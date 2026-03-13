@@ -12,26 +12,9 @@
 <meta name="apple-mobile-web-app-title" content="Mio Cane ENCI"/>
 <meta name="description" content="Gestione ufficiale pedigree ENCI — salute, cucciolate, moduli e contratti"/>
 <link rel="manifest" href="manifest.json"/>
-<!-- Icone iOS (inline SVG come data URI) -->
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%230D47A1' rx='80'/%3E%3Cpath d='M128 180c0-75 61-104 104-66l24 22 24-22c43-38 104-9 104 66 0 38-19 70-47 92L256 384 175 272c-28-22-47-54-47-92z' fill='white' opacity='.9'/%3E%3Ccircle cx='192' cy='130' r='22' fill='%23C9A961'/%3E%3Ccircle cx='320' cy='130' r='22' fill='%23C9A961'/%3E%3Ccircle cx='144' cy='176' r='18' fill='%23C9A961'/%3E%3Ccircle cx='368' cy='176' r='18' fill='%23C9A961'/%3E%3C/svg%3E"/>
+<script>if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw.js').catch(function(){}); }); }</script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<script>
-// Service Worker inline — registrato dal HTML stesso (no file esterno necessario)
-if('serviceWorker' in navigator){
-  var swCode = `
-const CACHE='miocane-v1';
-const ASSETS=['/'];
-self.addEventListener('install',e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))); self.skipWaiting(); });
-self.addEventListener('activate',e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))); self.clients.claim(); });
-self.addEventListener('fetch',e=>{
-  if(e.request.method!=='GET') return;
-  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{ var rc=res.clone(); caches.open(CACHE).then(c=>c.put(e.request,rc)); return res; }).catch(()=>caches.match('/'))));
-});`;
-  var blob = new Blob([swCode],{type:'application/javascript'});
-  var swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl).catch(function(){});
-}
-</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;font-family:'DM Sans',sans-serif;background:#EEF3FB;color:#1a1a3a;overflow:hidden}
