@@ -136,6 +136,10 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 .enci-btn{display:flex;align-items:center;gap:10px;background:#F4F7FE;border:1.5px solid #DDEAFF;border-radius:11px;padding:12px 16px;cursor:pointer;text-decoration:none;color:#1a1a3a;transition:all .2s;margin-bottom:10px}
 .enci-btn:hover{background:#EEF3FB;border-color:#1565C0;transform:translateX(4px)}
 
+/* Campi obbligatori — bordo rosso se vuoti al submit */
+.campo-mancante{border-color:#C0534A!important;background:#FFF0F0!important;animation:shake .3s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
 /* CAMP ROWS */
 .camp-row{border-radius:11px;padding:14px 16px;margin-bottom:10px;border:1.5px solid #DDEAFF}
 .camp-done{background:linear-gradient(135deg,#FDF6E3,#F0FFF6);border-color:#C9A961}
@@ -1504,13 +1508,22 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 
     <!-- Step 1: upload foto -->
     <div id="foto-step1">
-      <div id="foto-dropzone" onclick="fotoDropzoneClick()" style="border:2.5px dashed #BFCFE8;border-radius:14px;padding:36px 20px;text-align:center;cursor:pointer;transition:border .2s;background:#F8FAFF" onmouseover="this.style.borderColor='#1565C0'" onmouseout="this.style.borderColor='#BFCFE8'">
-        <div style="font-size:48px;margin-bottom:10px">📄</div>
-        <div style="font-weight:700;font-size:15px;color:#1565C0;margin-bottom:5px">Clicca per scegliere la foto</div>
-        <div style="font-size:12px;color:#6B8BB0">oppure scatta una foto con il telefono · JPG, PNG, HEIC</div>
-        <input id="foto-input" type="file" accept="image/*" style="display:none" onchange="onFotoSelected(this)"/>
+      <!-- Due bottoni: Fotocamera + Galleria -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <button onclick="g('foto-input-camera').click()" style="border:2px solid #1565C0;border-radius:14px;padding:20px 12px;text-align:center;cursor:pointer;background:#EEF3FB;display:flex;flex-direction:column;align-items:center;gap:8px">
+          <div style="font-size:36px">📷</div>
+          <div style="font-weight:700;font-size:14px;color:#1565C0">Scatta foto</div>
+          <div style="font-size:11px;color:#6B8BB0">Apre la fotocamera</div>
+          <input id="foto-input-camera" type="file" accept="image/*" capture="environment" style="display:none" onchange="onFotoSelected(this)"/>
+        </button>
+        <button onclick="g('foto-input-gallery').click()" style="border:2px dashed #BFCFE8;border-radius:14px;padding:20px 12px;text-align:center;cursor:pointer;background:#F8FAFF;display:flex;flex-direction:column;align-items:center;gap:8px">
+          <div style="font-size:36px">🖼️</div>
+          <div style="font-weight:700;font-size:14px;color:#1565C0">Dalla galleria</div>
+          <div style="font-size:11px;color:#6B8BB0">Scegli foto salvata</div>
+          <input id="foto-input-gallery" type="file" accept="image/*" style="display:none" onchange="onFotoSelected(this)"/>
+        </button>
       </div>
-      <div style="margin-top:14px;background:#FDF6E3;border:1.5px solid #E8D5A0;border-radius:10px;padding:12px 16px;font-size:12px;color:#6B8BB0;line-height:1.7">
+      <div style="margin-top:4px;background:#FDF6E3;border:1.5px solid #E8D5A0;border-radius:10px;padding:12px 16px;font-size:12px;color:#6B8BB0;line-height:1.7">
         💡 <strong style="color:#A88A41">Consigli per una buona lettura:</strong><br>
         • Fotografa in <strong>piena luce</strong> o vicino a una finestra<br>
         • Tieni il telefono <strong>parallelo al documento</strong>, senza angolazioni<br>
@@ -1604,11 +1617,21 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
     <div id="new-section-foto" style="display:none">
       <div id="new-foto-ai-banner" style="margin-bottom:12px;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:600"></div>
 
-      <div id="new-foto-dropzone" onclick="newFotoDropzoneClick()" style="border:2.5px dashed #BFCFE8;border-radius:14px;padding:28px 20px;text-align:center;cursor:pointer;background:#F8FAFF;margin-bottom:12px" onmouseover="this.style.borderColor='#1565C0'" onmouseout="this.style.borderColor='#BFCFE8'">
-        <div style="font-size:44px;margin-bottom:8px">📄</div>
-        <div style="font-weight:700;font-size:14px;color:#1565C0;margin-bottom:4px">Clicca per scegliere la foto</div>
-        <div style="font-size:11px;color:#6B8BB0">Certificato ENCI cartaceo · JPG, PNG, HEIC</div>
-        <input id="new-ped-foto-input" type="file" accept="image/*" style="display:none" onchange="onNuovoCaneFoto(this)"/>
+      <div id="new-foto-dropzone" style="margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <button onclick="g('new-ped-foto-camera').click()" style="border:2px solid #1565C0;border-radius:14px;padding:18px 10px;text-align:center;cursor:pointer;background:#EEF3FB;display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="font-size:32px">📷</div>
+            <div style="font-weight:700;font-size:13px;color:#1565C0">Scatta foto</div>
+            <div style="font-size:10px;color:#6B8BB0">Apre fotocamera</div>
+            <input id="new-ped-foto-camera" type="file" accept="image/*" capture="environment" style="display:none" onchange="onNuovoCaneFoto(this)"/>
+          </button>
+          <button onclick="g('new-ped-foto-gallery').click()" style="border:2px dashed #BFCFE8;border-radius:14px;padding:18px 10px;text-align:center;cursor:pointer;background:#F8FAFF;display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="font-size:32px">🖼️</div>
+            <div style="font-weight:700;font-size:13px;color:#1565C0">Dalla galleria</div>
+            <div style="font-size:10px;color:#6B8BB0">Scegli foto salvata</div>
+            <input id="new-ped-foto-gallery" type="file" accept="image/*" style="display:none" onchange="onNuovoCaneFoto(this)"/>
+          </button>
+        </div>
       </div>
       <div id="new-foto-reading" style="display:none">
         <div style="display:flex;gap:12px;align-items:center;background:#EEF3FB;border-radius:12px;padding:14px">
@@ -1683,18 +1706,39 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
       <button class="btn btn-ghost btn-sm" onclick="hide('modal-share')">✕</button>
     </div>
     <div id="share-preview-content"></div>
-    <div style="background:#F4F7FE;border:1.5px solid #DDEAFF;border-radius:10px;padding:14px;margin:14px 0;font-size:13px;color:#4A6080;line-height:1.8">
-      1️⃣ Scarica il file <strong style="color:#00838F">.enci</strong><br/>
-      2️⃣ Invialo via WhatsApp / email / AirDrop<br/>
-      3️⃣ L'altro allevatore apre la sua app → <strong>📥 Importa</strong><br/>
-      4️⃣ Compare nel <strong style="color:#7B1FA2">🧬 Breeding Planner</strong> con pedigree per il calcolo COI
+    <div style="background:#F0FFF6;border:1.5px solid #A8D8B8;border-radius:10px;padding:12px 14px;margin:14px 0;font-size:13px;color:#1a7a4a">
+      🔗 Viene creato un <strong>link</strong> — l'altro allevatore lo apre e importa il cane con un tap. Nessun file da cercare!
     </div>
-    <div style="background:#E0F7FA;border:1.5px solid #80DEEA;border-radius:9px;padding:10px 13px;margin-bottom:14px;font-size:12px;color:#006064">
-      🔒 La scheda include: profilo, titoli, displasia, pedigree. <strong>NON</strong> include vaccinazioni e trattamenti privati.
+    <div style="background:#E0F7FA;border:1.5px solid #80DEEA;border-radius:9px;padding:10px 13px;margin-bottom:16px;font-size:12px;color:#006064">
+      🔒 Include: profilo, titoli, displasia, pedigree. <strong>NON</strong> include vaccinazioni e trattamenti privati.
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn btn-ghost" onclick="hide('modal-share')">Annulla</button>
-      <button class="btn btn-teal" onclick="downloadScheda()">⬇ Scarica .enci</button>
+    <!-- Link generato -->
+    <div id="share-link-box" style="display:none;margin-bottom:14px">
+      <div style="font-size:12px;color:#6B8BB0;margin-bottom:6px">🔗 Link pronto — copialo o condividi direttamente:</div>
+      <div style="display:flex;gap:6px">
+        <input id="share-link-input" type="text" readonly style="flex:1;font-size:12px;background:#F8FAFF;color:#1565C0;cursor:pointer" onclick="this.select()"/>
+        <button class="btn btn-sm btn-ghost" onclick="copyShareLink()" id="btn-copy-link">📋 Copia</button>
+      </div>
+    </div>
+    <!-- Bottoni condivisione -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px" id="share-buttons">
+      <button class="btn" onclick="shareVia('whatsapp')" style="background:#25D366;color:#fff;border:none;display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        WhatsApp
+      </button>
+      <button class="btn" onclick="shareVia('telegram')" style="background:#229ED9;color:#fff;border:none;display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+        Telegram
+      </button>
+      <button class="btn" onclick="shareVia('email')" style="background:#EA4335;color:#fff;border:none;display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px">
+        ✉️ Email
+      </button>
+      <button class="btn btn-ghost" onclick="shareViaNative()" style="display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;border:1.5px solid #DDEAFF">
+        ↗ Altro...
+      </button>
+    </div>
+    <div style="text-align:center">
+      <button class="btn btn-ghost btn-sm" onclick="hide('modal-share')" style="font-size:12px;color:#9ab0cc">Annulla</button>
     </div>
   </div>
 </div>
@@ -2203,66 +2247,191 @@ function callAIVision(b64, mime, prompt, onSuccess, onError){
     onError(new Error('__NO_KEY__'));
     return;
   }
-  // Costruisce coda di provider disponibili
+
+  // Coda provider in ordine di preferenza
   var queue = [];
-  if(_aiKeys.gemini) queue.push({name:'gemini', key:_aiKeys.gemini});
-  if(_aiKeys.claude) queue.push({name:'claude', key:_aiKeys.claude});
-  if(_aiKeys.openai) queue.push({name:'openai', key:_aiKeys.openai});
+  if(_aiKeys.gemini) queue.push('gemini');
+  if(_aiKeys.claude) queue.push('claude');
+  if(_aiKeys.openai) queue.push('openai');
 
   function tryNext(idx){
-    if(idx >= queue.length){ onError(new Error('Tutti i provider AI hanno fallito. Riprova tra un minuto.')); return; }
-    var p = queue[idx];
-    console.log('[AI] Provo provider:', p.name);
+    if(idx >= queue.length){
+      onError(new Error('Quota esaurita su tutti i provider. Attendi qualche minuto e riprova.'));
+      return;
+    }
+    var provider = queue[idx];
+    console.log('[AI] Provo:', provider);
 
-    if(p.name === 'gemini'){
+    if(provider === 'gemini'){
       var MODELS = ['gemini-1.5-flash','gemini-2.0-flash','gemini-1.5-flash-8b'];
       var mi = 0;
       function tryGemini(){
-        fetch('https://generativelanguage.googleapis.com/v1beta/models/'+MODELS[mi]+':generateContent?key='+p.key,{
+        fetch('https://generativelanguage.googleapis.com/v1beta/models/'+MODELS[mi]+':generateContent?key='+_aiKeys.gemini,{
           method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:mime,data:b64}},{text:prompt}]}],generationConfig:{maxOutputTokens:2500}})
+          body:JSON.stringify({
+            contents:[{parts:[{inline_data:{mime_type:'image/jpeg',data:b64}},{text:prompt}]}],
+            generationConfig:{maxOutputTokens:2500, temperature:0.1}
+          })
         }).then(function(r){return r.json();}).then(function(d){
           if(d.error){
-            var msg=d.error.message||'';
-            if((d.error.code===429||msg.indexOf('quota')!==-1||msg.indexOf('RESOURCE_EXHAUSTED')!==-1)){
+            var code=d.error.code||0, msg=d.error.message||'';
+            if(code===429||msg.indexOf('quota')!==-1||msg.indexOf('RESOURCE_EXHAUSTED')!==-1){
               if(mi<MODELS.length-1){mi++;setTimeout(tryGemini,2000);return;}
-              else{console.log('[AI] Gemini esaurito, passo al prossimo');setTimeout(function(){tryNext(idx+1);},1000);return;}
+              console.log('[AI] Gemini quota esaurita, passo al prossimo');
+              setTimeout(function(){tryNext(idx+1);},500); return;
             }
-            throw new Error(msg);
+            console.log('[AI] Gemini errore:',msg);
+            setTimeout(function(){tryNext(idx+1);},500); return;
           }
-          var txt=d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts&&d.candidates[0].content.parts[0]&&d.candidates[0].content.parts[0].text;
-          if(!txt) throw new Error('Nessuna risposta');
-          parseAIResponse(txt, onSuccess, onError);
-        }).catch(function(e){console.log('[AI] Gemini errore:',e.message);tryNext(idx+1);});
+          var txt=d.candidates&&d.candidates[0]&&d.candidates[0].content&&
+                  d.candidates[0].content.parts&&d.candidates[0].content.parts[0]&&
+                  d.candidates[0].content.parts[0].text;
+          if(!txt){setTimeout(function(){tryNext(idx+1);},500);return;}
+          parseAIResponse(txt,onSuccess,onError);
+        }).catch(function(){setTimeout(function(){tryNext(idx+1);},500);});
       }
       tryGemini();
 
-    } else if(p.name === 'claude'){
+    } else if(provider === 'claude'){
+      // Claude supporta chiamate dirette dal browser con questo header
       fetch('https://api.anthropic.com/v1/messages',{
         method:'POST',
-        headers:{'Content-Type':'application/json','x-api-key':p.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-        body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2500,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mime,data:b64}},{type:'text',text:prompt}]}]})
+        headers:{
+          'Content-Type':'application/json',
+          'x-api-key': _aiKeys.claude,
+          'anthropic-version':'2023-06-01',
+          'anthropic-dangerous-direct-browser-access':'true'
+        },
+        body:JSON.stringify({
+          model:'claude-haiku-4-5-20251001',
+          max_tokens:2500,
+          messages:[{role:'user',content:[
+            {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
+            {type:'text',text:prompt}
+          ]}]
+        })
       }).then(function(r){return r.json();}).then(function(d){
-        if(d.error||d.type==='error'){throw new Error(d.error&&d.error.message||'Errore Claude');}
+        if(d.type==='error'||d.error){
+          console.log('[AI] Claude errore:',d.error&&d.error.message);
+          setTimeout(function(){tryNext(idx+1);},500); return;
+        }
         var txt=d.content&&d.content[0]&&d.content[0].text;
-        if(!txt) throw new Error('Nessuna risposta Claude');
-        parseAIResponse(txt, onSuccess, onError);
-      }).catch(function(e){console.log('[AI] Claude errore:',e.message);tryNext(idx+1);});
+        if(!txt){setTimeout(function(){tryNext(idx+1);},500);return;}
+        parseAIResponse(txt,onSuccess,onError);
+      }).catch(function(e){
+        console.log('[AI] Claude fetch error:',e.message);
+        setTimeout(function(){tryNext(idx+1);},500);
+      });
 
-    } else if(p.name === 'openai'){
+    } else if(provider === 'openai'){
       fetch('https://api.openai.com/v1/chat/completions',{
         method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+p.key},
-        body:JSON.stringify({model:'gpt-4o-mini',max_tokens:2500,messages:[{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64}},{type:'text',text:prompt}]}]})
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+_aiKeys.openai},
+        body:JSON.stringify({
+          model:'gpt-4o-mini', max_tokens:2500,
+          messages:[{role:'user',content:[
+            {type:'image_url',image_url:{url:'data:image/jpeg;base64,'+b64}},
+            {type:'text',text:prompt}
+          ]}]
+        })
       }).then(function(r){return r.json();}).then(function(d){
-        if(d.error){throw new Error(d.error.message||'Errore OpenAI');}
+        if(d.error){console.log('[AI] OpenAI errore:',d.error.message);setTimeout(function(){tryNext(idx+1);},500);return;}
         var txt=d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content;
-        if(!txt) throw new Error('Nessuna risposta OpenAI');
-        parseAIResponse(txt, onSuccess, onError);
-      }).catch(function(e){console.log('[AI] OpenAI errore:',e.message);tryNext(idx+1);});
+        if(!txt){setTimeout(function(){tryNext(idx+1);},500);return;}
+        parseAIResponse(txt,onSuccess,onError);
+      }).catch(function(){setTimeout(function(){tryNext(idx+1);},500);});
     }
   }
   tryNext(0);
+}
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var img = new Image();
+    img.onload = function(){
+      var MAX = 1200;
+      var w = img.width, h = img.height;
+      if(w > MAX || h > MAX){
+        if(w > h){ h = Math.round(h * MAX/w); w = MAX; }
+        else { w = Math.round(w * MAX/h); h = MAX; }
+      }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      // Qualità 0.82 = buon bilanciamento leggibilità/peso
+      var dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      var b64 = dataUrl.split(',')[1];
+      var kb = Math.round(b64.length * 0.75 / 1024);
+      console.log('[AI] Immagine ridimensionata: '+w+'x'+h+' px, ~'+kb+'KB');
+      callback(b64, 'image/jpeg');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function callAIVision(b64, mime, prompt, onSuccess, onError){
+  if(!hasAnyAIKey()){
+    onError(new Error('__NO_KEY__'));
+    return;
+  }
+
+  // Solo Gemini funziona da browser senza CORS issues
+  // Claude e OpenAI richiedono un proxy server — usiamo Gemini con fallback modelli
+  var MODELS = ['gemini-1.5-flash','gemini-2.0-flash','gemini-1.5-flash-8b'];
+  var mi = 0;
+
+  function tryGemini(){
+    if(!_aiKeys.gemini){
+      // Nessuna key Gemini — mostra errore specifico
+      onError(new Error('Serve la chiave Gemini (gratuita). Claude e OpenAI non funzionano direttamente dal browser per motivi di sicurezza.'));
+      return;
+    }
+    var model = MODELS[mi];
+    console.log('[AI] Provo Gemini:', model);
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+_aiKeys.gemini,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        contents:[{parts:[
+          {inline_data:{mime_type:'image/jpeg', data:b64}},
+          {text:prompt}
+        ]}],
+        generationConfig:{maxOutputTokens:2500, temperature:0.1}
+      })
+    })
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.error){
+        var msg = d.error.message||'';
+        var code = d.error.code||0;
+        console.log('[AI] Gemini errore:', code, msg);
+        if((code===429 || msg.indexOf('quota')!==-1 || msg.indexOf('RESOURCE_EXHAUSTED')!==-1)){
+          if(mi < MODELS.length-1){
+            mi++;
+            console.log('[AI] Quota superata, provo:', MODELS[mi]);
+            setTimeout(tryGemini, 3000);
+            return;
+          }
+          onError(new Error('Quota Gemini esaurita. Attendi 1 minuto e riprova.'));
+          return;
+        }
+        if(code===400) onError(new Error('Immagine non leggibile. Prova con una foto più nitida e luminosa.'));
+        else onError(new Error('Errore Gemini: '+msg));
+        return;
+      }
+      var txt = d.candidates&&d.candidates[0]&&d.candidates[0].content&&
+                d.candidates[0].content.parts&&d.candidates[0].content.parts[0]&&
+                d.candidates[0].content.parts[0].text;
+      if(!txt){ onError(new Error('Nessuna risposta da Gemini')); return; }
+      parseAIResponse(txt, onSuccess, onError);
+    })
+    .catch(function(e){
+      console.log('[AI] Fetch error:', e);
+      onError(new Error('Errore di rete. Controlla la connessione e riprova.'));
+    });
+  }
+
+  tryGemini();
 }
 
 function parseAIResponse(txt, onSuccess, onError){
@@ -2436,17 +2605,18 @@ function resetNuovoCaneFoto(){
 
 function onNuovoCaneFoto(input){
   var file=input.files[0];if(!file)return;
-  var reader=new FileReader();
-  reader.onload=function(e){
-    var b64=e.target.result.split(',')[1];
-    var mime=file.type||'image/jpeg';
-    g('new-foto-preview-img').src=e.target.result;
-    g('new-foto-dropzone').style.display='none';
-    g('new-foto-reading').style.display='';
+  // Anteprima immediata
+  var pr=new FileReader();
+  pr.onload=function(e){ g('new-foto-preview-img').src=e.target.result; };
+  pr.readAsDataURL(file);
+  g('new-foto-dropzone').style.display='none';
+  g('new-foto-reading').style.display='';
+  g('new-foto-status').textContent='📐 Ottimizzazione immagine…';
+  // Ridimensiona poi invia
+  resizeImageForAI(file, function(b64, mime){
     g('new-foto-status').textContent='🔍 Lettura in corso…';
     leggiNuovoCaneConClaude(b64, mime);
-  };
-  reader.readAsDataURL(file);
+  });
 }
 
 function leggiNuovoCaneConClaude(b64, mime){
@@ -3083,29 +3253,101 @@ function exportScheda(){
     sesso:c.sesso,microchip:c.microchip,foto:c.foto,displasia:c.displasia,
     cac_list:c.cac_list,cacib_list:c.cacib_list,pedigreeFlat:c.pedigreeFlat||{},
     pedGens:c.pedGens||1,vaccinazioni:[],trattamenti:[],_guest:true};
+  // Genera link con dati codificati
+  var json = JSON.stringify(scheda);
+  var b64 = btoa(unescape(encodeURIComponent(json)));
+  var link = 'https://mio-cane-enci.vercel.app/?import='+b64;
+  window._shareLink = link;
+  window._shareNome = c.nome;
+  window._pendingScheda = scheda;
+  // Mostra link nel modal
   var req=calcolaRequisiti(c);
   var html=schedaPreviewHtml(c,req,'#BFCFE8','#0D47A1');
   g('share-preview-content').innerHTML=html;
-  window._pendingScheda=scheda;show('modal-share');
+  g('share-link-input').value=link;
+  g('share-link-box').style.display='';
+  show('modal-share');
 }
-function downloadScheda(){var s=window._pendingScheda;if(!s)return;var blob=new Blob([JSON.stringify(s,null,2)],{type:'application/json'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=s.nome.replace(/\s+/g,'_')+'.enci';a.click();URL.revokeObjectURL(url);hide('modal-share');}
+
+function copyShareLink(){
+  var inp=g('share-link-input');
+  inp.select();
+  try{ document.execCommand('copy'); }catch(e){ navigator.clipboard&&navigator.clipboard.writeText(inp.value); }
+  var btn=g('btn-copy-link');
+  btn.textContent='✅ Copiato!';
+  setTimeout(function(){ btn.textContent='📋 Copia'; },2000);
+}
+
+function shareVia(platform){
+  var link=window._shareLink||'';
+  var nome=window._shareNome||'un cane';
+  var testo='🐾 Ti condivido la scheda pedigree di *'+nome+'* su Mio Cane ENCI.\nClicca il link per importarla direttamente nell\'app:\n'+link;
+  if(platform==='whatsapp'){
+    window.open('https://wa.me/?text='+encodeURIComponent(testo),'_blank');
+  } else if(platform==='telegram'){
+    window.open('https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent('🐾 Scheda pedigree di '+nome+' su Mio Cane ENCI'),'_blank');
+  } else if(platform==='email'){
+    window.open('mailto:?subject='+encodeURIComponent('Scheda pedigree '+nome+' — Mio Cane ENCI')+'&body='+encodeURIComponent(testo),'_blank');
+  }
+}
+
+function shareViaNative(){
+  var link=window._shareLink||'';
+  var nome=window._shareNome||'un cane';
+  if(navigator.share){
+    navigator.share({
+      title:'Scheda pedigree '+nome,
+      text:'🐾 Scheda pedigree di '+nome+' su Mio Cane ENCI',
+      url:link
+    }).catch(function(){});
+  } else {
+    copyShareLink();
+    toast('Link copiato! Incollalo dove vuoi condividere.');
+  }
+}
+
+// Mantenuto per compatibilità
+function downloadScheda(){shareViaNative();}
 function triggerImport(){g('import-input').value='';g('import-input').click();}
+
 function importScheda(input){
   var file=input.files[0];if(!file)return;
-  if(!file.name.endsWith('.enci')){alert('File non valido. Usa un file .enci di Mio Cane ENCI.');return;}
+  // Accetta sia .enci che .json
   var r=new FileReader();
   r.onload=function(e){
     try{
       var data=JSON.parse(e.target.result);
-      if(!data._enci_version||!data.nome){alert('File .enci non valido.');return;}
+      if(!data.nome){alert('File non valido.');return;}
       data._guest=true;pendingImport=data;
       var req=calcolaRequisiti(data);
       var html=schedaPreviewHtml(data,req,'#80DEEA','#00838F');
       html+='<div style="font-size:11px;color:#6B8BB0;text-align:center;margin-top:8px">Scheda del '+(data._exported?new Date(data._exported).toLocaleDateString('it-IT'):'N.D.')+'</div>';
       g('import-preview').innerHTML=html;show('modal-import');
-    }catch(err){alert('Errore lettura file .enci');}
+    }catch(err){alert('Errore lettura file.');}
   };
   r.readAsText(file);
+}
+
+// Gestione import da URL (?import=BASE64)
+function checkURLImport(){
+  try{
+    var params=new URLSearchParams(window.location.search);
+    var b64=params.get('import');
+    if(!b64) return;
+    // Pulisci URL senza ricaricare
+    window.history.replaceState({},'',window.location.pathname);
+    var json=decodeURIComponent(escape(atob(b64)));
+    var data=JSON.parse(json);
+    if(!data.nome) return;
+    data._guest=true;
+    pendingImport=data;
+    var req=calcolaRequisiti(data);
+    var html=schedaPreviewHtml(data,req,'#80DEEA','#00838F');
+    html+='<div style="font-size:11px;color:#6B8BB0;text-align:center;margin-top:8px">Ricevuto il '+new Date().toLocaleDateString('it-IT')+'</div>';
+    g('import-preview').innerHTML=html;
+    // Piccolo delay per far caricare l'app
+    setTimeout(function(){ show('modal-import'); }, 600);
+  }catch(e){ console.log('Import URL error:', e); }
 }
 function schedaPreviewHtml(c,req,borderColor,labelColor){
   var titoli=[];if(req.italiano.ok)titoli.push('🇮🇹');if(req.cib.ok)titoli.push('🌍');if(req.europeo.ok)titoli.push('🇪🇺');if(req.mondiale.ok)titoli.push('🌐');
@@ -4253,73 +4495,48 @@ function renderNewFotoAI(){ _renderAIBanner('new-foto-ai-banner'); }
 function _renderAIBanner(elId){
   var el=g(elId); if(!el) return;
   if(hasAnyAIKey()){
-    var providers=[];
-    if(_aiKeys.gemini) providers.push('🟢 Gemini');
-    if(_aiKeys.claude) providers.push('🟢 Claude');
-    if(_aiKeys.openai) providers.push('🟢 OpenAI');
-    el.style.cssText='background:#F0FFF6;border:1.5px solid #A8D8B8;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:600;color:#1a7a4a;margin-bottom:14px';
-    el.innerHTML='✅ <strong>AI pronta</strong> · '+providers.join(' · ')+' '
-      +'<span onclick="openAISettings(\''+elId+'\')" style="cursor:pointer;font-weight:400;text-decoration:underline;color:#6B8BB0;font-size:11px">configura</span>';
+    var p=[];
+    if(_aiKeys.gemini) p.push('🔵 Gemini');
+    if(_aiKeys.claude) p.push('🟠 Claude');
+    if(_aiKeys.openai) p.push('🟢 OpenAI');
+    el.style.cssText='background:#F0FFF6;border:1.5px solid #A8D8B8;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;color:#1a7a4a;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:8px';
+    el.innerHTML='<span>✅ AI pronta · '+p.join(' · ')+'</span>'
+      +'<span onclick="openAISettings(\''+elId+'\')" style="cursor:pointer;font-weight:400;font-size:11px;color:#6B8BB0;text-decoration:underline;white-space:nowrap;flex-shrink:0">configura</span>';
   } else {
     el.style.cssText='background:#F8FAFF;border:1.5px solid #DDEAFF;border-radius:12px;padding:13px 15px;margin-bottom:14px';
-    el.innerHTML='<div style="font-size:13px;font-weight:700;color:#1565C0;margin-bottom:8px">🤖 Configura AI (gratis, solo la prima volta)</div>'
-      +'<div style="font-size:12px;color:#4A6080;margin-bottom:10px">Scegli uno o più provider — l\'app prova automaticamente in ordine</div>'
-      +'<button class="btn btn-primary btn-sm" onclick="openAISettings(\''+elId+'\')" style="width:100%">⚙️ Configura AI</button>';
+    el.innerHTML='<div style="font-size:13px;font-weight:700;color:#1565C0;margin-bottom:8px">🤖 Configura AI (gratis con Gemini)</div>'
+      +'<div style="font-size:12px;color:#4A6080;margin-bottom:10px">30 secondi di configurazione · Poi legge i pedigree automaticamente</div>'
+      +'<button class="btn btn-primary btn-sm" onclick="openAISettings(\''+elId+'\')" style="width:100%">⚙️ Configura ora</button>';
   }
 }
 
 function openAISettings(fromEl){
   var hasG=!!_aiKeys.gemini, hasC=!!_aiKeys.claude, hasO=!!_aiKeys.openai;
-  var html='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px" id="ai-settings-overlay">'
-    +'<div style="background:#fff;border-radius:16px;padding:24px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">'
+  function row(id,emoji,name,badge,badgeColor,desc,link,linkLabel,placeholder,hasKey){
+    return '<div style="border:1.5px solid '+(hasKey?'#A8D8B8':'#DDEAFF')+';border-radius:12px;padding:14px;margin-bottom:10px">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'
+      +'<div style="width:36px;height:36px;background:#F4F7FE;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px">'+emoji+'</div>'
+      +'<div style="flex:1"><div style="font-weight:700;font-size:14px">'+name+' <span style="background:'+badgeColor+';font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">'+badge+'</span></div>'
+      +'<div style="font-size:11px;color:#6B8BB0">'+desc+' · <a href="'+link+'" target="_blank" style="color:#1565C0">'+linkLabel+'</a></div></div>'
+      +(hasKey?'<span style="color:#1a7a4a;font-size:12px;font-weight:700">✅</span>':'')
+      +'</div>'
+      +'<div style="display:flex;gap:6px">'
+      +'<input id="ai-key-'+id+'" type="password" placeholder="'+placeholder+'" style="flex:1;font-size:13px" value="'+(hasKey?'••••••••':'')+'" />'
+      +(hasKey?'<button class="btn btn-sm" style="background:#FEE;color:#C0534A;border:1.5px solid #F5C6C6;white-space:nowrap" onclick="removeAIKey(\''+id+'\');_refreshAISettings(\''+fromEl+'\')">🗑</button>':'')
+      +'<button class="btn btn-primary btn-sm" onclick="_saveKeyFromSettings(\''+id+'\',\'ai-key-'+id+'\',\''+fromEl+'\')" style="white-space:nowrap">✓ Salva</button>'
+      +'</div></div>';
+  }
+  var html='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:flex-end" id="ai-settings-overlay">'
+    +'<div style="background:#fff;border-radius:18px 18px 0 0;padding:22px;width:100%;max-height:92vh;overflow-y:auto">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1">🤖 Configura AI</div>'
-    +'<button onclick="document.getElementById(\'ai-settings-overlay\').remove();if(\''+fromEl+'\')_renderAIBanner(\''+fromEl+'\')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6B8BB0">✕</button>'
+    +'<button onclick="document.getElementById(\'ai-settings-overlay\').remove();_renderAIBanner(\''+fromEl+'\')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#6B8BB0">✕</button>'
     +'</div>'
-
-    // GEMINI
-    +'<div style="border:1.5px solid #DDEAFF;border-radius:12px;padding:14px;margin-bottom:12px">'
-    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
-    +'<span style="font-size:20px">🔵</span>'
-    +'<div><div style="font-weight:700;font-size:14px">Google Gemini</div>'
-    +'<div style="font-size:11px;color:#6B8BB0">Gratuito · <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#1565C0">aistudio.google.com</a></div></div>'
-    +(hasG?'<span style="margin-left:auto;color:#1a7a4a;font-size:12px;font-weight:700">✅ Attivo</span>':'')
-    +'</div>'
-    +'<div style="display:flex;gap:6px">'
-    +'<input id="ai-key-gemini" type="password" placeholder="AIza..." value="'+(hasG?'••••••••':'')+'" style="flex:1;font-size:13px"/>'
-    +(hasG?'<button class="btn btn-sm" style="background:#FEE;color:#C0534A;border:1.5px solid #F5C6C6" onclick="removeAIKey(\'gemini\');this.closest(\'.ai-row-g\');_refreshAISettings(\''+fromEl+'\')">🗑</button>':'')
-    +'<button class="btn btn-primary btn-sm" onclick="_saveKeyFromSettings(\'gemini\',\'ai-key-gemini\',\''+fromEl+'\')">Salva</button>'
-    +'</div></div>'
-
-    // CLAUDE
-    +'<div style="border:1.5px solid #DDEAFF;border-radius:12px;padding:14px;margin-bottom:12px">'
-    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
-    +'<span style="font-size:20px">🟠</span>'
-    +'<div><div style="font-weight:700;font-size:14px">Anthropic Claude</div>'
-    +'<div style="font-size:11px;color:#6B8BB0">A pagamento · <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:#1565C0">console.anthropic.com</a></div></div>'
-    +(hasC?'<span style="margin-left:auto;color:#1a7a4a;font-size:12px;font-weight:700">✅ Attivo</span>':'')
-    +'</div>'
-    +'<div style="display:flex;gap:6px">'
-    +'<input id="ai-key-claude" type="password" placeholder="sk-ant-..." value="'+(hasC?'••••••••':'')+'" style="flex:1;font-size:13px"/>'
-    +(hasC?'<button class="btn btn-sm" style="background:#FEE;color:#C0534A;border:1.5px solid #F5C6C6" onclick="removeAIKey(\'claude\');_refreshAISettings(\''+fromEl+'\')">🗑</button>':'')
-    +'<button class="btn btn-primary btn-sm" onclick="_saveKeyFromSettings(\'claude\',\'ai-key-claude\',\''+fromEl+'\')">Salva</button>'
-    +'</div></div>'
-
-    // OPENAI
-    +'<div style="border:1.5px solid #DDEAFF;border-radius:12px;padding:14px;margin-bottom:16px">'
-    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
-    +'<span style="font-size:20px">🟢</span>'
-    +'<div><div style="font-weight:700;font-size:14px">OpenAI GPT-4o</div>'
-    +'<div style="font-size:11px;color:#6B8BB0">A pagamento · <a href="https://platform.openai.com/api-keys" target="_blank" style="color:#1565C0">platform.openai.com</a></div></div>'
-    +(hasO?'<span style="margin-left:auto;color:#1a7a4a;font-size:12px;font-weight:700">✅ Attivo</span>':'')
-    +'</div>'
-    +'<div style="display:flex;gap:6px">'
-    +'<input id="ai-key-openai" type="password" placeholder="sk-..." value="'+(hasO?'••••••••':'')+'" style="flex:1;font-size:13px"/>'
-    +(hasO?'<button class="btn btn-sm" style="background:#FEE;color:#C0534A;border:1.5px solid #F5C6C6" onclick="removeAIKey(\'openai\');_refreshAISettings(\''+fromEl+'\')">🗑</button>':'')
-    +'<button class="btn btn-primary btn-sm" onclick="_saveKeyFromSettings(\'openai\',\'ai-key-openai\',\''+fromEl+'\')">Salva</button>'
-    +'</div></div>'
-
-    +'<div style="font-size:11px;color:#9ab0cc;text-align:center">🔒 Le chiavi sono salvate solo nel tuo browser · Non vengono mai inviate ai nostri server</div>'
+    +'<div style="font-size:12px;color:#4A6080;margin-bottom:14px;background:#F0FFF6;border:1.5px solid #A8D8B8;border-radius:8px;padding:8px 12px">💡 <strong>Configura più provider</strong> — se uno è al limite, l\'app passa automaticamente al successivo.</div>'
+    +row('gemini','🔵','Google Gemini','GRATUITO','#E0F7FA;color:#006064','Consigliato','https://aistudio.google.com/app/apikey','aistudio.google.com','AIza...',hasG)
+    +row('claude','🟠','Anthropic Claude','~$0.001/foto','#FFF3E0;color:#E65100','Eccellente qualità','https://console.anthropic.com/settings/keys','console.anthropic.com','sk-ant-...',hasC)
+    +row('openai','🟢','OpenAI GPT-4o','~$0.002/foto','#E8F5E9;color:#2E7D32','Ottimo backup','https://platform.openai.com/api-keys','platform.openai.com','sk-...',hasO)
+    +'<div style="font-size:11px;color:#9ab0cc;text-align:center;margin-top:4px">🔒 Salvate solo nel tuo browser · Mai inviate ai nostri server</div>'
     +'</div></div>';
   var wrap=document.createElement('div');
   wrap.innerHTML=html;
@@ -4352,18 +4569,21 @@ function resetGeminiKey(){
 }
 
 function fotoDropzoneClick(){
-  if(!hasAnyAIKey()){
-    renderFotoAI(); // mostra il wizard se nascosto
-    return;
-  }
-  g('foto-input').click();
+  if(!hasAnyAIKey()){ renderFotoAI(); return; }
+  g('foto-input-gallery').click();
 }
 function newFotoDropzoneClick(){
-  if(!hasAnyAIKey()){
-    renderNewFotoAI();
-    return;
-  }
-  g('new-ped-foto-input').click();
+  if(!hasAnyAIKey()){ renderNewFotoAI(); return; }
+  g('new-ped-foto-gallery').click();
+}
+function resetNuovoCaneFoto(){
+  _nuovoCaneFotoData=null;
+  var c=g('new-ped-foto-camera'); if(c) c.value='';
+  var gl=g('new-ped-foto-gallery'); if(gl) gl.value='';
+  g('new-foto-dropzone').style.display='';
+  g('new-foto-reading').style.display='none';
+  g('new-foto-result').style.display='none';
+  g('new-foto-error').style.display='none';
 }
 
 
@@ -4372,19 +4592,20 @@ function newFotoDropzoneClick(){
 function onFotoSelected(input){
   var file=input.files[0];
   if(!file)return;
-  var reader=new FileReader();
-  reader.onload=function(e){
-    var b64=e.target.result.split(',')[1];
-    var mime=file.type||'image/jpeg';
-    g('foto-preview-img').src=e.target.result;
-    g('foto-step1').style.display='none';
-    g('foto-step2').style.display='';
-    g('foto-status').textContent='🔍 Lettura in corso…';
+  // Mostra anteprima subito
+  var previewReader=new FileReader();
+  previewReader.onload=function(e){ g('foto-preview-img').src=e.target.result; };
+  previewReader.readAsDataURL(file);
+  g('foto-step1').style.display='none';
+  g('foto-step2').style.display='';
+  g('foto-status').textContent='🔍 Preparazione immagine…';
+  g('foto-progress').textContent='📐 Ottimizzazione per AI…';
+  g('foto-spinner').style.display='';
+  // Ridimensiona poi invia
+  resizeImageForAI(file, function(b64, mime){
     g('foto-progress').textContent='🤖 AI sta analizzando il documento ENCI…';
-    g('foto-spinner').style.display='';
     leggiPedigreeConClaude(b64, mime);
-  };
-  reader.readAsDataURL(file);
+  });
 }
 
 function leggiPedigreeConClaude(b64, mime){
@@ -4993,6 +5214,7 @@ getReminders=function(c){
     cani.push(luna, ramon);
   }
   renderSidebar();
+  checkURLImport();
 })();
 
 /* ── Proprietario del Cane (scheda Info) ── */
@@ -5645,7 +5867,36 @@ function gChecked(name){ var r=document.querySelector('input[name="'+name+'"]:ch
 function fmtData(d){ if(!d) return ''; var p=d.split('-'); return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d; }
 
 /* ══ GENERA PDF MODELLO A ══ */
+function validaModelloA(){
+  var errori = [];
+  var campi = [
+    ['ma-nome',  'Nome allevatore'],
+    ['ma-f-razza','Razza fattrice'],
+    ['ma-f-nome', 'Nome fattrice'],
+    ['ma-data-monta', 'Data monta'],
+    ['ma-data-nascita','Data nascita cucciolata'],
+    ['ma-s-nome', 'Nome stallone']
+  ];
+  campi.forEach(function(c){
+    var el = g(c[0]); if(!el) return;
+    if(!el.value.trim()){
+      errori.push(c[1]);
+      el.classList.add('campo-mancante');
+    } else {
+      el.classList.remove('campo-mancante');
+    }
+  });
+  if(errori.length > 0){
+    toast('⚠️ Mancano: ' + errori.slice(0,3).join(', ') + (errori.length>3?' e altri…':''));
+    var firstMissing = campi.find(function(c){ var el=g(c[0]); return el&&!el.value.trim(); });
+    if(firstMissing){ var el=g(firstMissing[0]); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }
+    return false;
+  }
+  return true;
+}
+
 function generaPdfModelloA(){
+  if(!validaModelloA()) return;
   var firmaFattriceUrl = getFirmaDataUrl('firma-a-fattrice');
   var firmaStalloneUrl = getFirmaDataUrl('firma-a-stallone');
   var socio = gChecked('ma-socio');
@@ -5821,7 +6072,37 @@ function generaPdfModelloA(){
 }
 
 /* ══ GENERA PDF MODELLO B ══ */
+function validaModelloB(){
+  var errori = [];
+  var campi = [
+    ['mb-nome',  'Nome allevatore'],
+    ['mb-f-nome', 'Nome fattrice'],
+    ['mb-f-razza','Razza fattrice'],
+    ['mb-s-nome', 'Nome stallone'],
+    ['mb-data-nascita','Data nascita cucciolata']
+  ];
+  campi.forEach(function(c){
+    var el = g(c[0]); if(!el) return;
+    if(!el.value.trim()){
+      errori.push(c[1]);
+      el.classList.add('campo-mancante');
+    } else {
+      el.classList.remove('campo-mancante');
+    }
+  });
+  var cuccioli = getCuccioliB();
+  if(cuccioli.length === 0) errori.push('almeno 1 cucciolo');
+  if(errori.length > 0){
+    toast('⚠️ Mancano: ' + errori.slice(0,3).join(', ') + (errori.length>3?' e altri…':''));
+    var firstMissing = campi.find(function(c){ var el=g(c[0]); return el&&!el.value.trim(); });
+    if(firstMissing){ var el=g(firstMissing[0]); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }
+    return false;
+  }
+  return true;
+}
+
 function generaPdfModelloB(){
+  if(!validaModelloB()) return;
   var firmaUrl = getFirmaDataUrl('firma-b-fattrice');
   var cuccioli = getCuccioliB();
   var socio = gChecked('mb-socio');
