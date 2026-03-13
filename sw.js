@@ -19,12 +19,16 @@ self.addEventListener('activate', function(e) {
 
 self.addEventListener('fetch', function(e) {
   if (e.request.method !== 'GET') return;
+  // Ignora chrome-extension://, moz-extension://, ecc.
+  if (!e.request.url.startsWith('http')) return;
   e.respondWith(
     caches.match(e.request).then(function(cached) {
       if (cached) return cached;
       return fetch(e.request).then(function(res) {
-        var rc = res.clone();
-        caches.open(CACHE).then(function(c) { c.put(e.request, rc); });
+        if (res && res.status === 200) {
+          var rc = res.clone();
+          caches.open(CACHE).then(function(c) { c.put(e.request, rc); });
+        }
         return res;
       }).catch(function() {
         return caches.match('/index.html');
