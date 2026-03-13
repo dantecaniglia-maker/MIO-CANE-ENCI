@@ -136,6 +136,14 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 .enci-btn{display:flex;align-items:center;gap:10px;background:#F4F7FE;border:1.5px solid #DDEAFF;border-radius:11px;padding:12px 16px;cursor:pointer;text-decoration:none;color:#1a1a3a;transition:all .2s;margin-bottom:10px}
 .enci-btn:hover{background:#EEF3FB;border-color:#1565C0;transform:translateX(4px)}
 
+/* Classi responsive mobile */
+.hide-mobile{ display:inline!important }
+.show-mobile{ display:none!important }
+@media(max-width:600px){
+  .hide-mobile{ display:none!important }
+  .show-mobile{ display:inline!important }
+}
+
 /* Campi obbligatori — bordo rosso se vuoti al submit */
 .campo-mancante{border-color:#C0534A!important;background:#FFF0F0!important;animation:shake .3s ease}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
@@ -956,29 +964,31 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 <div id="app">
 
 <!-- ══ HEADER ══ -->
-<header style="flex-shrink:0;background:#fff;border-bottom:1px solid #DDEAFF;padding:0 20px;height:58px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 6px rgba(21,101,192,.07)">
-  <div style="display:flex;align-items:center;gap:12px">
-    <button id="btn-home" class="hidden btn btn-ghost btn-sm no-print" onclick="goHome()" title="Torna alla home">🏠</button>
-    <!-- Logo moderno: iniziali stilizzate -->
-    <div style="width:34px;height:34px;background:linear-gradient(135deg,#1565C0,#0D47A1);border-radius:9px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(21,101,192,.3)">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3 9C3 6.79 4.79 5 7 5C8.1 5 9.1 5.45 9.83 6.17L12 8.34L14.17 6.17C14.9 5.45 15.9 5 17 5C19.21 5 21 6.79 21 9C21 10.1 20.55 11.1 19.83 11.83L12 19.66L4.17 11.83C3.45 11.1 3 10.1 3 9Z" fill="white" opacity="0.9"/>
-        <circle cx="7.5" cy="3.5" r="1.5" fill="#C9A961"/>
-        <circle cx="16.5" cy="3.5" r="1.5" fill="#C9A961"/>
-        <circle cx="4" cy="7" r="1.5" fill="#C9A961"/>
-        <circle cx="20" cy="7" r="1.5" fill="#C9A961"/>
-      </svg>
+<header style="flex-shrink:0;background:#fff;border-bottom:1px solid #DDEAFF;padding:0 12px;height:54px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 6px rgba(21,101,192,.07)">
+  <!-- SINISTRA: logo + titolo -->
+  <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
+    <button id="btn-home" class="hidden btn btn-ghost btn-sm no-print" onclick="goHome()" style="flex-shrink:0;padding:6px 8px;font-size:16px">🏠</button>
+    <div style="width:30px;height:30px;flex-shrink:0;background:linear-gradient(135deg,#1565C0,#0D47A1);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(21,101,192,.3)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 9C3 6.79 4.79 5 7 5C8.1 5 9.1 5.45 9.83 6.17L12 8.34L14.17 6.17C14.9 5.45 15.9 5 17 5C19.21 5 21 6.79 21 9C21 10.1 20.55 11.1 19.83 11.83L12 19.66L4.17 11.83C3.45 11.1 3 10.1 3 9Z" fill="white" opacity="0.9"/><circle cx="7.5" cy="3.5" r="1.5" fill="#C9A961"/><circle cx="16.5" cy="3.5" r="1.5" fill="#C9A961"/><circle cx="4" cy="7" r="1.5" fill="#C9A961"/><circle cx="20" cy="7" r="1.5" fill="#C9A961"/></svg>
     </div>
-    <div>
-      <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#0D47A1">Mio Cane <span style="color:#C9A961">ENCI</span></div>
-      <div style="font-size:9px;color:#6B8BB0;letter-spacing:.12em;text-transform:uppercase">Gestione Ufficiale Pedigree</div>
+    <div style="min-width:0">
+      <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:#0D47A1;white-space:nowrap">Mio Cane <span style="color:#C9A961">ENCI</span></div>
+      <div class="hide-mobile" style="font-size:8px;color:#6B8BB0;letter-spacing:.1em;text-transform:uppercase">Gestione Pedigree</div>
     </div>
   </div>
-  <div style="display:flex;gap:8px;align-items:center">
-    <input id="import-input" type="file" accept=".enci" onchange="importScheda(this)" style="display:none"/>
-    <button id="btn-home" class="hidden btn btn-ghost btn-sm no-print" onclick="closeDetail()" title="Torna ai miei cani">← I miei cani</button>
-    <button class="btn btn-teal btn-sm no-print" onclick="triggerImport()">📥 Importa Scheda</button>
-    <button class="btn btn-gold no-print" onclick="openModal()">+ Aggiungi Cane</button>
+  <!-- DESTRA: bottoni azione -->
+  <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+    <input id="import-input" type="file" accept=".enci,.json" onchange="importScheda(this)" style="display:none"/>
+    <!-- Su mobile: icone; su desktop: testo completo -->
+    <button id="btn-back" class="hidden btn btn-ghost btn-sm no-print" onclick="closeDetail()" style="white-space:nowrap;font-size:13px">← Cani</button>
+    <button class="btn btn-teal btn-sm no-print" onclick="triggerImport()" title="Importa scheda">
+      <span class="hide-mobile">📥 Importa</span>
+      <span class="show-mobile">📥</span>
+    </button>
+    <button class="btn btn-gold no-print" onclick="openModal()" title="Aggiungi cane">
+      <span class="hide-mobile">+ Aggiungi Cane</span>
+      <span class="show-mobile">+🐾</span>
+    </button>
   </div>
 </header>
 
@@ -2344,6 +2354,9 @@ function callAIVision(b64, mime, prompt, onSuccess, onError){
   }
   tryNext(0);
 }
+
+/* ── Ridimensiona immagine prima di inviarla all'AI (max 1200px) ── */
+function resizeImageForAI(file, callback){
   var reader = new FileReader();
   reader.onload = function(e){
     var img = new Image();
@@ -2369,70 +2382,7 @@ function callAIVision(b64, mime, prompt, onSuccess, onError){
   reader.readAsDataURL(file);
 }
 
-function callAIVision(b64, mime, prompt, onSuccess, onError){
-  if(!hasAnyAIKey()){
-    onError(new Error('__NO_KEY__'));
-    return;
-  }
 
-  // Solo Gemini funziona da browser senza CORS issues
-  // Claude e OpenAI richiedono un proxy server — usiamo Gemini con fallback modelli
-  var MODELS = ['gemini-1.5-flash','gemini-2.0-flash','gemini-1.5-flash-8b'];
-  var mi = 0;
-
-  function tryGemini(){
-    if(!_aiKeys.gemini){
-      // Nessuna key Gemini — mostra errore specifico
-      onError(new Error('Serve la chiave Gemini (gratuita). Claude e OpenAI non funzionano direttamente dal browser per motivi di sicurezza.'));
-      return;
-    }
-    var model = MODELS[mi];
-    console.log('[AI] Provo Gemini:', model);
-    fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+_aiKeys.gemini,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        contents:[{parts:[
-          {inline_data:{mime_type:'image/jpeg', data:b64}},
-          {text:prompt}
-        ]}],
-        generationConfig:{maxOutputTokens:2500, temperature:0.1}
-      })
-    })
-    .then(function(r){return r.json();})
-    .then(function(d){
-      if(d.error){
-        var msg = d.error.message||'';
-        var code = d.error.code||0;
-        console.log('[AI] Gemini errore:', code, msg);
-        if((code===429 || msg.indexOf('quota')!==-1 || msg.indexOf('RESOURCE_EXHAUSTED')!==-1)){
-          if(mi < MODELS.length-1){
-            mi++;
-            console.log('[AI] Quota superata, provo:', MODELS[mi]);
-            setTimeout(tryGemini, 3000);
-            return;
-          }
-          onError(new Error('Quota Gemini esaurita. Attendi 1 minuto e riprova.'));
-          return;
-        }
-        if(code===400) onError(new Error('Immagine non leggibile. Prova con una foto più nitida e luminosa.'));
-        else onError(new Error('Errore Gemini: '+msg));
-        return;
-      }
-      var txt = d.candidates&&d.candidates[0]&&d.candidates[0].content&&
-                d.candidates[0].content.parts&&d.candidates[0].content.parts[0]&&
-                d.candidates[0].content.parts[0].text;
-      if(!txt){ onError(new Error('Nessuna risposta da Gemini')); return; }
-      parseAIResponse(txt, onSuccess, onError);
-    })
-    .catch(function(e){
-      console.log('[AI] Fetch error:', e);
-      onError(new Error('Errore di rete. Controlla la connessione e riprova.'));
-    });
-  }
-
-  tryGemini();
-}
 
 function parseAIResponse(txt, onSuccess, onError){
   try{
@@ -2796,7 +2746,7 @@ function renderSidebar(){
     sidebar.className='full';
     hide('detail');
     hide('cani-panel');
-    var bh=g('btn-home'); if(bh) bh.classList.add('hidden');
+    var bh=g('btn-back'); if(bh) bh.classList.add('hidden');
 
     // La home è SEMPRE visibile quando nessun cane è selezionato
     show('empty-state');
@@ -2852,7 +2802,7 @@ function renderSidebar(){
     hide('cani-home');
     show('cani-panel');
     show('detail');
-    var bh2=g('btn-home'); if(bh2) bh2.classList.remove('hidden');
+    var bh2=g('btn-back'); if(bh2) bh2.classList.remove('hidden');
 
     renderReminderSummary();
 
@@ -4452,15 +4402,7 @@ function applicaPdfImport(){
   toast('✅ Pedigree importato dal PDF!');
 }
 
-function applicaPdfImport(){
-  if(!_pdfImportData) return;
-  var c = cur();
-  if(!c) return;
-  var count = applicaImportData(c, _pdfImportData);
-  hide('modal-pdf-import');
-  openDetail(c.id,'pedigree');
-  alert('✅ Importati '+count+' antenati dal PDF!');
-}
+
 
 function toast(msg){
   var el=document.createElement('div');
@@ -4576,15 +4518,7 @@ function newFotoDropzoneClick(){
   if(!hasAnyAIKey()){ renderNewFotoAI(); return; }
   g('new-ped-foto-gallery').click();
 }
-function resetNuovoCaneFoto(){
-  _nuovoCaneFotoData=null;
-  var c=g('new-ped-foto-camera'); if(c) c.value='';
-  var gl=g('new-ped-foto-gallery'); if(gl) gl.value='';
-  g('new-foto-dropzone').style.display='';
-  g('new-foto-reading').style.display='none';
-  g('new-foto-result').style.display='none';
-  g('new-foto-error').style.display='none';
-}
+
 
 
 
