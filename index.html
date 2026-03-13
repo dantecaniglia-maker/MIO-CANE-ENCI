@@ -193,56 +193,71 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
   body.print-biglietto #biglietto-print-wrap{display:flex!important;justify-content:center;align-items:flex-start;min-height:100vh;background:#fff;padding:20px}
 }
 
-/* ── MOBILE (Android/iPhone) ── */
+/* ── MOBILE (Android/iPhone ≤600px) ── */
 @media (max-width: 600px){
   /* Header compatto */
-  header{padding:0 12px!important;height:50px!important}
-  header .btn{font-size:12px!important;padding:6px 10px!important}
+  header{padding:0 10px!important;height:48px!important}
+  header .btn{font-size:11px!important;padding:5px 8px!important}
 
-  /* Sidebar a tutta larghezza */
+  /* Su mobile sidebar e detail sono alterni — gestiti da JS */
+  #detail{padding:10px!important;width:100%!important}
   #sidebar.full{padding:10px!important}
-  #sidebar.panel{width:100%!important;border-right:none!important}
-  #detail{padding:12px!important}
 
-  /* Card sezioni home */
-  .empty-state > div, #empty-state > div{margin-bottom:10px!important}
+  /* Bottone torna indietro ben visibile */
+  #btn-home{display:flex!important;font-size:13px!important}
+
+  /* Card cane header */
+  #det-header{padding:14px!important}
+  #det-avatar{width:52px!important;height:52px!important;font-size:26px!important}
+
+  /* Tab navigazione — scrollabile orizzontalmente */
+  #det-tabs{display:flex!important;overflow-x:auto!important;white-space:nowrap!important;
+            gap:4px!important;padding-bottom:4px!important;scrollbar-width:none!important}
+  #det-tabs::-webkit-scrollbar{display:none!important}
+  .tab-btn{padding:7px 12px!important;font-size:12px!important;flex-shrink:0!important}
+
+  /* Pannelli tab */
+  .tab-panel{padding:12px!important}
+  .card{padding:14px!important;margin-bottom:10px!important}
 
   /* Bottoni */
   .btn{font-size:13px!important;padding:9px 14px!important}
-  .btn-sm{font-size:12px!important;padding:6px 10px!important}
+  .btn-sm{font-size:11px!important;padding:5px 9px!important}
+  .btn-gold,.btn-primary,.btn-teal{font-size:13px!important}
 
   /* Input e form */
   input,select,textarea{font-size:16px!important;padding:10px 12px!important}
   label{font-size:12px!important}
 
-  /* Modali a schermo intero */
-  .modal{max-width:100%!important;width:100%!important;margin:0!important;
-         border-radius:16px 16px 0 0!important;position:fixed!important;
-         bottom:0!important;top:auto!important;max-height:92vh!important;overflow-y:auto!important}
+  /* Modali a sheet dal basso */
   .overlay{align-items:flex-end!important;padding:0!important}
+  .modal{max-width:100%!important;width:100%!important;margin:0!important;
+         border-radius:18px 18px 0 0!important;
+         max-height:92vh!important;overflow-y:auto!important}
 
-  /* Griglia adattiva */
-  .col2{grid-template-columns:1fr!important}
-  .col3{grid-template-columns:1fr 1fr!important}
+  /* Griglia form */
+  .col2,.col3,.col4{grid-template-columns:1fr!important}
 
-  /* Voci sidebar */
-  #empty-state [style*="display:flex"][style*="gap:12px"]{padding:10px!important}
-  #empty-state [style*="font-size:14px"]{font-size:13px!important}
-  #empty-state [style*="font-size:12px"]{font-size:11px!important}
+  /* Home dashboard */
+  #empty-state{padding:12px!important}
+  #empty-state [style*="display:grid"]{grid-template-columns:1fr!important}
 
-  /* Pedigree tree */
-  .ped-node{min-width:90px!important;font-size:10px!important;padding:5px 6px!important}
+  /* Quick tip in fondo */
+  #empty-first-tip{flex-direction:column!important}
+  #empty-first-tip > div:last-child{display:flex!important;flex-direction:column!important;gap:6px!important;width:100%!important}
+  #empty-first-tip .btn{width:100%!important;text-align:center!important}
+
+  /* Pedigree — scroll orizzontale */
+  #ped-tree{overflow-x:auto!important;font-size:10px!important}
+  .ped-node{min-width:80px!important;max-width:100px!important;padding:4px 5px!important;font-size:10px!important}
 
   /* Firma canvas */
-  canvas{max-width:100%!important}
+  canvas{max-width:100%!important;height:120px!important}
 
-  /* Tab panel */
-  .tab-btn{padding:8px 10px!important;font-size:12px!important}
-
-  /* Quick stats */
-  #empty-first-tip{flex-direction:column!important;gap:10px!important}
-  #empty-first-tip > div:last-child{flex-direction:column!important;width:100%!important}
-  #empty-first-tip .btn{width:100%!important;text-align:center!important}
+  /* Sezioni home cards */
+  #empty-state > div > div[style*="display:grid"]{
+    grid-template-columns:1fr!important;
+  }
 }
 </style>
 </head>
@@ -2658,6 +2673,11 @@ function openDetail(id,tab){
   selectedId=id; var c=cur(); if(!c) return;
   var guest=!!c._guest;
   show('detail'); renderSidebar();
+  // Su mobile: nascondi sidebar e mostra solo il dettaglio
+  if(window.innerWidth <= 600){
+    g('sidebar').style.display='none';
+    g('detail').style.width='100%';
+  }
   g('det-avatar').innerHTML=c.foto?'<img src="'+c.foto+'" style="width:100%;height:100%;object-fit:cover"/>':'🐾';
   g('det-nome').textContent=c.nome;
   g('det-sub').textContent=(c.razza||'Razza n.s.')+' · '+(c.sesso==='M'?'♂ Maschio':'♀ Femmina');
@@ -2686,6 +2706,11 @@ function openDetail(id,tab){
 function closeDetail(){
   selectedId=null;
   hide('detail');
+  // Su mobile: ripristina sidebar
+  if(window.innerWidth <= 600){
+    g('sidebar').style.display='';
+    g('detail').style.width='';
+  }
   renderSidebar();
 }
 function goHome(){ closeDetail(); }
