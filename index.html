@@ -14,10 +14,26 @@
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%230D47A1' rx='80'/%3E%3Cpath d='M128 180c0-75 61-104 104-66l24 22 24-22c43-38 104-9 104 66 0 38-19 70-47 92L256 384 175 272c-28-22-47-54-47-92z' fill='white' opacity='.9'/%3E%3Ccircle cx='192' cy='130' r='22' fill='%23C9A961'/%3E%3Ccircle cx='320' cy='130' r='22' fill='%23C9A961'/%3E%3Ccircle cx='144' cy='176' r='18' fill='%23C9A961'/%3E%3Ccircle cx='368' cy='176' r='18' fill='%23C9A961'/%3E%3C/svg%3E"/>
 <script>
-// Rimuove qualsiasi Service Worker precedente
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.getRegistrations().then(function(regs){
-    regs.forEach(function(r){ r.unregister(); });
+  navigator.serviceWorker.register('/sw.js').then(function(reg){
+    // Controlla aggiornamenti ogni volta che si apre l'app
+    reg.addEventListener('updatefound', function(){
+      var newSW = reg.installing;
+      newSW.addEventListener('statechange', function(){
+        if(newSW.state === 'installed' && navigator.serviceWorker.controller){
+          // Nuovo SW pronto — ricarica automaticamente
+          console.log('[App] Aggiornamento disponibile, ricarico...');
+          newSW.postMessage({type:'SKIP_WAITING'});
+          window.location.reload();
+        }
+      });
+    });
+  }).catch(function(e){ console.log('[SW] Errore registrazione:', e); });
+
+  // Quando il SW attivo cambia (dopo skipWaiting), ricarica la pagina
+  var refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function(){
+    if(!refreshing){ refreshing = true; window.location.reload(); }
   });
 }
 </script>
@@ -175,6 +191,58 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 @media print{
   body.print-biglietto > *{display:none!important}
   body.print-biglietto #biglietto-print-wrap{display:flex!important;justify-content:center;align-items:flex-start;min-height:100vh;background:#fff;padding:20px}
+}
+
+/* ── MOBILE (Android/iPhone) ── */
+@media (max-width: 600px){
+  /* Header compatto */
+  header{padding:0 12px!important;height:50px!important}
+  header .btn{font-size:12px!important;padding:6px 10px!important}
+
+  /* Sidebar a tutta larghezza */
+  #sidebar.full{padding:10px!important}
+  #sidebar.panel{width:100%!important;border-right:none!important}
+  #detail{padding:12px!important}
+
+  /* Card sezioni home */
+  .empty-state > div, #empty-state > div{margin-bottom:10px!important}
+
+  /* Bottoni */
+  .btn{font-size:13px!important;padding:9px 14px!important}
+  .btn-sm{font-size:12px!important;padding:6px 10px!important}
+
+  /* Input e form */
+  input,select,textarea{font-size:16px!important;padding:10px 12px!important}
+  label{font-size:12px!important}
+
+  /* Modali a schermo intero */
+  .modal{max-width:100%!important;width:100%!important;margin:0!important;
+         border-radius:16px 16px 0 0!important;position:fixed!important;
+         bottom:0!important;top:auto!important;max-height:92vh!important;overflow-y:auto!important}
+  .overlay{align-items:flex-end!important;padding:0!important}
+
+  /* Griglia adattiva */
+  .col2{grid-template-columns:1fr!important}
+  .col3{grid-template-columns:1fr 1fr!important}
+
+  /* Voci sidebar */
+  #empty-state [style*="display:flex"][style*="gap:12px"]{padding:10px!important}
+  #empty-state [style*="font-size:14px"]{font-size:13px!important}
+  #empty-state [style*="font-size:12px"]{font-size:11px!important}
+
+  /* Pedigree tree */
+  .ped-node{min-width:90px!important;font-size:10px!important;padding:5px 6px!important}
+
+  /* Firma canvas */
+  canvas{max-width:100%!important}
+
+  /* Tab panel */
+  .tab-btn{padding:8px 10px!important;font-size:12px!important}
+
+  /* Quick stats */
+  #empty-first-tip{flex-direction:column!important;gap:10px!important}
+  #empty-first-tip > div:last-child{flex-direction:column!important;width:100%!important}
+  #empty-first-tip .btn{width:100%!important;text-align:center!important}
 }
 </style>
 </head>
@@ -1425,7 +1493,7 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
         <div style="font-size:48px;margin-bottom:10px">📄</div>
         <div style="font-weight:700;font-size:15px;color:#1565C0;margin-bottom:5px">Clicca per scegliere la foto</div>
         <div style="font-size:12px;color:#6B8BB0">oppure scatta una foto con il telefono · JPG, PNG, HEIC</div>
-        <input id="foto-input" type="file" accept="image/*" capture="environment" style="display:none" onchange="onFotoSelected(this)"/>
+        <input id="foto-input" type="file" accept="image/*" style="display:none" onchange="onFotoSelected(this)"/>
       </div>
       <div style="margin-top:14px;background:#FDF6E3;border:1.5px solid #E8D5A0;border-radius:10px;padding:12px 16px;font-size:12px;color:#6B8BB0;line-height:1.7">
         💡 <strong style="color:#A88A41">Consigli per una buona lettura:</strong><br>
@@ -1525,7 +1593,7 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
         <div style="font-size:44px;margin-bottom:8px">📄</div>
         <div style="font-weight:700;font-size:14px;color:#1565C0;margin-bottom:4px">Clicca per scegliere la foto</div>
         <div style="font-size:11px;color:#6B8BB0">Certificato ENCI cartaceo · JPG, PNG, HEIC</div>
-        <input id="new-ped-foto-input" type="file" accept="image/*" capture="environment" style="display:none" onchange="onNuovoCaneFoto(this)"/>
+        <input id="new-ped-foto-input" type="file" accept="image/*" style="display:none" onchange="onNuovoCaneFoto(this)"/>
       </div>
       <div id="new-foto-reading" style="display:none">
         <div style="display:flex;gap:12px;align-items:center;background:#EEF3FB;border-radius:12px;padding:14px">
