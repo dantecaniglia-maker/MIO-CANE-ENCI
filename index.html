@@ -1072,10 +1072,18 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
               <div><div style="font-weight:700;font-size:14px;color:#1a1a3a">ENCI Online</div><div style="font-size:12px;color:#6B8BB0">Accesso rapido ai servizi ENCI</div></div>
               <span style="margin-left:auto;color:#BFCFE8;font-size:18px">›</span>
             </div>
-            <div onclick="openContratto()" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;cursor:pointer;transition:background .15s;border:1.5px solid #C9A961;background:linear-gradient(135deg,#FFFBF0,#FFF8E1)" onmouseover="this.style.background='#FFF3CC'" onmouseout="this.style.background='linear-gradient(135deg,#FFFBF0,#FFF8E1)'">
+            <div onclick="openContratto()" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;cursor:pointer;transition:background .15s;margin-bottom:6px;border:1.5px solid #C9A961;background:linear-gradient(135deg,#FFFBF0,#FFF8E1)" onmouseover="this.style.background='#FFF3CC'" onmouseout="this.style.background='linear-gradient(135deg,#FFFBF0,#FFF8E1)'">
               <div style="width:38px;height:38px;background:#FDF3D0;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🤝</div>
               <div><div style="font-weight:700;font-size:14px;color:#1a1a3a">Contratto di Monta</div><div style="font-size:12px;color:#6B8BB0">Accordo legale tra proprietari · PDF + WhatsApp</div></div>
               <span style="margin-left:auto;color:#C9A961;font-size:18px">›</span>
+            </div>
+            <div onclick="openAISettings('sidebar-ai-banner')" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;cursor:pointer;transition:background .15s;border:1.5px solid #DDEAFF" onmouseover="this.style.background='#EEF3FB'" onmouseout="this.style.background='#fff'">
+              <div style="width:38px;height:38px;background:#EEF3FB;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🤖</div>
+              <div id="sidebar-ai-banner">
+                <div style="font-weight:700;font-size:14px;color:#1a1a3a">Configura AI</div>
+                <div style="font-size:12px;color:#6B8BB0">API key Gemini per leggere pedigree</div>
+              </div>
+              <span style="margin-left:auto;color:#BFCFE8;font-size:18px">›</span>
             </div>
           </div>
         </div>
@@ -2421,18 +2429,27 @@ function callAIHybrid(b64, ocrText, onSuccess, onError){
     }).then(function(r){return r.json();}).then(function(d){
       if(d.error){
         var code=d.error.code||0, msg=d.error.message||'';
-        if(code===429||msg.indexOf('quota')!==-1){
-          if(mi<MODELS.length-1){mi++;setTimeout(tryModel,2000);return;}
-          onError(new Error('Quota esaurita. Attendi 1 min.')); return;
+        console.log('[Gemini] Errore codice:',code,'msg:',msg);
+        // API key non valida → errore immediato, non riprovare
+        if(code===400 && (msg.indexOf('API key')!==-1 || msg.indexOf('invalid')!==-1)){
+          onError(new Error('⚠️ API key non valida. Vai in Strumenti → Configura AI e inserisci una key valida da aistudio.google.com'));
+          return;
         }
-        onError(new Error('Errore AI: '+msg)); return;
+        // Quota esaurita → prova modello successivo
+        if(code===429||msg.indexOf('quota')!==-1||msg.indexOf('RESOURCE_EXHAUSTED')!==-1){
+          if(mi<MODELS.length-1){mi++;setTimeout(tryModel,2000);return;}
+          onError(new Error('Quota Gemini esaurita. Attendi 1 minuto e riprova.')); return;
+        }
+        // Immagine troppo grande o formato non supportato
+        if(code===400){ onError(new Error('Immagine non supportata. Riprova con una foto diversa.')); return; }
+        onError(new Error('Errore Gemini ('+code+'): '+msg.substring(0,100))); return;
       }
       var txt=d.candidates&&d.candidates[0]&&d.candidates[0].content&&
               d.candidates[0].content.parts&&d.candidates[0].content.parts[0]&&
               d.candidates[0].content.parts[0].text;
-      if(!txt){onError(new Error('Nessuna risposta'));return;}
+      if(!txt){onError(new Error('Nessuna risposta da Gemini. Riprova.'));return;}
       parseAIResponse(txt, onSuccess, onError);
-    }).catch(function(e){ onError(new Error('Errore rete: '+e.message)); });
+    }).catch(function(e){ onError(new Error('Errore di rete: '+e.message)); });
   }
   tryModel();
 }
@@ -2622,12 +2639,19 @@ function callAIVision(b64, mime, prompt, onSuccess, onError){
         }).then(function(r){return r.json();}).then(function(d){
           if(d.error){
             var code=d.error.code||0, msg=d.error.message||'';
+            console.log('[Gemini Vision] Errore',code,msg.substring(0,80));
+            // API key non valida — errore definitivo
+            if(code===400 && (msg.indexOf('API key')!==-1||msg.indexOf('invalid')!==-1||msg.indexOf('API_KEY')!==-1)){
+              onError(new Error('⚠️ API key non valida. Vai in Strumenti → 🤖 Configura AI e aggiorna la key Gemini.'));
+              return;
+            }
+            // Quota/rate limit → prova modello successivo
             if(code===429||msg.indexOf('quota')!==-1||msg.indexOf('RESOURCE_EXHAUSTED')!==-1){
               if(mi<MODELS.length-1){mi++;setTimeout(tryGemini,2000);return;}
-              console.log('[AI] Gemini quota esaurita, passo al prossimo');
+              console.log('[AI] Gemini quota esaurita, passo al prossimo provider');
               setTimeout(function(){tryNext(idx+1);},500); return;
             }
-            console.log('[AI] Gemini errore:',msg);
+            console.log('[AI] Gemini errore generico, passo al prossimo');
             setTimeout(function(){tryNext(idx+1);},500); return;
           }
           var txt=d.candidates&&d.candidates[0]&&d.candidates[0].content&&
@@ -3555,14 +3579,18 @@ function exportScheda(){
   window._shareNome = c.nome;
   window._pendingScheda = scheda;
 
-  // Mostra anteprima e stato "generazione link"
+  // Prima mostra il modal, POI scrivi i valori
   var req=calcolaRequisiti(c);
   g('share-preview-content').innerHTML=schedaPreviewHtml(c,req,'#BFCFE8','#0D47A1');
-  g('share-link-box').style.display='';
-  g('share-link-input').value='⏳ Generazione link…';
-  g('share-link-input').disabled=true;
-  g('btn-copy-link').disabled=true;
   show('modal-share');
+
+  // Ora gli elementi sono visibili e scrivibili
+  var linkBox = g('share-link-box');
+  var linkInp = g('share-link-input');
+  var copyBtn = g('btn-copy-link');
+  if(linkBox) linkBox.style.display='';
+  if(linkInp){ linkInp.value='⏳ Generazione link…'; linkInp.disabled=true; }
+  if(copyBtn) copyBtn.disabled=true;
 
   // Salva su jsonbin.io (gratuito, public bin)
   fetch('https://api.jsonbin.io/v3/b', {
@@ -4846,18 +4874,24 @@ function _renderAIBanner(elId){
 function openAISettings(fromEl){
   var hasG=!!_aiKeys.gemini, hasC=!!_aiKeys.claude, hasO=!!_aiKeys.openai;
   function row(id,emoji,name,badge,badgeColor,desc,link,linkLabel,placeholder,hasKey){
-    return '<div style="border:1.5px solid '+(hasKey?'#A8D8B8':'#DDEAFF')+';border-radius:12px;padding:14px;margin-bottom:10px">'
+    return '<div style="border:2px solid '+(hasKey?'#A8D8B8':'#DDEAFF')+';border-radius:12px;padding:14px;margin-bottom:10px">'
       +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'
       +'<div style="width:36px;height:36px;background:#F4F7FE;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px">'+emoji+'</div>'
       +'<div style="flex:1"><div style="font-weight:700;font-size:14px">'+name+' <span style="background:'+badgeColor+';font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">'+badge+'</span></div>'
       +'<div style="font-size:11px;color:#6B8BB0">'+desc+' · <a href="'+link+'" target="_blank" style="color:#1565C0">'+linkLabel+'</a></div></div>'
-      +(hasKey?'<span style="color:#1a7a4a;font-size:12px;font-weight:700">✅</span>':'')
+      +(hasKey?'<span style="color:#1a7a4a;font-size:13px;font-weight:700">✅</span>':'')
       +'</div>'
-      +'<div style="display:flex;gap:6px">'
-      +'<input id="ai-key-'+id+'" type="password" placeholder="'+placeholder+'" style="flex:1;font-size:13px" value="'+(hasKey?'••••••••':'')+'" />'
-      +(hasKey?'<button class="btn btn-sm" style="background:#FEE;color:#C0534A;border:1.5px solid #F5C6C6;white-space:nowrap" onclick="removeAIKey(\''+id+'\');_refreshAISettings(\''+fromEl+'\')">🗑</button>':'')
+      // Input con clear automatico al focus
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
+      +'<input id="ai-key-'+id+'" type="text" placeholder="'+(hasKey?'Tocca per cambiare key…':placeholder)+'" '
+      +'style="flex:1;font-size:13px;min-width:0;font-family:monospace" '
+      +'onfocus="if(this.dataset.hasKey){this.value=\'\';this.dataset.hasKey=\'\'}" '
+      +'data-has-key="'+(hasKey?'1':'')+'"/>'
       +'<button class="btn btn-primary btn-sm" onclick="_saveKeyFromSettings(\''+id+'\',\'ai-key-'+id+'\',\''+fromEl+'\')" style="white-space:nowrap">✓ Salva</button>'
-      +'</div></div>';
+      +(hasKey?'<button class="btn btn-sm" style="background:#FEE;color:#C0534A;border:1.5px solid #F5C6C6;white-space:nowrap" onclick="removeAIKey(\''+id+'\');_refreshAISettings(\''+fromEl+'\')">🗑</button>':'')
+      +'</div>'
+      +(hasKey?'<div style="font-size:11px;color:#6B8BB0;margin-top:6px">✏️ Tocca il campo e incolla la nuova key per cambiarla</div>':'')
+      +'</div>';
   }
   var html='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:flex-end" id="ai-settings-overlay">'
     +'<div style="background:#fff;border-radius:18px 18px 0 0;padding:22px;width:100%;max-height:92vh;overflow-y:auto">'
@@ -4865,11 +4899,13 @@ function openAISettings(fromEl){
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1">🤖 Configura AI</div>'
     +'<button onclick="document.getElementById(\'ai-settings-overlay\').remove();_renderAIBanner(\''+fromEl+'\')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#6B8BB0">✕</button>'
     +'</div>'
-    +'<div style="font-size:12px;color:#4A6080;margin-bottom:14px;background:#F0FFF6;border:1.5px solid #A8D8B8;border-radius:8px;padding:8px 12px">💡 <strong>Configura più provider</strong> — se uno è al limite, l\'app passa automaticamente al successivo.</div>'
-    +row('gemini','🔵','Google Gemini','GRATUITO','#E0F7FA;color:#006064','Consigliato','https://aistudio.google.com/app/apikey','aistudio.google.com','AIza...',hasG)
+    +'<div style="font-size:12px;color:#1565C0;margin-bottom:14px;background:#EEF3FB;border:1.5px solid #BFCFE8;border-radius:8px;padding:10px 12px">'
+    +'💡 <strong>Gemini è gratis</strong> — vai su <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#1565C0;font-weight:700">aistudio.google.com</a> → Create API key → copia e incolla qui sotto.'
+    +'</div>'
+    +row('gemini','🔵','Google Gemini','GRATUITO','#E0F7FA;color:#006064','Consigliato','https://aistudio.google.com/app/apikey','aistudio.google.com','AIzaSy...',hasG)
     +row('claude','🟠','Anthropic Claude','~$0.001/foto','#FFF3E0;color:#E65100','Eccellente qualità','https://console.anthropic.com/settings/keys','console.anthropic.com','sk-ant-...',hasC)
     +row('openai','🟢','OpenAI GPT-4o','~$0.002/foto','#E8F5E9;color:#2E7D32','Ottimo backup','https://platform.openai.com/api-keys','platform.openai.com','sk-...',hasO)
-    +'<div style="font-size:11px;color:#9ab0cc;text-align:center;margin-top:4px">🔒 Salvate solo nel tuo browser · Mai inviate ai nostri server</div>'
+    +'<div style="font-size:11px;color:#9ab0cc;text-align:center;margin-top:8px">🔒 Salvate solo nel tuo telefono · Mai inviate ai nostri server</div>'
     +'</div></div>';
   var wrap=document.createElement('div');
   wrap.innerHTML=html;
@@ -4879,8 +4915,15 @@ function openAISettings(fromEl){
 function _saveKeyFromSettings(provider, inputId, fromEl){
   var inp=g(inputId); if(!inp) return;
   var key=inp.value.trim();
-  if(!key||key==='••••••••'){inp.style.borderColor='#C0534A';return;}
+  // Blocca solo se vuoto o invariato (puntini)
+  if(!key || key==='••••••••'){
+    inp.style.borderColor='#C0534A';
+    inp.placeholder='⚠️ Incolla qui la tua API key!';
+    setTimeout(function(){ inp.style.borderColor=''; }, 2000);
+    return;
+  }
   saveAIKey(provider, key);
+  toast('✅ Key '+provider+' salvata!');
   _refreshAISettings(fromEl);
 }
 
