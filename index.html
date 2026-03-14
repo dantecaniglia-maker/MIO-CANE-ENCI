@@ -2473,6 +2473,9 @@ function callAIHybrid(b64, ocrText, onSuccess, onError){
   var MODELS = ['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash'];
   var mi = 0;
 
+  // Tronca testo OCR — se non disponibile usa stringa vuota
+  var ocrShort = (ocrText || '').substring(0, 1500);
+
   // Prompt ibrido: usa testo OCR + immagine
   var hybridPrompt = 'Analizza questo pedigree ENCI italiano. Usa il testo OCR E l\'immagine.\n\n'
     + 'TESTO OCR:\n"""\n' + ocrShort + '\n"""\n\n'
@@ -3434,8 +3437,13 @@ function closeDetail(){
 function goHome(){ closeDetail(); }
 function deleteCurrent(){
   var c=cur();if(!c)return;
-  if(c._guest){guestCani=guestCani.filter(function(x){return x.id!==selectedId;});}
-  else{if(!confirm('Eliminare '+c.nome+'?'))return;cani=cani.filter(function(x){return x.id!==selectedId;});}
+  if(c._guest){
+    guestCani=guestCani.filter(function(x){return x.id!==selectedId;});
+  } else {
+    if(!confirm('Eliminare '+c.nome+'? Operazione irreversibile.'))return;
+    cani=cani.filter(function(x){return x.id!==selectedId;});
+    salvaDB();
+  }
   selectedId=null;hide('detail');renderSidebar();
 }
 function switchTab(t){
