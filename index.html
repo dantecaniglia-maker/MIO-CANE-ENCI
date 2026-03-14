@@ -2387,7 +2387,7 @@ function callAIHybrid(b64, ocrText, onSuccess, onError){
   if(!hasAnyAIKey()){ onError(new Error('__NO_KEY__')); return; }
   if(!_aiKeys.gemini){ onError(new Error('Serve chiave Gemini')); return; }
 
-  var MODELS = ['gemini-2.0-flash','gemini-2.0-flash-lite','gemini-1.5-flash'];
+  var MODELS = ['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash'];
   var mi = 0;
 
   // Prompt ibrido: usa testo OCR + immagine
@@ -2458,7 +2458,7 @@ function callAIHybrid(b64, ocrText, onSuccess, onError){
 function callAIText(text, onSuccess, onError){
   if(!hasAnyAIKey()){ onError(new Error('__NO_KEY__')); return; }
   if(!_aiKeys.gemini){ onError(new Error('Serve chiave Gemini')); return; }
-  var MODELS = ['gemini-2.0-flash','gemini-2.0-flash-lite','gemini-1.5-flash'];
+  var MODELS = ['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash'];
   var mi = 0;
   function tryModel(){
     fetch('https://generativelanguage.googleapis.com/v1beta/models/'+MODELS[mi]+':generateContent?key='+_aiKeys.gemini,{
@@ -2627,7 +2627,7 @@ function callAIVision(b64, mime, prompt, onSuccess, onError){
     console.log('[AI] Provo:', provider);
 
     if(provider === 'gemini'){
-      var MODELS = ['gemini-2.0-flash','gemini-2.0-flash-lite','gemini-1.5-flash'];
+      var MODELS = ['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash'];
       var mi = 0;
       function tryGemini(){
         fetch('https://generativelanguage.googleapis.com/v1beta/models/'+MODELS[mi]+':generateContent?key='+_aiKeys.gemini,{
@@ -4940,7 +4940,7 @@ function testGeminiKey(){
   if(btn){ btn.textContent='⏳ Test in corso…'; btn.disabled=true; }
   
   // Test con testo semplice (niente immagine) per verificare la key
-  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+key, {
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+key, {
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
