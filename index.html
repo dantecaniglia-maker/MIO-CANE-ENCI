@@ -2212,6 +2212,83 @@ var ENCI_LEGENDA_PROMPT = 'LEGENDA UFFICIALE ENCI — colonne tabella laterale:\
 var _tesseractLoaded = false;
 var _tesseractWorker = null;
 
+/* ══════════════════════════════════════════════════════
+   PRE-PROCESSING IMMAGINE (Canvas API, no server)
+   Migliora contrasto, nitidezza e binarizzazione
+   prima di mandare a Tesseract e Gemini
+══════════════════════════════════════════════════════ */
+function preprocessImageForOCR(b64, callback){
+  var img = new Image();
+  img.onload = function(){
+    var W = img.width, H = img.height;
+    var canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    var imageData = ctx.getImageData(0, 0, W, H);
+    var data = imageData.data;
+
+    // 1. Converti in scala di grigi
+    for(var i=0; i<data.length; i+=4){
+      var gray = Math.round(0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2]);
+      data[i] = data[i+1] = data[i+2] = gray;
+    }
+
+    // 2. Aumenta contrasto (CLAHE semplificato)
+    // Calcola istogramma
+    var hist = new Array(256).fill(0);
+    for(var i=0; i<data.length; i+=4) hist[data[i]]++;
+    // CDF per equalizzazione
+    var cdf = new Array(256).fill(0);
+    cdf[0] = hist[0];
+    for(var i=1; i<256; i++) cdf[i] = cdf[i-1] + hist[i];
+    var cdfMin = cdf.find(function(v){ return v>0; });
+    var total = W * H;
+    for(var i=0; i<data.length; i+=4){
+      var eq = Math.round(((cdf[data[i]] - cdfMin) / (total - cdfMin)) * 255);
+      data[i] = data[i+1] = data[i+2] = eq;
+    }
+
+    // 3. Sharpening (unsharp mask leggero)
+    var sharpen = [0,-1,0,-1,5,-1,0,-1,0];
+    var W2=W, H2=H;
+    var tmp = new Uint8ClampedArray(data);
+    for(var y=1; y<H2-1; y++){
+      for(var x=1; x<W2-1; x++){
+        var idx = (y*W2+x)*4;
+        var sum = 0;
+        for(var ky=-1; ky<=1; ky++){
+          for(var kx=-1; kx<=1; kx++){
+            var ni = ((y+ky)*W2+(x+kx))*4;
+            sum += tmp[ni] * sharpen[(ky+1)*3+(kx+1)];
+          }
+        }
+        var v = Math.max(0, Math.min(255, sum));
+        data[idx] = data[idx+1] = data[idx+2] = v;
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    // Upscale se l'immagine è piccola (migliora OCR)
+    var scale = 1;
+    if(W < 1500) scale = Math.min(2, 1500/W);
+    if(scale > 1){
+      var canvas2 = document.createElement('canvas');
+      canvas2.width = Math.round(W*scale);
+      canvas2.height = Math.round(H*scale);
+      var ctx2 = canvas2.getContext('2d');
+      ctx2.imageSmoothingEnabled = false;
+      ctx2.drawImage(canvas, 0, 0, canvas2.width, canvas2.height);
+      callback(canvas2.toDataURL('image/jpeg', 0.95).split(',')[1]);
+    } else {
+      callback(canvas.toDataURL('image/jpeg', 0.95).split(',')[1]);
+    }
+  };
+  img.src = 'data:image/jpeg;base64,' + b64;
+}
+
 function loadTesseract(onReady){
   if(_tesseractLoaded && _tesseractWorker){
     onReady(_tesseractWorker);
@@ -2222,40 +2299,46 @@ function loadTesseract(onReady){
   script.onload = function(){
     Tesseract.createWorker('ita+eng', 1, {
       logger: function(m){
-        // Aggiorna progress se disponibile
         var el = document.getElementById('ocr-progress');
         if(el && m.status === 'recognizing text'){
           el.textContent = '🔍 OCR: ' + Math.round((m.progress||0)*100) + '%';
         }
       }
     }).then(function(worker){
+      // PSM 6 = blocco uniforme di testo — molto meglio per pedigree ENCI
+      worker.setParameters({
+        tessedit_pageseg_mode: '6',
+        preserve_interword_spaces: '1'
+      });
       _tesseractLoaded = true;
       _tesseractWorker = worker;
       onReady(worker);
     }).catch(function(e){
       console.log('[OCR] Tesseract init error:', e);
-      onReady(null); // fallback senza OCR
+      onReady(null);
     });
   };
   script.onerror = function(){
-    console.log('[OCR] Tesseract.js non caricato, uso solo AI');
+    console.log('[OCR] Tesseract.js non caricato');
     onReady(null);
   };
   document.head.appendChild(script);
 }
 
-// Prompt AI ottimizzato per testo OCR (molto più corto e preciso)
-var PEDIGREE_PROMPT_OCR = 'Sei un esperto di pedigree ENCI italiani. Analizza questo testo estratto da un certificato genealogico ENCI tramite OCR.\n\n'
-  +'Il testo OCR può contenere errori di lettura (0 vs O, 1 vs I, spazi errati). Correggili.\n\n'
+// Prompt ibrido con esempio few-shot reale ENCI
+var PEDIGREE_PROMPT_OCR = 'Sei un esperto di pedigree ENCI italiani.\n\n'
+  +'ESEMPIO (few-shot): dato testo OCR "ROI 17/150083 RAMON (R.Sel.) ... RSR 09/74871 ULISSE"\n'
+  +'risultato atteso: pos2={name:"RAMON",loi:"ROI 17/150083"}, pos4={name:"ULISSE",loi:"RSR 09/74871"}\n\n'
   +'STRUTTURA PEDIGREE ENCI (posizioni binarie):\n'
-  +'  pos2=PADRE, pos3=MADRE\n'
+  +'  pos2=PADRE (metà SUPERIORE), pos3=MADRE (metà INFERIORE)\n'
   +'  pos4=nonno paterno, pos5=nonna paterna, pos6=nonno materno, pos7=nonna materna\n'
-  +'  pos8-11=bisnonni paterni, pos12-15=bisnonni materni\n'
-  +'  pos16-31=trisnonni\n'
-  +'I cani nella metà SUPERIORE del testo appartengono al lato PADRE, quelli nella metà INFERIORE al lato MADRE.\n\n'
-  +'Da "RSR 09/74871 ULISSE" ricava: name="ULISSE", loi="RSR 09/74871"\n'
-  +'Prefissi LOI validi: RSR, ROI, GI91L, LR, LOI\n\n'
-  +'Restituisci SOLO questo JSON:\n'
+  +'  pos8-11=bisnonni paterni, pos12-15=bisnonni materni, pos16-31=trisnonni\n\n'
+  +'REGOLE CRITICHE:\n'
+  +'  1. Prefissi LOI: RSR, ROI, GI91L, LR, LOI — il numero segue (es: RSR 09/74871)\n'
+  +'  2. Il NOME del cane viene DOPO il codice LOI\n'
+  +'  3. Correggi: 0↔O, 1↔I, l↔1 nei codici numerici\n'
+  +'  4. Se illeggibile → null (NON inventare)\n\n'
+  +'Restituisci SOLO JSON valido:\n'
   +'{"nome":"","loi":"","razza":"","sesso":"M o F","dataNascita":"YYYY-MM-DD","microchip":"","pedigree":{"2":{"name":"","loi":""},"3":{"name":"","loi":""},'
   +'"4":{"name":"","loi":""},"5":{"name":"","loi":""},"6":{"name":"","loi":""},"7":{"name":"","loi":""},'
   +'"8":{"name":"","loi":""},"9":{"name":"","loi":""},"10":{"name":"","loi":""},"11":{"name":"","loi":""},'
@@ -2264,8 +2347,50 @@ var PEDIGREE_PROMPT_OCR = 'Sei un esperto di pedigree ENCI italiani. Analizza qu
   +'"20":{"name":"","loi":""},"21":{"name":"","loi":""},"22":{"name":"","loi":""},"23":{"name":"","loi":""},'
   +'"24":{"name":"","loi":""},"25":{"name":"","loi":""},"26":{"name":"","loi":""},"27":{"name":"","loi":""},'
   +'"28":{"name":"","loi":""},"29":{"name":"","loi":""},"30":{"name":"","loi":""},"31":{"name":"","loi":""}},'
-  +'"titoli":{},"hd":{},"ed":{},"isFounder":{}}\n'
-  +'Assente=null. Solo JSON puro.\n\nTESTO OCR:\n';
+  +'"titoli":{},"hd":{},"ed":{}}\n'
+  +'Solo JSON. TESTO OCR:\n';
+
+/* ── Validazione post-AI con regex ENCI ── */
+function validaECorreggiRisultato(obj){
+  if(!obj) return obj;
+  var loiRegex = /^(RSR|ROI|GI\d*L?|LR|LOI)\s*[\d\/\-]+$/i;
+  var dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  var chipRegex = /^\d{9,15}$/;
+
+  // Correggi LOI principale
+  if(obj.loi && !loiRegex.test(obj.loi.trim())){
+    console.log('[Validazione] LOI sospetto:', obj.loi);
+  }
+  // Correggi data
+  if(obj.dataNascita && !dateRegex.test(obj.dataNascita)){
+    // Prova a convertire DD/MM/YYYY → YYYY-MM-DD
+    var m = obj.dataNascita.match(/(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})/);
+    if(m) obj.dataNascita = m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+    else obj.dataNascita = '';
+  }
+  // Correggi microchip
+  if(obj.microchip && !chipRegex.test(obj.microchip.replace(/\s/g,''))){
+    obj.microchip = obj.microchip.replace(/\s/g,'');
+    if(!chipRegex.test(obj.microchip)) obj.microchip = '';
+  }
+  // Correggi LOI degli antenati
+  if(obj.pedigree){
+    for(var pos=2; pos<=31; pos++){
+      var anc = obj.pedigree[pos];
+      if(anc && anc.loi){
+        // Rimuovi spazi extra nei codici LOI
+        anc.loi = anc.loi.replace(/\s+/g,' ').trim();
+        // Correggi 0→O all'inizio del prefisso
+        anc.loi = anc.loi.replace(/^0SR/i,'RSR').replace(/^0OI/i,'ROI');
+      }
+      // Nomi tutto maiuscolo → capitalizza
+      if(anc && anc.name && anc.name === anc.name.toUpperCase() && anc.name.length > 1){
+        anc.name = anc.name.charAt(0).toUpperCase() + anc.name.slice(1).toLowerCase();
+      }
+    }
+  }
+  return obj;
+}
 
 // MODALITÀ IBRIDA: manda OCR testo + immagine originale a Gemini insieme
 // → accuracy 90-95% come suggerito da Grok
@@ -2365,96 +2490,70 @@ function callAIText(text, onSuccess, onError){
 
 // Pipeline principale: OCR gratuito → Parser ENCI → AI solo come fallback
 function leggiPedigreeOCR_AI(b64, mime, onProgress, onSuccess, onError){
-
-  onProgress('⏳ Caricamento motore OCR…');
-
-  loadTesseract(function(worker){
-    if(!worker){
-      if(hasAnyAIKey()){
-        onProgress('🤖 Uso AI Vision…');
-        callAIVision(b64, mime, PEDIGREE_PROMPT, onSuccess, onError);
-      } else {
-        onError(new Error('OCR non disponibile. Configura Gemini oppure inserisci manualmente.'));
-      }
-      return;
-    }
-
-    onProgress('🔍 Lettura testo dal documento…');
-
-    var binary = atob(b64);
-    var bytes = new Uint8Array(binary.length);
-    for(var i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
-    var blob = new Blob([bytes], {type: mime});
-    var url = URL.createObjectURL(blob);
-
-    worker.recognize(url).then(function(res){
-      URL.revokeObjectURL(url);
-      var testo = res.data.text;
-      var confidence = Math.round(res.data.confidence||0);
-      console.log('[OCR] Confidence:', confidence+'%', '| Chars:', testo.length);
-      console.log('[OCR] Testo:\n', testo.substring(0,800));
-
-      if(!testo || testo.trim().length < 30){
+  onProgress('⚙️ Pre-processing immagine…');
+  preprocessImageForOCR(b64, function(b64E){
+    onProgress('⏳ Caricamento motore OCR…');
+    loadTesseract(function(worker){
+      if(!worker){
         if(hasAnyAIKey()){
-          onProgress('⚠️ Testo scarso, uso AI Vision…');
-          callAIVision(b64, mime, PEDIGREE_PROMPT, onSuccess, onError);
-        } else {
-          onError(new Error('Immagine non leggibile. Riprova con una foto più nitida.'));
+          onProgress('🤖 Uso AI Vision…');
+          callAIVision(b64E,'image/jpeg',PEDIGREE_PROMPT,function(r){onSuccess(validaECorreggiRisultato(r));},onError);
+        } else { onError(new Error('OCR non disponibile. Configura Gemini o inserisci manualmente.')); }
+        return;
+      }
+      onProgress('🔍 OCR (PSM6, ita+eng)…');
+      var binary=atob(b64E), bytes=new Uint8ClampedArray(binary.length);
+      for(var i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+      var blob=new Blob([bytes],{type:'image/jpeg'}), url=URL.createObjectURL(blob);
+      worker.recognize(url).then(function(res){
+        URL.revokeObjectURL(url);
+        var testo=res.data.text, conf=Math.round(res.data.confidence||0);
+        console.log('[OCR PSM6] Confidence:',conf+'%','Chars:',testo.length);
+        console.log('[OCR] Testo:\n',testo.substring(0,800));
+        if(!testo||testo.trim().length<30){
+          if(hasAnyAIKey()){
+            onProgress('⚠️ Testo scarso, uso AI Vision…');
+            callAIVision(b64E,'image/jpeg',PEDIGREE_PROMPT,function(r){onSuccess(validaECorreggiRisultato(r));},onError);
+          } else { onError(new Error('Immagine non leggibile. Riprova con foto più nitida.')); }
+          return;
         }
-        return;
-      }
-
-      onProgress('⚙️ Analisi struttura ENCI… (OCR: '+confidence+'%)');
-
-      // 1️⃣ Parser ENCI gratuito — nessuna API
-      var parsed = parseEnciOcrText(testo);
-      console.log('[ENCI Parser] Trovati', parsed._ocrFound, 'antenati, confidence:', parsed._ocrConfidence);
-
-      if(parsed._ocrFound >= 4 && confidence >= 55 && !hasAnyAIKey()){
-        // Buon risultato senza API
-        onProgress('✅ Letto! Trovati '+parsed._ocrFound+' antenati (GRATIS, nessuna API)');
-        setTimeout(function(){ onSuccess(parsed); }, 300);
-        return;
-      }
-
-      // 2️⃣ Modalità IBRIDA: OCR testo + immagine originale → Gemini
-      // Accuracy 90-95% (suggerito da best practice 2026)
-      if(hasAnyAIKey()){
-        onProgress('🤖 Analisi ibrida OCR+AI in corso… (confidence OCR: '+confidence+'%)');
-        callAIHybrid(b64, testo, function(aiRes){
-          // Completa con dati OCR dove AI è vuota
-          if(!aiRes.nome && parsed.nome) aiRes.nome = parsed.nome;
-          if(!aiRes.razza && parsed.razza) aiRes.razza = parsed.razza;
-          if(!aiRes.microchip && parsed.microchip) aiRes.microchip = parsed.microchip;
-          onSuccess(aiRes);
-        }, function(hybridErr){
-          console.log('[Hybrid] Fallback a Vision pura:', hybridErr.message);
-          // Fallback: solo immagine
-          onProgress('🔄 Provo con AI Vision pura…');
-          callAIVision(b64, mime, PEDIGREE_PROMPT, onSuccess, function(){
-            // Ultimo fallback: usa parser OCR
-            if(parsed._ocrFound >= 1){ onSuccess(parsed); }
-            else { onError(new Error('Impossibile leggere. Inserisci manualmente.')); }
+        var parsed=parseEnciOcrText(testo);
+        console.log('[Parser] Trovati',parsed._ocrFound,'antenati');
+        if(parsed._ocrFound>=4&&conf>=55&&!hasAnyAIKey()){
+          onProgress('✅ Letto! Trovati '+parsed._ocrFound+' antenati (GRATIS)');
+          setTimeout(function(){onSuccess(validaECorreggiRisultato(parsed));},300);
+          return;
+        }
+        if(hasAnyAIKey()){
+          onProgress('🤖 AI ibrida OCR+Vision (OCR conf: '+conf+'%)…');
+          callAIHybrid(b64E,testo,function(aiRes){
+            if(!aiRes.nome&&parsed.nome) aiRes.nome=parsed.nome;
+            if(!aiRes.razza&&parsed.razza) aiRes.razza=parsed.razza;
+            if(!aiRes.microchip&&parsed.microchip) aiRes.microchip=parsed.microchip;
+            onSuccess(validaECorreggiRisultato(aiRes));
+          },function(err){
+            console.log('[Hybrid] Fallback Vision:',err.message);
+            onProgress('🔄 AI Vision pura…');
+            callAIVision(b64E,'image/jpeg',PEDIGREE_PROMPT,function(r){
+              onSuccess(validaECorreggiRisultato(r));
+            },function(){
+              if(parsed._ocrFound>=1){onSuccess(validaECorreggiRisultato(parsed));}
+              else{onError(new Error('Impossibile leggere. Inserisci manualmente.'));}
+            });
           });
-        });
-      } else {
-        // Nessuna API — usa ciò che abbiamo dall'OCR
-        if(parsed._ocrFound >= 1){
-          onProgress('✅ OCR completato ('+parsed._ocrFound+' antenati). Aggiungi Gemini per risultati migliori!');
-          onSuccess(parsed);
         } else {
-          onError(new Error('Documento difficile. Configura Gemini per risultati migliori.'));
+          if(parsed._ocrFound>=1){
+            onProgress('✅ OCR: '+parsed._ocrFound+' antenati. Aggiungi Gemini per risultati migliori!');
+            onSuccess(validaECorreggiRisultato(parsed));
+          } else { onError(new Error('Documento difficile. Configura Gemini o inserisci manualmente.')); }
         }
-      }
-
-    }).catch(function(e){
-      URL.revokeObjectURL(url);
-      if(hasAnyAIKey()){
-        onProgress('🔄 OCR fallito, uso AI Vision…');
-        callAIVision(b64, mime, PEDIGREE_PROMPT, onSuccess, onError);
-      } else {
-        onError(new Error('Errore lettura. Riprova con foto più nitida o inserisci manualmente.'));
-      }
+      }).catch(function(e){
+        URL.revokeObjectURL(url);
+        if(hasAnyAIKey()){
+          onProgress('🔄 OCR fallito, uso AI Vision…');
+          callAIVision(b64E,'image/jpeg',PEDIGREE_PROMPT,function(r){onSuccess(validaECorreggiRisultato(r));},onError);
+        } else { onError(new Error('Errore lettura. Riprova con foto più nitida.')); }
+      });
     });
   });
 }
