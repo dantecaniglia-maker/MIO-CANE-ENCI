@@ -2152,26 +2152,50 @@ function caricaDB(){
     if(!raw) return false;
     var data = JSON.parse(raw);
     if(data.cani && data.cani.length) {
-      cani = data.cani;
+      cani = data.cani.map(_migraCane);
     }
     if(data.guestCani && data.guestCani.length) {
-      guestCani = data.guestCani;
+      guestCani = data.guestCani.map(_migraCane);
     }
-    if(data.cucciolate) {
-      // caricato dopo che cucciolate è definita
-      window._db_cucciolate = data.cucciolate;
-    }
-    if(data.esposizioni) {
-      window._db_esposizioni = data.esposizioni;
-    }
-    if(data.tessere) {
-      window._db_tessere = data.tessere;
-    }
-    if(data.profilo) {
-      window._db_profilo = data.profilo;
-    }
+    if(data.cucciolate) window._db_cucciolate = data.cucciolate;
+    if(data.esposizioni) window._db_esposizioni = data.esposizioni;
+    if(data.tessere) window._db_tessere = data.tessere;
+    if(data.profilo) window._db_profilo = data.profilo;
     return true;
   } catch(e){ console.warn('caricaDB error:', e); return false; }
+}
+
+// Migrazione automatica codici titoli vecchi → nuovi
+function _migraCane(c){
+  if(!c || !c.pedigreeFlat) return c;
+  // Mappa vecchi codici → nuovi
+  var MAP = {'IT':'IT_B','CIB':'INT_B','EU':'E','WD':'F','RIPR':'D','SEL1':'O','SEL2':'P',
+             'IT_B':'IT_B','INT_B':'INT_B','E':'E','F':'F','D':'D','O':'O','P':'P'};
+  for(var pos in c.pedigreeFlat){
+    var node = c.pedigreeFlat[pos];
+    if(!node || !node.titoli) continue;
+    // Filtra e converti
+    var titoliPuliti = [];
+    node.titoli.forEach(function(t){
+      // Salta displasia finita per errore nei titoli
+      if(['R','S','T','U','V','W','X','Y','Z','Z1'].indexOf(t) > -1){
+        // Era displasia messa per errore nei titoli — la sposta
+        if(['R','S','T','U','V'].indexOf(t) > -1 && !node.hd){
+          var hdMap = {'R':'A','S':'B','T':'C','U':'D','V':'E'};
+          node.hd = hdMap[t];
+        }
+        if(['W','X','Y','Z'].indexOf(t) > -1 && !node.ed){
+          var edMap = {'W':'0','X':'I','Y':'II','Z':'III'};
+          node.ed = edMap[t];
+        }
+        return; // non aggiungere ai titoli
+      }
+      var mapped = MAP[t] || t;
+      if(titoliPuliti.indexOf(mapped) === -1) titoliPuliti.push(mapped);
+    });
+    node.titoli = titoliPuliti;
+  }
+  return c;
 }
 
 function resetDB(){
