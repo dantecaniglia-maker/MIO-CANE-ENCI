@@ -2218,75 +2218,56 @@ var _tesseractWorker = null;
    prima di mandare a Tesseract e Gemini
 ══════════════════════════════════════════════════════ */
 function preprocessImageForOCR(b64, callback){
-  var img = new Image();
-  img.onload = function(){
-    var W = img.width, H = img.height;
-    var canvas = document.createElement('canvas');
-    canvas.width = W; canvas.height = H;
-    var ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0);
+  try{
+    var img = new Image();
+    img.onerror = function(){ callback(b64); }; // se fallisce, usa originale
+    img.onload = function(){
+      try{
+        var W = img.width, H = img.height;
+        // Upscale se necessario per OCR (max 2000px lato lungo)
+        var maxDim = 2000;
+        var scale = (W>maxDim||H>maxDim) ? Math.min(maxDim/W, maxDim/H) : 1;
+        // Non upscalare troppo - Tesseract funziona bene già con 1000px
+        if(W < 800) scale = Math.min(2, 1600/W);
 
-    var imageData = ctx.getImageData(0, 0, W, H);
-    var data = imageData.data;
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.round(W*scale);
+        canvas.height = Math.round(H*scale);
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    // 1. Converti in scala di grigi
-    for(var i=0; i<data.length; i+=4){
-      var gray = Math.round(0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2]);
-      data[i] = data[i+1] = data[i+2] = gray;
-    }
+        // Grayscale + aumento contrasto (veloce, su tutto il canvas)
+        var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        var data = imageData.data;
+        var min=255, max=0;
 
-    // 2. Aumenta contrasto (CLAHE semplificato)
-    // Calcola istogramma
-    var hist = new Array(256).fill(0);
-    for(var i=0; i<data.length; i+=4) hist[data[i]]++;
-    // CDF per equalizzazione
-    var cdf = new Array(256).fill(0);
-    cdf[0] = hist[0];
-    for(var i=1; i<256; i++) cdf[i] = cdf[i-1] + hist[i];
-    var cdfMin = cdf.find(function(v){ return v>0; });
-    var total = W * H;
-    for(var i=0; i<data.length; i+=4){
-      var eq = Math.round(((cdf[data[i]] - cdfMin) / (total - cdfMin)) * 255);
-      data[i] = data[i+1] = data[i+2] = eq;
-    }
-
-    // 3. Sharpening (unsharp mask leggero)
-    var sharpen = [0,-1,0,-1,5,-1,0,-1,0];
-    var W2=W, H2=H;
-    var tmp = new Uint8ClampedArray(data);
-    for(var y=1; y<H2-1; y++){
-      for(var x=1; x<W2-1; x++){
-        var idx = (y*W2+x)*4;
-        var sum = 0;
-        for(var ky=-1; ky<=1; ky++){
-          for(var kx=-1; kx<=1; kx++){
-            var ni = ((y+ky)*W2+(x+kx))*4;
-            sum += tmp[ni] * sharpen[(ky+1)*3+(kx+1)];
-          }
+        // Prima passata: converti in grigio e trova min/max
+        for(var i=0; i<data.length; i+=4){
+          var gray = Math.round(0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2]);
+          data[i] = data[i+1] = data[i+2] = gray;
+          if(gray<min) min=gray;
+          if(gray>max) max=gray;
         }
-        var v = Math.max(0, Math.min(255, sum));
-        data[idx] = data[idx+1] = data[idx+2] = v;
+
+        // Seconda passata: stretch contrasto (min→0, max→255)
+        var range = max-min || 1;
+        for(var i=0; i<data.length; i+=4){
+          var stretched = Math.round((data[i]-min)/range*255);
+          data[i] = data[i+1] = data[i+2] = stretched;
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        callback(canvas.toDataURL('image/jpeg', 0.92).split(',')[1]);
+      }catch(e){
+        console.log('[PreProcess] Errore canvas:', e);
+        callback(b64); // fallback originale
       }
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-
-    // Upscale se l'immagine è piccola (migliora OCR)
-    var scale = 1;
-    if(W < 1500) scale = Math.min(2, 1500/W);
-    if(scale > 1){
-      var canvas2 = document.createElement('canvas');
-      canvas2.width = Math.round(W*scale);
-      canvas2.height = Math.round(H*scale);
-      var ctx2 = canvas2.getContext('2d');
-      ctx2.imageSmoothingEnabled = false;
-      ctx2.drawImage(canvas, 0, 0, canvas2.width, canvas2.height);
-      callback(canvas2.toDataURL('image/jpeg', 0.95).split(',')[1]);
-    } else {
-      callback(canvas.toDataURL('image/jpeg', 0.95).split(',')[1]);
-    }
-  };
-  img.src = 'data:image/jpeg;base64,' + b64;
+    };
+    img.src = 'data:image/jpeg;base64,' + b64;
+  }catch(e){
+    console.log('[PreProcess] Errore:', e);
+    callback(b64);
+  }
 }
 
 function loadTesseract(onReady){
@@ -2619,7 +2600,10 @@ function callAIVision(b64, mime, prompt, onSuccess, onError){
 
   function tryNext(idx){
     if(idx >= queue.length){
-      onError(new Error('Quota esaurita su tutti i provider. Attendi qualche minuto e riprova.'));
+      var msg = queue.length === 0
+        ? 'Nessuna API configurata. Premi "configura" per aggiungere Gemini (gratis).'
+        : 'Quota AI esaurita. Attendi 1 minuto e riprova, oppure inserisci manualmente.';
+      onError(new Error(msg));
       return;
     }
     var provider = queue[idx];
