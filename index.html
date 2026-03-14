@@ -4903,9 +4903,11 @@ function openAISettings(fromEl){
     +'💡 <strong>Gemini è gratis</strong> — vai su <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#1565C0;font-weight:700">aistudio.google.com</a> → Create API key → copia e incolla qui sotto.'
     +'</div>'
     +row('gemini','🔵','Google Gemini','GRATUITO','#E0F7FA;color:#006064','Consigliato','https://aistudio.google.com/app/apikey','aistudio.google.com','AIzaSy...',hasG)
+    +(hasG?'<div style="margin:-8px 0 10px;padding:0 4px"><button id="btn-test-gemini" class="btn btn-sm" onclick="testGeminiKey()" style="width:100%;background:#F0FFF6;border:1.5px solid #A8D8B8;color:#1a7a4a;font-size:13px">🧪 Testa key Gemini — verifica che funzioni</button></div>':'')
     +row('claude','🟠','Anthropic Claude','~$0.001/foto','#FFF3E0;color:#E65100','Eccellente qualità','https://console.anthropic.com/settings/keys','console.anthropic.com','sk-ant-...',hasC)
     +row('openai','🟢','OpenAI GPT-4o','~$0.002/foto','#E8F5E9;color:#2E7D32','Ottimo backup','https://platform.openai.com/api-keys','platform.openai.com','sk-...',hasO)
     +'<div style="font-size:11px;color:#9ab0cc;text-align:center;margin-top:8px">🔒 Salvate solo nel tuo telefono · Mai inviate ai nostri server</div>'
+    +'<div style="margin-top:12px;text-align:center"><button class="btn btn-sm" onclick="localStorage.removeItem(\'miocane_ai_keys_v1\');localStorage.removeItem(\'miocane_gemini_v1\');_aiKeys={};_geminiKey=\'\';toast(\'🗑 Tutte le key cancellate\');_refreshAISettings(\''+fromEl+'\')" style="background:#FEE;color:#C0534A;border:1.5px solid #F5C6C6;font-size:12px">🗑 Cancella tutte le key e ricomincia</button></div>'
     +'</div></div>';
   var wrap=document.createElement('div');
   wrap.innerHTML=html;
@@ -4915,16 +4917,48 @@ function openAISettings(fromEl){
 function _saveKeyFromSettings(provider, inputId, fromEl){
   var inp=g(inputId); if(!inp) return;
   var key=inp.value.trim();
-  // Blocca solo se vuoto o invariato (puntini)
   if(!key || key==='••••••••'){
     inp.style.borderColor='#C0534A';
-    inp.placeholder='⚠️ Incolla qui la tua API key!';
     setTimeout(function(){ inp.style.borderColor=''; }, 2000);
+    toast('⚠️ Incolla la tua API key nel campo!');
     return;
   }
   saveAIKey(provider, key);
-  toast('✅ Key '+provider+' salvata!');
+  toast('✅ Key salvata! Premi "Testa" per verificare.');
   _refreshAISettings(fromEl);
+}
+
+function testGeminiKey(){
+  var key = _aiKeys.gemini;
+  if(!key){ toast('❌ Nessuna key Gemini configurata'); return; }
+  var btn = document.getElementById('btn-test-gemini');
+  if(btn){ btn.textContent='⏳ Test in corso…'; btn.disabled=true; }
+  
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+key, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      contents:[{parts:[{text:'Rispondi solo con: OK'}]}],
+      generationConfig:{maxOutputTokens:10}
+    })
+  }).then(function(r){return r.json();}).then(function(d){
+    if(btn){ btn.textContent='🧪 Testa key'; btn.disabled=false; }
+    if(d.error){
+      var code=d.error.code||0, msg=d.error.message||'';
+      if(code===400||code===403){
+        toast('❌ KEY NON VALIDA: '+msg.substring(0,60));
+      } else if(code===429){
+        toast('⚠️ Key valida ma quota esaurita. Attendi 1 min.');
+      } else {
+        toast('❌ Errore ('+code+'): '+msg.substring(0,60));
+      }
+    } else {
+      toast('✅ KEY GEMINI FUNZIONANTE! Ora prova a leggere un pedigree.');
+    }
+  }).catch(function(e){
+    if(btn){ btn.textContent='🧪 Testa key'; btn.disabled=false; }
+    toast('❌ Errore di rete: '+e.message);
+  });
 }
 
 function _refreshAISettings(fromEl){
