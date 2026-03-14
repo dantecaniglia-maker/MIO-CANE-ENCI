@@ -2205,20 +2205,42 @@ var ENCI_CAMP_COLS = {
   'INT_B':'C.I.B.','INT_L':'Camp.Internaz.Lavoro','INT_A':'Camp.Internaz.Assoluto'
 };
 /* Stringa legenda per prompt AI */
-var ENCI_LEGENDA_PROMPT = 'LEGENDA UFFICIALE ENCI — colonne tabella laterale:\n'
-  +'Le colonne "CAMPIONI ITALIANI" (Bellezza/Lavoro/Assoluto) e "CAMPIONI INTERNAZ." (Bellezza/Lavoro/Assoluto): un asterisco (*) in quelle colonne indica il titolo corrispondente.\n'
-  +'Colonna TITOLI VARI — lettere:\n'
-  +'A=Camp.Trialer, B=Camp.Sociale, C=Camp.Estero, D=Camp.Riproduttore,\n'
-  +'E=Camp.Europeo Bellezza, F=Camp.Mondiale Bellezza, F1=Camp.Internaz.Expo, F2=Camp.Internaz.Coursing,\n'
-  +'G=IPO1, H=IPO2, I=IPO3, L=Brevetto1, M=Brevetto2, N=Brevetto3,\n'
-  +'O=Selezione1, P=Selezione2, Q=ZTP\n'
-  +'Lettere displasia ANCA: R=GradoA, S=GradoB, T=GradoC, U=GradoD, V=GradoE\n'
-  +'Lettere displasia GOMITO: W=Grado0, X=GradoI, Y=GradoII, Z=GradoIII, Z1=Borderline\n'
-  +'Nel JSON titoli usa i codici esatti: per Camp.Italiani Bellezza usa "IT_B", Lavoro "IT_L", Assoluto "IT_A",\n'
-  +'C.I.B. usa "INT_B", Lavoro Internaz "INT_L", Assoluto Internaz "INT_A".\n'
-  +'Per titoli vari usa le lettere come scritte (A,B,C,D,E,F,F1,F2,G,H,I,L,M,N,O,P,Q).\n'
-  +'Per HD e ED usa il VALORE (es: hd:"A", ed:"I") NON la lettera legenda.\n'
-  +'Il campo "isFounder":true se la lettera F (Fondatore) è presente nei titoli vari.';
+var ENCI_LEGENDA_PROMPT = '\n\nLEGENDA UFFICIALE ENCI (colonna TITOLI VARI a destra di ogni antenato):\n'
+  +'A=CAMP.TRIALER, B=CAMP.SOCIALE, C=CAMP.ESTERO, D=CAMP.RIPRODUTTORE\n'
+  +'E=CAMP.EUROPEO BELLEZZA, F=CAMP.MONDIALE BELLEZZA\n'
+  +'F1=CAMP.INTERNAZ.EXPO, F2=CAMP.INTERNAZ.COURSING\n'
+  +'G=IPO1, H=IPO2, I=IPO3\n'
+  +'L=BREVETTO1, M=BREVETTO2, N=BREVETTO3\n'
+  +'O=SELEZIONE1, P=SELEZIONE2, Q=ZTP\n'
+  +'R=DISPLASIA ANCA GRADO A → hd:"A"\n'
+  +'S=DISPLASIA ANCA GRADO B → hd:"B"\n'
+  +'T=DISPLASIA ANCA GRADO C → hd:"C"\n'
+  +'U=DISPLASIA ANCA GRADO D → hd:"D"\n'
+  +'V=DISPLASIA ANCA GRADO E → hd:"E"\n'
+  +'W=DISPLASIA GOMITO GRADO 0 → ed:"0"\n'
+  +'X=DISPLASIA GOMITO GRADO I → ed:"I"\n'
+  +'Y=DISPLASIA GOMITO GRADO II → ed:"II"\n'
+  +'Z=DISPLASIA GOMITO GRADO III → ed:"III"\n'
+  +'Z1=DISPLASIA GOMITO BORDERLINE → ed:"BL"\n\n'
+  +'REGOLA CRITICA: le lettere R,S,T,U,V vanno nel campo "hd", le lettere W,X,Y,Z,Z1 vanno nel campo "ed".\n'
+  +'Le lettere A-Q (escluse R-Z) vanno nell\'array "titoli".\n'
+  +'NON mettere R,S,T,U,V,W,X,Y,Z nell\'array titoli — sono displasia!\n\n'
+  +'COLONNE CAMPIONI ITALIANI/INTERNAZ (asterisco * o punto):\n'
+  +'  * colonna Bellezza Italiani → aggiungi "IT_B" ai titoli\n'
+  +'  * colonna Lavoro Italiani → aggiungi "IT_L"\n'
+  +'  * colonna Assoluto Italiani → aggiungi "IT_A"\n'
+  +'  * colonna Bellezza Internaz → aggiungi "INT_B" (C.I.B.)\n'
+  +'  * colonna Lavoro Internaz → aggiungi "INT_L"\n'
+  +'  * colonna Assoluto Internaz → aggiungi "INT_A"\n\n'
+  +'ESEMPIO REALE — Ramon ROI 17/150083 (da pedigree RSR Maremmano):\n'
+  +'  Ha * in Bellezza Italiani + lettere B,D,F,S,W in Titoli Vari\n'
+  +'  → titoli: ["IT_B","B","D","F"], hd:"B" (S=grado B), ed:"0" (W=gomito 0)\n\n'
+  +'ESEMPIO — Pastrano ROI 10/14840:\n'
+  +'  Ha lettera D in Titoli Vari\n'
+  +'  → titoli: ["D"], hd:null, ed:null\n\n'
+  +'isFounder: non usare mai — lascia sempre false/null.';
+
+
 
 /* Prompt unificato pedigree — usato da tutti i provider */
 /* ══════════════════════════════════════════════════════
@@ -2401,28 +2423,46 @@ function callAIHybrid(b64, ocrText, onSuccess, onError){
   var mi = 0;
 
   // Prompt ibrido: usa testo OCR + immagine
-  // Tronca il testo OCR per non sprecare token
-  var ocrShort = ocrText.substring(0, 1500);
-
   var hybridPrompt = 'Analizza questo pedigree ENCI italiano. Usa il testo OCR E l\'immagine.\n\n'
     + 'TESTO OCR:\n"""\n' + ocrShort + '\n"""\n\n'
-    + 'REGOLE:\n'
-    + '- pos2=PADRE(metà alta), pos3=MADRE(metà bassa)\n'
-    + '- pos4=nonno pat, pos5=nonna pat, pos6=nonno mat, pos7=nonna mat\n'
-    + '- pos8-15=bisnonni, pos16-31=trisnonni\n'
-    + '- "RSR 09/74871 ULISSE" → name:"ULISSE" loi:"RSR 09/74871"\n'
-    + '- Illeggibile → null\n\n'
-    + 'Rispondi SOLO con JSON compatto (no spazi extra):\n'
+    + 'STRUTTURA BINARIA ENCI (CRITICA — leggi attentamente):\n'
+    + 'pos2=PADRE, pos3=MADRE\n'
+    + 'pos4=nonno paterno (padre del PADRE), pos5=nonna paterna (madre del PADRE)\n'
+    + 'pos6=nonno materno (padre della MADRE), pos7=nonna materna (madre della MADRE)\n'
+    + 'pos8=padre di pos4, pos9=madre di pos4, pos10=padre di pos5, pos11=madre di pos5\n'
+    + 'pos12=padre di pos6, pos13=madre di pos6, pos14=padre di pos7, pos15=madre di pos7\n'
+    + 'pos16=padre di pos8, pos17=madre di pos8, pos18=padre di pos9, pos19=madre di pos9\n'
+    + 'pos20=padre di pos10, pos21=madre di pos10, pos22=padre di pos11, pos23=madre di pos11\n'
+    + 'pos24=padre di pos12, pos25=madre di pos12, pos26=padre di pos13, pos27=madre di pos13\n'
+    + 'pos28=padre di pos14, pos29=madre di pos14, pos30=padre di pos15, pos31=madre di pos15\n\n'
+    + 'ESEMPIO REALE VERIFICATO — Squarcione RSR 25/69758:\n'
+    + 'pos4=Romeo RSR 10/194453, pos5=Cesarina RSR 16/130079\n'
+    + 'pos6=Ramon ROI 17/150083, pos7=Vittoria RSR 17/190678\n'
+    + 'pos8=Ulisse RSR 09/74871 (padre di Romeo), pos9=Morra RSR 09/15722 (madre di Romeo)\n'
+    + 'pos10=null (Cesarina è RSR, no dati), pos11=null\n'
+    + 'pos12=Ulisse RSR 09/74871 (padre di Ramon), pos13=Morra RSR 09/15722 (madre di Ramon)\n'
+    + 'pos14=null (Vittoria è RSR, no dati), pos15=null\n'
+    + 'pos16=Pastrano ROI 10/14840 (padre di Ulisse/8), pos17=Marsica RSR 04/69133 (madre di Ulisse/8)\n'
+    + 'pos18=Cerbero RSR 05/129216 (padre di Morra/9), pos19=Marsica RSR 05/60669 (madre di Morra/9)\n'
+    + 'pos20-23=null (genitori di Cesarina non registrati)\n'
+    + 'pos24=Pastrano ROI 10/14840 (padre di Ulisse/12), pos25=Marsica RSR 04/69133 (madre di Ulisse/12)\n'
+    + 'pos26=Cerbero RSR 05/129216 (padre di Morra/13), pos27=Marsica RSR 05/60669 (madre di Morra/13)\n'
+    + 'pos28-31=null (genitori di Vittoria non registrati)\n\n'
+    + 'REGOLA CRITICA: i cani RSR senza dati genealogici hanno pos=null. NON inventare antenati.\n'
+    + 'Da "RSR 09/74871 ULISSE": name="ULISSE" loi="RSR 09/74871"\n\n'
+    + ENCI_LEGENDA_PROMPT + '\n\n'
+    + 'Rispondi SOLO con JSON compatto:\n'
     + '{"nome":"","loi":"","razza":"","sesso":"","dataNascita":"","microchip":"",'
-    + '"pedigree":{'
-    + '"2":{"name":"","loi":""},"3":{"name":"","loi":""},'
+    + '"pedigree":{"2":{"name":"","loi":""},"3":{"name":"","loi":""},'
     + '"4":{"name":"","loi":""},"5":{"name":"","loi":""},"6":{"name":"","loi":""},"7":{"name":"","loi":""},'
     + '"8":{"name":"","loi":""},"9":{"name":"","loi":""},"10":{"name":"","loi":""},"11":{"name":"","loi":""},'
     + '"12":{"name":"","loi":""},"13":{"name":"","loi":""},"14":{"name":"","loi":""},"15":{"name":"","loi":""},'
     + '"16":{"name":"","loi":""},"17":{"name":"","loi":""},"18":{"name":"","loi":""},"19":{"name":"","loi":""},'
     + '"20":{"name":"","loi":""},"21":{"name":"","loi":""},"22":{"name":"","loi":""},"23":{"name":"","loi":""},'
     + '"24":{"name":"","loi":""},"25":{"name":"","loi":""},"26":{"name":"","loi":""},"27":{"name":"","loi":""},'
-    + '"28":{"name":"","loi":""},"29":{"name":"","loi":""},"30":{"name":"","loi":""},"31":{"name":"","loi":""}}}';
+    + '"28":{"name":"","loi":""},"29":{"name":"","loi":""},"30":{"name":"","loi":""},"31":{"name":"","loi":""}},'
+    + '"titoli":{"6":["IT_B","B","D","F"]},"hd":{"6":"B"},"ed":{"6":"0"}}';
+
 
   function tryModel(){
     fetch('https://generativelanguage.googleapis.com/v1beta/models/'+MODELS[mi]+':generateContent?key='+_aiKeys.gemini,{
@@ -4971,8 +5011,17 @@ function openAISettings(fromEl){
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1">🤖 Configura AI</div>'
     +'<button onclick="document.getElementById(\'ai-settings-overlay\').remove();_renderAIBanner(\''+fromEl+'\')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#6B8BB0">✕</button>'
     +'</div>'
-    +'<div style="font-size:12px;color:#1565C0;margin-bottom:14px;background:#EEF3FB;border:1.5px solid #BFCFE8;border-radius:8px;padding:10px 12px">'
-    +'💡 <strong>Gemini è gratis</strong> — vai su <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#1565C0;font-weight:700">aistudio.google.com</a> → Create API key → copia e incolla qui sotto.'
+    +'<div style="font-size:12px;color:#1565C0;margin-bottom:14px;background:#EEF3FB;border:1.5px solid #BFCFE8;border-radius:8px;padding:12px">'
+    +'<strong>📋 Come ottenere la chiave Gemini (gratis, 5 minuti):</strong><br>'
+    +'<strong>1.</strong> Vai su <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#1565C0;font-weight:700">aistudio.google.com/app/apikey</a><br>'
+    +'<strong>2.</strong> Accedi con il tuo account Google<br>'
+    +'<strong>3.</strong> Clicca <strong>"Crea chiave API"</strong> → <strong>"Crea chiave API nel nuovo progetto"</strong><br>'
+    +'<strong>4.</strong> Copia la chiave (inizia con <code>AIzaSy...</code>)<br>'
+    +'<strong>5.</strong> Incollala nel campo qui sotto e premi Salva<br>'
+    +'<div style="margin-top:6px;padding:6px 10px;background:#FFF3E0;border-radius:6px;font-size:11px;color:#E65100">'
+    +'⚠️ <strong>Importante:</strong> usa SEMPRE aistudio.google.com — NON Google Cloud Console. '
+    +'Le chiavi di AI Studio hanno quota gratuita automatica.'
+    +'</div>'
     +'</div>'
     +row('gemini','🔵','Google Gemini','GRATUITO','#E0F7FA;color:#006064','Consigliato','https://aistudio.google.com/app/apikey','aistudio.google.com','AIzaSy...',hasG)
     +(hasG?'<div style="margin:-8px 0 10px;padding:0 4px"><button id="btn-test-gemini" class="btn btn-sm" onclick="testGeminiKey()" style="width:100%;background:#F0FFF6;border:1.5px solid #A8D8B8;color:#1a7a4a;font-size:13px">🧪 Testa key Gemini — verifica che funzioni</button></div>':'')
@@ -5090,9 +5139,24 @@ function onPdfPedigreeSelected(input){
     var b64 = e.target.result.split(',')[1];
 
     // Prompt specifico per PDF — molto più semplice dell'immagine
-    var pdfPrompt = 'Questo è un certificato genealogico ENCI italiano in formato PDF.\n\n'
-      + 'Estrai TUTTI i dati e restituisci SOLO JSON compatto:\n'
-      + '{"nome":"","loi":"","razza":"","sesso":"","dataNascita":"YYYY-MM-DD","microchip":"",'
+    var pdfPrompt = 'Analizza questo certificato genealogico ENCI italiano.\n\n'
+      + 'STRUTTURA BINARIA (FONDAMENTALE):\n'
+      + 'pos2=PADRE, pos3=MADRE\n'
+      + 'pos4=padre del PADRE, pos5=madre del PADRE\n'
+      + 'pos6=padre della MADRE, pos7=madre della MADRE\n'
+      + 'pos8=padre di pos4, pos9=madre di pos4, pos10=padre di pos5, pos11=madre di pos5\n'
+      + 'pos12=padre di pos6, pos13=madre di pos6, pos14=padre di pos7, pos15=madre di pos7\n'
+      + 'pos16=padre di pos8, pos17=madre di pos8, pos18=padre di pos9, pos19=madre di pos9\n'
+      + 'pos20=padre di pos10 ... pos31=madre di pos15\n\n'
+      + 'ESEMPIO VERIFICATO — Squarcione RSR 25/69758:\n'
+      + 'Romeo(4)→Ulisse(8)+Morra(9) | Cesarina(5)→null(10)+null(11)\n'
+      + 'Ramon(6)→Ulisse(12)+Morra(13) | Vittoria(7)→null(14)+null(15)\n'
+      + 'Ulisse(8)→Pastrano(16)+Marsica04(17) | Morra(9)→Cerbero(18)+Marsica05(19)\n'
+      + 'Ulisse(12)→Pastrano(24)+Marsica04(25) | Morra(13)→Cerbero(26)+Marsica05(27)\n\n'
+      + 'REGOLA: cani RSR senza dati → pos=null. NON inventare.\n\n'
+      + ENCI_LEGENDA_PROMPT + '\n\n'
+      + 'Restituisci SOLO JSON:\n'
+      + '{"nome":"","loi":"","razza":"","sesso":"","dataNascita":"","microchip":"",'
       + '"pedigree":{"2":{"name":"","loi":""},"3":{"name":"","loi":""},'
       + '"4":{"name":"","loi":""},"5":{"name":"","loi":""},"6":{"name":"","loi":""},"7":{"name":"","loi":""},'
       + '"8":{"name":"","loi":""},"9":{"name":"","loi":""},"10":{"name":"","loi":""},"11":{"name":"","loi":""},'
@@ -5100,8 +5164,8 @@ function onPdfPedigreeSelected(input){
       + '"16":{"name":"","loi":""},"17":{"name":"","loi":""},"18":{"name":"","loi":""},"19":{"name":"","loi":""},'
       + '"20":{"name":"","loi":""},"21":{"name":"","loi":""},"22":{"name":"","loi":""},"23":{"name":"","loi":""},'
       + '"24":{"name":"","loi":""},"25":{"name":"","loi":""},"26":{"name":"","loi":""},"27":{"name":"","loi":""},'
-      + '"28":{"name":"","loi":""},"29":{"name":"","loi":""},"30":{"name":"","loi":""},"31":{"name":"","loi":""}}}\n'
-      + 'pos2=PADRE(metà alta), pos3=MADRE(metà bassa). Illeggibile→null.';
+      + '"28":{"name":"","loi":""},"29":{"name":"","loi":""},"30":{"name":"","loi":""},"31":{"name":"","loi":""}},'
+      + '"titoli":{},"hd":{},"ed":{}}';
 
     if(!hasAnyAIKey()){
       _showPdfError(isNuovoCane, 'Configura la chiave Gemini in Strumenti → 🤖 Configura AI');
