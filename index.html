@@ -14,26 +14,22 @@
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%230D47A1' rx='80'/%3E%3Cpath d='M128 180c0-75 61-104 104-66l24 22 24-22c43-38 104-9 104 66 0 38-19 70-47 92L256 384 175 272c-28-22-47-54-47-92z' fill='white' opacity='.9'/%3E%3Ccircle cx='192' cy='130' r='22' fill='%23C9A961'/%3E%3Ccircle cx='320' cy='130' r='22' fill='%23C9A961'/%3E%3Ccircle cx='144' cy='176' r='18' fill='%23C9A961'/%3E%3Ccircle cx='368' cy='176' r='18' fill='%23C9A961'/%3E%3C/svg%3E"/>
 <script>
-if('serviceWorker' in navigator){
+// Registra Service Worker solo su Vercel (non nella preview Claude)
+if('serviceWorker' in navigator && window.location.hostname !== 'www.claudeusercontent.com'){
   navigator.serviceWorker.register('/sw.js').then(function(reg){
-    // Controlla aggiornamenti ogni volta che si apre l'app
     reg.addEventListener('updatefound', function(){
       var newSW = reg.installing;
       newSW.addEventListener('statechange', function(){
-        if(newSW.state === 'installed' && navigator.serviceWorker.controller){
-          // Nuovo SW pronto — ricarica automaticamente
-          console.log('[App] Aggiornamento disponibile, ricarico...');
+        if(newSW.state==='installed' && navigator.serviceWorker.controller){
           newSW.postMessage({type:'SKIP_WAITING'});
           window.location.reload();
         }
       });
     });
-  }).catch(function(e){ console.log('[SW] Errore registrazione:', e); });
-
-  // Quando il SW attivo cambia (dopo skipWaiting), ricarica la pagina
-  var refreshing = false;
+  }).catch(function(){});
+  var refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange', function(){
-    if(!refreshing){ refreshing = true; window.location.reload(); }
+    if(!refreshing){ refreshing=true; window.location.reload(); }
   });
 }
 </script>
@@ -528,9 +524,10 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
         </div>
       </div>
 
-      <div style="display:flex;gap:10px;justify-content:flex-end">
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="hide('modal-moduli-enci')">Chiudi</button>
-        <button class="btn btn-primary" onclick="generaPdfModelloA()" style="font-size:14px;padding:10px 24px">🖨 Genera Modello A PDF</button>
+        <button class="btn btn-ghost" onclick="inviaEmailModello('A')" style="border-color:#1565C0;color:#1565C0;font-size:13px">✉️ Invia per Email</button>
+        <button class="btn btn-primary" onclick="generaPdfModelloA()" style="font-size:14px;padding:10px 24px">🖨 Genera PDF</button>
       </div>
     </div>
 
@@ -638,9 +635,10 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
         </div>
       </div>
 
-      <div style="display:flex;gap:10px;justify-content:flex-end">
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="hide('modal-moduli-enci')">Chiudi</button>
-        <button class="btn btn-primary" onclick="generaPdfModelloB()" style="font-size:14px;padding:10px 24px">🖨 Genera Modello B PDF</button>
+        <button class="btn btn-ghost" onclick="inviaEmailModello('B')" style="border-color:#1565C0;color:#1565C0;font-size:13px">✉️ Invia per Email</button>
+        <button class="btn btn-primary" onclick="generaPdfModelloB()" style="font-size:14px;padding:10px 24px">🖨 Genera PDF</button>
       </div>
     </div>
   </div><!-- chiude .modal -->
@@ -741,21 +739,21 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
         <div style="font-size:11px;font-weight:800;color:#8B6914;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">💰 Tipo di Compenso</div>
 
         <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
-          <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;border:1.5px solid #E0C870;border-radius:8px;cursor:pointer;background:#fff" id="comp-row-denaro">
-            <input type="radio" name="cc-compenso" value="denaro" onchange="switchCompenso('denaro')" style="margin-top:2px;flex-shrink:0">
-            <div><div style="font-weight:700;font-size:13px;color:#1a1a3a">💶 Pagamento in denaro</div><div style="font-size:11px;color:#6B8BB0">Importo fisso concordato tra le parti</div></div>
+          <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid #E0C870;border-radius:8px;cursor:pointer;background:#fff" id="comp-row-denaro">
+            <input type="radio" name="cc-compenso" value="denaro" onchange="switchCompenso('denaro')" style="flex-shrink:0;width:18px;height:18px;accent-color:#C9A961">
+            <div style="text-align:center;flex:1"><div style="font-weight:700;font-size:13px;color:#1a1a3a">💶 Pagamento in denaro</div><div style="font-size:11px;color:#6B8BB0;margin-top:2px">Importo fisso concordato tra le parti</div></div>
           </label>
-          <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;border:1.5px solid #E0C870;border-radius:8px;cursor:pointer;background:#fff" id="comp-row-cucciolo">
-            <input type="radio" name="cc-compenso" value="cucciolo" onchange="switchCompenso('cucciolo')" style="margin-top:2px;flex-shrink:0">
-            <div><div style="font-weight:700;font-size:13px;color:#1a1a3a">🐾 Cucciolo/i dalla cucciolata</div><div style="font-size:11px;color:#6B8BB0">Il proprietario dello stallone riceve uno o più cuccioli</div></div>
+          <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid #E0C870;border-radius:8px;cursor:pointer;background:#fff" id="comp-row-cucciolo">
+            <input type="radio" name="cc-compenso" value="cucciolo" onchange="switchCompenso('cucciolo')" style="flex-shrink:0;width:18px;height:18px;accent-color:#C9A961">
+            <div style="text-align:center;flex:1"><div style="font-weight:700;font-size:13px;color:#1a1a3a">🐾 Cucciolo/i dalla cucciolata</div><div style="font-size:11px;color:#6B8BB0;margin-top:2px">Il proprietario dello stallone riceve uno o più cuccioli</div></div>
           </label>
-          <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;border:1.5px solid #E0C870;border-radius:8px;cursor:pointer;background:#fff" id="comp-row-misto">
-            <input type="radio" name="cc-compenso" value="misto" onchange="switchCompenso('misto')" style="margin-top:2px;flex-shrink:0">
-            <div><div style="font-weight:700;font-size:13px;color:#1a1a3a">🤝 Misto: denaro + cucciolo</div><div style="font-size:11px;color:#6B8BB0">Combinazione di pagamento e cucciolo</div></div>
+          <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid #E0C870;border-radius:8px;cursor:pointer;background:#fff" id="comp-row-misto">
+            <input type="radio" name="cc-compenso" value="misto" onchange="switchCompenso('misto')" style="flex-shrink:0;width:18px;height:18px;accent-color:#C9A961">
+            <div style="text-align:center;flex:1"><div style="font-weight:700;font-size:13px;color:#1a1a3a">🤝 Misto: denaro + cucciolo</div><div style="font-size:11px;color:#6B8BB0;margin-top:2px">Combinazione di pagamento e cucciolo</div></div>
           </label>
-          <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;border:1.5px solid #E0C870;border-radius:8px;cursor:pointer;background:#fff" id="comp-row-gratuita">
-            <input type="radio" name="cc-compenso" value="gratuita" onchange="switchCompenso('gratuita')" style="margin-top:2px;flex-shrink:0">
-            <div><div style="font-weight:700;font-size:13px;color:#1a1a3a">🎁 Gratuita / a titolo di cortesia</div><div style="font-size:11px;color:#6B8BB0">Nessun compenso — la monta è offerta gratuitamente</div></div>
+          <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid #E0C870;border-radius:8px;cursor:pointer;background:#fff" id="comp-row-gratuita">
+            <input type="radio" name="cc-compenso" value="gratuita" onchange="switchCompenso('gratuita')" style="flex-shrink:0;width:18px;height:18px;accent-color:#C9A961">
+            <div style="text-align:center;flex:1"><div style="font-weight:700;font-size:13px;color:#1a1a3a">🎁 Gratuita / a titolo di cortesia</div><div style="font-size:11px;color:#6B8BB0;margin-top:2px">Nessun compenso — la monta è offerta gratuitamente</div></div>
           </label>
         </div>
 
@@ -2205,6 +2203,198 @@ var ENCI_LEGENDA_PROMPT = 'LEGENDA UFFICIALE ENCI — colonne tabella laterale:\
   +'Il campo "isFounder":true se la lettera F (Fondatore) è presente nei titoli vari.';
 
 /* Prompt unificato pedigree — usato da tutti i provider */
+/* ══════════════════════════════════════════════════════
+   PIPELINE OCR + AI
+   1. Tesseract.js legge il testo grezzo dalla foto
+   2. Gemini/Claude interpreta il testo e produce il JSON
+   Risultato: lettura molto più accurata e meno costosa
+══════════════════════════════════════════════════════ */
+var _tesseractLoaded = false;
+var _tesseractWorker = null;
+
+function loadTesseract(onReady){
+  if(_tesseractLoaded && _tesseractWorker){
+    onReady(_tesseractWorker);
+    return;
+  }
+  var script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js';
+  script.onload = function(){
+    Tesseract.createWorker('ita+eng', 1, {
+      logger: function(m){
+        // Aggiorna progress se disponibile
+        var el = document.getElementById('ocr-progress');
+        if(el && m.status === 'recognizing text'){
+          el.textContent = '🔍 OCR: ' + Math.round((m.progress||0)*100) + '%';
+        }
+      }
+    }).then(function(worker){
+      _tesseractLoaded = true;
+      _tesseractWorker = worker;
+      onReady(worker);
+    }).catch(function(e){
+      console.log('[OCR] Tesseract init error:', e);
+      onReady(null); // fallback senza OCR
+    });
+  };
+  script.onerror = function(){
+    console.log('[OCR] Tesseract.js non caricato, uso solo AI');
+    onReady(null);
+  };
+  document.head.appendChild(script);
+}
+
+// Prompt AI ottimizzato per testo OCR (molto più corto e preciso)
+var PEDIGREE_PROMPT_OCR = 'Sei un esperto di pedigree ENCI italiani. Analizza questo testo estratto da un certificato genealogico ENCI tramite OCR.\n\n'
+  +'Il testo OCR può contenere errori di lettura (0 vs O, 1 vs I, spazi errati). Correggili.\n\n'
+  +'STRUTTURA PEDIGREE ENCI (posizioni binarie):\n'
+  +'  pos2=PADRE, pos3=MADRE\n'
+  +'  pos4=nonno paterno, pos5=nonna paterna, pos6=nonno materno, pos7=nonna materna\n'
+  +'  pos8-11=bisnonni paterni, pos12-15=bisnonni materni\n'
+  +'  pos16-31=trisnonni\n'
+  +'I cani nella metà SUPERIORE del testo appartengono al lato PADRE, quelli nella metà INFERIORE al lato MADRE.\n\n'
+  +'Da "RSR 09/74871 ULISSE" ricava: name="ULISSE", loi="RSR 09/74871"\n'
+  +'Prefissi LOI validi: RSR, ROI, GI91L, LR, LOI\n\n'
+  +'Restituisci SOLO questo JSON:\n'
+  +'{"nome":"","loi":"","razza":"","sesso":"M o F","dataNascita":"YYYY-MM-DD","microchip":"","pedigree":{"2":{"name":"","loi":""},"3":{"name":"","loi":""},'
+  +'"4":{"name":"","loi":""},"5":{"name":"","loi":""},"6":{"name":"","loi":""},"7":{"name":"","loi":""},'
+  +'"8":{"name":"","loi":""},"9":{"name":"","loi":""},"10":{"name":"","loi":""},"11":{"name":"","loi":""},'
+  +'"12":{"name":"","loi":""},"13":{"name":"","loi":""},"14":{"name":"","loi":""},"15":{"name":"","loi":""},'
+  +'"16":{"name":"","loi":""},"17":{"name":"","loi":""},"18":{"name":"","loi":""},"19":{"name":"","loi":""},'
+  +'"20":{"name":"","loi":""},"21":{"name":"","loi":""},"22":{"name":"","loi":""},"23":{"name":"","loi":""},'
+  +'"24":{"name":"","loi":""},"25":{"name":"","loi":""},"26":{"name":"","loi":""},"27":{"name":"","loi":""},'
+  +'"28":{"name":"","loi":""},"29":{"name":"","loi":""},"30":{"name":"","loi":""},"31":{"name":"","loi":""}},'
+  +'"titoli":{},"hd":{},"ed":{},"isFounder":{}}\n'
+  +'Assente=null. Solo JSON puro.\n\nTESTO OCR:\n';
+
+function callAIText(text, onSuccess, onError){
+  if(!hasAnyAIKey()){ onError(new Error('__NO_KEY__')); return; }
+  if(!_aiKeys.gemini){ onError(new Error('Serve chiave Gemini per la lettura AI')); return; }
+
+  var prompt = PEDIGREE_PROMPT_OCR + text;
+  var MODELS = ['gemini-1.5-flash','gemini-2.0-flash','gemini-1.5-flash-8b'];
+  var mi = 0;
+
+  function tryModel(){
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/'+MODELS[mi]+':generateContent?key='+_aiKeys.gemini,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        contents:[{parts:[{text:prompt}]}],
+        generationConfig:{maxOutputTokens:3000, temperature:0.05}
+      })
+    }).then(function(r){return r.json();}).then(function(d){
+      if(d.error){
+        var code=d.error.code||0, msg=d.error.message||'';
+        if(code===429||msg.indexOf('quota')!==-1){
+          if(mi<MODELS.length-1){mi++;setTimeout(tryModel,2000);return;}
+          onError(new Error('Quota Gemini esaurita. Attendi 1 minuto.')); return;
+        }
+        onError(new Error('Errore AI: '+msg)); return;
+      }
+      var txt=d.candidates&&d.candidates[0]&&d.candidates[0].content&&
+              d.candidates[0].content.parts&&d.candidates[0].content.parts[0]&&
+              d.candidates[0].content.parts[0].text;
+      if(!txt){onError(new Error('Nessuna risposta AI'));return;}
+      parseAIResponse(txt, onSuccess, onError);
+    }).catch(function(e){ onError(new Error('Errore rete: '+e.message)); });
+  }
+  tryModel();
+}
+
+// Pipeline principale: OCR gratuito → Parser ENCI → AI solo come fallback
+function leggiPedigreeOCR_AI(b64, mime, onProgress, onSuccess, onError){
+
+  onProgress('⏳ Caricamento motore OCR…');
+
+  loadTesseract(function(worker){
+    if(!worker){
+      if(hasAnyAIKey()){
+        onProgress('🤖 Uso AI Vision…');
+        callAIVision(b64, mime, PEDIGREE_PROMPT, onSuccess, onError);
+      } else {
+        onError(new Error('OCR non disponibile. Configura Gemini oppure inserisci manualmente.'));
+      }
+      return;
+    }
+
+    onProgress('🔍 Lettura testo dal documento…');
+
+    var binary = atob(b64);
+    var bytes = new Uint8Array(binary.length);
+    for(var i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    var blob = new Blob([bytes], {type: mime});
+    var url = URL.createObjectURL(blob);
+
+    worker.recognize(url).then(function(res){
+      URL.revokeObjectURL(url);
+      var testo = res.data.text;
+      var confidence = Math.round(res.data.confidence||0);
+      console.log('[OCR] Confidence:', confidence+'%', '| Chars:', testo.length);
+      console.log('[OCR] Testo:\n', testo.substring(0,800));
+
+      if(!testo || testo.trim().length < 30){
+        if(hasAnyAIKey()){
+          onProgress('⚠️ Testo scarso, uso AI Vision…');
+          callAIVision(b64, mime, PEDIGREE_PROMPT, onSuccess, onError);
+        } else {
+          onError(new Error('Immagine non leggibile. Riprova con una foto più nitida.'));
+        }
+        return;
+      }
+
+      onProgress('⚙️ Analisi struttura ENCI… (OCR: '+confidence+'%)');
+
+      // 1️⃣ Parser ENCI gratuito — nessuna API
+      var parsed = parseEnciOcrText(testo);
+      console.log('[ENCI Parser] Trovati', parsed._ocrFound, 'antenati, confidence:', parsed._ocrConfidence);
+
+      if(parsed._ocrFound >= 4 && confidence >= 55){
+        // Buon risultato — completamente gratuito!
+        onProgress('✅ Letto! Trovati '+parsed._ocrFound+' antenati (GRATIS, nessuna API usata)');
+        setTimeout(function(){ onSuccess(parsed); }, 300);
+        return;
+      }
+
+      // 2️⃣ Se OCR è parziale e abbiamo API → AI raffina
+      if(hasAnyAIKey()){
+        onProgress('🤖 OCR parziale ('+(parsed._ocrFound||0)+' antenati), AI raffina…');
+        callAIText(testo, function(aiRes){
+          // Combina: AI + dati OCR mancanti
+          if(!aiRes.nome && parsed.nome) aiRes.nome = parsed.nome;
+          if(!aiRes.razza && parsed.razza) aiRes.razza = parsed.razza;
+          if(!aiRes.microchip && parsed.microchip) aiRes.microchip = parsed.microchip;
+          onSuccess(aiRes);
+        }, function(){
+          // AI testo fallisce → prova AI Vision
+          onProgress('🔄 Provo AI Vision…');
+          callAIVision(b64, mime, PEDIGREE_PROMPT, onSuccess, function(){
+            // Tutto fallisce → usa comunque il parziale OCR
+            if(parsed._ocrFound >= 1){ onSuccess(parsed); }
+            else { onError(new Error('Impossibile leggere. Riprova o inserisci manualmente.')); }
+          });
+        });
+      } else {
+        // Nessuna API — usa ciò che abbiamo dall'OCR
+        if(parsed._ocrFound >= 1){
+          onProgress('✅ OCR completato ('+(parsed._ocrFound)+' antenati). Verifica i dati!');
+          onSuccess(parsed);
+        } else {
+          onError(new Error('Documento difficile da leggere. Configura Gemini per risultati migliori, oppure inserisci manualmente.'));
+        }
+      }
+
+    }).catch(function(e){
+      URL.revokeObjectURL(url);
+      if(hasAnyAIKey()){
+        onProgress('🔄 OCR fallito, uso AI Vision…');
+        callAIVision(b64, mime, PEDIGREE_PROMPT, onSuccess, onError);
+      } else {
+        onError(new Error('Errore lettura. Riprova con foto più nitida o inserisci manualmente.'));
+      }
+    });
+  });
+}
+
 var PEDIGREE_PROMPT = 'Sei un esperto di pedigree ENCI italiani. Leggi questa foto di un certificato genealogico ENCI.\n\n'
   +'STRUTTURA VISIVA (da sinistra a destra):\n'
   +'COLONNA 1 = GENITORI: metà superiore=PADRE, metà inferiore=MADRE\n'
@@ -2575,16 +2765,25 @@ function leggiNuovoCaneConClaude(b64, mime){
     renderNewFotoAI();
     return;
   }
-  var prompt=PEDIGREE_PROMPT;
-  callAIVision(b64, mime, prompt,
+  // Aggiorna stato
+  var st = g('new-foto-status');
+  if(st) st.textContent = '⏳ Avvio OCR…';
+
+  leggiPedigreeOCR_AI(b64, mime,
+    function(msg){
+      var el = g('new-foto-status');
+      if(el) el.textContent = msg;
+    },
     function(obj){
-      _nuovoCaneFotoData=obj;
+      _nuovoCaneFotoData = obj;
       mostraNuovoCaneReview(obj);
     },
     function(err){
       g('new-foto-reading').style.display='none';
       g('new-foto-error').style.display='';
-      g('new-foto-error-msg').textContent='Errore: '+(err.message||'Foto non leggibile');
+      var msg = err.message||'Foto non leggibile';
+      if(msg==='__NO_KEY__') msg='Configura la chiave AI per leggere i pedigree';
+      g('new-foto-error-msg').textContent='Errore: '+msg;
     }
   );
 }
@@ -3198,25 +3397,98 @@ function campRowSpec(icon,label,ok,desc){
 /* ── EXPORT / IMPORT ── */
 function exportScheda(){
   var c=cur();if(!c||c._guest)return;
+
+  // Scheda senza foto (troppo grande per condivisione)
   var scheda={_enci_version:'1.0',_exported:new Date().toISOString(),id:'guest_'+Date.now(),
     nome:c.nome,razza:c.razza,numeroENCI:c.numeroENCI,dataNascita:c.dataNascita,
-    sesso:c.sesso,microchip:c.microchip,foto:c.foto,displasia:c.displasia,
+    sesso:c.sesso,microchip:c.microchip,foto:null,displasia:c.displasia,
     cac_list:c.cac_list,cacib_list:c.cacib_list,pedigreeFlat:c.pedigreeFlat||{},
     pedGens:c.pedGens||1,vaccinazioni:[],trattamenti:[],_guest:true};
-  // Genera link con dati codificati
-  var json = JSON.stringify(scheda);
-  var b64 = btoa(unescape(encodeURIComponent(json)));
-  var link = 'https://mio-cane-enci.vercel.app/?import='+b64;
-  window._shareLink = link;
+
   window._shareNome = c.nome;
   window._pendingScheda = scheda;
-  // Mostra link nel modal
+
+  // Mostra anteprima e stato "generazione link"
   var req=calcolaRequisiti(c);
-  var html=schedaPreviewHtml(c,req,'#BFCFE8','#0D47A1');
-  g('share-preview-content').innerHTML=html;
-  g('share-link-input').value=link;
+  g('share-preview-content').innerHTML=schedaPreviewHtml(c,req,'#BFCFE8','#0D47A1');
   g('share-link-box').style.display='';
+  g('share-link-input').value='⏳ Generazione link…';
+  g('share-link-input').disabled=true;
+  g('btn-copy-link').disabled=true;
   show('modal-share');
+
+  // Salva su jsonbin.io (gratuito, public bin)
+  fetch('https://api.jsonbin.io/v3/b', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'X-Bin-Name': c.nome+' - Mio Cane ENCI',
+      'X-Bin-Private':'false'
+    },
+    body: JSON.stringify({scheda: scheda})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    var binId = d.metadata && d.metadata.id;
+    if(!binId) throw new Error('ID non ricevuto');
+    var link = 'https://mio-cane-enci.vercel.app/?code='+binId;
+    window._shareLink = link;
+    g('share-link-input').value = link;
+    g('share-link-input').disabled = false;
+    g('btn-copy-link').disabled = false;
+  })
+  .catch(function(){
+    // Fallback: link base64 senza foto (più corto)
+    var json = JSON.stringify(scheda);
+    var b64 = btoa(unescape(encodeURIComponent(json)));
+    var link = 'https://mio-cane-enci.vercel.app/?import='+b64;
+    window._shareLink = link;
+    g('share-link-input').value = link;
+    g('share-link-input').disabled = false;
+    g('btn-copy-link').disabled = false;
+  });
+}
+
+// Gestione import da URL (?code=BINID oppure ?import=BASE64)
+function checkURLImport(){
+  try{
+    var params = new URLSearchParams(window.location.search);
+    var code = params.get('code');
+    var b64  = params.get('import');
+    if(!code && !b64) return;
+    window.history.replaceState({},'',window.location.pathname);
+
+    if(code){
+      // Carica da jsonbin.io
+      fetch('https://api.jsonbin.io/v3/b/'+code+'/latest')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var data = d.record && d.record.scheda;
+        if(!data || !data.nome) throw new Error('Dati non validi');
+        _mostraImportPreview(data);
+      })
+      .catch(function(e){
+        toast('❌ Link non valido o scaduto');
+        console.log('Import code error:', e);
+      });
+    } else if(b64){
+      // Vecchio formato base64
+      var json = decodeURIComponent(escape(atob(b64)));
+      var data = JSON.parse(json);
+      if(!data.nome) return;
+      _mostraImportPreview(data);
+    }
+  }catch(e){ console.log('Import URL error:', e); }
+}
+
+function _mostraImportPreview(data){
+  data._guest = true;
+  pendingImport = data;
+  var req = calcolaRequisiti(data);
+  var html = schedaPreviewHtml(data,req,'#80DEEA','#00838F');
+  html += '<div style="font-size:11px;color:#6B8BB0;text-align:center;margin-top:8px">Ricevuto il '+new Date().toLocaleDateString('it-IT')+'</div>';
+  g('import-preview').innerHTML = html;
+  setTimeout(function(){ show('modal-import'); }, 600);
 }
 
 function copyShareLink(){
@@ -3231,13 +3503,13 @@ function copyShareLink(){
 function shareVia(platform){
   var link=window._shareLink||'';
   var nome=window._shareNome||'un cane';
-  var testo='🐾 Ti condivido la scheda pedigree di *'+nome+'* su Mio Cane ENCI.\nClicca il link per importarla direttamente nell\'app:\n'+link;
+  var testo='🐾 Ti condivido la scheda pedigree di *'+nome+'* su Mio Cane ENCI.\nClicca il link per importarla direttamente:\n'+link;
   if(platform==='whatsapp'){
     window.open('https://wa.me/?text='+encodeURIComponent(testo),'_blank');
   } else if(platform==='telegram'){
-    window.open('https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent('🐾 Scheda pedigree di '+nome+' su Mio Cane ENCI'),'_blank');
+    window.open('https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent('🐾 '+nome+' — Mio Cane ENCI'),'_blank');
   } else if(platform==='email'){
-    window.open('mailto:?subject='+encodeURIComponent('Scheda pedigree '+nome+' — Mio Cane ENCI')+'&body='+encodeURIComponent(testo),'_blank');
+    window.open('mailto:?subject='+encodeURIComponent('Scheda '+nome+' — Mio Cane ENCI')+'&body='+encodeURIComponent(testo),'_blank');
   }
 }
 
@@ -3245,59 +3517,27 @@ function shareViaNative(){
   var link=window._shareLink||'';
   var nome=window._shareNome||'un cane';
   if(navigator.share){
-    navigator.share({
-      title:'Scheda pedigree '+nome,
-      text:'🐾 Scheda pedigree di '+nome+' su Mio Cane ENCI',
-      url:link
-    }).catch(function(){});
+    navigator.share({title:'Scheda '+nome,text:'🐾 Scheda pedigree di '+nome,url:link}).catch(function(){});
   } else {
     copyShareLink();
-    toast('Link copiato! Incollalo dove vuoi condividere.');
+    toast('Link copiato!');
   }
 }
 
-// Mantenuto per compatibilità
-function downloadScheda(){shareViaNative();}
-function triggerImport(){g('import-input').value='';g('import-input').click();}
+function downloadScheda(){ shareViaNative(); }
+function triggerImport(){ g('import-input').value=''; g('import-input').click(); }
 
 function importScheda(input){
-  var file=input.files[0];if(!file)return;
-  // Accetta sia .enci che .json
+  var file=input.files[0]; if(!file) return;
   var r=new FileReader();
   r.onload=function(e){
     try{
       var data=JSON.parse(e.target.result);
-      if(!data.nome){alert('File non valido.');return;}
-      data._guest=true;pendingImport=data;
-      var req=calcolaRequisiti(data);
-      var html=schedaPreviewHtml(data,req,'#80DEEA','#00838F');
-      html+='<div style="font-size:11px;color:#6B8BB0;text-align:center;margin-top:8px">Scheda del '+(data._exported?new Date(data._exported).toLocaleDateString('it-IT'):'N.D.')+'</div>';
-      g('import-preview').innerHTML=html;show('modal-import');
-    }catch(err){alert('Errore lettura file.');}
+      if(!data.nome){ alert('File non valido.'); return; }
+      _mostraImportPreview(data);
+    }catch(err){ alert('Errore lettura file.'); }
   };
   r.readAsText(file);
-}
-
-// Gestione import da URL (?import=BASE64)
-function checkURLImport(){
-  try{
-    var params=new URLSearchParams(window.location.search);
-    var b64=params.get('import');
-    if(!b64) return;
-    // Pulisci URL senza ricaricare
-    window.history.replaceState({},'',window.location.pathname);
-    var json=decodeURIComponent(escape(atob(b64)));
-    var data=JSON.parse(json);
-    if(!data.nome) return;
-    data._guest=true;
-    pendingImport=data;
-    var req=calcolaRequisiti(data);
-    var html=schedaPreviewHtml(data,req,'#80DEEA','#00838F');
-    html+='<div style="font-size:11px;color:#6B8BB0;text-align:center;margin-top:8px">Ricevuto il '+new Date().toLocaleDateString('it-IT')+'</div>';
-    g('import-preview').innerHTML=html;
-    // Piccolo delay per far caricare l'app
-    setTimeout(function(){ show('modal-import'); }, 600);
-  }catch(e){ console.log('Import URL error:', e); }
 }
 function schedaPreviewHtml(c,req,borderColor,labelColor){
   var titoli=[];if(req.italiano.ok)titoli.push('🇮🇹');if(req.cib.ok)titoli.push('🌍');if(req.europeo.ok)titoli.push('🇪🇺');if(req.mondiale.ok)titoli.push('🌐');
@@ -4445,10 +4685,14 @@ function _renderAIBanner(elId){
     el.innerHTML='<span>✅ AI pronta · '+p.join(' · ')+'</span>'
       +'<span onclick="openAISettings(\''+elId+'\')" style="cursor:pointer;font-weight:400;font-size:11px;color:#6B8BB0;text-decoration:underline;white-space:nowrap;flex-shrink:0">configura</span>';
   } else {
-    el.style.cssText='background:#F8FAFF;border:1.5px solid #DDEAFF;border-radius:12px;padding:13px 15px;margin-bottom:14px';
-    el.innerHTML='<div style="font-size:13px;font-weight:700;color:#1565C0;margin-bottom:8px">🤖 Configura AI (gratis con Gemini)</div>'
-      +'<div style="font-size:12px;color:#4A6080;margin-bottom:10px">30 secondi di configurazione · Poi legge i pedigree automaticamente</div>'
-      +'<button class="btn btn-primary btn-sm" onclick="openAISettings(\''+elId+'\')" style="width:100%">⚙️ Configura ora</button>';
+    el.style.cssText='background:#EEF3FB;border:1.5px solid #BFCFE8;border-radius:10px;padding:10px 14px;margin-bottom:14px';
+    el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
+      +'<div>'
+      +'<div style="font-size:13px;font-weight:700;color:#1565C0;margin-bottom:2px">🔍 OCR attivo — funziona GRATIS!</div>'
+      +'<div style="font-size:11px;color:#6B8BB0">Legge i pedigree senza API · Aggiungi Gemini per risultati migliori</div>'
+      +'</div>'
+      +'<button class="btn btn-ghost btn-sm" onclick="openAISettings(\''+elId+'\')" style="white-space:nowrap;font-size:11px;flex-shrink:0">+ API</button>'
+      +'</div>';
   }
 }
 
@@ -4549,16 +4793,31 @@ function leggiPedigreeConClaude(b64, mime){
     renderFotoAI();
     return;
   }
-  callAIVision(b64, mime, PEDIGREE_PROMPT,
+  // Aggiungi elemento progress OCR
+  var prog = g('foto-progress');
+  if(prog) prog.innerHTML = '<span id="ocr-progress">⏳ Avvio OCR…</span>';
+
+  leggiPedigreeOCR_AI(b64, mime,
+    function(msg){
+      // onProgress
+      var el = document.getElementById('ocr-progress');
+      if(el) el.textContent = msg;
+      var fp = g('foto-progress');
+      if(fp && !el) fp.textContent = msg;
+    },
     function(obj){
-      _fotoImportData=obj;
+      // onSuccess
+      _fotoImportData = obj;
       mostraReviewFoto(obj);
     },
     function(err){
+      // onError
       g('foto-spinner').style.display='none';
       g('foto-step2').style.display='none';
       g('foto-step4').style.display='';
-      g('foto-error-msg').textContent='Errore: '+(err.message||'Foto non leggibile');
+      var msg = err.message||'Foto non leggibile';
+      if(msg==='__NO_KEY__') msg='Configura la chiave AI per leggere i pedigree';
+      g('foto-error-msg').textContent='Errore: '+msg;
     }
   );
 }
@@ -6185,6 +6444,61 @@ function generaPdfModelloB(){
   apriHtmlBlob(html);
 }
 
-</script>
+
+
+function inviaEmailModello(modello){
+// Valida prima
+  if(modello==='A' && !validaModelloA()) return;
+  if(modello==='B' && !validaModelloB()) return;
+
+  // Raccoglie dati per il corpo email
+  var allevatoreNome = modello==='A' ? gv('ma-nome') : gv('mb-nome');
+  var fattriceNome   = modello==='A' ? gv('ma-f-nome') : gv('mb-f-nome');
+  var fattriceLoi    = modello==='A' ? gv('ma-f-loi') : gv('mb-f-loi');
+  var razza          = modello==='A' ? gv('ma-f-razza') : gv('mb-f-razza');
+  var dataNascita    = modello==='A' ? gv('ma-data-nascita') : gv('mb-data-nascita');
+  var nCuccioli      = modello==='A' ? gv('ma-n-tot') : gv('mb-tot');
+
+  var destinatario = ''; // Lasciato vuoto — l'allevatore inserisce email sezione ENCI
+
+  var oggetto = modello==='A'
+    ? 'Modello A — Denuncia Monta e Nascita — ' + fattriceNome + ' (' + razza + ')'
+    : 'Modello B — Iscrizione Cucciolata — ' + fattriceNome + ' (' + razza + ')';
+
+  var corpo = modello==='A'
+    ? 'Gentile Delegazione ENCI,\n\n'
+      + 'Si trasmette il Modello A (F-7233) — Denuncia di Monta e Nascita:\n\n'
+      + '• Allevatore: ' + allevatoreNome + '\n'
+      + '• Fattrice: ' + fattriceNome + (fattriceLoi ? ' — LOI/RSR: ' + fattriceLoi : '') + '\n'
+      + '• Razza: ' + razza + '\n'
+      + '• Data nascita cucciolata: ' + (dataNascita ? new Date(dataNascita).toLocaleDateString('it-IT') : '—') + '\n'
+      + '• N° cuccioli nati: ' + (nCuccioli||'—') + '\n\n'
+      + 'Il modulo compilato e firmato è allegato in formato PDF.\n\n'
+      + 'Cordiali saluti,\n' + allevatoreNome
+    : 'Gentile Delegazione ENCI,\n\n'
+      + 'Si trasmette il Modello B (F-7234) — Iscrizione Cucciolata:\n\n'
+      + '• Allevatore: ' + allevatoreNome + '\n'
+      + '• Fattrice: ' + fattriceNome + (fattriceLoi ? ' — LOI/RSR: ' + fattriceLoi : '') + '\n'
+      + '• Razza: ' + razza + '\n'
+      + '• Data nascita: ' + (dataNascita ? new Date(dataNascita).toLocaleDateString('it-IT') : '—') + '\n'
+      + '• N° cuccioli: ' + (nCuccioli||'—') + '\n\n'
+      + 'Il modulo compilato e firmato è allegato in formato PDF.\n\n'
+      + 'Si prega di confermare la ricezione.\n\n'
+      + 'Cordiali saluti,\n' + allevatoreNome;
+
+  // Prima genera il PDF (si apre in nuova finestra per stampa/salvataggio)
+  if(modello==='A') generaPdfModelloA();
+  else generaPdfModelloB();
+
+  // Poi apre il client email dopo breve delay (così l'utente salva il PDF prima)
+  setTimeout(function(){
+    var mailtoUrl = 'mailto:' + destinatario
+      + '?subject=' + encodeURIComponent(oggetto)
+      + '&body=' + encodeURIComponent(corpo);
+    window.location.href = mailtoUrl;
+  }, 1500);
+
+  toast('📄 PDF aperto · ✉️ Apertura email tra un secondo — allega il PDF scaricato!');
+}</script>
 </body>
 </html>
