@@ -1524,26 +1524,30 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 
     <!-- Step 1: upload foto -->
     <div id="foto-step1">
-      <!-- Due bottoni: Fotocamera + Galleria -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <button onclick="g('foto-input-camera').click()" style="border:2px solid #1565C0;border-radius:14px;padding:20px 12px;text-align:center;cursor:pointer;background:#EEF3FB;display:flex;flex-direction:column;align-items:center;gap:8px">
-          <div style="font-size:36px">📷</div>
-          <div style="font-weight:700;font-size:14px;color:#1565C0">Scatta foto</div>
-          <div style="font-size:11px;color:#6B8BB0">Apre la fotocamera</div>
+      <!-- Tre bottoni: Fotocamera + Galleria + PDF -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+        <button onclick="g('foto-input-camera').click()" style="border:2px solid #1565C0;border-radius:14px;padding:16px 8px;text-align:center;cursor:pointer;background:#EEF3FB;display:flex;flex-direction:column;align-items:center;gap:6px">
+          <div style="font-size:30px">📷</div>
+          <div style="font-weight:700;font-size:12px;color:#1565C0">Scatta foto</div>
+          <div style="font-size:10px;color:#6B8BB0">Fotocamera</div>
           <input id="foto-input-camera" type="file" accept="image/*" capture="environment" style="display:none" onchange="onFotoSelected(this)"/>
         </button>
-        <button onclick="g('foto-input-gallery').click()" style="border:2px dashed #BFCFE8;border-radius:14px;padding:20px 12px;text-align:center;cursor:pointer;background:#F8FAFF;display:flex;flex-direction:column;align-items:center;gap:8px">
-          <div style="font-size:36px">🖼️</div>
-          <div style="font-weight:700;font-size:14px;color:#1565C0">Dalla galleria</div>
-          <div style="font-size:11px;color:#6B8BB0">Scegli foto salvata</div>
+        <button onclick="g('foto-input-gallery').click()" style="border:2px dashed #BFCFE8;border-radius:14px;padding:16px 8px;text-align:center;cursor:pointer;background:#F8FAFF;display:flex;flex-direction:column;align-items:center;gap:6px">
+          <div style="font-size:30px">🖼️</div>
+          <div style="font-weight:700;font-size:12px;color:#1565C0">Galleria</div>
+          <div style="font-size:10px;color:#6B8BB0">Foto salvata</div>
           <input id="foto-input-gallery" type="file" accept="image/*" style="display:none" onchange="onFotoSelected(this)"/>
         </button>
+        <button onclick="g('foto-input-pdf').click()" style="border:2px dashed #C9A961;border-radius:14px;padding:16px 8px;text-align:center;cursor:pointer;background:#FFFBF0;display:flex;flex-direction:column;align-items:center;gap:6px">
+          <div style="font-size:30px">📄</div>
+          <div style="font-weight:700;font-size:12px;color:#8B6914">PDF</div>
+          <div style="font-size:10px;color:#6B8BB0">Pedigree PDF</div>
+          <input id="foto-input-pdf" type="file" accept="application/pdf,.pdf" style="display:none" onchange="onPdfPedigreeSelected(this)"/>
+        </button>
       </div>
-      <div style="margin-top:4px;background:#FDF6E3;border:1.5px solid #E8D5A0;border-radius:10px;padding:12px 16px;font-size:12px;color:#6B8BB0;line-height:1.7">
-        💡 <strong style="color:#A88A41">Consigli per una buona lettura:</strong><br>
-        • Fotografa in <strong>piena luce</strong> o vicino a una finestra<br>
-        • Tieni il telefono <strong>parallelo al documento</strong>, senza angolazioni<br>
-        • Il testo deve essere <strong>tutto visibile</strong> — soprattutto NONNI e BISNONNI
+      <div style="margin-top:4px;background:#FDF6E3;border:1.5px solid #E8D5A0;border-radius:10px;padding:10px 14px;font-size:11px;color:#6B8BB0;line-height:1.6">
+        💡 <strong style="color:#A88A41">Consiglio:</strong> il <strong>PDF</strong> funziona meglio — usa CamScanner o "Stampa→PDF" dal telefono.<br>
+        Per la foto: buona luce, documento piatto, tutto visibile.
       </div>
     </div>
 
@@ -1634,18 +1638,24 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
       <div id="new-foto-ai-banner" style="margin-bottom:12px;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:600"></div>
 
       <div id="new-foto-dropzone" style="margin-bottom:12px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <button onclick="g('new-ped-foto-camera').click()" style="border:2px solid #1565C0;border-radius:14px;padding:18px 10px;text-align:center;cursor:pointer;background:#EEF3FB;display:flex;flex-direction:column;align-items:center;gap:6px">
-            <div style="font-size:32px">📷</div>
-            <div style="font-weight:700;font-size:13px;color:#1565C0">Scatta foto</div>
-            <div style="font-size:10px;color:#6B8BB0">Apre fotocamera</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <button onclick="g('new-ped-foto-camera').click()" style="border:2px solid #1565C0;border-radius:14px;padding:14px 8px;text-align:center;cursor:pointer;background:#EEF3FB;display:flex;flex-direction:column;align-items:center;gap:5px">
+            <div style="font-size:28px">📷</div>
+            <div style="font-weight:700;font-size:12px;color:#1565C0">Scatta foto</div>
+            <div style="font-size:10px;color:#6B8BB0">Fotocamera</div>
             <input id="new-ped-foto-camera" type="file" accept="image/*" capture="environment" style="display:none" onchange="onNuovoCaneFoto(this)"/>
           </button>
-          <button onclick="g('new-ped-foto-gallery').click()" style="border:2px dashed #BFCFE8;border-radius:14px;padding:18px 10px;text-align:center;cursor:pointer;background:#F8FAFF;display:flex;flex-direction:column;align-items:center;gap:6px">
-            <div style="font-size:32px">🖼️</div>
-            <div style="font-weight:700;font-size:13px;color:#1565C0">Dalla galleria</div>
-            <div style="font-size:10px;color:#6B8BB0">Scegli foto salvata</div>
+          <button onclick="g('new-ped-foto-gallery').click()" style="border:2px dashed #BFCFE8;border-radius:14px;padding:14px 8px;text-align:center;cursor:pointer;background:#F8FAFF;display:flex;flex-direction:column;align-items:center;gap:5px">
+            <div style="font-size:28px">🖼️</div>
+            <div style="font-weight:700;font-size:12px;color:#1565C0">Galleria</div>
+            <div style="font-size:10px;color:#6B8BB0">Foto salvata</div>
             <input id="new-ped-foto-gallery" type="file" accept="image/*" style="display:none" onchange="onNuovoCaneFoto(this)"/>
+          </button>
+          <button onclick="g('new-ped-pdf-input').click()" style="border:2px dashed #C9A961;border-radius:14px;padding:14px 8px;text-align:center;cursor:pointer;background:#FFFBF0;display:flex;flex-direction:column;align-items:center;gap:5px">
+            <div style="font-size:28px">📄</div>
+            <div style="font-weight:700;font-size:12px;color:#8B6914">PDF</div>
+            <div style="font-size:10px;color:#6B8BB0">Pedigree PDF</div>
+            <input id="new-ped-pdf-input" type="file" accept="application/pdf,.pdf" style="display:none" onchange="onPdfPedigreeSelected(this)"/>
           </button>
         </div>
       </div>
@@ -2391,30 +2401,28 @@ function callAIHybrid(b64, ocrText, onSuccess, onError){
   var mi = 0;
 
   // Prompt ibrido: usa testo OCR + immagine
-  var hybridPrompt = 'Hai questo testo OCR grezzo estratto da un pedigree ENCI italiano:\n\n'
-    + '"""\n' + ocrText.substring(0, 3000) + '\n"""\n\n'
-    + 'E questa è l\'immagine originale del pedigree.\n\n'
-    + 'Ricostruisci l\'albero genealogico COMPLETO usando ENTRAMBE le fonti.\n'
-    + 'Il testo OCR ti dà i nomi, l\'immagine ti mostra il layout (lato paterno = metà superiore, materno = metà inferiore).\n'
-    + 'Correggi errori OCR (0↔O, 1↔I, spazi errati nei codici LOI).\n\n'
-    + 'MAPPATURA POSIZIONI:\n'
-    + 'pos2=PADRE, pos3=MADRE\n'
-    + 'pos4=nonno paterno, pos5=nonna paterna, pos6=nonno materno, pos7=nonna materna\n'
-    + 'pos8-11=bisnonni paterni, pos12-15=bisnonni materni\n'
-    + 'pos16-31=trisnonni\n\n'
-    + 'Da "RSR 09/74871 ULISSE": name="ULISSE", loi="RSR 09/74871"\n\n'
-    + 'Output SOLO JSON valido:\n'
-    + '{"nome":"","loi":"","razza":"","sesso":"M o F","dataNascita":"YYYY-MM-DD","microchip":"",'
-    + '"pedigree":{"2":{"name":"","loi":""},"3":{"name":"","loi":""},'
+  // Tronca il testo OCR per non sprecare token
+  var ocrShort = ocrText.substring(0, 1500);
+
+  var hybridPrompt = 'Analizza questo pedigree ENCI italiano. Usa il testo OCR E l\'immagine.\n\n'
+    + 'TESTO OCR:\n"""\n' + ocrShort + '\n"""\n\n'
+    + 'REGOLE:\n'
+    + '- pos2=PADRE(metà alta), pos3=MADRE(metà bassa)\n'
+    + '- pos4=nonno pat, pos5=nonna pat, pos6=nonno mat, pos7=nonna mat\n'
+    + '- pos8-15=bisnonni, pos16-31=trisnonni\n'
+    + '- "RSR 09/74871 ULISSE" → name:"ULISSE" loi:"RSR 09/74871"\n'
+    + '- Illeggibile → null\n\n'
+    + 'Rispondi SOLO con JSON compatto (no spazi extra):\n'
+    + '{"nome":"","loi":"","razza":"","sesso":"","dataNascita":"","microchip":"",'
+    + '"pedigree":{'
+    + '"2":{"name":"","loi":""},"3":{"name":"","loi":""},'
     + '"4":{"name":"","loi":""},"5":{"name":"","loi":""},"6":{"name":"","loi":""},"7":{"name":"","loi":""},'
     + '"8":{"name":"","loi":""},"9":{"name":"","loi":""},"10":{"name":"","loi":""},"11":{"name":"","loi":""},'
     + '"12":{"name":"","loi":""},"13":{"name":"","loi":""},"14":{"name":"","loi":""},"15":{"name":"","loi":""},'
     + '"16":{"name":"","loi":""},"17":{"name":"","loi":""},"18":{"name":"","loi":""},"19":{"name":"","loi":""},'
     + '"20":{"name":"","loi":""},"21":{"name":"","loi":""},"22":{"name":"","loi":""},"23":{"name":"","loi":""},'
     + '"24":{"name":"","loi":""},"25":{"name":"","loi":""},"26":{"name":"","loi":""},"27":{"name":"","loi":""},'
-    + '"28":{"name":"","loi":""},"29":{"name":"","loi":""},"30":{"name":"","loi":""},"31":{"name":"","loi":""}},'
-    + '"titoli":{},"hd":{},"ed":{}}\n'
-    + 'Non inventare nulla. Se illeggibile usa null.';
+    + '"28":{"name":"","loi":""},"29":{"name":"","loi":""},"30":{"name":"","loi":""},"31":{"name":"","loi":""}}}';
 
   function tryModel(){
     fetch('https://generativelanguage.googleapis.com/v1beta/models/'+MODELS[mi]+':generateContent?key='+_aiKeys.gemini,{
@@ -2424,7 +2432,7 @@ function callAIHybrid(b64, ocrText, onSuccess, onError){
           {text: hybridPrompt},
           {inline_data:{mime_type:'image/jpeg', data:b64}}
         ]}],
-        generationConfig:{maxOutputTokens:3000, temperature:0.05}
+        generationConfig:{maxOutputTokens:8000, temperature:0.05}
       })
     }).then(function(r){return r.json();}).then(function(d){
       if(d.error){
@@ -2465,7 +2473,7 @@ function callAIText(text, onSuccess, onError){
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         contents:[{parts:[{text: PEDIGREE_PROMPT_OCR + text}]}],
-        generationConfig:{maxOutputTokens:3000, temperature:0.05}
+        generationConfig:{maxOutputTokens:8000, temperature:0.05}
       })
     }).then(function(r){return r.json();}).then(function(d){
       if(d.error){
@@ -2634,7 +2642,7 @@ function callAIVision(b64, mime, prompt, onSuccess, onError){
           method:'POST', headers:{'Content-Type':'application/json'},
           body:JSON.stringify({
             contents:[{parts:[{inline_data:{mime_type:'image/jpeg',data:b64}},{text:prompt}]}],
-            generationConfig:{maxOutputTokens:2500, temperature:0.1}
+            generationConfig:{maxOutputTokens:8000, temperature:0.1}
           })
         }).then(function(r){return r.json();}).then(function(d){
           if(d.error){
@@ -2752,10 +2760,69 @@ function resizeImageForAI(file, callback){
 
 function parseAIResponse(txt, onSuccess, onError){
   try{
-    txt=txt.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
-    var s=txt.indexOf('{'); if(s>0) txt=txt.substring(s);
-    onSuccess(JSON.parse(txt));
-  }catch(e){ onError(new Error('Risposta AI non leggibile: '+e.message)); }
+    txt = txt.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+    var s = txt.indexOf('{');
+    if(s > 0) txt = txt.substring(s);
+
+    // Prova parsing diretto
+    try{
+      onSuccess(JSON.parse(txt));
+      return;
+    }catch(e1){
+      // JSON troncato — tenta riparazione
+      console.log('[Parser] JSON troncato, tento riparazione...');
+
+      // Chiudi le stringhe aperte e le graffe mancanti
+      var fixed = txt;
+      // Conta graffe aperte e chiuse
+      var opens = (fixed.match(/\{/g)||[]).length;
+      var closes = (fixed.match(/\}/g)||[]).length;
+      var diff = opens - closes;
+
+      // Se c'è una stringa non chiusa, chiudila
+      // Trova l'ultima " non chiusa
+      var lastColon = fixed.lastIndexOf(':');
+      if(lastColon > 0){
+        var afterColon = fixed.substring(lastColon+1).trim();
+        if(afterColon.startsWith('"') && !afterColon.endsWith('"')){
+          fixed += 'null'; // sostituisci stringa troncata con null
+        }
+      }
+      // Chiudi le graffe mancanti
+      for(var i=0; i<diff; i++) fixed += '}';
+
+      try{
+        var obj = JSON.parse(fixed);
+        console.log('[Parser] JSON riparato con successo');
+        onSuccess(obj);
+      }catch(e2){
+        // Ultimo tentativo: estrai solo i dati principali con regex
+        var result = {nome:'', loi:'', razza:'', sesso:'', dataNascita:'', microchip:'', pedigree:{}};
+        var nomeM = txt.match(/"nome"\s*:\s*"([^"]+)"/);
+        var loiM  = txt.match(/"loi"\s*:\s*"([^"]+)"/);
+        var razzaM= txt.match(/"razza"\s*:\s*"([^"]+)"/);
+        var sessoM= txt.match(/"sesso"\s*:\s*"([^"]+)"/);
+        var chipM = txt.match(/"microchip"\s*:\s*"([^"]+)"/);
+        if(nomeM) result.nome = nomeM[1];
+        if(loiM)  result.loi  = loiM[1];
+        if(razzaM)result.razza= razzaM[1];
+        if(sessoM)result.sesso= sessoM[1];
+        if(chipM) result.microchip = chipM[1];
+        // Estrai antenati
+        var ancRe = /"(\d+)"\s*:\s*\{"name"\s*:\s*"([^"]*)"[^}]*"loi"\s*:\s*"([^"]*)"/g;
+        var m;
+        while((m=ancRe.exec(txt))!==null){
+          result.pedigree[m[1]] = {name:m[2], loi:m[3]};
+        }
+        if(result.nome || Object.keys(result.pedigree).length > 0){
+          console.log('[Parser] Dati estratti parzialmente via regex');
+          onSuccess(result);
+        } else {
+          onError(new Error('Risposta AI non leggibile. Riprova.'));
+        }
+      }
+    }
+  }catch(e){ onError(new Error('Errore parsing: '+e.message)); }
 }
 
 function saveAIKey(provider, key){
@@ -4997,6 +5064,118 @@ function newFotoDropzoneClick(){
 
 
 
+/* ── Lettura pedigree da PDF ── */
+function onPdfPedigreeSelected(input){
+  var file = input.files[0];
+  if(!file) return;
+
+  // Determina se chiamato da "nuovo cane" o da "scheda esistente"
+  var isNuovoCane = (input.id === 'new-ped-pdf-input');
+
+  if(isNuovoCane){
+    g('new-foto-dropzone').style.display = 'none';
+    g('new-foto-reading').style.display = '';
+    g('new-foto-status').textContent = '📄 Lettura PDF…';
+  } else {
+    g('foto-step1').style.display = 'none';
+    g('foto-step2').style.display = '';
+    g('foto-status').textContent = '📄 Lettura PDF…';
+    g('foto-progress').textContent = '';
+    g('foto-spinner').style.display = '';
+  }
+
+  // Leggi il PDF come base64 e mandalo direttamente a Gemini
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var b64 = e.target.result.split(',')[1];
+
+    // Prompt specifico per PDF — molto più semplice dell'immagine
+    var pdfPrompt = 'Questo è un certificato genealogico ENCI italiano in formato PDF.\n\n'
+      + 'Estrai TUTTI i dati e restituisci SOLO JSON compatto:\n'
+      + '{"nome":"","loi":"","razza":"","sesso":"","dataNascita":"YYYY-MM-DD","microchip":"",'
+      + '"pedigree":{"2":{"name":"","loi":""},"3":{"name":"","loi":""},'
+      + '"4":{"name":"","loi":""},"5":{"name":"","loi":""},"6":{"name":"","loi":""},"7":{"name":"","loi":""},'
+      + '"8":{"name":"","loi":""},"9":{"name":"","loi":""},"10":{"name":"","loi":""},"11":{"name":"","loi":""},'
+      + '"12":{"name":"","loi":""},"13":{"name":"","loi":""},"14":{"name":"","loi":""},"15":{"name":"","loi":""},'
+      + '"16":{"name":"","loi":""},"17":{"name":"","loi":""},"18":{"name":"","loi":""},"19":{"name":"","loi":""},'
+      + '"20":{"name":"","loi":""},"21":{"name":"","loi":""},"22":{"name":"","loi":""},"23":{"name":"","loi":""},'
+      + '"24":{"name":"","loi":""},"25":{"name":"","loi":""},"26":{"name":"","loi":""},"27":{"name":"","loi":""},'
+      + '"28":{"name":"","loi":""},"29":{"name":"","loi":""},"30":{"name":"","loi":""},"31":{"name":"","loi":""}}}\n'
+      + 'pos2=PADRE(metà alta), pos3=MADRE(metà bassa). Illeggibile→null.';
+
+    if(!hasAnyAIKey()){
+      _showPdfError(isNuovoCane, 'Configura la chiave Gemini in Strumenti → 🤖 Configura AI');
+      return;
+    }
+
+    var MODELS = ['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash'];
+    var mi = 0;
+
+    function tryModel(){
+      if(isNuovoCane) g('new-foto-status').textContent = '🤖 Gemini legge il PDF… ('+MODELS[mi]+')';
+      else { var p=g('foto-progress'); if(p) p.textContent = '🤖 Gemini legge il PDF… ('+MODELS[mi]+')'; }
+
+      fetch('https://generativelanguage.googleapis.com/v1beta/models/'+MODELS[mi]+':generateContent?key='+_aiKeys.gemini,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          contents:[{parts:[
+            {inline_data:{mime_type:'application/pdf', data:b64}},
+            {text: pdfPrompt}
+          ]}],
+          generationConfig:{maxOutputTokens:8000, temperature:0.05}
+        })
+      })
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(d.error){
+          var code=d.error.code||0, msg=d.error.message||'';
+          if(code===429){
+            if(mi<MODELS.length-1){mi++;setTimeout(tryModel,2000);return;}
+            _showPdfError(isNuovoCane,'Quota Gemini esaurita. Attendi 1 minuto e riprova.');
+            return;
+          }
+          _showPdfError(isNuovoCane,'Errore Gemini ('+code+'): '+msg.substring(0,80));
+          return;
+        }
+        var txt=d.candidates&&d.candidates[0]&&d.candidates[0].content&&
+                d.candidates[0].content.parts&&d.candidates[0].content.parts[0]&&
+                d.candidates[0].content.parts[0].text;
+        if(!txt){_showPdfError(isNuovoCane,'Nessuna risposta. Riprova.');return;}
+        parseAIResponse(txt, function(obj){
+          obj = validaECorreggiRisultato(obj);
+          if(isNuovoCane){
+            _nuovoCaneFotoData = obj;
+            mostraNuovoCaneReview(obj);
+          } else {
+            _fotoImportData = obj;
+            mostraReviewFoto(obj);
+          }
+        }, function(err){
+          _showPdfError(isNuovoCane, err.message);
+        });
+      })
+      .catch(function(e){
+        _showPdfError(isNuovoCane,'Errore di rete: '+e.message);
+      });
+    }
+    tryModel();
+  };
+  reader.readAsDataURL(file);
+}
+
+function _showPdfError(isNuovoCane, msg){
+  if(isNuovoCane){
+    g('new-foto-reading').style.display='none';
+    g('new-foto-error').style.display='';
+    var em=g('new-foto-error-msg'); if(em) em.textContent='Errore: '+msg;
+  } else {
+    g('foto-spinner').style.display='none';
+    g('foto-step2').style.display='none';
+    g('foto-step4').style.display='';
+    var em=g('foto-error-msg'); if(em) em.textContent='Errore: '+msg;
+  }
+}
+
 function onFotoSelected(input){
   var file=input.files[0];
   if(!file)return;
@@ -5134,6 +5313,121 @@ function mostraReviewHtml(obj){
   return html;
 }
 
+/* ── Confronto LOI: trova cani già nel DB con stesso LOI ── */
+function trovaCanePerLOI(loi){
+  if(!loi) return null;
+  var loiClean = loi.trim().toUpperCase();
+  return cani.find(function(c){
+    return c.numeroENCI && c.numeroENCI.trim().toUpperCase() === loiClean;
+  }) || null;
+}
+
+/* ── Propone aggiornamento titoli/HD per un cane esistente ── */
+function confrontaEProponaAggiornamento(caneEsistente, datiNuovi){
+  var updates = [];
+
+  // Controlla titoli
+  var titoliEsistenti = (caneEsistente.cacib_list||[]).length + (caneEsistente.cac_list||[]).length;
+  var titoliNuovi = (datiNuovi.titoli||[]).length;
+  if(titoliNuovi > 0 && titoliEsistenti === 0){
+    updates.push('titoli: '+datiNuovi.titoli.join(', '));
+  }
+
+  // Controlla HD/ED
+  if(datiNuovi.hd && (!caneEsistente.displasia || !caneEsistente.displasia.hd)){
+    updates.push('HD: '+datiNuovi.hd);
+  }
+
+  return updates;
+}
+
+/* ── Controlla antenati del pedigree importato vs DB locale ── */
+function controllaAggiornamenti(pedigreeFlat, titoli, hdMap){
+  var aggiornamenti = [];
+  for(var pos=2; pos<=15; pos++){
+    var anc = pedigreeFlat[pos];
+    if(!anc || !anc.loi) continue;
+    var caneDB = trovaCanePerLOI(anc.loi);
+    if(!caneDB) continue;
+
+    var tt = titoli[pos]||titoli[String(pos)]||[];
+    var hd = hdMap[pos]||hdMap[String(pos)]||'';
+    var titoliNuovi = Array.isArray(tt) ? tt : [];
+
+    // Titoli nuovi rispetto a quelli nel DB?
+    var titoliDB = caneDB.pedigreeFlat && caneDB.pedigreeFlat[pos] ?
+      (caneDB.pedigreeFlat[pos].titoli||[]) : [];
+    var titoliExtra = titoliNuovi.filter(function(t){ return titoliDB.indexOf(t)===-1; });
+
+    if(titoliExtra.length > 0 || (hd && (!caneDB.displasia||!caneDB.displasia.hd))){
+      aggiornamenti.push({
+        cane: caneDB,
+        pos: pos,
+        nome: anc.name,
+        loi: anc.loi,
+        titoliExtra: titoliExtra,
+        hdNuovo: hd && (!caneDB.displasia||!caneDB.displasia.hd) ? hd : null
+      });
+    }
+  }
+  return aggiornamenti;
+}
+
+/* ── Mostra dialog di aggiornamento ── */
+function mostraDialogAggiornamenti(aggiornamenti, onContinue){
+  if(aggiornamenti.length === 0){ onContinue(); return; }
+
+  var html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px" id="dialog-aggiornamenti">'
+    +'<div style="background:#fff;border-radius:16px;padding:22px;max-width:480px;width:100%;max-height:85vh;overflow-y:auto">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:17px;font-weight:700;color:#0D47A1;margin-bottom:6px">🔄 Aggiornamenti trovati</div>'
+    +'<div style="font-size:13px;color:#4A6080;margin-bottom:16px">Il pedigree importato contiene nuovi dati per cani già presenti nel tuo allevamento:</div>';
+
+  aggiornamenti.forEach(function(a){
+    html += '<div style="border:1.5px solid #DDEAFF;border-radius:10px;padding:12px;margin-bottom:10px">'
+      +'<div style="font-weight:700;font-size:14px;color:#1a1a3a">'+a.nome+'</div>'
+      +'<div style="font-size:11px;color:#6B8BB0;margin-bottom:8px">'+a.loi+'</div>';
+    if(a.titoliExtra.length){
+      html += '<div style="font-size:12px;color:#1565C0;margin-bottom:4px">🏆 Nuovi titoli: <strong>'+a.titoliExtra.join(', ')+'</strong></div>';
+    }
+    if(a.hdNuovo){
+      html += '<div style="font-size:12px;color:#1565C0">🦴 HD: <strong>'+a.hdNuovo+'</strong></div>';
+    }
+    html += '<div style="display:flex;gap:8px;margin-top:8px">'
+      +'<button class="btn btn-primary btn-sm" onclick="_applicaAggiornamento(\''+a.cane.id+'\',\''+a.pos+'\','+JSON.stringify(a.titoliExtra)+',\''+( a.hdNuovo||'')+'\',this)">✓ Aggiorna</button>'
+      +'<button class="btn btn-ghost btn-sm" onclick="this.closest(\'div[style*=border]\').style.opacity=\'0.4\'">Salta</button>'
+      +'</div></div>';
+  });
+
+  html += '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">'
+    +'<button class="btn btn-primary" onclick="document.getElementById(\'dialog-aggiornamenti\').remove();('+onContinue.toString()+')()">Continua importazione →</button>'
+    +'</div></div></div>';
+
+  var wrap = document.createElement('div');
+  wrap.innerHTML = html;
+  document.body.appendChild(wrap.firstChild);
+}
+
+function _applicaAggiornamento(caneId, pos, titoliExtra, hdNuovo, btn){
+  var c = cani.find(function(x){ return String(x.id)===String(caneId); });
+  if(!c) return;
+  pos = parseInt(pos);
+  if(!c.pedigreeFlat) c.pedigreeFlat = {};
+  if(!c.pedigreeFlat[pos]) c.pedigreeFlat[pos] = {};
+  // Aggiungi titoli
+  if(titoliExtra && titoliExtra.length){
+    var tt = c.pedigreeFlat[pos].titoli || [];
+    titoliExtra.forEach(function(t){ if(tt.indexOf(t)===-1) tt.push(t); });
+    c.pedigreeFlat[pos].titoli = tt;
+  }
+  // Aggiungi HD
+  if(hdNuovo && !c.pedigreeFlat[pos].hd) c.pedigreeFlat[pos].hd = hdNuovo;
+  salvaDB();
+  btn.textContent = '✅ Aggiornato';
+  btn.disabled = true;
+  btn.style.background = '#E0F7FA';
+  toast('✅ '+c.nome+' aggiornato!');
+}
+
 function applicaImportData(c, obj){
   if(obj.nome&&!c.nome)c.nome=obj.nome;
   if(obj.razza&&!c.razza)c.razza=obj.razza;
@@ -5168,7 +5462,17 @@ function applicaImportData(c, obj){
   if(count>14)c.pedGens=4;
   else if(count>6)c.pedGens=3;
   else if(count>2)c.pedGens=2;
-  salvaDB();
+
+  // Controlla se ci sono aggiornamenti per cani già nel DB
+  var aggiornamenti = controllaAggiornamenti(c.pedigreeFlat, titoli, hdMap);
+  if(aggiornamenti.length > 0){
+    // Salva prima, poi mostra dialog aggiornamenti
+    salvaDB();
+    mostraDialogAggiornamenti(aggiornamenti, function(){ renderSidebar(); });
+  } else {
+    salvaDB();
+  }
+
   return count;
 }
 
