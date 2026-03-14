@@ -2194,6 +2194,12 @@ function _migraCane(c){
       if(titoliPuliti.indexOf(mapped) === -1) titoliPuliti.push(mapped);
     });
     node.titoli = titoliPuliti;
+
+    // Se ha ancora 5+ titoli = Gemini ha inventato → azzera
+    if(node.titoli.length >= 5){
+      console.log('[Migrazione] Titoli inventati azzerati per pos', pos);
+      node.titoli = [];
+    }
   }
   return c;
 }
@@ -2418,22 +2424,43 @@ function validaECorreggiRisultato(obj){
     obj.microchip = obj.microchip.replace(/\s/g,'');
     if(!chipRegex.test(obj.microchip)) obj.microchip = '';
   }
-  // Correggi LOI degli antenati
+  // FIX CRITICO: se un nodo ha tutti e 7 i titoli → Gemini ha inventato, azzera
+  var ALL7 = ['IT_B','INT_B','E','F','D','O','P'];
   if(obj.pedigree){
     for(var pos=2; pos<=31; pos++){
       var anc = obj.pedigree[pos];
+      if(!anc) continue;
+      if(Array.isArray(anc.titoli) && anc.titoli.length >= 5){
+        // Troppi titoli — quasi certamente inventati
+        console.log('[Validazione] Titoli sospetti pos'+pos+':', anc.titoli, '→ azzero');
+        anc.titoli = [];
+        anc.hd = anc.hd || null;
+        anc.ed = anc.ed || null;
+      }
+      // Separa displasia dai titoli
+      if(Array.isArray(anc.titoli)){
+        var hdLetters = {R:'A',S:'B',T:'C',U:'D',V:'E'};
+        var edLetters = {W:'0',X:'I',Y:'II',Z:'III'};
+        var titoliPuliti = [];
+        anc.titoli.forEach(function(t){
+          if(hdLetters[t]){ if(!anc.hd) anc.hd = hdLetters[t]; }
+          else if(edLetters[t]){ if(!anc.ed) anc.ed = edLetters[t]; }
+          else titoliPuliti.push(t);
+        });
+        anc.titoli = titoliPuliti;
+      }
+    }
+  }
+    for(var pos=2; pos<=31; pos++){
+      var anc = obj.pedigree[pos];
       if(anc && anc.loi){
-        // Rimuovi spazi extra nei codici LOI
         anc.loi = anc.loi.replace(/\s+/g,' ').trim();
-        // Correggi 0→O all'inizio del prefisso
         anc.loi = anc.loi.replace(/^0SR/i,'RSR').replace(/^0OI/i,'ROI');
       }
-      // Nomi tutto maiuscolo → capitalizza
       if(anc && anc.name && anc.name === anc.name.toUpperCase() && anc.name.length > 1){
         anc.name = anc.name.charAt(0).toUpperCase() + anc.name.slice(1).toLowerCase();
       }
     }
-  }
   return obj;
 }
 
@@ -2472,7 +2499,10 @@ function callAIHybrid(b64, ocrText, onSuccess, onError){
     + 'pos24=Pastrano ROI 10/14840 (padre di Ulisse/12), pos25=Marsica RSR 04/69133 (madre di Ulisse/12)\n'
     + 'pos26=Cerbero RSR 05/129216 (padre di Morra/13), pos27=Marsica RSR 05/60669 (madre di Morra/13)\n'
     + 'pos28-31=null (genitori di Vittoria non registrati)\n\n'
-    + 'REGOLA CRITICA: i cani RSR senza dati genealogici hanno pos=null. NON inventare antenati.\n'
+    + 'REGOLA TITOLI (CRITICA):\n'
+    + 'Metti titoli SOLO se vedi ESPLICITAMENTE un asterisco (*) o una lettera nella tabella.\n'
+    + 'Se la riga di un antenato è vuota o non vedi simboli → titoli:[], hd:null, ed:null\n'
+    + 'NON mettere titoli per default. Un cane senza simboli = nessun titolo.\n\n'
     + 'Da "RSR 09/74871 ULISSE": name="ULISSE" loi="RSR 09/74871"\n\n'
     + ENCI_LEGENDA_PROMPT + '\n\n'
     + 'Rispondi SOLO con JSON compatto:\n'
