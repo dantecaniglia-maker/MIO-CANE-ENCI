@@ -2645,6 +2645,11 @@ function callAIVision(b64, mime, prompt, onSuccess, onError){
               onError(new Error('⚠️ API key non valida. Vai in Strumenti → 🤖 Configura AI e aggiorna la key Gemini.'));
               return;
             }
+            // Billing non attivato o key senza permessi
+            if(code===403){
+              onError(new Error('⚠️ Key senza permessi. Su aistudio.google.com verifica che la key sia attiva e il progetto abilitato.'));
+              return;
+            }
             // Quota/rate limit → prova modello successivo
             if(code===429||msg.indexOf('quota')!==-1||msg.indexOf('RESOURCE_EXHAUSTED')!==-1){
               if(mi<MODELS.length-1){mi++;setTimeout(tryGemini,2000);return;}
@@ -4934,30 +4939,31 @@ function testGeminiKey(){
   var btn = document.getElementById('btn-test-gemini');
   if(btn){ btn.textContent='⏳ Test in corso…'; btn.disabled=true; }
   
+  // Test con testo semplice (niente immagine) per verificare la key
   fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+key, {
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
-      contents:[{parts:[{text:'Rispondi solo con: OK'}]}],
-      generationConfig:{maxOutputTokens:10}
+      contents:[{parts:[{text:'Rispondi solo con la parola: FUNZIONA'}]}],
+      generationConfig:{maxOutputTokens:5}
     })
   }).then(function(r){return r.json();}).then(function(d){
     if(btn){ btn.textContent='🧪 Testa key'; btn.disabled=false; }
+    console.log('[Test Key] Risposta completa:', JSON.stringify(d));
     if(d.error){
       var code=d.error.code||0, msg=d.error.message||'';
-      if(code===400||code===403){
-        toast('❌ KEY NON VALIDA: '+msg.substring(0,60));
-      } else if(code===429){
-        toast('⚠️ Key valida ma quota esaurita. Attendi 1 min.');
-      } else {
-        toast('❌ Errore ('+code+'): '+msg.substring(0,60));
-      }
+      console.log('[Test Key] Errore completo:', code, msg);
+      toast('❌ Errore '+code+': '+msg.substring(0,80));
     } else {
-      toast('✅ KEY GEMINI FUNZIONANTE! Ora prova a leggere un pedigree.');
+      var txt = d.candidates&&d.candidates[0]&&d.candidates[0].content&&
+                d.candidates[0].content.parts&&d.candidates[0].content.parts[0]&&
+                d.candidates[0].content.parts[0].text;
+      toast('✅ KEY OK! Risposta: '+txt+' — Ora prova a leggere un pedigree');
     }
   }).catch(function(e){
     if(btn){ btn.textContent='🧪 Testa key'; btn.disabled=false; }
-    toast('❌ Errore di rete: '+e.message);
+    console.log('[Test Key] Errore fetch:', e);
+    toast('❌ Errore rete: '+e.message);
   });
 }
 
