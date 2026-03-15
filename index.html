@@ -2404,63 +2404,88 @@ var PEDIGREE_PROMPT_OCR = 'Sei un esperto di pedigree ENCI italiani.\n\n'
 /* ── Validazione post-AI con regex ENCI ── */
 function validaECorreggiRisultato(obj){
   if(!obj) return obj;
-  var loiRegex = /^(RSR|ROI|GI\d*L?|LR|LOI)\s*[\d\/\-]+$/i;
-  var dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  var chipRegex = /^\d{9,15}$/;
 
-  // Correggi LOI principale
-  if(obj.loi && !loiRegex.test(obj.loi.trim())){
-    console.log('[Validazione] LOI sospetto:', obj.loi);
-  }
   // Correggi data
-  if(obj.dataNascita && !dateRegex.test(obj.dataNascita)){
-    // Prova a convertire DD/MM/YYYY → YYYY-MM-DD
+  if(obj.dataNascita && !/^\d{4}-\d{2}-\d{2}$/.test(obj.dataNascita)){
     var m = obj.dataNascita.match(/(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})/);
     if(m) obj.dataNascita = m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
     else obj.dataNascita = '';
   }
   // Correggi microchip
-  if(obj.microchip && !chipRegex.test(obj.microchip.replace(/\s/g,''))){
+  if(obj.microchip){
     obj.microchip = obj.microchip.replace(/\s/g,'');
-    if(!chipRegex.test(obj.microchip)) obj.microchip = '';
+    if(!/^\d{9,15}$/.test(obj.microchip)) obj.microchip = '';
   }
-  // FIX CRITICO: se un nodo ha tutti e 7 i titoli → Gemini ha inventato, azzera
-  var ALL7 = ['IT_B','INT_B','E','F','D','O','P'];
-  if(obj.pedigree){
-    for(var pos=2; pos<=31; pos++){
-      var anc = obj.pedigree[pos];
-      if(!anc) continue;
-      if(Array.isArray(anc.titoli) && anc.titoli.length >= 5){
-        // Troppi titoli — quasi certamente inventati
-        console.log('[Validazione] Titoli sospetti pos'+pos+':', anc.titoli, '→ azzero');
-        anc.titoli = [];
-        anc.hd = anc.hd || null;
-        anc.ed = anc.ed || null;
+
+  // ── FIX PRINCIPALE: pulisci i titoli nel map root-level {pos: [titoli]}
+  // Gemini restituisce "titoli":{"2":["IT_B",...]} — è QUI che va la pulizia
+  var hdLetters = {R:'A',S:'B',T:'C',U:'D',V:'E'};
+  var edLetters = {W:'0',X:'I',Y:'II',Z:'III'};
+
+  if(!obj.titoli) obj.titoli = {};
+  if(!obj.hd) obj.hd = {};
+  if(!obj.ed) obj.ed = {};
+
+  for(var pos=2; pos<=31; pos++){
+    var tt = obj.titoli[pos] || obj.titoli[String(pos)] || [];
+    if(!Array.isArray(tt)) tt = [];
+
+    // Se ha 5+ titoli = Gemini ha inventato → azzera
+    if(tt.length >= 5){
+      console.log('[Fix titoli] pos'+pos+' ha '+tt.length+' titoli → azzero');
+      delete obj.titoli[pos];
+      delete obj.titoli[String(pos)];
+      continue;
+    }
+
+    // Separa displasia dai titoli
+    var titoliPuliti = [];
+    tt.forEach(function(t){
+      if(hdLetters[t]){
+        if(!obj.hd[pos] && !obj.hd[String(pos)]) obj.hd[pos] = hdLetters[t];
+      } else if(edLetters[t]){
+        if(!obj.ed[pos] && !obj.ed[String(pos)]) obj.ed[pos] = edLetters[t];
+      } else {
+        titoliPuliti.push(t);
       }
-      // Separa displasia dai titoli
-      if(Array.isArray(anc.titoli)){
-        var hdLetters = {R:'A',S:'B',T:'C',U:'D',V:'E'};
-        var edLetters = {W:'0',X:'I',Y:'II',Z:'III'};
-        var titoliPuliti = [];
-        anc.titoli.forEach(function(t){
-          if(hdLetters[t]){ if(!anc.hd) anc.hd = hdLetters[t]; }
-          else if(edLetters[t]){ if(!anc.ed) anc.ed = edLetters[t]; }
-          else titoliPuliti.push(t);
-        });
-        anc.titoli = titoliPuliti;
+    });
+
+    if(titoliPuliti.length > 0) obj.titoli[pos] = titoliPuliti;
+    else { delete obj.titoli[pos]; delete obj.titoli[String(pos)]; }
+  }
+
+  // ── Pulisci anche hd/ed nel map root-level
+  if(obj.hd){
+    for(var pos=2; pos<=31; pos++){
+      var hd = obj.hd[pos]||obj.hd[String(pos)];
+      // HD inventato? Gemini spesso mette "null" come stringa
+      if(hd === 'null' || hd === '' || hd === 'N/D') {
+        delete obj.hd[pos]; delete obj.hd[String(pos)];
       }
     }
   }
+
+  // ── Pulisci LOI e nomi nel pedigree
+  if(obj.pedigree){
     for(var pos=2; pos<=31; pos++){
-      var anc = obj.pedigree[pos];
-      if(anc && anc.loi){
+      var anc = obj.pedigree[pos] || obj.pedigree[String(pos)];
+      if(!anc) continue;
+      // LOI: rimuovi spazi extra e correggi prefissi
+      if(anc.loi){
         anc.loi = anc.loi.replace(/\s+/g,' ').trim();
         anc.loi = anc.loi.replace(/^0SR/i,'RSR').replace(/^0OI/i,'ROI');
       }
-      if(anc && anc.name && anc.name === anc.name.toUpperCase() && anc.name.length > 1){
+      // Nome tutto maiuscolo → Title Case
+      if(anc.name && anc.name === anc.name.toUpperCase() && anc.name.length > 1){
         anc.name = anc.name.charAt(0).toUpperCase() + anc.name.slice(1).toLowerCase();
       }
+      // Se titoli direttamente nel nodo (formato alternativo Gemini)
+      if(Array.isArray(anc.titoli) && anc.titoli.length >= 5){
+        anc.titoli = [];
+      }
     }
+  }
+
   return obj;
 }
 
@@ -2502,10 +2527,16 @@ function callAIHybrid(b64, ocrText, onSuccess, onError){
     + 'pos24=Pastrano ROI 10/14840 (padre di Ulisse/12), pos25=Marsica RSR 04/69133 (madre di Ulisse/12)\n'
     + 'pos26=Cerbero RSR 05/129216 (padre di Morra/13), pos27=Marsica RSR 05/60669 (madre di Morra/13)\n'
     + 'pos28-31=null (genitori di Vittoria non registrati)\n\n'
+    + 'REGOLA ANTENATI RSR (CRITICA):\n'
+    + 'Se un cane è RSR e nel documento non ha colonne padre/madre compilate → i suoi figli nel pedigree sono null.\n'
+    + 'ESEMPIO: Cesarina RSR 16/130079 non ha genitori nel documento → pos10=null, pos11=null\n'
+    + 'ESEMPIO: Vittoria RSR 17/190678 non ha genitori nel documento → pos14=null, pos15=null\n'
+    + 'NON mettere Cerbero/Marsica come genitori di Cesarina o Vittoria — non ci sono nel documento!\n\n'
     + 'REGOLA TITOLI (CRITICA):\n'
-    + 'Metti titoli SOLO se vedi ESPLICITAMENTE un asterisco (*) o una lettera nella tabella.\n'
-    + 'Se la riga di un antenato è vuota o non vedi simboli → titoli:[], hd:null, ed:null\n'
-    + 'NON mettere titoli per default. Un cane senza simboli = nessun titolo.\n\n'
+    + 'Metti titoli SOLO se vedi ESPLICITAMENTE * o lettera nella colonna di QUEL cane.\n'
+    + 'Se non vedi simboli → "titoli":[] per quella posizione. MAI mettere tutti i titoli.\n'
+    + 'ESEMPIO CORRETTO: Ramon pos6 ha * Bellezza+BDFSW → titoli:["IT_B","B","D","F"]\n'
+    + 'ESEMPIO CORRETTO: Romeo, Cesarina, Vittoria non hanno simboli → titoli non presenti nel JSON\n\n'
     + 'Da "RSR 09/74871 ULISSE": name="ULISSE" loi="RSR 09/74871"\n\n'
     + ENCI_LEGENDA_PROMPT + '\n\n'
     + 'Rispondi SOLO con JSON compatto:\n'
@@ -3076,11 +3107,13 @@ function setNuovoCaneMode(mode){
 
 function resetNuovoCaneFoto(){
   _nuovoCaneFotoData=null;
-  g('new-ped-foto-input').value='';
+  if(g('new-ped-foto-camera')) g('new-ped-foto-camera').value='';
+  if(g('new-ped-foto-gallery')) g('new-ped-foto-gallery').value='';
+  if(g('new-ped-pdf-input')) g('new-ped-pdf-input').value='';
   g('new-foto-dropzone').style.display='';
   g('new-foto-reading').style.display='none';
   g('new-foto-result').style.display='none';
-  g('new-foto-error').style.display='none';
+  if(g('new-foto-error')) g('new-foto-error').style.display='none';
 }
 
 function onNuovoCaneFoto(input){
@@ -5012,9 +5045,11 @@ function openFotoImport(){
 function resetFotoImport(){
   g('foto-step1').style.display='';
   g('foto-step2').style.display='none';
-  g('foto-step3').style.display='none';
-  g('foto-step4').style.display='none';
-  g('foto-input').value='';
+  if(g('foto-step3')) g('foto-step3').style.display='none';
+  if(g('foto-step4')) g('foto-step4').style.display='none';
+  if(g('foto-input-camera')) g('foto-input-camera').value='';
+  if(g('foto-input-gallery')) g('foto-input-gallery').value='';
+  if(g('foto-input-pdf')) g('foto-input-pdf').value='';
   _fotoImportData=null;
 }
 
@@ -5200,34 +5235,55 @@ function onPdfPedigreeSelected(input){
   reader.onload = function(e){
     var b64 = e.target.result.split(',')[1];
 
-    // Prompt specifico per PDF — molto più semplice dell'immagine
-    var pdfPrompt = 'Analizza questo certificato genealogico ENCI italiano.\n\n'
-      + 'STRUTTURA BINARIA (FONDAMENTALE):\n'
-      + 'pos2=PADRE, pos3=MADRE\n'
-      + 'pos4=padre del PADRE, pos5=madre del PADRE\n'
-      + 'pos6=padre della MADRE, pos7=madre della MADRE\n'
-      + 'pos8=padre di pos4, pos9=madre di pos4, pos10=padre di pos5, pos11=madre di pos5\n'
-      + 'pos12=padre di pos6, pos13=madre di pos6, pos14=padre di pos7, pos15=madre di pos7\n'
-      + 'pos16=padre di pos8, pos17=madre di pos8, pos18=padre di pos9, pos19=madre di pos9\n'
-      + 'pos20=padre di pos10 ... pos31=madre di pos15\n\n'
-      + 'ESEMPIO VERIFICATO — Squarcione RSR 25/69758:\n'
-      + 'Romeo(4)→Ulisse(8)+Morra(9) | Cesarina(5)→null(10)+null(11)\n'
-      + 'Ramon(6)→Ulisse(12)+Morra(13) | Vittoria(7)→null(14)+null(15)\n'
-      + 'Ulisse(8)→Pastrano(16)+Marsica04(17) | Morra(9)→Cerbero(18)+Marsica05(19)\n'
-      + 'Ulisse(12)→Pastrano(24)+Marsica04(25) | Morra(13)→Cerbero(26)+Marsica05(27)\n\n'
-      + 'REGOLA: cani RSR senza dati → pos=null. NON inventare.\n\n'
+    var pdfPrompt = 'Sei un esperto di pedigree ENCI. Leggi questo certificato genealogico ENCI italiano (PDF).\n\n'
+      + 'STRUTTURA BINARIA — ogni posizione corrisponde a un cane preciso:\n'
+      + 'pos2=PADRE del cane, pos3=MADRE del cane\n'
+      + 'pos4=padre di pos2, pos5=madre di pos2\n'
+      + 'pos6=padre di pos3, pos7=madre di pos3\n'
+      + 'pos8=padre di pos4, pos9=madre di pos4\n'
+      + 'pos10=padre di pos5, pos11=madre di pos5\n'
+      + 'pos12=padre di pos6, pos13=madre di pos6\n'
+      + 'pos14=padre di pos7, pos15=madre di pos7\n'
+      + 'pos16=padre di pos8, pos17=madre di pos8\n'
+      + 'pos18=padre di pos9, pos19=madre di pos9\n'
+      + 'pos20=padre di pos10, pos21=madre di pos10\n'
+      + 'pos22=padre di pos11, pos23=madre di pos11\n'
+      + 'pos24=padre di pos12, pos25=madre di pos12\n'
+      + 'pos26=padre di pos13, pos27=madre di pos13\n'
+      + 'pos28=padre di pos14, pos29=madre di pos14\n'
+      + 'pos30=padre di pos15, pos31=madre di pos15\n\n'
+      + 'REGOLE FONDAMENTALI:\n'
+      + '1. Se un cane nel documento non ha riga padre/madre compilata → i suoi figli sono null\n'
+      + '2. NON inventare antenati. Se non è scritto = null\n'
+      + '3. I codici LOI si trovano PRIMA del nome: "RSR 09/74871 ULISSE" → loi="RSR 09/74871", name="ULISSE"\n'
+      + '4. Prefissi validi: RSR, ROI, LR, GI, LOI\n\n'
+      + 'ESEMPIO VERIFICATO (pedigree Squarcione RSR 25/69758 - Maremmano):\n'
+      + 'pos2=Ovidio RSR 18/177932, pos3=Marsorumtransumanza RSR 18/39390\n'
+      + 'pos4=Romeo RSR 10/194453, pos5=Cesarina RSR 16/130079\n'
+      + 'pos6=Ramon ROI 17/150083, pos7=Vittoria RSR 17/190678\n'
+      + 'pos8=Ulisse RSR 09/74871, pos9=Morra RSR 09/15722\n'
+      + 'pos10=null, pos11=null (Cesarina non ha genitori nel doc)\n'
+      + 'pos12=Ulisse RSR 09/74871, pos13=Morra RSR 09/15722\n'
+      + 'pos14=null, pos15=null (Vittoria non ha genitori nel doc)\n'
+      + 'pos16=Pastrano ROI 10/14840, pos17=Marsica RSR 04/69133\n'
+      + 'pos18=Cerbero RSR 05/129216, pos19=Marsica RSR 05/60669\n'
+      + 'pos20-23=null, pos24=Pastrano ROI 10/14840, pos25=Marsica RSR 04/69133\n'
+      + 'pos26=Cerbero RSR 05/129216, pos27=Marsica RSR 05/60669, pos28-31=null\n\n'
       + ENCI_LEGENDA_PROMPT + '\n\n'
-      + 'Restituisci SOLO JSON:\n'
-      + '{"nome":"","loi":"","razza":"","sesso":"","dataNascita":"","microchip":"",'
-      + '"pedigree":{"2":{"name":"","loi":""},"3":{"name":"","loi":""},'
-      + '"4":{"name":"","loi":""},"5":{"name":"","loi":""},"6":{"name":"","loi":""},"7":{"name":"","loi":""},'
-      + '"8":{"name":"","loi":""},"9":{"name":"","loi":""},"10":{"name":"","loi":""},"11":{"name":"","loi":""},'
-      + '"12":{"name":"","loi":""},"13":{"name":"","loi":""},"14":{"name":"","loi":""},"15":{"name":"","loi":""},'
-      + '"16":{"name":"","loi":""},"17":{"name":"","loi":""},"18":{"name":"","loi":""},"19":{"name":"","loi":""},'
-      + '"20":{"name":"","loi":""},"21":{"name":"","loi":""},"22":{"name":"","loi":""},"23":{"name":"","loi":""},'
-      + '"24":{"name":"","loi":""},"25":{"name":"","loi":""},"26":{"name":"","loi":""},"27":{"name":"","loi":""},'
-      + '"28":{"name":"","loi":""},"29":{"name":"","loi":""},"30":{"name":"","loi":""},"31":{"name":"","loi":""}},'
+      + 'TITOLI: metti SOLO i titoli esplicitamente presenti (asterisco o lettera nella tabella destra).\n'
+      + 'Se non vedi simboli per un cane → non includere quella posizione in "titoli".\n\n'
+      + 'Rispondi SOLO con JSON valido, nessun testo prima o dopo:\n'
+      + '{"nome":"","loi":"","razza":"","sesso":"M o F","dataNascita":"YYYY-MM-DD","microchip":"",'
+      + '"pedigree":{"2":{"name":"","loi":""},"3":{"name":"","loi":""},"4":{"name":"","loi":""},"5":{"name":"","loi":""},'
+      + '"6":{"name":"","loi":""},"7":{"name":"","loi":""},"8":{"name":"","loi":""},"9":{"name":"","loi":""},'
+      + '"10":{"name":"","loi":""},"11":{"name":"","loi":""},"12":{"name":"","loi":""},"13":{"name":"","loi":""},'
+      + '"14":{"name":"","loi":""},"15":{"name":"","loi":""},"16":{"name":"","loi":""},"17":{"name":"","loi":""},'
+      + '"18":{"name":"","loi":""},"19":{"name":"","loi":""},"20":{"name":"","loi":""},"21":{"name":"","loi":""},'
+      + '"22":{"name":"","loi":""},"23":{"name":"","loi":""},"24":{"name":"","loi":""},"25":{"name":"","loi":""},'
+      + '"26":{"name":"","loi":""},"27":{"name":"","loi":""},"28":{"name":"","loi":""},"29":{"name":"","loi":""},'
+      + '"30":{"name":"","loi":""},"31":{"name":"","loi":""}},'
       + '"titoli":{},"hd":{},"ed":{}}';
+
 
     if(!hasAnyAIKey()){
       _showPdfError(isNuovoCane, 'Configura la chiave Gemini in Strumenti → 🤖 Configura AI');
@@ -5255,12 +5311,18 @@ function onPdfPedigreeSelected(input){
       .then(function(d){
         if(d.error){
           var code=d.error.code||0, msg=d.error.message||'';
+          console.log('[PDF Gemini] Errore:', code, msg);
+          if(code===400 && msg.indexOf('API key')!==-1){
+            _showPdfError(isNuovoCane,'⚠️ API key non valida. Vai in Strumenti → 🤖 Configura AI.');
+            return;
+          }
           if(code===429){
             if(mi<MODELS.length-1){mi++;setTimeout(tryModel,2000);return;}
             _showPdfError(isNuovoCane,'Quota Gemini esaurita. Attendi 1 minuto e riprova.');
             return;
           }
-          _showPdfError(isNuovoCane,'Errore Gemini ('+code+'): '+msg.substring(0,80));
+          if(mi<MODELS.length-1){mi++;setTimeout(tryModel,1000);return;}
+          _showPdfError(isNuovoCane,'Errore Gemini ('+code+'): '+msg.substring(0,100));
           return;
         }
         var txt=d.candidates&&d.candidates[0]&&d.candidates[0].content&&
