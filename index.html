@@ -3470,14 +3470,16 @@ function closeDetail(){
 function goHome(){ closeDetail(); }
 function deleteCurrent(){
   var c=cur();if(!c)return;
+  var id=c.id;
   if(c._guest){
-    guestCani=guestCani.filter(function(x){return x.id!==selectedId;});
+    guestCani=guestCani.filter(function(x){return String(x.id)!==String(id);});
+    selectedId=null;hide('detail');renderSidebar();
   } else {
     if(!confirm('Eliminare '+c.nome+'? Operazione irreversibile.'))return;
-    cani=cani.filter(function(x){return x.id!==selectedId;});
+    cani=cani.filter(function(x){return String(x.id)!==String(id);});
     salvaDB();
+    selectedId=null;hide('detail');renderSidebar();
   }
-  selectedId=null;hide('detail');renderSidebar();
 }
 function switchTab(t){
   ['info','salute','campionati','pedigree','riproduzione'].forEach(function(x){
@@ -3560,33 +3562,37 @@ function renderPedigree(){
       var hasData=!!(node.name||node.loi);
       var isFounder=!!node.isFounder;
       var hdVal=node.hd||'';
+      var edVal=node.ed||'';
+      // Titoli: prima guarda nel nodo, poi nel map root-level
       var titoli=node.titoli||[];
+      if(!titoli.length && c.pedigreeFlat && c.pedigreeFlat[pos] && c.pedigreeFlat[pos].titoli){
+        titoli = c.pedigreeFlat[pos].titoli||[];
+      }
       var cls='ped-node'+(isFounder?' is-founder':hasData?' has-data':'');
 
-      // Badge titoli per visualizzazione (nuovi codici ENCI)
+      // Badge titoli — solo quelli reali
       var titBadges='';
-      if(Array.isArray(titoli)){
+      if(Array.isArray(titoli) && titoli.length > 0 && titoli.length < 5){
         titoli.forEach(function(cod){titBadges+=enciTitoloBadge(cod);});
       }
-      var hdColor=hdVal==='A1'||hdVal==='A2'?'#1a7a4a':hdVal==='B'?'#5A8A00':hdVal==='C'||hdVal==='D'?'#E65100':hdVal==='E'?'#C62828':'#6B8BB0';
+      var hdColor=hdVal==='A'||hdVal==='A1'||hdVal==='A2'?'#1a7a4a':hdVal==='B'?'#5A8A00':hdVal==='C'||hdVal==='D'?'#E65100':hdVal==='E'?'#C62828':'#6B8BB0';
+      var edColor=edVal==='0'?'#1a7a4a':edVal==='I'?'#5A8A00':edVal==='II'?'#E65100':edVal==='III'?'#C62828':'#6B8BB0';
 
       if(guest){
-        // Sola lettura
         html+='<div class="'+cls+'">';
         html+='<div style="font-size:9px;color:#6B8BB0;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">'+getAncLabel(pos)+'</div>';
         html+='<div style="font-size:13px;font-weight:700;color:#1a1a3a;margin-bottom:2px">'+(node.name||'—')+'</div>';
         if(node.loi)html+='<div style="font-size:10px;color:#1565C0;margin-bottom:4px">'+node.loi+'</div>';
         if(isFounder)html+='<div style="font-size:10px;color:#00838F">🌿 RSR</div>';
         if(titBadges)html+='<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:2px">'+titBadges+'</div>';
-        if(hdVal)html+='<div style="margin-top:3px;font-size:11px;font-weight:700;color:'+hdColor+'">🦴 HD: '+hdVal+'</div>';
+        if(hdVal)html+='<div style="margin-top:3px;font-size:11px;font-weight:700;color:'+hdColor+'">🦴 Anca: '+hdVal+'</div>';
+        if(edVal)html+='<div style="margin-top:2px;font-size:11px;font-weight:700;color:'+edColor+'">🦴 Gomito: '+edVal+'</div>';
         html+='</div>';
       } else {
-        // Editing con sezioni espandibili
         var nodeId='ped-'+pos;
         html+='<div class="'+cls+'" id="'+nodeId+'">';
         html+='<div style="font-size:9px;color:#6B8BB0;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">'+getAncLabel(pos)+'</div>';
 
-        // Nome + LOI — con autocomplete da antenati già noti
         var allNames=getAllPedNames();
         var dlId='ped-dl-'+pos;
         var dlHtml='<datalist id="'+dlId+'">';
@@ -3596,29 +3602,33 @@ function renderPedigree(){
         html+='<input type="text" list="'+dlId+'" placeholder="Nome antenato" value="'+(node.name||'')+'" oninput="savePed('+pos+',\'name\',this.value)" onchange="autofillPedNode('+pos+',this.value)" style="margin-bottom:4px;font-size:12px;padding:6px 8px;font-weight:600"/>';
         html+='<input type="text" placeholder="LOI / RSR n°" value="'+(node.loi||'')+'" oninput="savePed('+pos+',\'loi\',this.value)" id="ped-loi-'+pos+'" style="margin-bottom:6px;font-size:11px;padding:5px 8px;color:#1565C0"/>';
 
-        // Displasia HD
-        html+='<div style="margin-bottom:6px">';
-        html+='<div style="font-size:9px;color:#6B8BB0;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">🦴 Displasia HD</div>';
-        html+='<select onchange="savePed('+pos+',\'hd\',this.value)" style="font-size:12px;padding:5px 7px;border-radius:7px;border:1.5px solid '+(hdVal?hdColor:'#DDEAFF')+';background:#fff;color:'+(hdVal?hdColor:'#6B8BB0')+';font-weight:'+(hdVal?'700':'400')+'">';
-        ['','A1','A2','B','C','D','E'].forEach(function(v){html+='<option value="'+v+'"'+(hdVal===v?' selected':'')+'>'+( v||'— HD n.d. —')+'</option>';});
-        html+='</select>';
+        // Displasia ANCA
+        html+='<div style="display:flex;gap:6px;margin-bottom:6px">';
+        html+='<div style="flex:1"><div style="font-size:9px;color:#6B8BB0;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">🦴 Anca (HD)</div>';
+        html+='<select onchange="savePed('+pos+',\'hd\',this.value)" style="width:100%;font-size:12px;padding:5px 7px;border-radius:7px;border:1.5px solid '+(hdVal?hdColor:'#DDEAFF')+';background:#fff;color:'+(hdVal?hdColor:'#6B8BB0')+';font-weight:'+(hdVal?'700':'400')+'">';
+        ['','A','B','C','D','E'].forEach(function(v){html+='<option value="'+v+'"'+(hdVal===v?' selected':'')+'>'+( v||'— n.d. —')+'</option>';});
+        html+='</select></div>';
+
+        // Displasia GOMITO
+        html+='<div style="flex:1"><div style="font-size:9px;color:#6B8BB0;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">🦴 Gomito (ED)</div>';
+        html+='<select onchange="savePed('+pos+',\'ed\',this.value)" style="width:100%;font-size:12px;padding:5px 7px;border-radius:7px;border:1.5px solid '+(edVal?edColor:'#DDEAFF')+';background:#fff;color:'+(edVal?edColor:'#6B8BB0')+';font-weight:'+(edVal?'700':'400')+'">';
+        ['','0','I','II','III'].forEach(function(v){html+='<option value="'+v+'"'+(edVal===v?' selected':'')+'>'+( v||'— n.d. —')+'</option>';});
+        html+='</select></div>';
         html+='</div>';
 
-        // Titoli (checkbox multi) — codici ENCI ufficiali
+        // Titoli
         html+='<div style="margin-bottom:6px">';
         html+='<div style="font-size:9px;color:#6B8BB0;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">🏆 Titoli</div>';
         html+='<div style="display:flex;flex-wrap:wrap;gap:4px">';
-        [['IT_B','🇮🇹 C.IT'],['INT_B','🌍 C.I.B'],['E','🇪🇺 C.EU'],['F','🌐 C.WD'],['D','🏅 Ripr.'],['O','☑ Sel.1'],['P','☑ Sel.2']].forEach(function(t){
-          var checked=titoli.indexOf(t[0])>-1;
+        [['IT_B','🇮🇹 C.IT'],['INT_B','🌍 C.I.B'],['E','🇪🇺 C.EU'],['F','🌐 C.WD'],['D','🏅 Ripr.'],['B','🏅 Soc.'],['O','☑ Sel.1'],['P','☑ Sel.2']].forEach(function(t){
+          var checked=Array.isArray(titoli)&&titoli.indexOf(t[0])>-1;
           html+='<label style="display:flex;align-items:center;gap:3px;font-size:10px;cursor:pointer;background:'+(checked?'#F0FFF6':'#F4F7FE')+';border:1.5px solid '+(checked?'#A8D8B8':'#DDEAFF')+';border-radius:6px;padding:3px 7px;font-weight:600;color:'+(checked?'#1a7a4a':'#6B8BB0')+';">'
             +'<input type="checkbox"'+(checked?' checked':'')+' onchange="savePedTitolo('+pos+',\''+t[0]+'\',this.checked)" style="width:11px;height:11px"/> '+t[1]+'</label>';
         });
         html+='</div></div>';
 
-        // Fondatore RSR
         html+='<label style="display:flex;align-items:center;gap:5px;font-size:10px;color:'+(isFounder?'#00838F':'#6B8BB0')+';cursor:pointer;font-weight:600;background:'+(isFounder?'#E0F7FA':'transparent')+';border-radius:6px;padding:3px 0">';
         html+='<input type="checkbox"'+(isFounder?' checked':'')+' onchange="savePed('+pos+',\'isFounder\',this.checked)" style="width:11px;height:11px"/> 🌿 Fondatore RSR / non registrato</label>';
-
         html+='</div>';
       }
     }
@@ -5270,8 +5280,13 @@ function onPdfPedigreeSelected(input){
       + 'pos20-23=null, pos24=Pastrano ROI 10/14840, pos25=Marsica RSR 04/69133\n'
       + 'pos26=Cerbero RSR 05/129216, pos27=Marsica RSR 05/60669, pos28-31=null\n\n'
       + ENCI_LEGENDA_PROMPT + '\n\n'
-      + 'TITOLI: metti SOLO i titoli esplicitamente presenti (asterisco o lettera nella tabella destra).\n'
-      + 'Se non vedi simboli per un cane → non includere quella posizione in "titoli".\n\n'
+      + 'ESEMPIO TITOLI VERIFICATO dal pedigree Squarcione:\n'
+      + 'Ramon ROI 17/150083: * Bellezza Italiani + lettere B,D,F,S,W\n'
+      + '→ "titoli":{"6":["IT_B","B","D","F"]}, "hd":{"6":"B"}, "ed":{"6":"0"}\n'
+      + '  (IT_B=CampItalBellezza, B=CampSociale, D=CampRiproduttore, F=CampMonBellezza, S=AncaGradoB→hd, W=GomitoGrado0→ed)\n'
+      + 'Pastrano ROI 10/14840: * Bellezza Italiani + * Bellezza Internaz + lettera D\n'
+      + '→ "titoli":{"16":["IT_B","INT_B","D"]}\n'
+      + '  (IT_B=CampItalBellezza, INT_B=CIB, D=CampRiproduttore)\n\n'
       + 'Rispondi SOLO con JSON valido, nessun testo prima o dopo:\n'
       + '{"nome":"","loi":"","razza":"","sesso":"M o F","dataNascita":"YYYY-MM-DD","microchip":"",'
       + '"pedigree":{"2":{"name":"","loi":""},"3":{"name":"","loi":""},"4":{"name":"","loi":""},"5":{"name":"","loi":""},'
