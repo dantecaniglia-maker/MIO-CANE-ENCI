@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '6.3';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '6.4';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1462,14 +1462,14 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
   </div>
 </div>
 <div id="modal-cucciolo" class="overlay hidden">
-  <div class="modal" style="max-width:480px">
+  <div class="modal" style="max-width:520px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
       <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D47A1">🐾 Dati Cucciolo</div>
       <button class="btn btn-ghost btn-sm" onclick="hide('modal-cucciolo');_editCuccId=null;_editPuppyId=null;">✕</button>
     </div>
     <input type="hidden" id="cucc-modal-cuccId"/>
     <input type="hidden" id="cucc-modal-puppyId"/>
-    <div class="form-grid" style="margin-bottom:12px">
+    <div class="form-grid" style="margin-bottom:14px">
       <div><label>Nome</label><input type="text" id="cucc-puppy-nome" placeholder="Es. Argo"/></div>
       <div><label>Sesso</label>
         <select id="cucc-puppy-sesso">
@@ -1486,16 +1486,13 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
           <option value="venduto">🔴 Venduto</option>
         </select>
       </div>
+      <div><label>Prezzo vendita (€)</label><input type="number" id="cucc-puppy-prezzo" min="0" placeholder="1500"/></div>
     </div>
-    <div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">👤 Acquirente</div>
-    <div class="form-grid" style="margin-bottom:12px">
-      <div><label>Nome Acquirente</label><input type="text" id="cucc-puppy-acq-nome" placeholder="Mario Rossi"/></div>
-      <div><label>Telefono</label><input type="text" id="cucc-puppy-acq-tel" placeholder="333-1234567"/></div>
-      <div><label>Email</label><input type="text" id="cucc-puppy-acq-email" placeholder="mario@email.it"/></div>
-      <div><label>Acconto (€)</label><input type="number" id="cucc-puppy-acq-acconto" min="0" placeholder="200"/></div>
-      <div><label>Data Acconto</label><input type="date" id="cucc-puppy-acq-dataAcconto"/></div>
-      <div><label>Note Acquirente</label><input type="text" id="cucc-puppy-acq-note" placeholder="Es. vuole femmina bianca"/></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.08em">👤 Contatti / Acquirenti</div>
+      <button type="button" onclick="addAcquirenteRow()" style="background:#1565C0;color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">+ Aggiungi</button>
     </div>
+    <div id="cucc-acquirenti-list" style="margin-bottom:14px;max-height:320px;overflow-y:auto"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-ghost btn-sm" onclick="hide('modal-cucciolo');_editCuccId=null;_editPuppyId=null;">Annulla</button>
       <button class="btn btn-primary btn-sm" onclick="saveCucciolo()">✓ Salva</button>
@@ -6078,7 +6075,7 @@ function addTemperatura(){
 }
 
 /* ── CUCCIOLI INDIVIDUALI ── */
-var _editCuccId=null, _editPuppyId=null;
+var _editCuccId=null, _editPuppyId=null, _acquirenti=[];
 
 function toggleCuccioli(cuccId){
   var sec = g('cuccioli-section-'+cuccId);
@@ -6117,27 +6114,42 @@ function showCuccioliModal(cuccId){
     var statoColor={disponibile:'#1a7a4a',prenotato:'#E65100',venduto:'#C0534A'};
     var statoLabel={disponibile:'🟢 Disponibile',prenotato:'🟡 Prenotato',venduto:'🔴 Venduto'};
     cuccioli.forEach(function(p){
-      var acq=p.acquirente||{};
-      var stato=acq.stato||'disponibile';
+      var stato=p.stato||(p.acquirente&&p.acquirente.stato)||'disponibile';
       var ultimoPeso=p.pesi&&p.pesi.length?p.pesi[p.pesi.length-1]:null;
+      var acquirenti=p.acquirenti||(p.acquirente&&p.acquirente.nome?[p.acquirente]:[]);
+      var totAcconti=acquirenti.reduce(function(s,a){return s+(a.acconto||0);},0);
       html+='<div style="background:#F8FAFF;border:1.5px solid #DDEAFF;border-radius:10px;padding:10px 12px;margin-bottom:8px">';
+      // Riga principale
       html+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">';
       html+='<div style="display:flex;align-items:center;gap:8px">';
       html+='<span style="font-size:20px;background:#EEF3FB;border-radius:8px;padding:4px 7px">'+(p.sesso==='M'?'♂':'♀')+'</span>';
-      html+='<div><div style="font-weight:700;font-size:13px">'+(p.nome||'Senza nome')+(p.colore?' <span style="font-size:11px;color:#6B8BB0">'+p.colore+'</span>':'')+'</div>';
-      if(ultimoPeso) html+='<div style="font-size:11px;color:#1565C0">⚖ '+ultimoPeso.grammi+'g · '+ultimoPeso.data+'</div>';
+      html+='<div>';
+      html+='<div style="font-weight:700;font-size:13px">'+(p.nome||'Senza nome')+(p.colore?' <span style="font-size:11px;color:#6B8BB0">'+p.colore+'</span>':'')+'</div>';
+      var infoLine='';
+      if(p.prezzo) infoLine+='<span style="color:#1565C0;font-weight:700">💶 €'+p.prezzo+'</span>';
+      if(totAcconti) infoLine+=(infoLine?' · ':'')+'<span style="color:#1a7a4a">Acconto: €'+totAcconti+'</span>';
+      if(ultimoPeso) infoLine+=(infoLine?' · ':'')+'<span style="color:#6B8BB0">⚖ '+ultimoPeso.grammi+'g</span>';
+      if(infoLine) html+='<div style="font-size:11px;margin-top:2px">'+infoLine+'</div>';
       html+='</div></div>';
       html+='<div style="display:flex;gap:5px;align-items:center">';
       html+='<span style="font-size:11px;font-weight:700;color:'+(statoColor[stato]||'#6B8BB0')+'">'+(statoLabel[stato]||stato)+'</span>';
       html+='<button onclick="hide(\'modal-cuccioli-list\');openCuccioloDetail('+cuccId+','+p.id+')" style="background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1565C0">✏</button>';
       html+='<button onclick="hide(\'modal-cuccioli-list\');openAggiuntaPeso('+cuccId+','+p.id+')" style="background:#F0FFF6;border:1.5px solid #A8D8B8;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1a7a4a">⚖</button>';
-      html+='<button onclick="deleteCucciolo('+cuccId+','+p.id+');showCuccioliModal('+cuccId+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:13px">🗑</button>';
+      html+='<button onclick="deleteCucciolo('+cuccId+','+p.id+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:13px">🗑</button>';
       html+='</div></div>';
-      if(acq.nome){
-        html+='<div style="margin-top:6px;padding:6px 9px;background:#fff;border-radius:7px;border:1px solid #EEF3FB;font-size:12px;color:#4A6080">';
-        html+='👤 <strong>'+acq.nome+'</strong>';
-        if(acq.tel) html+=' · 📞 '+acq.tel;
-        if(acq.acconto) html+=' · <span style="color:#1a7a4a;font-weight:700">💶 €'+acq.acconto+'</span>';
+      // Contatti acquirenti
+      if(acquirenti.length){
+        html+='<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">';
+        acquirenti.forEach(function(a){
+          if(!a.nome&&!a.acconto) return;
+          html+='<div style="padding:5px 9px;background:#fff;border-radius:7px;border:1px solid #EEF3FB;font-size:12px;color:#4A6080">';
+          html+='👤 <strong>'+(a.nome||'N.D.')+'</strong>';
+          if(a.tel) html+=' · 📞 '+a.tel;
+          if(a.email) html+=' · ✉ '+a.email;
+          if(a.acconto) html+=' · <span style="color:#1a7a4a;font-weight:700">💶 acconto €'+a.acconto+(a.dataAcconto?' ('+a.dataAcconto+')':'')+'</span>';
+          if(a.note) html+='<div style="color:#6B8BB0;font-size:11px;margin-top:1px">📝 '+a.note+'</div>';
+          html+='</div>';
+        });
         html+='</div>';
       }
       html+='</div>';
@@ -6148,6 +6160,42 @@ function showCuccioliModal(cuccId){
   show('modal-cuccioli-list');
 }
 
+function renderAcquirentiRows(){
+  var list=g('cucc-acquirenti-list');
+  if(!list) return;
+  if(!_acquirenti.length){
+    list.innerHTML='<div style="text-align:center;padding:10px;color:#6B8BB0;font-size:12px">Nessun contatto — clicca + Aggiungi</div>';
+    return;
+  }
+  var html='';
+  _acquirenti.forEach(function(a,i){
+    html+='<div style="background:#F8FAFF;border:1.5px solid #DDEAFF;border-radius:10px;padding:10px 12px;margin-bottom:8px">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+    html+='<span style="font-weight:700;font-size:12px;color:#1565C0">👤 Contatto #'+(i+1)+'</span>';
+    html+='<button onclick="removeAcquirenteRow('+i+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:13px">🗑</button>';
+    html+='</div>';
+    html+='<div class="form-grid">';
+    html+='<div><label>Nome</label><input type="text" id="acq-nome-'+i+'" placeholder="Mario Rossi" value="'+(a.nome||'').replace(/"/g,'&quot;')+'"/></div>';
+    html+='<div><label>Telefono</label><input type="text" id="acq-tel-'+i+'" placeholder="333-1234567" value="'+(a.tel||'')+'"/></div>';
+    html+='<div><label>Email</label><input type="text" id="acq-email-'+i+'" placeholder="mario@email.it" value="'+(a.email||'')+'"/></div>';
+    html+='<div><label>Acconto versato (€)</label><input type="number" id="acq-acconto-'+i+'" min="0" placeholder="200" value="'+(a.acconto||'')+'"/></div>';
+    html+='<div><label>Data Acconto</label><input type="date" id="acq-data-'+i+'" value="'+(a.dataAcconto||'')+'"/></div>';
+    html+='<div><label>Note</label><input type="text" id="acq-note-'+i+'" placeholder="Es. preferisce femmina" value="'+(a.note||'').replace(/"/g,'&quot;')+'"/></div>';
+    html+='</div></div>';
+  });
+  list.innerHTML=html;
+}
+
+function addAcquirenteRow(){
+  _acquirenti.push({nome:'',tel:'',email:'',acconto:0,dataAcconto:'',note:''});
+  renderAcquirentiRows();
+}
+
+function removeAcquirenteRow(i){
+  _acquirenti.splice(i,1);
+  renderAcquirentiRows();
+}
+
 function openAddCucciolo(cuccId){
   _editCuccId=cuccId; _editPuppyId=null;
   g('cucc-modal-cuccId').value=cuccId;
@@ -6156,12 +6204,9 @@ function openAddCucciolo(cuccId){
   g('cucc-puppy-sesso').value='M';
   g('cucc-puppy-colore').value='';
   g('cucc-puppy-stato').value='disponibile';
-  g('cucc-puppy-acq-nome').value='';
-  g('cucc-puppy-acq-tel').value='';
-  g('cucc-puppy-acq-email').value='';
-  g('cucc-puppy-acq-acconto').value='';
-  g('cucc-puppy-acq-dataAcconto').value='';
-  g('cucc-puppy-acq-note').value='';
+  g('cucc-puppy-prezzo').value='';
+  _acquirenti=[];
+  renderAcquirentiRows();
   show('modal-cucciolo');
 }
 
@@ -6176,14 +6221,18 @@ function openCuccioloDetail(cuccId, puppyId){
   g('cucc-puppy-nome').value=p.nome||'';
   g('cucc-puppy-sesso').value=p.sesso||'M';
   g('cucc-puppy-colore').value=p.colore||'';
-  var acq=p.acquirente||{};
-  g('cucc-puppy-stato').value=acq.stato||'disponibile';
-  g('cucc-puppy-acq-nome').value=acq.nome||'';
-  g('cucc-puppy-acq-tel').value=acq.tel||'';
-  g('cucc-puppy-acq-email').value=acq.email||'';
-  g('cucc-puppy-acq-acconto').value=acq.acconto||'';
-  g('cucc-puppy-acq-dataAcconto').value=acq.dataAcconto||'';
-  g('cucc-puppy-acq-note').value=acq.note||'';
+  g('cucc-puppy-prezzo').value=p.prezzo||'';
+  var stato=p.stato||(p.acquirente&&p.acquirente.stato)||'disponibile';
+  g('cucc-puppy-stato').value=stato;
+  // Backward compat: converti vecchio acquirente singolo → array
+  if(p.acquirenti&&p.acquirenti.length){
+    _acquirenti=p.acquirenti.slice();
+  } else if(p.acquirente&&(p.acquirente.nome||p.acquirente.acconto)){
+    _acquirenti=[Object.assign({},p.acquirente)];
+  } else {
+    _acquirenti=[];
+  }
+  renderAcquirentiRows();
   show('modal-cucciolo');
 }
 
@@ -6193,23 +6242,29 @@ function saveCucciolo(){
   var cu=cucciolate.find(function(c){return c.id===cuccId;});
   if(!cu) return;
   cu.cuccioli=cu.cuccioli||[];
-  var acq={
-    stato:g('cucc-puppy-stato').value,
-    nome:g('cucc-puppy-acq-nome').value.trim(),
-    tel:g('cucc-puppy-acq-tel').value.trim(),
-    email:g('cucc-puppy-acq-email').value.trim(),
-    acconto:parseFloat(g('cucc-puppy-acq-acconto').value)||0,
-    dataAcconto:g('cucc-puppy-acq-dataAcconto').value,
-    note:g('cucc-puppy-acq-note').value.trim()
-  };
-  if(!acq.nome && !acq.acconto) acq=null;
+  // Leggi contatti dal DOM
+  var acquirenti=_acquirenti.map(function(_,i){
+    return {
+      nome:g('acq-nome-'+i)?g('acq-nome-'+i).value.trim():'',
+      tel:g('acq-tel-'+i)?g('acq-tel-'+i).value.trim():'',
+      email:g('acq-email-'+i)?g('acq-email-'+i).value.trim():'',
+      acconto:parseFloat(g('acq-acconto-'+i)&&g('acq-acconto-'+i).value)||0,
+      dataAcconto:g('acq-data-'+i)?g('acq-data-'+i).value:'',
+      note:g('acq-note-'+i)?g('acq-note-'+i).value.trim():''
+    };
+  }).filter(function(a){return a.nome||a.acconto;});
+  var stato=g('cucc-puppy-stato').value;
+  var prezzo=parseFloat(g('cucc-puppy-prezzo').value)||0;
   if(puppyId){
     var p=cu.cuccioli.find(function(x){return x.id===puppyId;});
     if(p){
       p.nome=g('cucc-puppy-nome').value.trim();
       p.sesso=g('cucc-puppy-sesso').value;
       p.colore=g('cucc-puppy-colore').value.trim();
-      p.acquirente=acq||{stato:g('cucc-puppy-stato').value};
+      p.stato=stato;
+      p.prezzo=prezzo;
+      p.acquirenti=acquirenti;
+      p.acquirente={stato:stato}; // legacy compat
     }
   } else {
     cu.cuccioli.push({
@@ -6217,18 +6272,17 @@ function saveCucciolo(){
       nome:g('cucc-puppy-nome').value.trim(),
       sesso:g('cucc-puppy-sesso').value,
       colore:g('cucc-puppy-colore').value.trim(),
-      acquirente:acq||{stato:'disponibile'},
+      stato:stato,
+      prezzo:prezzo,
+      acquirenti:acquirenti,
+      acquirente:{stato:stato},
       pesi:[]
     });
   }
   hide('modal-cucciolo');
   _editCuccId=null; _editPuppyId=null;
   renderCucciolate(); salvaDB();
-  // Riapri la sezione cuccioli
-  setTimeout(function(){
-    var sec=g('cuccioli-section-'+cuccId);
-    if(sec) sec.style.display='';
-  },50);
+  setTimeout(function(){ showCuccioliModal(cuccId); },50);
 }
 
 function deleteCucciolo(cuccId, puppyId){
@@ -6236,7 +6290,7 @@ function deleteCucciolo(cuccId, puppyId){
   if(!cu||!confirm('Eliminare questo cucciolo?')) return;
   cu.cuccioli=(cu.cuccioli||[]).filter(function(x){return x.id!==puppyId;});
   renderCucciolate(); salvaDB();
-  setTimeout(function(){ var sec=g('cuccioli-section-'+cuccId); if(sec) sec.style.display=''; },50);
+  setTimeout(function(){ showCuccioliModal(cuccId); },50);
 }
 
 function openAggiuntaPeso(cuccId, puppyId){
@@ -6321,6 +6375,9 @@ getReminders=function(c){
   window.deleteCucciolo = deleteCucciolo;
   window.openAggiuntaPeso = openAggiuntaPeso;
   window.salvaPeso = salvaPeso;
+  window.renderAcquirentiRows = renderAcquirentiRows;
+  window.addAcquirenteRow = addAcquirenteRow;
+  window.removeAcquirenteRow = removeAcquirenteRow;
 })();
 
 /* ── Proprietario del Cane (scheda Info) ── */
