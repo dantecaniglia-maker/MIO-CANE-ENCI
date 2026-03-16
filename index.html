@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '6.9';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '7.0';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -6492,10 +6492,32 @@ function aggiornaStatoCucciolo(cuccId, puppyId, stato){
     p.caneId=null;
     renderSidebar();
   }
-  if(stato==='mio_cane'&&!p.caneId){
-    _creaSchedaCanePerCucciolo(cu, p);
-    renderSidebar();
-    toast('✅ '+p.nome+' aggiunto ai tuoi cani!');
+  if(stato==='mio_cane'){
+    if(!p.caneId){
+      // Cane non esiste ancora: crealo con pedigree completo
+      _creaSchedaCanePerCucciolo(cu, p);
+      renderSidebar();
+      toast('✅ '+p.nome+' aggiunto ai tuoi cani!');
+    } else {
+      // Cane già esiste (es. da vecchia versione): aggiorna pedigreeFlat se vuoto
+      var caneEsistente = cani.find(function(c){return String(c.id)===String(p.caneId);});
+      if(caneEsistente){
+        var nVoci = caneEsistente.pedigreeFlat ? Object.keys(caneEsistente.pedigreeFlat).length : 0;
+        if(nVoci === 0){
+          _computaPedigreePerCucciolo(cu, p);
+          caneEsistente.pedigreeFlat = p.pedigreeFlat || {};
+          var nPed = Object.keys(caneEsistente.pedigreeFlat).length;
+          caneEsistente.pedGens = nPed>=14?4:nPed>=6?3:nPed>=2?2:1;
+        }
+        renderSidebar();
+      } else {
+        // caneId punta a un record non più in cani[]: ricrealo
+        p.caneId = null;
+        _creaSchedaCanePerCucciolo(cu, p);
+        renderSidebar();
+        toast('✅ '+p.nome+' aggiunto ai tuoi cani!');
+      }
+    }
   }
   salvaDB();
   setTimeout(function(){ showCuccioliModal(cuccId); },50);
@@ -6504,13 +6526,16 @@ function aggiornaStatoCucciolo(cuccId, puppyId, stato){
 // Computa il pedigree e lo salva nel cucciolo p (NON crea scheda cane)
 function _computaPedigreePerCucciolo(cu, p){
   var tutti = cani.concat(guestCani);
-  var padreObj = tutti.find(function(c){return String(c.id)===String(cu.padre);});
-  var madreObj = tutti.find(function(c){return String(c.id)===String(cu.madre);});
+  // Cerca padre per ID (String comparison robusta) con fallback per nome
+  var padreObj = tutti.find(function(c){return cu.padre && String(c.id)===String(cu.padre);});
+  if(!padreObj && cu.padre) padreObj = tutti.find(function(c){return c.nome && String(cu.padre)===c.nome;});
+  var madreObj = tutti.find(function(c){return cu.madre && String(c.id)===String(cu.madre);});
+  if(!madreObj && cu.madre) madreObj = tutti.find(function(c){return c.nome && String(cu.madre)===c.nome;});
   p._razza = (padreObj&&padreObj.razza)||(madreObj&&madreObj.razza)||'';
   var pedFlat = {};
   var pF = (padreObj&&(padreObj.pedigreeFlat||{}))||{};
   var mF = (madreObj&&(madreObj.pedigreeFlat||{}))||{};
-  function node(dog){ return dog?{name:dog.nome,loi:dog.numeroENCI||'',isFounder:false,hd:'',ed:'',titoli:[]}:null; }
+  function node(dog){ return dog?{name:dog.nome,loi:dog.numeroENCI||'',isFounder:false,hd:(dog.displasia&&dog.displasia.hd)||'',ed:'',titoli:[]}:null; }
   function cp(pos, src, k){ var n=src['pos'+k]||src[String(k)]; if(n&&n.name) pedFlat['pos'+pos]=n; }
   if(padreObj) pedFlat['pos2'] = node(padreObj);
   if(madreObj) pedFlat['pos3'] = node(madreObj);
@@ -6725,11 +6750,22 @@ function saveCucciolo(){
         p.caneId=null;
         renderSidebar();
       }
-      // Se mio_cane → crea cane se non esiste
-      if(stato==='mio_cane' && !p.caneId){
-        _creaSchedaCanePerCucciolo(cu, p);
-        renderSidebar();
-        toast('✅ '+p.nome+' aggiunto ai tuoi cani!');
+      // Se mio_cane → crea cane o aggiorna pedigree esistente
+      if(stato==='mio_cane'){
+        if(!p.caneId){
+          _creaSchedaCanePerCucciolo(cu, p);
+          renderSidebar();
+          toast('✅ '+p.nome+' aggiunto ai tuoi cani!');
+        } else {
+          var ce=cani.find(function(c){return String(c.id)===String(p.caneId);});
+          if(ce && (!ce.pedigreeFlat||Object.keys(ce.pedigreeFlat).length===0)){
+            _computaPedigreePerCucciolo(cu, p);
+            ce.pedigreeFlat=p.pedigreeFlat||{};
+            var nP=Object.keys(ce.pedigreeFlat).length;
+            ce.pedGens=nP>=14?4:nP>=6?3:nP>=2?2:1;
+          }
+          renderSidebar();
+        }
       }
     }
   } else {
@@ -8206,12 +8242,17 @@ function mostraCuccioliPanel(btn){
 <script>
 /* ── Navigazione: intercetta freccia Indietro browser/telefono ── */
 (function(){
-  history.replaceState({nav:0}, '');
-  document.addEventListener('DOMContentLoaded', function(){
-    history.replaceState({nav:0}, '');
-  });
+  // Aggiungi uno stato SOPRA quello reale del browser come "backstop".
+  // Così quando l'utente preme Indietro, il browser poppa il nostro stato
+  // (non quello reale) e scatta il listener — senza mai uscire dall'app.
+  history.pushState({nav:'app'}, '', window.location.href);
+
   window.addEventListener('popstate', function(){
-    // Chiudi il modal più in primo piano
+    // Ri-push SUBITO un nuovo stato identico: questo garantisce che il
+    // prossimo back press intercetti ancora questo handler invece di uscire.
+    history.pushState({nav:'app'}, '', window.location.href);
+
+    // Chiudi il modal più in primo piano (ordine: più profondo → più esterno)
     var order = [
       'modal-peso','modal-cucciolo','modal-cuccioli-list',
       'modal-cucciolate','modal-cuccioli-dashboard',
@@ -8224,19 +8265,16 @@ function mostraCuccioliPanel(btn){
       var el=document.getElementById(order[i]);
       if(el&&!el.classList.contains('hidden')){
         el.classList.add('hidden');
-        history.pushState({nav:0},'');
         return;
       }
     }
-    // Nessun modal aperto: chiudi il dettaglio cane se aperto
+    // Nessun modal aperto: chiudi il dettaglio cane se visibile
     var detail=document.getElementById('detail');
     if(detail&&detail.style.display!=='none'&&!detail.classList.contains('hidden')){
       if(typeof closeDetail==='function') closeDetail();
-      history.pushState({nav:0},'');
       return;
     }
-    // Siamo alla root: push stato per non uscire dall'app
-    history.pushState({nav:0},'');
+    // Siamo alla root: non fare nulla (stato già ri-pushed sopra)
   });
 })();
 </script>
