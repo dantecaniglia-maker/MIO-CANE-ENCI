@@ -2175,6 +2175,7 @@ function caricaDB(){
     if(data.esposizioni) window._db_esposizioni = data.esposizioni;
     if(data.tessere) window._db_tessere = data.tessere;
     if(data.profilo) window._db_profilo = data.profilo;
+    console.log('[DB] Caricato:', {cani: cani.length, cucciolate: cucciolate.length});
     return true;
   } catch(e){ console.warn('caricaDB error:', e); return false; }
 }
