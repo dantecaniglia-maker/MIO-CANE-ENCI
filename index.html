@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '6.0';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '6.1';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4465,7 +4465,7 @@ function renderCucciolate(){
       html+='</div>';
       html+='<div style="display:flex;gap:4px">';
       html+='<button onclick="condividiCucciolata('+cu.id+')" style="background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">📲 Condividi</button>';
-      html+='<button onclick="mostraCuccioliPanel('+cu.id+')" style="background:linear-gradient(135deg,#1a7a4a,#0f5a35);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">🐾 Cuccioli</button>';
+      html+='<button onclick="mostraCuccioliPanel(this)" style="background:linear-gradient(135deg,#1a7a4a,#0f5a35);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">🐾 Cuccioli</button>';
       html+='<button onclick="deleteCucciolata('+cu.id+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:15px;flex-shrink:0;padding:6px">🗑</button>';
       html+='</div>';
       html+='</div>';
@@ -7468,9 +7468,13 @@ function captureFromGuide(){
   },'image/jpeg',0.92);
 }
 
-function mostraCuccioliPanel(cuccId){
-  var s = document.getElementById('cuccioli-section-'+cuccId);
-  if(!s){ console.warn('[CUCC] sezione non trovata:', 'cuccioli-section-'+cuccId); return; }
+function mostraCuccioliPanel(btn){
+  // Risale: button → div-bottoni → div-header → div-card
+  var card = btn && btn.parentElement && btn.parentElement.parentElement && btn.parentElement.parentElement.parentElement;
+  if(!card){ console.warn('[CUCC] card non trovata dal button'); return; }
+  var s = card.querySelector('[id^="cuccioli-section-"]');
+  if(!s){ console.warn('[CUCC] cuccioli-section non trovata dentro card', card.id||card.className); return; }
+  console.log('[CUCC] toggle sezione:', s.id, 'display attuale:', s.style.display);
   s.style.display = s.style.display === 'none' ? 'block' : 'none';
 }
 </script>
