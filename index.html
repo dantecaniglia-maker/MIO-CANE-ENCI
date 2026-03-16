@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '5.0';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '5.1';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -2627,16 +2627,16 @@ function callAIText(text, onSuccess, onError){
 function leggiPedigreeOCR_AI(b64, mime, onProgress, onSuccess, onError){
   onProgress('⚙️ Pre-processing immagine…');
   preprocessImageForOCR(b64, function(b64E){
-    onProgress('⏳ Caricamento motore OCR…');
+    onProgress('🔍 Tesseract OCR in lettura…');
     loadTesseract(function(worker){
       if(!worker){
         if(hasAnyAIKey()){
-          onProgress('🤖 Uso AI Vision…');
-          callAIVision(b64E,'image/jpeg',PEDIGREE_PROMPT,function(r){onSuccess(validaECorreggiRisultato(r));},onError);
+          onProgress('🤖 Gemini 2.5-flash analizza…');
+          callAIVision(b64E,'image/jpeg',PEDIGREE_PROMPT,function(r){onProgress('✅ Letto con Gemini — '+Object.keys(r.pedigree||{}).length+' antenati trovati');onSuccess(validaECorreggiRisultato(r));},onError);
         } else { onError(new Error('OCR non disponibile. Configura Gemini o inserisci manualmente.')); }
         return;
       }
-      onProgress('🔍 OCR (PSM6, ita+eng)…');
+      onProgress('🔍 Tesseract OCR in lettura…');
       var binary=atob(b64E), bytes=new Uint8ClampedArray(binary.length);
       for(var i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
       var blob=new Blob([bytes],{type:'image/jpeg'}), url=URL.createObjectURL(blob);
@@ -2647,29 +2647,31 @@ function leggiPedigreeOCR_AI(b64, mime, onProgress, onSuccess, onError){
         console.log('[OCR] Testo:\n',testo.substring(0,800));
         if(!testo||testo.trim().length<30){
           if(hasAnyAIKey()){
-            onProgress('⚠️ Testo scarso, uso AI Vision…');
-            callAIVision(b64E,'image/jpeg',PEDIGREE_PROMPT,function(r){onSuccess(validaECorreggiRisultato(r));},onError);
+            onProgress('🤖 Gemini 2.5-flash analizza…');
+            callAIVision(b64E,'image/jpeg',PEDIGREE_PROMPT,function(r){onProgress('✅ Letto con Gemini — '+Object.keys(r.pedigree||{}).length+' antenati trovati');onSuccess(validaECorreggiRisultato(r));},onError);
           } else { onError(new Error('Immagine non leggibile. Riprova con foto più nitida.')); }
           return;
         }
         var parsed=parseEnciOcrText(testo);
         console.log('[Parser] Trovati',parsed._ocrFound,'antenati');
         if(parsed._ocrFound>=4&&conf>=55&&!hasAnyAIKey()){
-          onProgress('✅ Letto! Trovati '+parsed._ocrFound+' antenati (GRATIS)');
+          onProgress('✅ Letto con Tesseract — '+parsed._ocrFound+' antenati trovati');
           setTimeout(function(){onSuccess(validaECorreggiRisultato(parsed));},300);
           return;
         }
         if(hasAnyAIKey()){
-          onProgress('🤖 AI ibrida OCR+Vision (OCR conf: '+conf+'%)…');
+          onProgress('🤖 Gemini 2.5-flash analizza…');
           callAIHybrid(b64E,testo,function(aiRes){
             if(!aiRes.nome&&parsed.nome) aiRes.nome=parsed.nome;
             if(!aiRes.razza&&parsed.razza) aiRes.razza=parsed.razza;
             if(!aiRes.microchip&&parsed.microchip) aiRes.microchip=parsed.microchip;
+            onProgress('✅ Letto con Gemini — '+Object.keys(aiRes.pedigree||{}).length+' antenati trovati');
             onSuccess(validaECorreggiRisultato(aiRes));
           },function(err){
             console.log('[Hybrid] Fallback Vision:',err.message);
-            onProgress('🔄 AI Vision pura…');
+            onProgress('🤖 Gemini 2.5-flash analizza…');
             callAIVision(b64E,'image/jpeg',PEDIGREE_PROMPT,function(r){
+              onProgress('✅ Letto con Gemini — '+Object.keys(r.pedigree||{}).length+' antenati trovati');
               onSuccess(validaECorreggiRisultato(r));
             },function(){
               if(parsed._ocrFound>=1){onSuccess(validaECorreggiRisultato(parsed));}
@@ -2685,8 +2687,8 @@ function leggiPedigreeOCR_AI(b64, mime, onProgress, onSuccess, onError){
       }).catch(function(e){
         URL.revokeObjectURL(url);
         if(hasAnyAIKey()){
-          onProgress('🔄 OCR fallito, uso AI Vision…');
-          callAIVision(b64E,'image/jpeg',PEDIGREE_PROMPT,function(r){onSuccess(validaECorreggiRisultato(r));},onError);
+          onProgress('🤖 Gemini 2.5-flash analizza…');
+          callAIVision(b64E,'image/jpeg',PEDIGREE_PROMPT,function(r){onProgress('✅ Letto con Gemini — '+Object.keys(r.pedigree||{}).length+' antenati trovati');onSuccess(validaECorreggiRisultato(r));},onError);
         } else { onError(new Error('Errore lettura. Riprova con foto più nitida.')); }
       });
     });
@@ -4174,7 +4176,24 @@ function renderBreedResult(){
   html+='<div style="font-size:28px;font-weight:700;color:'+colors[Math.min(score,5)]+';font-family:\'Playfair Display\',serif;margin-bottom:12px">'+labels[Math.min(score,5)]+'</div>';
   notes.forEach(function(n){var nc=n.ok===true?'#1a7a4a':n.ok===false?'#C0534A':'#E65100';var ic=n.ok===true?'✓':n.ok===false?'✗':'⚠';html+='<div style="font-size:13px;color:'+nc+';margin-bottom:5px">'+ic+' '+n.msg+'</div>';});
   html+='</div>';
+  html+='<div style="text-align:right;margin-top:16px"><button class="btn btn-primary btn-sm" onclick="exportBreedingPDF()">📄 Esporta PDF</button></div>';
   g('breed-result-content').innerHTML=html;hide('breed-empty');show('breed-result');
+}
+
+function exportBreedingPDF(){
+  var content=g('breed-result-content');
+  if(!content)return;
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8">'
+    +'<style>body{font-family:Arial,Helvetica,sans-serif;padding:20mm;font-size:10pt;color:#000}'
+    +'h1{font-size:14pt;font-weight:700;margin-bottom:14px;border-bottom:2px solid #000;padding-bottom:6px}'
+    +'button{display:none!important}'
+    +'@media print{body{padding:10mm}}</style>'
+    +'</head><body>'
+    +'<h1>📊 Breeding Planner — Analisi Accoppiamento</h1>'
+    +content.innerHTML
+    +'<script>window.onload=function(){window.print();}<\/script>'
+    +'</body></html>';
+  apriHtmlBlob(html);
 }
 
 /* ══════════════════════════════════════
@@ -5027,6 +5046,12 @@ function applicaPdfImport(){
   if(!_pdfImportData) return;
   var c = cur();
   if(!c) return;
+  if(g('review-nome'))        _pdfImportData.nome        = g('review-nome').value.trim()        || _pdfImportData.nome;
+  if(g('review-loi'))         _pdfImportData.loi         = g('review-loi').value.trim()         || _pdfImportData.loi;
+  if(g('review-razza'))       _pdfImportData.razza       = g('review-razza').value.trim()       || _pdfImportData.razza;
+  if(g('review-sesso'))       _pdfImportData.sesso       = g('review-sesso').value              || _pdfImportData.sesso;
+  if(g('review-dataNascita')) _pdfImportData.dataNascita = g('review-dataNascita').value        || _pdfImportData.dataNascita;
+  if(g('review-microchip'))   _pdfImportData.microchip   = g('review-microchip').value.trim()   || _pdfImportData.microchip;
   applicaImportData(c, _pdfImportData);
   hide('modal-pdf-import');
   renderDettaglio(c.id);
@@ -5445,6 +5470,12 @@ function applicaFotoImport(){
   var obj=_fotoImportData;
   if(!obj)return;
   var c=cur();if(!c)return;
+  if(g('review-nome'))        obj.nome        = g('review-nome').value.trim()        || obj.nome;
+  if(g('review-loi'))         obj.loi         = g('review-loi').value.trim()         || obj.loi;
+  if(g('review-razza'))       obj.razza       = g('review-razza').value.trim()       || obj.razza;
+  if(g('review-sesso'))       obj.sesso       = g('review-sesso').value              || obj.sesso;
+  if(g('review-dataNascita')) obj.dataNascita = g('review-dataNascita').value        || obj.dataNascita;
+  if(g('review-microchip'))   obj.microchip   = g('review-microchip').value.trim()   || obj.microchip;
 
   // Aggiorna dati base se mancanti
   if(obj.nome&&!c.nome)c.nome=obj.nome;
@@ -5498,12 +5529,19 @@ function mostraReviewHtml(obj){
     'Trisnono PPP','Trisnonna PPP','Trisnono PPM','Trisnonna PPM','Trisnono PMP','Trisnonna PMP',
     'Trisnono PMM','Trisnonna PMM','Trisnono MPP','Trisnonna MPP','Trisnono MPM','Trisnonna MPM',
     'Trisnono MMP','Trisnonna MMP','Trisnono MMM','Trisnonna MMM'];
-  var html='';
-  if(obj.nome) html+='<div>🐕 <strong>Nome:</strong> '+obj.nome+'</div>';
-  if(obj.loi)  html+='<div>📋 <strong>LOI/RSR:</strong> '+obj.loi+'</div>';
-  if(obj.razza)html+='<div>🏷 <strong>Razza:</strong> '+obj.razza+'</div>';
-  if(obj.sesso)html+='<div>'+(obj.sesso==='M'?'♂':'♀')+' <strong>Sesso:</strong> '+(obj.sesso==='M'?'Maschio':'Femmina')+'</div>';
-  if(obj.dataNascita)html+='<div>🗓 <strong>Nascita:</strong> '+obj.dataNascita+'</div>';
+  var inpStyle='width:100%;padding:4px 8px;border:1.5px solid #BFCFE8;border-radius:6px;font-size:12px;margin-bottom:6px;box-sizing:border-box';
+  var lblStyle='font-size:11px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:2px';
+  var html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-bottom:8px">';
+  html+='<div><label style="'+lblStyle+'">🐕 Nome</label><input id="review-nome" style="'+inpStyle+'" value="'+(obj.nome||'')+'"/></div>';
+  html+='<div><label style="'+lblStyle+'">📋 LOI/RSR</label><input id="review-loi" style="'+inpStyle+'" value="'+(obj.loi||'')+'"/></div>';
+  html+='<div><label style="'+lblStyle+'">🏷 Razza</label><input id="review-razza" style="'+inpStyle+'" value="'+(obj.razza||'')+'"/></div>';
+  html+='<div><label style="'+lblStyle+'">Sesso</label><select id="review-sesso" style="'+inpStyle+'">'
+    +'<option value="M"'+(obj.sesso==='M'?' selected':'')+'">♂ Maschio</option>'
+    +'<option value="F"'+(obj.sesso==='F'?' selected':'')+'">♀ Femmina</option>'
+    +'</select></div>';
+  html+='<div><label style="'+lblStyle+'">🗓 Data Nascita</label><input id="review-dataNascita" type="date" style="'+inpStyle+'" value="'+(obj.dataNascita||'')+'"/></div>';
+  html+='<div><label style="'+lblStyle+'">🔖 Microchip</label><input id="review-microchip" style="'+inpStyle+'" value="'+(obj.microchip||'')+'"/></div>';
+  html+='</div>';
   html+='<div style="margin:8px 0;border-top:1.5px solid #A8D8B8;padding-top:8px;font-weight:700;color:#1a7a4a">Antenati letti:</div>';
   var count=0;
   for(var pos=2;pos<=31;pos++){
