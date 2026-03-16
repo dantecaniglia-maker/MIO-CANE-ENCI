@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '7.0';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '7.1';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4562,15 +4562,20 @@ function renderCucciolate(){
   }
 
   var now = new Date(); now.setHours(0,0,0,0);
-  // Ordina per data decrescente (più recenti prima)
+  // Separa attive da archiviate, ordina per data decrescente
+  var attive=cucciolate.filter(function(c){return !c.archiviata;});
+  var archiviate=cucciolate.filter(function(c){return !!c.archiviata;});
   var byYear={};
-  cucciolate.slice().sort(function(a,b){return (b.data||'').localeCompare(a.data||'');}).forEach(function(c){
+  attive.slice().sort(function(a,b){return (b.data||'').localeCompare(a.data||'');}).forEach(function(c){
     var y=c.data?c.data.substring(0,4):'N.D.';
     if(!byYear[y])byYear[y]=[];
     byYear[y].push(c);
   });
 
   var html='';
+  if(!attive.length){
+    html='<div style="text-align:center;padding:20px;color:#6B8BB0;font-size:14px">🐾 Nessuna cucciolata attiva</div>';
+  }
   Object.keys(byYear).sort().reverse().forEach(function(y){
     html+='<div style="font-size:11px;font-weight:800;color:#1565C0;text-transform:uppercase;letter-spacing:.1em;margin:14px 0 8px">📅 '+y+'</div>';
     byYear[y].forEach(function(cu){
@@ -4594,7 +4599,7 @@ function renderCucciolate(){
       html+='<div style="font-size:13px;color:#4A6080;margin-top:3px">♂ <strong>'+padreNome+'</strong> × ♀ <strong>'+madreNome+'</strong></div>';
       if(cu.note)html+='<div style="font-size:12px;color:#6B8BB0;margin-top:2px">📝 '+cu.note+'</div>';
       html+='</div>';
-      html+='<button onclick="deleteCucciolata('+cu.id+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:15px;flex-shrink:0;padding:4px 6px">🗑</button>';
+      html+='<button onclick="archiviaCucciolata('+cu.id+')" style="background:none;border:none;cursor:pointer;color:#6B8BB0;font-size:15px;flex-shrink:0;padding:4px 6px" title="Archivia cucciolata">📦</button>';
       html+='</div>';
       html+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
       html+='<button onclick="condividiCucciolata('+cu.id+')" style="background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">📲 Condividi</button>';
@@ -4747,6 +4752,34 @@ function renderCucciolate(){
       html+='</div>';
     });  // fine byYear[y].forEach
   });    // fine Object.keys forEach
+
+  // ── Sezione Archivio ──
+  if(archiviate.length){
+    html+='<div style="margin-top:18px;border-top:1.5px dashed #BFCFE8;padding-top:14px">';
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer" onclick="toggleEl(\'cucc-archivio-body\')">';
+    html+='<span style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em">📦 Archivio ('+archiviate.length+')</span>';
+    html+='<span style="font-size:11px;color:#BFCFE8">▼</span>';
+    html+='</div>';
+    html+='<div id="cucc-archivio-body" class="hidden">';
+    archiviate.slice().sort(function(a,b){return (b.data||'').localeCompare(a.data||'');}).forEach(function(cu){
+      var padreNome=nomeById(cu.padre)||'N.D.';
+      var madreNome=nomeById(cu.madre)||'N.D.';
+      var eta=cu.data?etaCuccioli(cu.data):'';
+      html+='<div style="background:#F8FAFF;border:1.5px solid #DDEAFF;border-radius:11px;padding:12px 14px;margin-bottom:8px;opacity:.75">';
+      html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">';
+      html+='<div style="min-width:0">';
+      html+='<div style="font-weight:600;font-size:13px;color:#4A6080">🐶 Cucciolata del '+cu.data+' <span style="font-size:11px;font-weight:400">'+eta+'</span></div>';
+      html+='<div style="font-size:12px;color:#6B8BB0;margin-top:2px">♂ '+padreNome+' × ♀ '+madreNome+'</div>';
+      html+='</div>';
+      html+='<div style="display:flex;gap:5px;flex-shrink:0">';
+      html+='<button onclick="showCuccioliModal('+cu.id+')" style="background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:7px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;color:#1565C0">🐾 Cuccioli</button>';
+      html+='<button onclick="ripristinaCucciolata('+cu.id+')" style="background:#F0FFF6;border:1.5px solid #A8D8B8;border-radius:7px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;color:#1a7a4a">↩ Ripristina</button>';
+      html+='<button onclick="eliminaDefinitivaCucciolata('+cu.id+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:13px" title="Elimina definitivamente">🗑</button>';
+      html+='</div></div></div>';
+    });
+    html+='</div></div>';
+  }
+
   cont.innerHTML=html;
 }
 
@@ -4754,6 +4787,7 @@ function renderCuccAlerts(){
   var now=new Date();now.setHours(0,0,0,0);
   var urgenti=[];
   cucciolate.forEach(function(cu){
+    if(cu.archiviata) return;
     (cu.schedule||[]).forEach(function(s){
       if(s.fatto)return;
       var diff=Math.round((new Date(s.dataScadenza)-now)/864e5);
@@ -5050,8 +5084,25 @@ function addCucciolata(){
   salvaDB();
 }
 
-function deleteCucciolata(id){
-  if(!confirm('Eliminare questa cucciolata?'))return;
+function archiviaCucciolata(id){
+  var cu=cucciolate.find(function(c){return String(c.id)===String(id);});
+  if(!cu)return;
+  cu.archiviata=true;
+  renderCucciolate();
+  renderReminderSummary();
+  salvaDB();
+  toast('📦 Cucciolata archiviata');
+}
+function ripristinaCucciolata(id){
+  var cu=cucciolate.find(function(c){return String(c.id)===String(id);});
+  if(!cu)return;
+  cu.archiviata=false;
+  renderCucciolate();
+  salvaDB();
+  toast('✅ Cucciolata ripristinata');
+}
+function eliminaDefinitivaCucciolata(id){
+  if(!confirm('Eliminare definitivamente questa cucciolata e tutti i suoi dati?'))return;
   cucciolate=cucciolate.filter(function(c){return String(c.id)!==String(id);});
   renderCucciolate();
   renderReminderSummary();
@@ -6499,16 +6550,13 @@ function aggiornaStatoCucciolo(cuccId, puppyId, stato){
       renderSidebar();
       toast('✅ '+p.nome+' aggiunto ai tuoi cani!');
     } else {
-      // Cane già esiste (es. da vecchia versione): aggiorna pedigreeFlat se vuoto
+      // Cane già esiste: ricalcola sempre il pedigree
       var caneEsistente = cani.find(function(c){return String(c.id)===String(p.caneId);});
       if(caneEsistente){
-        var nVoci = caneEsistente.pedigreeFlat ? Object.keys(caneEsistente.pedigreeFlat).length : 0;
-        if(nVoci === 0){
-          _computaPedigreePerCucciolo(cu, p);
-          caneEsistente.pedigreeFlat = p.pedigreeFlat || {};
-          var nPed = Object.keys(caneEsistente.pedigreeFlat).length;
-          caneEsistente.pedGens = nPed>=14?4:nPed>=6?3:nPed>=2?2:1;
-        }
+        _computaPedigreePerCucciolo(cu, p);
+        caneEsistente.pedigreeFlat = p.pedigreeFlat || {};
+        var nPed = Object.keys(caneEsistente.pedigreeFlat).length;
+        caneEsistente.pedGens = nPed>=14?4:nPed>=6?3:nPed>=2?2:1;
         renderSidebar();
       } else {
         // caneId punta a un record non più in cani[]: ricrealo
@@ -6525,28 +6573,35 @@ function aggiornaStatoCucciolo(cuccId, puppyId, stato){
 
 // Computa il pedigree e lo salva nel cucciolo p (NON crea scheda cane)
 function _computaPedigreePerCucciolo(cu, p){
-  var tutti = cani.concat(guestCani);
-  // Cerca padre per ID (String comparison robusta) con fallback per nome
-  var padreObj = tutti.find(function(c){return cu.padre && String(c.id)===String(cu.padre);});
-  if(!padreObj && cu.padre) padreObj = tutti.find(function(c){return c.nome && String(cu.padre)===c.nome;});
-  var madreObj = tutti.find(function(c){return cu.madre && String(c.id)===String(cu.madre);});
-  if(!madreObj && cu.madre) madreObj = tutti.find(function(c){return c.nome && String(cu.madre)===c.nome;});
+  var allDogs = cani.concat(guestCani);
+  // Cerca padre per String(id) === String(cu.padre), fallback per nome
+  var padreObj = allDogs.find(function(c){ return cu.padre && String(c.id)===String(cu.padre); });
+  if(!padreObj && cu.padre) padreObj = allDogs.find(function(c){ return c.nome && c.nome===String(cu.padre); });
+  // Cerca madre per String(id) === String(cu.madre), fallback per nome
+  var madreObj = allDogs.find(function(c){ return cu.madre && String(c.id)===String(cu.madre); });
+  if(!madreObj && cu.madre) madreObj = allDogs.find(function(c){ return c.nome && c.nome===String(cu.madre); });
+  console.log('[Pedigree] padre:', padreObj&&padreObj.nome, 'madre:', madreObj&&madreObj.nome, 'cu.padre:', cu.padre, 'cu.madre:', cu.madre);
   p._razza = (padreObj&&padreObj.razza)||(madreObj&&madreObj.razza)||'';
   var pedFlat = {};
   var pF = (padreObj&&(padreObj.pedigreeFlat||{}))||{};
   var mF = (madreObj&&(madreObj.pedigreeFlat||{}))||{};
-  function node(dog){ return dog?{name:dog.nome,loi:dog.numeroENCI||'',isFounder:false,hd:(dog.displasia&&dog.displasia.hd)||'',ed:'',titoli:[]}:null; }
+  function node(dog){ return {name:dog.nome,loi:dog.numeroENCI||'',isFounder:false,hd:(dog.displasia&&dog.displasia.hd)||'',ed:'',titoli:[]}; }
   function cp(pos, src, k){ var n=src['pos'+k]||src[String(k)]; if(n&&n.name) pedFlat['pos'+pos]=n; }
+  // pos2 = padre, pos3 = madre
   if(padreObj) pedFlat['pos2'] = node(padreObj);
   if(madreObj) pedFlat['pos3'] = node(madreObj);
-  cp(4,pF,2); cp(5,pF,3); cp(6,mF,2); cp(7,mF,3);
-  cp(8,pF,4); cp(9,pF,5); cp(10,pF,6); cp(11,pF,7);
+  // Lato paterno: dal pedigreeFlat del padre
+  cp(4,pF,2);  cp(5,pF,3);
+  cp(8,pF,4);  cp(9,pF,5);  cp(10,pF,6); cp(11,pF,7);
+  cp(16,pF,8); cp(17,pF,9); cp(18,pF,10);cp(19,pF,11);
+  cp(20,pF,12);cp(21,pF,13);cp(22,pF,14);cp(23,pF,15);
+  // Lato materno: dal pedigreeFlat della madre
+  cp(6,mF,2);  cp(7,mF,3);
   cp(12,mF,4); cp(13,mF,5); cp(14,mF,6); cp(15,mF,7);
-  cp(16,pF,8); cp(17,pF,9); cp(18,pF,10); cp(19,pF,11);
-  cp(20,pF,12); cp(21,pF,13); cp(22,pF,14); cp(23,pF,15);
-  cp(24,mF,8); cp(25,mF,9); cp(26,mF,10); cp(27,mF,11);
-  cp(28,mF,12); cp(29,mF,13); cp(30,mF,14); cp(31,mF,15);
+  cp(24,mF,8); cp(25,mF,9); cp(26,mF,10);cp(27,mF,11);
+  cp(28,mF,12);cp(29,mF,13);cp(30,mF,14);cp(31,mF,15);
   p.pedigreeFlat = pedFlat;
+  console.log('[Pedigree] nodi compilati:', Object.keys(pedFlat).length);
 }
 
 // Crea una scheda cane completa solo quando stato === 'mio_cane'
@@ -6758,7 +6813,7 @@ function saveCucciolo(){
           toast('✅ '+p.nome+' aggiunto ai tuoi cani!');
         } else {
           var ce=cani.find(function(c){return String(c.id)===String(p.caneId);});
-          if(ce && (!ce.pedigreeFlat||Object.keys(ce.pedigreeFlat).length===0)){
+          if(ce){
             _computaPedigreePerCucciolo(cu, p);
             ce.pedigreeFlat=p.pedigreeFlat||{};
             var nP=Object.keys(ce.pedigreeFlat).length;
