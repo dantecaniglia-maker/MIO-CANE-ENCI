@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '5.7';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '5.8';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4464,7 +4464,7 @@ function renderCucciolate(){
       html+='</div>';
       html+='<div style="display:flex;gap:4px">';
       html+='<button onclick="condividiCucciolata('+cu.id+')" style="background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">📲 Condividi</button>';
-      html+='<button onclick="toggleCuccioli('+cu.id+')" style="background:linear-gradient(135deg,#1a7a4a,#0f5a35);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">🐾 Cuccioli</button>';
+      html+='<button onclick="var _s=document.getElementById(\'cuccioli-section-'+cu.id+'\');if(_s)_s.style.display=_s.style.display===\'none\'?\'block\':\'none\'" style="background:linear-gradient(135deg,#1a7a4a,#0f5a35);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">🐾 Cuccioli</button>';
       html+='<button onclick="deleteCucciolata('+cu.id+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:15px;flex-shrink:0;padding:6px">🗑</button>';
       html+='</div>';
       html+='</div>';
@@ -4768,10 +4768,11 @@ function addCucciolata(){
   var data=g('cucc-data').value, nati=parseInt(g('cucc-nati').value)||0;
   if(!data){alert('Inserisci la data di nascita');return;}
   if(!nati){alert('Inserisci il numero di cuccioli nati');return;}
+  var padreId=g('cucc-padre').value, madreId=g('cucc-madre').value;
   cucciolate.push({
     id:Date.now(),
-    padre:g('cucc-padre').value,
-    madre:g('cucc-madre').value,
+    padre:padreId,
+    madre:madreId,
     data:data,nati:nati,
     maschi:parseInt(g('cucc-maschi').value)||0,
     femmine:parseInt(g('cucc-femmine').value)||0,
@@ -4779,6 +4780,21 @@ function addCucciolata(){
     schedule:generaSchedule(data),
     cuccioli:[]
   });
+  // Registra gravidanza automaticamente nella scheda della madre
+  if(madreId){
+    var madreDog = cani.find(function(c){return String(c.id)===madreId;}) || guestCani.find(function(c){return String(c.id)===madreId;});
+    if(madreDog){
+      madreDog.gravidanze = madreDog.gravidanze || [];
+      var dataAccopp = addDays(data, -63);
+      madreDog.gravidanze.push({
+        id: Date.now()+1,
+        accoppiamenti: [{id: Date.now()+2, data: dataAccopp, note: 'Stallone: '+(nomeById(padreId)||'N.D.')}],
+        temperature: [],
+        note: 'Cucciolata del '+data+' — '+nati+' nati',
+        conclusa: true
+      });
+    }
+  }
   g('cucc-data').value='';g('cucc-nati').value='';g('cucc-maschi').value='';
   g('cucc-femmine').value='';g('cucc-note').value='';
   g('cucc-padre').value='';g('cucc-madre').value='';
