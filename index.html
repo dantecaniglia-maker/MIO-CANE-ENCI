@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '5.2';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '5.3';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1201,12 +1201,12 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
     <!-- INFO -->
     <div id="panel-info" class="hidden">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="info-cell"><div class="info-lbl">Nome</div><div class="info-val" id="i-nome">—</div></div>
-        <div class="info-cell"><div class="info-lbl">Razza</div><div class="info-val" id="i-razza">—</div></div>
-        <div class="info-cell"><div class="info-lbl">N° ENCI / LOI</div><div class="info-val" id="i-enci">—</div></div>
-        <div class="info-cell"><div class="info-lbl">Data Nascita</div><div class="info-val" id="i-data">—</div></div>
-        <div class="info-cell"><div class="info-lbl">Sesso</div><div class="info-val" id="i-sesso">—</div></div>
-        <div class="info-cell"><div class="info-lbl">Microchip</div><div class="info-val" id="i-chip">—</div></div>
+        <div class="info-cell"><div class="info-lbl">Nome</div><input class="info-val" id="i-nome" oninput="salvaCampo(this)" placeholder="—" style="width:100%;border:1.5px solid #BFCFE8;border-radius:6px;padding:5px 8px;font-size:13px;box-sizing:border-box"/></div>
+        <div class="info-cell"><div class="info-lbl">Razza</div><input class="info-val" id="i-razza" oninput="salvaCampo(this)" placeholder="—" style="width:100%;border:1.5px solid #BFCFE8;border-radius:6px;padding:5px 8px;font-size:13px;box-sizing:border-box"/></div>
+        <div class="info-cell"><div class="info-lbl">N° ENCI / LOI</div><input class="info-val" id="i-enci" oninput="salvaCampo(this)" placeholder="—" style="width:100%;border:1.5px solid #BFCFE8;border-radius:6px;padding:5px 8px;font-size:13px;box-sizing:border-box"/></div>
+        <div class="info-cell"><div class="info-lbl">Data Nascita</div><input class="info-val" id="i-data" type="date" oninput="salvaCampo(this)" style="width:100%;border:1.5px solid #BFCFE8;border-radius:6px;padding:5px 8px;font-size:13px;box-sizing:border-box"/></div>
+        <div class="info-cell"><div class="info-lbl">Sesso</div><select class="info-val" id="i-sesso" onchange="salvaCampo(this)" style="width:100%;border:1.5px solid #BFCFE8;border-radius:6px;padding:5px 8px;font-size:13px;box-sizing:border-box"><option value="M">♂ Maschio</option><option value="F">♀ Femmina</option></select></div>
+        <div class="info-cell"><div class="info-lbl">Microchip</div><input class="info-val" id="i-chip" oninput="salvaCampo(this)" placeholder="—" style="width:100%;border:1.5px solid #BFCFE8;border-radius:6px;padding:5px 8px;font-size:13px;box-sizing:border-box"/></div>
       </div>
       <!-- Dati Proprietario cane -->
       <div id="i-propr-box" style="margin-top:14px;background:#F8FAFF;border:1.5px solid #DDEAFF;border-radius:12px;padding:14px">
@@ -1448,6 +1448,18 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 </div><!-- #app -->
 
 <!-- ════ MODAL CUCCIOLO ════ -->
+<div id="modal-cuccioli-list" class="overlay hidden">
+  <div class="modal" style="max-width:520px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D47A1">🐾 Cuccioli</div>
+      <button class="btn btn-ghost btn-sm" onclick="hide('modal-cuccioli-list')">✕</button>
+    </div>
+    <div id="cuccioli-list-modal-content"></div>
+    <div style="margin-top:14px;text-align:right">
+      <button class="btn btn-primary btn-sm" id="btn-add-cucciolo-modal" onclick="">+ Aggiungi cucciolo</button>
+    </div>
+  </div>
+</div>
 <div id="modal-cucciolo" class="overlay hidden">
   <div class="modal" style="max-width:480px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
@@ -2142,6 +2154,7 @@ function salvaDB(){
       profilo: (typeof profilo !== 'undefined') ? profilo : {}
     };
     localStorage.setItem(DB_KEY, JSON.stringify(data));
+    console.log('[DB] cucciolate salvate:', (typeof cucciolate!=='undefined'?cucciolate.length:0));
     var st=g('db-status');
     if(st){ st.textContent='💾 salvato'; setTimeout(function(){st.textContent='';},2000); }
   } catch(e){ console.warn('salvaDB error:', e); }
@@ -2158,7 +2171,7 @@ function caricaDB(){
     if(data.guestCani && data.guestCani.length) {
       guestCani = data.guestCani.map(_migraCane);
     }
-    if(data.cucciolate) cucciolate = data.cucciolate;
+    if(data.cucciolate){ cucciolate = data.cucciolate; console.log('[DB] cucciolate caricate:', cucciolate.length); }
     if(data.esposizioni) window._db_esposizioni = data.esposizioni;
     if(data.tessere) window._db_tessere = data.tessere;
     if(data.profilo) window._db_profilo = data.profilo;
@@ -3445,9 +3458,9 @@ function openDetail(id,tab){
   var tabRipr=g('tab-riproduzione');
   if(tabRipr) tabRipr.style.display=(c.sesso==='F'&&!guest)?'':'none';
   ['btn-add-vac','btn-add-trat','btn-add-disp','btn-add-cac','btn-add-cacib'].forEach(function(b){var el=g(b);if(el)el.style.display=guest?'none':'';});
-  g('i-nome').textContent=c.nome||'—'; g('i-razza').textContent=c.razza||'—';
-  g('i-enci').textContent=c.numeroENCI||'—'; g('i-data').textContent=c.dataNascita||'—';
-  g('i-sesso').textContent=c.sesso==='M'?'♂ Maschio':'♀ Femmina'; g('i-chip').textContent=c.microchip||'—';
+  g('i-nome').value=c.nome||''; g('i-razza').value=c.razza||'';
+  g('i-enci').value=c.numeroENCI||''; g('i-data').value=c.dataNascita||'';
+  g('i-sesso').value=c.sesso||'M'; g('i-chip').value=c.microchip||'';
   // Dati proprietario
   var pr = c.proprietario||{};
   g('ip-nome').textContent = pr.nome||'—';
@@ -3459,6 +3472,17 @@ function openDetail(id,tab){
   g('ip-indirizzo').textContent = ind||'—';
   switchTab(tab||'info'); renderVac(); renderTrat(); renderDisp(); renderCAC(); renderCACIB(); renderCamps(); renderReminderAlerts();
   renderPedigree();
+}
+function salvaCampo(el){
+  var c=cur(); if(!c||c._guest) return;
+  var id=el.id, val=el.value;
+  if(id==='i-nome'){ c.nome=val; g('det-nome').textContent=val; g('det-sub').textContent=(c.razza||'Razza n.s.')+' · '+(c.sesso==='M'?'♂ Maschio':'♀ Femmina'); }
+  else if(id==='i-razza'){ c.razza=val; g('det-sub').textContent=(c.razza||'Razza n.s.')+' · '+(c.sesso==='M'?'♂ Maschio':'♀ Femmina'); }
+  else if(id==='i-enci'){ c.numeroENCI=val; }
+  else if(id==='i-data'){ c.dataNascita=val; }
+  else if(id==='i-sesso'){ c.sesso=val; g('det-sub').textContent=(c.razza||'Razza n.s.')+' · '+(c.sesso==='M'?'♂ Maschio':'♀ Femmina'); }
+  else if(id==='i-chip'){ c.microchip=val; }
+  salvaDB();
 }
 function closeDetail(){
   selectedId=null;
@@ -4356,8 +4380,6 @@ function previewLogo(input){
    CUCCIOLATE — con calendario sanitario
 ══════════════════════════════════════ */
 var cucciolate = [];
-// applica dati DB se caricati
-if(window._db_cucciolate){ cucciolate=window._db_cucciolate; delete window._db_cucciolate; }
 
 /* Schema standard ENCI per cuccioli (giorni dalla nascita) */
 var SCHEMA_SANITARIO = [
@@ -4718,7 +4740,7 @@ function condividiCucciolataVia(platform){
   var linea1='🐾 Cucciolata'+(padreNome!=='N.D.'?' '+padreNome+' × '+madreNome:'');
   var linea2='📅 Nati il '+(cu.data||'?')+' — '+eta;
   var linea3='🐶 '+(cu.nati||'?')+' cuccioli'+(cu.maschi?' (♂ '+cu.maschi+(cu.femmine?', ♀ '+cu.femmine:'')+')'  :'');
-  var testo=linea1+'\n'+linea2+'\n'+linea3+'\n📲 Mio Cane ENCI';
+  var testo=linea1+'\n'+linea2+'\n'+linea3+'\n📲 Scarica l\'app: mio-cane-enci.vercel.app';
   if(platform==='whatsapp'){
     window.open('https://wa.me/?text='+encodeURIComponent(testo),'_blank');
   } else if(platform==='telegram'){
@@ -5068,7 +5090,7 @@ function applicaPdfImport(){
   if(g('review-loi'))         _pdfImportData.loi         = g('review-loi').value.trim()         || _pdfImportData.loi;
   if(g('review-razza'))       _pdfImportData.razza       = g('review-razza').value.trim()       || _pdfImportData.razza;
   if(g('review-sesso'))       _pdfImportData.sesso       = g('review-sesso').value              || _pdfImportData.sesso;
-  if(g('review-dataNascita')) _pdfImportData.dataNascita = g('review-dataNascita').value        || _pdfImportData.dataNascita;
+  if(g('review-data')) _pdfImportData.dataNascita = g('review-data').value        || _pdfImportData.dataNascita;
   if(g('review-microchip'))   _pdfImportData.microchip   = g('review-microchip').value.trim()   || _pdfImportData.microchip;
   applicaImportData(c, _pdfImportData);
   hide('modal-pdf-import');
@@ -5492,7 +5514,7 @@ function applicaFotoImport(){
   if(g('review-loi'))         obj.loi         = g('review-loi').value.trim()         || obj.loi;
   if(g('review-razza'))       obj.razza       = g('review-razza').value.trim()       || obj.razza;
   if(g('review-sesso'))       obj.sesso       = g('review-sesso').value              || obj.sesso;
-  if(g('review-dataNascita')) obj.dataNascita = g('review-dataNascita').value        || obj.dataNascita;
+  if(g('review-data')) obj.dataNascita = g('review-data').value        || obj.dataNascita;
   if(g('review-microchip'))   obj.microchip   = g('review-microchip').value.trim()   || obj.microchip;
 
   // Aggiorna dati base se mancanti
@@ -5557,7 +5579,7 @@ function mostraReviewHtml(obj){
     +'<option value="M"'+(obj.sesso==='M'?' selected':'')+'">♂ Maschio</option>'
     +'<option value="F"'+(obj.sesso==='F'?' selected':'')+'">♀ Femmina</option>'
     +'</select></div>';
-  html+='<div><label style="'+lblStyle+'">🗓 Data Nascita</label><input id="review-dataNascita" type="date" style="'+inpStyle+'" value="'+(obj.dataNascita||'')+'"/></div>';
+  html+='<div><label style="'+lblStyle+'">🗓 Data Nascita</label><input id="review-data" type="date" style="'+inpStyle+'" value="'+(obj.dataNascita||'')+'"/></div>';
   html+='<div><label style="'+lblStyle+'">🔖 Microchip</label><input id="review-microchip" style="'+inpStyle+'" value="'+(obj.microchip||'')+'"/></div>';
   html+='</div>';
   html+='<div style="margin:8px 0;border-top:1.5px solid #A8D8B8;padding-top:8px;font-weight:700;color:#1a7a4a">Antenati letti:</div>';
@@ -6042,9 +6064,48 @@ function addTemperatura(){
 var _editCuccId=null, _editPuppyId=null;
 
 function toggleCuccioli(cuccId){
-  var sec=g('cuccioli-section-'+cuccId);
-  if(!sec) return;
-  sec.style.display=sec.style.display==='none'?'':'none';
+  showCuccioliModal(cuccId);
+}
+function showCuccioliModal(cuccId){
+  var cu=cucciolate.find(function(c){return String(c.id)===String(cuccId);});
+  if(!cu) return;
+  var cuccioli=cu.cuccioli||[];
+  var html='';
+  if(!cuccioli.length){
+    html='<div style="text-align:center;padding:20px;color:#6B8BB0;font-size:13px">Nessun cucciolo registrato</div>';
+  } else {
+    var statoColor={disponibile:'#1a7a4a',prenotato:'#E65100',venduto:'#C0534A'};
+    var statoLabel={disponibile:'🟢 Disponibile',prenotato:'🟡 Prenotato',venduto:'🔴 Venduto'};
+    cuccioli.forEach(function(p){
+      var acq=p.acquirente||{};
+      var stato=acq.stato||'disponibile';
+      var ultimoPeso=p.pesi&&p.pesi.length?p.pesi[p.pesi.length-1]:null;
+      html+='<div style="background:#F8FAFF;border:1.5px solid #DDEAFF;border-radius:10px;padding:10px 12px;margin-bottom:8px">';
+      html+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">';
+      html+='<div style="display:flex;align-items:center;gap:8px">';
+      html+='<span style="font-size:20px;background:#EEF3FB;border-radius:8px;padding:4px 7px">'+(p.sesso==='M'?'♂':'♀')+'</span>';
+      html+='<div><div style="font-weight:700;font-size:13px">'+(p.nome||'Senza nome')+(p.colore?' <span style="font-size:11px;color:#6B8BB0">'+p.colore+'</span>':'')+'</div>';
+      if(ultimoPeso) html+='<div style="font-size:11px;color:#1565C0">⚖ '+ultimoPeso.grammi+'g · '+ultimoPeso.data+'</div>';
+      html+='</div></div>';
+      html+='<div style="display:flex;gap:5px;align-items:center">';
+      html+='<span style="font-size:11px;font-weight:700;color:'+(statoColor[stato]||'#6B8BB0')+'">'+(statoLabel[stato]||stato)+'</span>';
+      html+='<button onclick="hide(\'modal-cuccioli-list\');openCuccioloDetail('+cuccId+','+p.id+')" style="background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1565C0">✏</button>';
+      html+='<button onclick="hide(\'modal-cuccioli-list\');openAggiuntaPeso('+cuccId+','+p.id+')" style="background:#F0FFF6;border:1.5px solid #A8D8B8;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1a7a4a">⚖</button>';
+      html+='<button onclick="deleteCucciolo('+cuccId+','+p.id+');showCuccioliModal('+cuccId+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:13px">🗑</button>';
+      html+='</div></div>';
+      if(acq.nome){
+        html+='<div style="margin-top:6px;padding:6px 9px;background:#fff;border-radius:7px;border:1px solid #EEF3FB;font-size:12px;color:#4A6080">';
+        html+='👤 <strong>'+acq.nome+'</strong>';
+        if(acq.tel) html+=' · 📞 '+acq.tel;
+        if(acq.acconto) html+=' · <span style="color:#1a7a4a;font-weight:700">💶 €'+acq.acconto+'</span>';
+        html+='</div>';
+      }
+      html+='</div>';
+    });
+  }
+  g('cuccioli-list-modal-content').innerHTML=html;
+  g('btn-add-cucciolo-modal').onclick=function(){ hide('modal-cuccioli-list'); openAddCucciolo(cuccId); };
+  show('modal-cuccioli-list');
 }
 
 function openAddCucciolo(cuccId){

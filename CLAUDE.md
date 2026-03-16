@@ -2,7 +2,7 @@
 
 ## Progetto
 - **Nome app:** Mio Cane ENCI *(nome internazionale da decidere)*
-- **Versione attuale:** 5.2
+- **Versione attuale:** 5.3
 
 ## Stack
 - HTML / CSS / JS vanilla — nessun framework
