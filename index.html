@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '6.4';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '6.5';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1448,7 +1448,7 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 </div><!-- #app -->
 
 <!-- ════ MODAL CUCCIOLO ════ -->
-<div id="modal-cuccioli-list" class="overlay hidden" style="z-index:9990">
+<div id="modal-cuccioli-list" class="overlay hidden" style="z-index:10000">
   <div class="modal" style="max-width:640px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <div id="cuccioli-modal-title" style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D47A1">🐾 Cuccioli</div>
@@ -1461,7 +1461,7 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
     </div>
   </div>
 </div>
-<div id="modal-cucciolo" class="overlay hidden">
+<div id="modal-cucciolo" class="overlay hidden" style="z-index:10001">
   <div class="modal" style="max-width:520px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
       <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D47A1">🐾 Dati Cucciolo</div>
@@ -4805,7 +4805,7 @@ function addCucciolata(){
 
 function deleteCucciolata(id){
   if(!confirm('Eliminare questa cucciolata?'))return;
-  cucciolate=cucciolate.filter(function(c){return c.id!==id;});
+  cucciolate=cucciolate.filter(function(c){return String(c.id)!==String(id);});
   renderCucciolate();
   renderReminderSummary();
   salvaDB();
@@ -6133,6 +6133,11 @@ function showCuccioliModal(cuccId){
       html+='</div></div>';
       html+='<div style="display:flex;gap:5px;align-items:center">';
       html+='<span style="font-size:11px;font-weight:700;color:'+(statoColor[stato]||'#6B8BB0')+'">'+(statoLabel[stato]||stato)+'</span>';
+      if(p.caneId){
+        html+='<button onclick="hide(\'modal-cuccioli-list\');openDetail('+p.caneId+')" style="background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer">📋 Scheda</button>';
+      } else {
+        html+='<button onclick="registraCuccioloComeCane('+cuccId+','+p.id+')" style="background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer">📋 Crea Scheda</button>';
+      }
       html+='<button onclick="hide(\'modal-cuccioli-list\');openCuccioloDetail('+cuccId+','+p.id+')" style="background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1565C0">✏</button>';
       html+='<button onclick="hide(\'modal-cuccioli-list\');openAggiuntaPeso('+cuccId+','+p.id+')" style="background:#F0FFF6;border:1.5px solid #A8D8B8;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1a7a4a">⚖</button>';
       html+='<button onclick="deleteCucciolo('+cuccId+','+p.id+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:13px">🗑</button>';
@@ -6158,6 +6163,52 @@ function showCuccioliModal(cuccId){
   g('cuccioli-list-modal-content').innerHTML=html;
   g('btn-add-cucciolo-modal').onclick=function(){ hide('modal-cuccioli-list'); openAddCucciolo(cuccId); };
   show('modal-cuccioli-list');
+}
+
+function registraCuccioloComeCane(cuccId, puppyId){
+  var cu=cucciolate.find(function(c){return String(c.id)===String(cuccId);});
+  if(!cu) return;
+  var p=(cu.cuccioli||[]).find(function(x){return String(x.id)===String(puppyId);});
+  if(!p) return;
+  var tutti=cani.concat(guestCani);
+  var padreObj=tutti.find(function(c){return String(c.id)===String(cu.padre);});
+  var madreObj=tutti.find(function(c){return String(c.id)===String(cu.madre);});
+  var razza=(padreObj&&padreObj.razza)||(madreObj&&madreObj.razza)||'';
+  var pedFlat={};
+  if(padreObj) pedFlat['pos2']={name:padreObj.nome,loi:padreObj.numeroENCI||'',isFounder:false,hd:'',ed:'',titoli:[]};
+  if(madreObj) pedFlat['pos3']={name:madreObj.nome,loi:madreObj.numeroENCI||'',isFounder:false,hd:'',ed:'',titoli:[]};
+  // Nonni (pos4-7) se disponibili nel pedigree del padre/madre
+  if(padreObj&&padreObj.pedigreeFlat){
+    if(padreObj.pedigreeFlat['pos2']) pedFlat['pos4']=padreObj.pedigreeFlat['pos2'];
+    if(padreObj.pedigreeFlat['pos3']) pedFlat['pos5']=padreObj.pedigreeFlat['pos3'];
+  }
+  if(madreObj&&madreObj.pedigreeFlat){
+    if(madreObj.pedigreeFlat['pos2']) pedFlat['pos6']=madreObj.pedigreeFlat['pos2'];
+    if(madreObj.pedigreeFlat['pos3']) pedFlat['pos7']=madreObj.pedigreeFlat['pos3'];
+  }
+  var nuovoCane={
+    id:Date.now(),
+    nome:p.nome||'Cucciolo',
+    razza:razza,
+    numeroENCI:'',
+    dataNascita:cu.data||'',
+    sesso:p.sesso||'M',
+    microchip:'',
+    colore:p.colore||'',
+    foto:null,
+    vaccinazioni:[],trattamenti:[],
+    displasia:{hd:'',ed:'',dataTest:'',note:''},
+    cac_list:[],cacib_list:[],
+    pedigreeFlat:pedFlat,
+    pedGens:Object.keys(pedFlat).length>0?2:1,
+    _cucciolataId:cu.id
+  };
+  cani.push(nuovoCane);
+  p.caneId=nuovoCane.id;
+  salvaDB();
+  hide('modal-cuccioli-list');
+  renderSidebar();
+  openDetail(nuovoCane.id);
 }
 
 function renderAcquirentiRows(){
@@ -6378,6 +6429,7 @@ getReminders=function(c){
   window.renderAcquirentiRows = renderAcquirentiRows;
   window.addAcquirenteRow = addAcquirenteRow;
   window.removeAcquirenteRow = removeAcquirenteRow;
+  window.registraCuccioloComeCane = registraCuccioloComeCane;
 })();
 
 /* ── Proprietario del Cane (scheda Info) ── */
