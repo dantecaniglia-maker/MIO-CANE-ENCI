@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '5.4';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '5.5';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1448,7 +1448,7 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 </div><!-- #app -->
 
 <!-- ════ MODAL CUCCIOLO ════ -->
-<div id="modal-cuccioli-list" class="overlay hidden">
+<div id="modal-cuccioli-list" class="overlay hidden" style="z-index:9990">
   <div class="modal" style="max-width:520px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D47A1">🐾 Cuccioli</div>
@@ -1609,7 +1609,7 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 
   </div>
 </div>
-<div id="modal-cucc-share" class="overlay hidden">
+<div id="modal-cucc-share" class="overlay hidden" style="z-index:9999">
   <div class="modal" style="max-width:560px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
       <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#0D47A1">📲 Annuncio Cucciolata</div>
@@ -2155,6 +2155,7 @@ function salvaDB(){
     };
     localStorage.setItem(DB_KEY, JSON.stringify(data));
     console.log('[DB] cucciolate salvate:', (typeof cucciolate!=='undefined'?cucciolate.length:0));
+    console.log('[DB] profilo salvato:', (typeof profilo!=='undefined'?profilo.nome:''));
     var st=g('db-status');
     if(st){ st.textContent='💾 salvato'; setTimeout(function(){st.textContent='';},2000); }
   } catch(e){ console.warn('salvaDB error:', e); }
@@ -2172,9 +2173,9 @@ function caricaDB(){
       guestCani = data.guestCani.map(_migraCane);
     }
     if(data.cucciolate){ cucciolate = data.cucciolate; console.log('[DB] cucciolate caricate:', cucciolate.length); }
-    if(data.esposizioni) window._db_esposizioni = data.esposizioni;
-    if(data.tessere) window._db_tessere = data.tessere;
-    if(data.profilo) window._db_profilo = data.profilo;
+    if(data.esposizioni) esposizioni = data.esposizioni;
+    if(data.tessere){ Object.assign(tessere.enci, data.tessere.enci||{}); Object.assign(tessere.club, data.tessere.club||{}); }
+    if(data.profilo) Object.assign(profilo, data.profilo);
     console.log('[DB] Caricato:', {cani: cani.length, cucciolate: cucciolate.length});
     return true;
   } catch(e){ console.warn('caricaDB error:', e); return false; }
@@ -4228,8 +4229,6 @@ var tessere = {
   enci:  {nome:'', numero:'', anno:'', locked:false},
   club:  {nome:'', numero:'', anno:'', titolo:'', locked:false}
 };
-// applica dati DB se caricati
-if(window._db_tessere){ Object.assign(tessere.enci, window._db_tessere.enci||{}); Object.assign(tessere.club, window._db_tessere.club||{}); delete window._db_tessere; }
 
 function tsv(id,val){var el=g(id);if(el)el.textContent=val||'';}
 function ttoggle(editId,viewId,show_edit){var e=g(editId),v=g(viewId);if(!e||!v)return;if(show_edit){e.style.display='';v.style.display='none';}else{e.style.display='none';v.style.display='';}}
@@ -4319,8 +4318,6 @@ document.addEventListener('input', function(e){
    PROFILO ALLEVATORE
 ══════════════════════════════════════ */
 var profilo = {affisso:'',nome:'',prov:'',tel:'',email:'',razza:'',web:'',note:'',logo:null};
-// applica dati DB se caricati
-if(window._db_profilo){ Object.assign(profilo, window._db_profilo); delete window._db_profilo; }
 
 function renderProfilo(){
   g('p-affisso').value  = profilo.affisso;
@@ -4802,8 +4799,6 @@ function deleteCucciolata(id){
    CALENDARIO ESPOSIZIONI
 ══════════════════════════════════════ */
 var esposizioni = [];
-// applica dati DB se caricati
-if(window._db_esposizioni){ esposizioni=window._db_esposizioni; delete window._db_esposizioni; }
 
 function renderCalendario(){
   // Popola checkboxes cani
