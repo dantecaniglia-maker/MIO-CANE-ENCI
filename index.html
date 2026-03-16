@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '7.3';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '7.4';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -2263,9 +2263,26 @@ function caricaDB(){
   } catch(e){ console.warn('caricaDB error:', e); return false; }
 }
 
+// Normalizza chiavi pedigreeFlat da 'posN' (OCR) a numeriche (formato nativo)
+function _normalizePedFlat(flat){
+  if(!flat) return flat;
+  var needsNorm=false;
+  for(var k in flat){ if(flat.hasOwnProperty(k)&&String(k).indexOf('pos')===0){needsNorm=true;break;} }
+  if(!needsNorm) return flat;
+  var out={};
+  for(var k in flat){
+    if(!flat.hasOwnProperty(k)) continue;
+    if(String(k).indexOf('pos')===0){ var num=parseInt(k.slice(3),10); if(!isNaN(num)) out[num]=flat[k]; }
+    else out[k]=flat[k];
+  }
+  return out;
+}
+
 // Migrazione automatica codici titoli vecchi → nuovi
 function _migraCane(c){
-  if(!c || !c.pedigreeFlat) return c;
+  if(!c) return c;
+  if(c.pedigreeFlat) c.pedigreeFlat=_normalizePedFlat(c.pedigreeFlat);
+  if(!c.pedigreeFlat) return c;
   // Mappa vecchi codici → nuovi
   var MAP = {'IT':'IT_B','CIB':'INT_B','EU':'E','WD':'F','RIPR':'D','SEL1':'O','SEL2':'P',
              'IT_B':'IT_B','INT_B':'INT_B','E':'E','F':'F','D':'D','O':'O','P':'P'};
@@ -3685,6 +3702,7 @@ function getAncLabel(pos){
 function renderPedigree(){
   var c=cur();if(!c)return;
   if(!c.pedigreeFlat)c.pedigreeFlat={};if(!c.pedGens)c.pedGens=1;
+  console.log('[Render] pedigree nodi:', Object.keys(c.pedigreeFlat||{}).length, '_cucciolataId:', c._cucciolataId||'none');
   var guest=!!c._guest;
   var nPed=pedCount(c.pedigreeFlat);
   var badge=g('ped-stats-badge');
@@ -6588,10 +6606,10 @@ function _computaPedigreePerCucciolo(cu, p){
   var pF = (padreObj&&(padreObj.pedigreeFlat||{}))||{};
   var mF = (madreObj&&(madreObj.pedigreeFlat||{}))||{};
   function node(dog){ return {name:dog.nome,loi:dog.numeroENCI||'',isFounder:false,hd:(dog.displasia&&dog.displasia.hd)||'',ed:'',titoli:[]}; }
-  function cp(pos, src, k){ var n=src['pos'+k]||src[String(k)]; if(n&&n.name) pedFlat['pos'+pos]=n; }
-  // pos2 = padre, pos3 = madre
-  if(padreObj) pedFlat['pos2'] = node(padreObj);
-  if(madreObj) pedFlat['pos3'] = node(madreObj);
+  function cp(pos, src, k){ var n=src['pos'+k]||src[k]||src[String(k)]; if(n&&n.name) pedFlat[pos]=n; }
+  // pos2 = padre, pos3 = madre (numeric keys — compatibili con renderPedigree/pedCount)
+  if(padreObj) pedFlat[2] = node(padreObj);
+  if(madreObj) pedFlat[3] = node(madreObj);
   // Lato paterno: dal pedigreeFlat del padre
   cp(4,pF,2);  cp(5,pF,3);
   cp(8,pF,4);  cp(9,pF,5);  cp(10,pF,6); cp(11,pF,7);
