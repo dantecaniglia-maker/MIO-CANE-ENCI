@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '7.4';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '7.5';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1083,13 +1083,18 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
               <div><div style="font-weight:700;font-size:14px;color:#1a1a3a">Contratto di Monta</div><div style="font-size:12px;color:#6B8BB0">Accordo legale tra proprietari · PDF + WhatsApp</div></div>
               <span style="margin-left:auto;color:#C9A961;font-size:18px">›</span>
             </div>
-            <div onclick="openAISettings('sidebar-ai-banner')" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;cursor:pointer;transition:background .15s;border:1.5px solid #DDEAFF" onmouseover="this.style.background='#EEF3FB'" onmouseout="this.style.background='#fff'">
+            <div onclick="openAISettings('sidebar-ai-banner')" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;cursor:pointer;transition:background .15s;margin-bottom:6px;border:1.5px solid #DDEAFF" onmouseover="this.style.background='#EEF3FB'" onmouseout="this.style.background='#fff'">
               <div style="width:38px;height:38px;background:#EEF3FB;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🤖</div>
               <div id="sidebar-ai-banner">
                 <div style="font-weight:700;font-size:14px;color:#1a1a3a">Configura AI</div>
                 <div style="font-size:12px;color:#6B8BB0">API key Gemini per leggere pedigree</div>
               </div>
               <span style="margin-left:auto;color:#BFCFE8;font-size:18px">›</span>
+            </div>
+            <div onclick="openRegistro()" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;cursor:pointer;transition:background .15s;border:1.5px solid #A5D6A7;background:linear-gradient(135deg,#F1F8E9,#E8F5E9)" onmouseover="this.style.background='#DCEDC8'" onmouseout="this.style.background='linear-gradient(135deg,#F1F8E9,#E8F5E9)'">
+              <div style="width:38px;height:38px;background:#C8E6C9;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">💰</div>
+              <div><div style="font-weight:700;font-size:14px;color:#1a1a3a">Registro</div><div style="font-size:12px;color:#6B8BB0">Entrate, uscite e saldo mensile</div></div>
+              <span style="margin-left:auto;color:#A5D6A7;font-size:18px">›</span>
             </div>
           </div>
         </div>
@@ -2212,6 +2217,9 @@ document.addEventListener('click',function(e){var dd=g('breed-dropdown');if(dd&&
    DATI
 ══════════════════════════════════════ */
 var cani=[], guestCani=[], selectedId=null, fotoBase64=null;
+var _navStack=[];
+var registro={movimenti:[]};
+var _regMese=new Date().getMonth(), _regAnno=new Date().getFullYear(), _regTab='entrate';
 
 /* ══════════════════════════════════════
    LOCAL STORAGE — persistenza dati
@@ -2233,7 +2241,8 @@ function salvaDB(){
       cucciolate: (typeof cucciolate !== 'undefined') ? cucciolate : [],
       esposizioni: (typeof esposizioni !== 'undefined') ? esposizioni : [],
       tessere: (typeof tessere !== 'undefined') ? tessere : {},
-      profilo: (typeof profilo !== 'undefined') ? profilo : {}
+      profilo: (typeof profilo !== 'undefined') ? profilo : {},
+      registro: (typeof registro !== 'undefined') ? registro : {movimenti:[]}
     };
     localStorage.setItem(DB_KEY, JSON.stringify(data));
     console.log('[DB] cucciolate salvate:', (typeof cucciolate!=='undefined'?cucciolate.length:0));
@@ -2258,6 +2267,7 @@ function caricaDB(){
     if(data.esposizioni) esposizioni = data.esposizioni;
     if(data.tessere){ Object.assign(tessere.enci, data.tessere.enci||{}); Object.assign(tessere.club, data.tessere.club||{}); }
     if(data.profilo) Object.assign(profilo, data.profilo);
+    if(data.registro) registro = data.registro;
     console.log('[DB] Caricato:', {cani: cani.length, cucciolate: cucciolate.length});
     return true;
   } catch(e){ console.warn('caricaDB error:', e); return false; }
@@ -3177,8 +3187,8 @@ function enciTitoloBadge(cod){
 
 /* ── HELPERS ── */
 function g(id){return document.getElementById(id);}
-function show(id){var el=g(id);if(el){el.classList.remove('hidden');el.style.display='';}}
-function hide(id){var el=g(id);if(el){el.classList.add('hidden');el.style.display='none';}}
+function show(id){var el=g(id);if(el){el.classList.remove('hidden');el.style.display='';if(el.classList.contains('overlay')&&_navStack.indexOf(id)===-1)_navStack.push(id);}}
+function hide(id){var el=g(id);if(el){el.classList.add('hidden');el.style.display='none';var i=_navStack.lastIndexOf(id);if(i>-1)_navStack.splice(i,1);}}
 function toggleEl(id){var el=g(id);if(el)el.classList.toggle('hidden');}
 function cur(){return cani.find(function(c){return String(c.id)===String(selectedId);})||guestCani.find(function(c){return String(c.id)===String(selectedId);});}
 function allDogs(){return cani.concat(guestCani);}
@@ -8350,6 +8360,157 @@ function captureFromGuide(){
   },'image/jpeg',0.92);
 }
 
+/* ══════════════════════════════════════
+   REGISTRO FINANZIARIO
+══════════════════════════════════════ */
+var _REG_MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+var _REG_CAT_USCITE=[['veterinario','🏥 Veterinario'],['alimentazione','🍖 Alimentazione'],['enci','🏅 ENCI / Quote'],['farmaci','💊 Farmaci'],['altro','📋 Altro']];
+var _REG_CAT_ENTRATE=[['altro_entrata','💵 Altra entrata'],['vendita_cucciolo','🐾 Vendita cucciolo']];
+var _REG_ICONS={veterinario:'🏥',alimentazione:'🍖',enci:'🏅',farmaci:'💊',altro:'📋',vendita_cucciolo:'🐾',altro_entrata:'💵'};
+
+function openRegistro(){
+  _regMese=new Date().getMonth(); _regAnno=new Date().getFullYear(); _regTab='entrate';
+  renderRegistro();
+  show('modal-registro');
+}
+function cambiaRegMese(delta){
+  _regMese+=delta;
+  if(_regMese>11){_regMese=0;_regAnno++;}
+  if(_regMese<0){_regMese=11;_regAnno--;}
+  renderRegistro();
+}
+function setRegTab(tab){
+  _regTab=tab;
+  renderRegistroLista();
+  renderRegistroAddForm();
+}
+function getEntrateMensili(anno,mese){
+  var res=[];
+  (registro.movimenti||[]).forEach(function(m){
+    if(m.tipo!=='entrata'||!m.data)return;
+    var d=new Date(m.data);
+    if(d.getFullYear()===anno&&d.getMonth()===mese)res.push(m);
+  });
+  (cucciolate||[]).forEach(function(cu){
+    (cu.cuccioli||[]).forEach(function(p){
+      if(!p.ceduto&&p.stato!=='ceduto')return;
+      var prezzo=(p.pagamento&&p.pagamento.prezzo)||0;
+      if(!prezzo)return;
+      var dataStr=(p.pagamento&&p.pagamento.dataAcconto)||cu.data||'';
+      if(!dataStr)return;
+      var d=new Date(dataStr);
+      if(d.getFullYear()!==anno||d.getMonth()!==mese)return;
+      res.push({id:'auto_'+cu.id+'_'+p.id,data:dataStr,tipo:'entrata',importo:prezzo,
+        categoria:'vendita_cucciolo',descrizione:'Vendita '+(p.nome||'cucciolo')+' — '+(cu.nomeCucciolata||'Cucciolata'),fonte:'auto'});
+    });
+  });
+  return res;
+}
+function getUsciteMensili(anno,mese){
+  return (registro.movimenti||[]).filter(function(m){
+    if(m.tipo!=='uscita'||!m.data)return false;
+    var d=new Date(m.data);
+    return d.getFullYear()===anno&&d.getMonth()===mese;
+  });
+}
+function renderRegistro(){
+  var lbl=g('reg-mese-label');
+  if(lbl)lbl.textContent=_REG_MESI[_regMese]+' '+_regAnno;
+  var entrate=getEntrateMensili(_regAnno,_regMese);
+  var uscite=getUsciteMensili(_regAnno,_regMese);
+  var totEnt=entrate.reduce(function(s,m){return s+m.importo;},0);
+  var totUsc=uscite.reduce(function(s,m){return s+m.importo;},0);
+  var saldo=totEnt-totUsc;
+  var bar=g('reg-saldo-bar');
+  if(bar){
+    var sc=saldo>=0?'#1a7a4a':'#C0534A',sb=saldo>=0?'#E8F5E9':'#FFEBEE';
+    bar.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'
+      +'<div style="background:#E8F5E9;border:1.5px solid #1a7a4a;border-radius:10px;padding:12px;text-align:center"><div style="font-size:10px;color:#1a7a4a;font-weight:700;text-transform:uppercase;margin-bottom:4px">Entrate</div><div style="font-size:18px;font-weight:700;color:#1a7a4a">€'+totEnt.toFixed(0)+'</div></div>'
+      +'<div style="background:#FFEBEE;border:1.5px solid #C0534A;border-radius:10px;padding:12px;text-align:center"><div style="font-size:10px;color:#C0534A;font-weight:700;text-transform:uppercase;margin-bottom:4px">Uscite</div><div style="font-size:18px;font-weight:700;color:#C0534A">€'+totUsc.toFixed(0)+'</div></div>'
+      +'<div style="background:'+sb+';border:1.5px solid '+sc+';border-radius:10px;padding:12px;text-align:center"><div style="font-size:10px;color:'+sc+';font-weight:700;text-transform:uppercase;margin-bottom:4px">Saldo</div><div style="font-size:18px;font-weight:700;color:'+sc+'">'+(saldo>=0?'':'')+'€'+Math.abs(saldo).toFixed(0)+'</div></div>'
+      +'</div>';
+  }
+  renderRegistroLista();
+  renderRegistroAddForm();
+}
+function renderRegistroLista(){
+  var lista=g('reg-lista');
+  if(!lista)return;
+  var t1=g('reg-tab-entrate'),t2=g('reg-tab-uscite');
+  if(t1){t1.style.opacity=_regTab==='entrate'?'1':'0.5';t1.style.transform=_regTab==='entrate'?'scale(1.03)':'scale(1)';}
+  if(t2){t2.style.opacity=_regTab==='uscite'?'1':'0.5';t2.style.transform=_regTab==='uscite'?'scale(1.03)':'scale(1)';}
+  var items=_regTab==='entrate'?getEntrateMensili(_regAnno,_regMese):getUsciteMensili(_regAnno,_regMese);
+  if(!items.length){
+    lista.innerHTML='<div style="text-align:center;padding:20px;color:#6B8BB0;font-size:13px">Nessun movimento in questo mese</div>';
+    return;
+  }
+  var colore=_regTab==='entrate'?'#1a7a4a':'#C0534A';
+  var html='';
+  items.forEach(function(m){
+    var icon=_REG_ICONS[m.categoria]||'💰';
+    html+='<div style="background:#fff;border:1.5px solid #DDEAFF;border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px">'
+      +'<div style="font-size:22px;flex-shrink:0">'+icon+'</div>'
+      +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1a1a3a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(m.descrizione||m.categoria)+'</div>'
+      +'<div style="font-size:11px;color:#6B8BB0">'+(m.data||'')+(m.fonte==='auto'?' · Auto':' · Manuale')+'</div></div>'
+      +'<div style="font-weight:700;font-size:15px;color:'+colore+';flex-shrink:0">€'+(m.importo||0).toFixed(0)+'</div>'
+      +(m.fonte!=='auto'?'<button onclick="deleteMovimento(\''+m.id+'\')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:14px;flex-shrink:0;padding:0 4px" title="Elimina">🗑</button>':'')
+      +'</div>';
+  });
+  lista.innerHTML=html;
+}
+function renderRegistroAddForm(){
+  var form=g('reg-add-form');
+  if(!form)return;
+  var cats=_regTab==='entrate'?_REG_CAT_ENTRATE:_REG_CAT_USCITE;
+  var colore=_regTab==='entrate'?'#1a7a4a':'#C0534A';
+  var oggi=new Date().toISOString().slice(0,10);
+  var html='<div style="font-size:11px;font-weight:700;color:'+colore+';text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">+ Aggiungi '+((_regTab==='entrate')?'entrata':'uscita')+'</div>'
+    +'<div class="form-grid">'
+    +'<div><label>Data</label><input type="date" id="reg-input-data" value="'+oggi+'"/></div>'
+    +'<div><label>Importo (€)</label><input type="number" id="reg-input-importo" min="0" step="1" placeholder="Es. 150"/></div>'
+    +'<div><label>Categoria</label><select id="reg-input-cat">';
+  cats.forEach(function(c){html+='<option value="'+c[0]+'">'+c[1]+'</option>';});
+  html+='</select></div>'
+    +'<div style="grid-column:span 2"><label>Descrizione</label><input type="text" id="reg-input-desc" placeholder="Descrizione opzionale..."/></div>'
+    +'</div>'
+    +'<button onclick="addMovimento()" style="margin-top:10px;background:'+colore+';color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer">✓ Aggiungi</button>';
+  form.innerHTML=html;
+}
+function addMovimento(){
+  var data=g('reg-input-data')&&g('reg-input-data').value;
+  var importo=parseFloat(g('reg-input-importo')&&g('reg-input-importo').value)||0;
+  var cat=g('reg-input-cat')&&g('reg-input-cat').value;
+  var desc=(g('reg-input-desc')&&g('reg-input-desc').value.trim())||'';
+  if(!data||!importo){toast('⚠️ Inserisci data e importo');return;}
+  registro.movimenti.push({id:Date.now(),data:data,tipo:_regTab,importo:importo,categoria:cat,descrizione:desc||cat,fonte:'manuale'});
+  salvaDB();
+  renderRegistro();
+  toast(_regTab==='entrate'?'✅ Entrata aggiunta':'✅ Uscita aggiunta');
+}
+function deleteMovimento(id){
+  registro.movimenti=registro.movimenti.filter(function(m){return String(m.id)!==String(id);});
+  salvaDB();
+  renderRegistroLista();
+}
+function exportRegistroPDF(){
+  var entrate=getEntrateMensili(_regAnno,_regMese);
+  var uscite=getUsciteMensili(_regAnno,_regMese);
+  var totEnt=entrate.reduce(function(s,m){return s+m.importo;},0);
+  var totUsc=uscite.reduce(function(s,m){return s+m.importo;},0);
+  var saldo=totEnt-totUsc;
+  function righe(items){return items.map(function(m){return '<tr><td>'+m.data+'</td><td>'+(m.descrizione||m.categoria)+'</td><td style="text-align:right;font-weight:700">€'+m.importo.toFixed(0)+'</td></tr>';}).join('')||'<tr><td colspan="3" style="color:#999;text-align:center">Nessun movimento</td></tr>';}
+  var sc=saldo>=0?'#1a7a4a':'#C0534A';
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;padding:20mm;font-size:10pt}h1{font-size:14pt;color:#0D47A1}h2{font-size:12pt;color:#1565C0;border-bottom:1px solid #DDEAFF;padding-bottom:4px;margin-top:20px}table{width:100%;border-collapse:collapse;margin:10px 0}th{background:#EEF3FB;padding:6px 10px;text-align:left;font-size:9pt;color:#1565C0}td{padding:6px 10px;border-bottom:1px solid #F0F4FA;font-size:9pt}.saldo{margin-top:20px;text-align:right;font-size:13pt;font-weight:700;padding:12px;border-radius:6px}@media print{body{padding:10mm}}</style></head><body>'
+    +'<h1>💰 Registro Finanziario — '+_REG_MESI[_regMese]+' '+_regAnno+'</h1>'
+    +'<h2>📈 Entrate — €'+totEnt.toFixed(0)+'</h2>'
+    +'<table><tr><th>Data</th><th>Descrizione</th><th style="text-align:right">Importo</th></tr>'+righe(entrate)+'</table>'
+    +'<h2>📉 Uscite — €'+totUsc.toFixed(0)+'</h2>'
+    +'<table><tr><th>Data</th><th>Descrizione</th><th style="text-align:right">Importo</th></tr>'+righe(uscite)+'</table>'
+    +'<div class="saldo" style="background:'+(saldo>=0?'#E8F5E9':'#FFEBEE')+';color:'+sc+'">Saldo: '+(saldo>=0?'▲':'▼')+' €'+Math.abs(saldo).toFixed(0)+'</div>'
+    +'<script>window.onload=function(){window.print();}<\/script></body></html>';
+  apriHtmlBlob(html);
+}
+
 function mostraCuccioliPanel(btn){
   var card = btn && btn.parentElement && btn.parentElement.parentElement && btn.parentElement.parentElement.parentElement;
   if(!card){ return; }
@@ -8359,6 +8520,36 @@ function mostraCuccioliPanel(btn){
   s.style.display = isOpen ? 'none' : 'block';
   if(!isOpen) setTimeout(function(){ s.scrollIntoView({behavior:'smooth', block:'nearest'}); }, 50);
 }
+
+<!-- ════ MODAL REGISTRO FINANZIARIO ════ -->
+<div id="modal-registro" class="overlay hidden" style="z-index:10000">
+  <div class="modal" style="max-width:620px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D47A1">💰 Registro Finanziario</div>
+      <button class="btn btn-ghost btn-sm" onclick="hide('modal-registro')">✕</button>
+    </div>
+    <!-- Navigazione mese/anno -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;background:#EEF3FB;border-radius:12px;padding:10px 16px">
+      <button onclick="cambiaRegMese(-1)" style="background:none;border:none;cursor:pointer;font-size:22px;color:#1565C0;padding:0 8px;line-height:1">‹</button>
+      <div id="reg-mese-label" style="font-weight:700;font-size:15px;color:#0D47A1;text-align:center;flex:1"></div>
+      <button onclick="cambiaRegMese(1)" style="background:none;border:none;cursor:pointer;font-size:22px;color:#1565C0;padding:0 8px;line-height:1">›</button>
+    </div>
+    <!-- Saldo mensile cards -->
+    <div id="reg-saldo-bar" style="margin-bottom:16px"></div>
+    <!-- Tabs entrate / uscite -->
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button id="reg-tab-entrate" onclick="setRegTab('entrate')" style="flex:1;padding:9px;border-radius:8px;border:2px solid #1a7a4a;background:#E8F5E9;color:#1a7a4a;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s">📈 Entrate</button>
+      <button id="reg-tab-uscite" onclick="setRegTab('uscite')" style="flex:1;padding:9px;border-radius:8px;border:2px solid #C0534A;background:#FFEBEE;color:#C0534A;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s">📉 Uscite</button>
+    </div>
+    <div id="reg-lista" style="max-height:260px;overflow-y:auto;margin-bottom:14px"></div>
+    <!-- Form aggiungi -->
+    <div id="reg-add-form" style="background:#F8FAFF;border:1.5px solid #DDEAFF;border-radius:12px;padding:14px;margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center">
+      <button onclick="exportRegistroPDF()" style="background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">📄 Export PDF</button>
+      <button onclick="hide('modal-registro')" class="btn btn-ghost btn-sm">Chiudi</button>
+    </div>
+  </div>
+</div>
 </script>
 <script>
 /* ── Navigazione: intercetta freccia Indietro browser/telefono ── */
@@ -8369,25 +8560,14 @@ function mostraCuccioliPanel(btn){
   history.pushState({nav:'app'}, '', window.location.href);
 
   window.addEventListener('popstate', function(){
-    // Ri-push SUBITO un nuovo stato identico: questo garantisce che il
-    // prossimo back press intercetti ancora questo handler invece di uscire.
+    // Ri-push SUBITO: garantisce che il prossimo back press sia intercettato.
     history.pushState({nav:'app'}, '', window.location.href);
 
-    // Chiudi il modal più in primo piano (ordine: più profondo → più esterno)
-    var order = [
-      'modal-peso','modal-cucciolo','modal-cuccioli-list',
-      'modal-cucciolate','modal-cuccioli-dashboard',
-      'modal-foto-import','modal-pdf-import','modal-nuovo-cane',
-      'modal-import','modal-moduli-enci','modal-contratto',
-      'modal-cucc-share','modal-tessere','modal-calendario',
-      'modal-profilo','modal-impostazioni-ai','modal-camera'
-    ];
-    for(var i=0;i<order.length;i++){
-      var el=document.getElementById(order[i]);
-      if(el&&!el.classList.contains('hidden')){
-        el.classList.add('hidden');
-        return;
-      }
+    // Chiudi il modal in cima allo stack (_navStack traccia le overlay aperte)
+    if(_navStack.length > 0){
+      var topId = _navStack[_navStack.length - 1];
+      hide(topId);
+      return;
     }
     // Nessun modal aperto: chiudi il dettaglio cane se visibile
     var detail=document.getElementById('detail');
