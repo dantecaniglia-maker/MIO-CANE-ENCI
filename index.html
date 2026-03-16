@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '5.6';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '5.7';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -6263,6 +6263,24 @@ getReminders=function(c){
   }
   renderSidebar();
   checkURLImport();
+  // Esponi funzioni globalmente (erano intrappolate nell'IIFE)
+  window.renderRiproduzione = renderRiproduzione;
+  window.addCalore = addCalore;
+  window.deleteCalore = deleteCalore;
+  window.addGravidanza = addGravidanza;
+  window.addAccoppBtn = addAccoppBtn;
+  window.addAccoppiamento = addAccoppiamento;
+  window.concludiGravidanza = concludiGravidanza;
+  window.deleteGravidanza = deleteGravidanza;
+  window.addTemperatura = addTemperatura;
+  window.toggleCuccioli = toggleCuccioli;
+  window.showCuccioliModal = showCuccioliModal;
+  window.openAddCucciolo = openAddCucciolo;
+  window.openCuccioloDetail = openCuccioloDetail;
+  window.saveCucciolo = saveCucciolo;
+  window.deleteCucciolo = deleteCucciolo;
+  window.openAggiuntaPeso = openAggiuntaPeso;
+  window.salvaPeso = salvaPeso;
 })();
 
 /* ── Proprietario del Cane (scheda Info) ── */
