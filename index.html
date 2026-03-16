@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '6.1';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '6.3';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1449,11 +1449,12 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 
 <!-- ════ MODAL CUCCIOLO ════ -->
 <div id="modal-cuccioli-list" class="overlay hidden" style="z-index:9990">
-  <div class="modal" style="max-width:520px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D47A1">🐾 Cuccioli</div>
+  <div class="modal" style="max-width:640px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div id="cuccioli-modal-title" style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D47A1">🐾 Cuccioli</div>
       <button class="btn btn-ghost btn-sm" onclick="hide('modal-cuccioli-list')">✕</button>
     </div>
+    <div id="cuccioli-modal-subtitle" style="font-size:12px;color:#6B8BB0;margin-bottom:14px"></div>
     <div id="cuccioli-list-modal-content"></div>
     <div style="margin-top:14px;text-align:right">
       <button class="btn btn-primary btn-sm" id="btn-add-cucciolo-modal" onclick="">+ Aggiungi cucciolo</button>
@@ -4465,7 +4466,7 @@ function renderCucciolate(){
       html+='</div>';
       html+='<div style="display:flex;gap:4px">';
       html+='<button onclick="condividiCucciolata('+cu.id+')" style="background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">📲 Condividi</button>';
-      html+='<button onclick="mostraCuccioliPanel(this)" style="background:linear-gradient(135deg,#1a7a4a,#0f5a35);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">🐾 Cuccioli</button>';
+      html+='<button onclick="showCuccioliModal('+cu.id+')" style="background:linear-gradient(135deg,#1a7a4a,#0f5a35);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">🐾 Cuccioli</button>';
       html+='<button onclick="deleteCucciolata('+cu.id+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:15px;flex-shrink:0;padding:6px">🗑</button>';
       html+='</div>';
       html+='</div>';
@@ -6087,6 +6088,27 @@ function toggleCuccioli(cuccId){
 function showCuccioliModal(cuccId){
   var cu=cucciolate.find(function(c){return String(c.id)===String(cuccId);});
   if(!cu) return;
+
+  // Auto-genera schede cuccioli se ancora vuote
+  if(!cu.cuccioli||cu.cuccioli.length===0){
+    cu.cuccioli=[];
+    var ts=Date.now();
+    var m=cu.maschi||0, f=cu.femmine||0, tot=cu.nati||0;
+    for(var i=0;i<m;i++) cu.cuccioli.push({id:ts++,nome:'Cucciolo '+(i+1),sesso:'M',colore:'',acquirente:{stato:'disponibile'},pesi:[]});
+    for(var i=0;i<f;i++) cu.cuccioli.push({id:ts++,nome:'Cucciola '+(i+1),sesso:'F',colore:'',acquirente:{stato:'disponibile'},pesi:[]});
+    var extra=tot-m-f;
+    for(var i=0;i<extra;i++) cu.cuccioli.push({id:ts++,nome:'Cucciolo '+(m+f+i+1),sesso:'M',colore:'',acquirente:{stato:'disponibile'},pesi:[]});
+    salvaDB();
+  }
+
+  // Titolo dinamico
+  var padreNome=nomeById(cu.padre)||'N.D.';
+  var madreNome=nomeById(cu.madre)||'N.D.';
+  var titleEl=g('cuccioli-modal-title');
+  if(titleEl) titleEl.textContent='🐾 Cuccioli — '+(cu.data||'');
+  var subtitleEl=g('cuccioli-modal-subtitle');
+  if(subtitleEl) subtitleEl.textContent='♂ '+padreNome+' × ♀ '+madreNome+' · '+cu.cuccioli.length+' cuccioli';
+
   var cuccioli=cu.cuccioli||[];
   var html='';
   if(!cuccioli.length){
