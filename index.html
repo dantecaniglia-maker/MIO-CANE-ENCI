@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '5.9';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '6.0';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4416,16 +4416,17 @@ function renderCucciolate(){
   var pOpt='<option value="">— Seleziona padre —</option>';
   cani.filter(function(c){return c.sesso==='M';}).forEach(function(c){pOpt+='<option value="'+c.id+'">'+c.nome+(c.razza?' ('+c.razza+')':'')+'</option>';});
   guestCani.filter(function(c){return c.sesso==='M';}).forEach(function(c){pOpt+='<option value="'+c.id+'">'+c.nome+' 📥</option>';});
-  g('cucc-padre').innerHTML=pOpt;
+  var elPadre=g('cucc-padre'); if(elPadre) elPadre.innerHTML=pOpt;
 
   var mOpt='<option value="">— Seleziona madre —</option>';
   cani.filter(function(c){return c.sesso==='F';}).forEach(function(c){mOpt+='<option value="'+c.id+'">'+c.nome+(c.razza?' ('+c.razza+')':'')+'</option>';});
   guestCani.filter(function(c){return c.sesso==='F';}).forEach(function(c){mOpt+='<option value="'+c.id+'">'+c.nome+' 📥</option>';});
-  g('cucc-madre').innerHTML=mOpt;
+  var elMadre=g('cucc-madre'); if(elMadre) elMadre.innerHTML=mOpt;
 
-  renderCuccAlerts();
+  if(g('cucc-alerts')) renderCuccAlerts();
 
   var cont = g('cucc-list-container');
+  if(!cont) return;
   if(!cucciolate.length){
     cont.innerHTML='<div style="text-align:center;padding:30px;color:#6B8BB0;font-size:14px">🐾 Nessuna cucciolata registrata</div>';
     return;
@@ -4544,6 +4545,7 @@ function renderCucciolate(){
           html+='<div style="display:flex;gap:5px;align-items:center">';
           html+='<span style="font-size:11px;font-weight:700;color:'+statoColor+'">'+statoLabel+'</span>';
           html+='<button onclick="openCuccioloDetail('+cu.id+','+p.id+')" style="background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1565C0">✏</button>';
+          html+='<button onclick="openAggiuntaPeso('+cu.id+','+p.id+')" style="background:#F0FFF6;border:1.5px solid #A8D8B8;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1a7a4a">⚖</button>';
           html+='<button onclick="deleteCucciolo('+cu.id+','+p.id+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:13px">🗑</button>';
           html+='</div></div>';
           if(acq.nome){
