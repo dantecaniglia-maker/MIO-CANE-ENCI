@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '6.6';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '6.7';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1035,6 +1035,11 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
               <div><div style="font-weight:700;font-size:14px;color:#1a1a3a">Cucciolate</div><div style="font-size:12px;color:#6B8BB0">Calendario vaccini e sverminazioni</div></div>
               <span style="margin-left:auto;color:#BFCFE8;font-size:18px">›</span>
             </div>
+            <div onclick="show('modal-cuccioli-dashboard');renderCuccioliDashboard()" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;cursor:pointer;transition:background .15s;margin-bottom:6px;border:1.5px solid #DDEAFF" onmouseover="this.style.background='#EEF3FB'" onmouseout="this.style.background='#fff'">
+              <div style="width:38px;height:38px;background:#F0FFF6;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🐾</div>
+              <div><div style="font-weight:700;font-size:14px;color:#1a1a3a">Cuccioli</div><div style="font-size:12px;color:#6B8BB0">Vendite, acconti, stato cuccioli</div></div>
+              <span style="margin-left:auto;color:#BFCFE8;font-size:18px">›</span>
+            </div>
             <div onclick="show('modal-calendario');renderCalendario()" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;cursor:pointer;transition:background .15s;margin-bottom:6px;border:1.5px solid #DDEAFF" onmouseover="this.style.background='#EEF3FB'" onmouseout="this.style.background='#fff'">
               <div style="width:38px;height:38px;background:#FDF6E3;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🗓</div>
               <div><div style="font-weight:700;font-size:14px;color:#1a1a3a">Calendario Esposizioni</div><div style="font-size:12px;color:#6B8BB0">Show, raduni, CAC</div></div>
@@ -1488,32 +1493,42 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
         </select>
       </div>
       <div><label>Colore / Mantello</label><input type="text" id="cucc-puppy-colore" placeholder="Es. fulvo, bianco e nero"/></div>
-      <div>
-        <label>Stato</label>
-        <select id="cucc-puppy-stato">
-          <option value="disponibile">🟢 Disponibile</option>
-          <option value="prenotato">🟡 Prenotato</option>
-          <option value="venduto">🔴 Venduto</option>
-        </select>
-      </div>
-      <div><label>Prezzo vendita (€)</label><input type="number" id="cucc-puppy-prezzo" min="0" placeholder="1500"/></div>
     </div>
-    <!-- Ceduto toggle -->
-    <div id="cucc-ceduto-bar" style="display:flex;align-items:center;justify-content:space-between;background:#FFF8F0;border:1.5px solid #FFD0A0;border-radius:10px;padding:10px 14px;margin-bottom:14px">
-      <div>
-        <div style="font-weight:700;font-size:13px;color:#E65100">✂ Ceduto / Venduto</div>
-        <div style="font-size:11px;color:#8D5524;margin-top:2px">Disattiva alerts sanitari e rimuove dai Miei Cani</div>
+    <!-- Stato cucciolo: 4 pulsanti -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">📌 Stato</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button id="stato-btn-disponibile" onclick="setStatoCucciolo('disponibile')" style="border:2px solid #1a7a4a;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;background:#E8F5E9;color:#1a7a4a;transition:all .15s">🟢 Disponibile</button>
+        <button id="stato-btn-prenotato" onclick="setStatoCucciolo('prenotato')" style="border:2px solid #E65100;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;background:#FFF3E0;color:#E65100;transition:all .15s">🟠 Prenotato</button>
+        <button id="stato-btn-ceduto" onclick="setStatoCucciolo('ceduto')" style="border:2px solid #C0534A;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;background:#FFEBEE;color:#C0534A;transition:all .15s">🔴 Ceduto</button>
+        <button id="stato-btn-mio_cane" onclick="setStatoCucciolo('mio_cane')" style="border:2px solid #1565C0;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;background:#E3F2FD;color:#1565C0;transition:all .15s">🔵 Mio Cane</button>
       </div>
-      <button id="btn-ceduto-toggle" onclick="toggleCeduto()" style="border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">OFF</button>
+    </div>
+    <!-- Pagamento -->
+    <div class="form-box" style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:#1a7a4a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        💰 Pagamento
+        <span id="pag-badge"></span>
+      </div>
+      <div class="form-grid">
+        <div><label>Prezzo totale (€)</label><input type="number" id="pag-prezzo" min="0" placeholder="1500" oninput="aggiornaSaldo()"/></div>
+        <div><label>Acconto ricevuto (€)</label><input type="number" id="pag-acconto" min="0" placeholder="500" oninput="aggiornaSaldo()"/></div>
+        <div><label>Saldo restante (€)</label><input type="number" id="pag-saldo" readonly style="background:#F8FAFF;color:#1565C0;font-weight:700;border:1.5px solid #BFCFE8;border-radius:6px;padding:5px 8px;font-size:13px;width:100%;box-sizing:border-box"/></div>
+        <div><label>Data acconto</label><input type="date" id="pag-data-acconto"/></div>
+        <div style="grid-column:span 2"><label>Note pagamento</label><input type="text" id="pag-note" placeholder="Es. Saldo alla consegna"/></div>
+      </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.08em">👤 Contatti / Acquirenti</div>
       <button type="button" onclick="addAcquirenteRow()" style="background:#1565C0;color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">+ Aggiungi</button>
     </div>
     <div id="cucc-acquirenti-list" style="margin-bottom:14px;max-height:320px;overflow-y:auto"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-ghost btn-sm" onclick="hide('modal-cucciolo');_editCuccId=null;_editPuppyId=null;">Annulla</button>
-      <button class="btn btn-primary btn-sm" onclick="saveCucciolo()">✓ Salva</button>
+    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center">
+      <button id="btn-genera-contratto" onclick="generaContrattoVenditaModal()" style="background:linear-gradient(135deg,#4A148C,#7B1FA2);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;display:none">📄 Contratto</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-ghost btn-sm" onclick="hide('modal-cucciolo');_editCuccId=null;_editPuppyId=null;">Annulla</button>
+        <button class="btn btn-primary btn-sm" onclick="saveCucciolo()">✓ Salva</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1906,6 +1921,27 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ════ DASHBOARD CUCCIOLI ════ -->
+<div id="modal-cuccioli-dashboard" class="overlay hidden" style="z-index:10000">
+  <div class="modal modal-wide">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#0D47A1">🐾 Gestione Cuccioli</div>
+      <button class="btn btn-ghost btn-sm" onclick="hide('modal-cuccioli-dashboard')">✕</button>
+    </div>
+    <!-- Statistiche -->
+    <div id="cucc-dash-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px"></div>
+    <!-- Filtro stato -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="cucc-dash-filtri">
+      <button onclick="renderCuccioliDashboard('tutti')" id="df-tutti" class="btn btn-primary btn-sm">Tutti</button>
+      <button onclick="renderCuccioliDashboard('disponibile')" id="df-disponibile" class="btn btn-ghost btn-sm">🟢 Disponibili</button>
+      <button onclick="renderCuccioliDashboard('prenotato')" id="df-prenotato" class="btn btn-ghost btn-sm">🟠 Prenotati</button>
+      <button onclick="renderCuccioliDashboard('ceduto')" id="df-ceduto" class="btn btn-ghost btn-sm">🔴 Ceduti</button>
+      <button onclick="renderCuccioliDashboard('mio_cane')" id="df-mio_cane" class="btn btn-ghost btn-sm">🔵 Mio Cane</button>
+    </div>
+    <div id="cucc-dash-list"></div>
   </div>
 </div>
 
@@ -4534,6 +4570,8 @@ function renderCucciolate(){
       html+='<div style="display:flex;gap:4px">';
       html+='<button onclick="condividiCucciolata('+cu.id+')" style="background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">📲 Condividi</button>';
       html+='<button onclick="showCuccioliModal('+cu.id+')" style="background:linear-gradient(135deg,#1a7a4a,#0f5a35);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">🐾 Cuccioli</button>';
+      html+='<button onclick="autocompilaModA('+cu.id+')" style="background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700">📋 Mod.A</button>';
+      html+='<button onclick="autocompilaModB('+cu.id+')" style="background:linear-gradient(135deg,#6B3FA0,#4A148C);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700">📋 Mod.B</button>';
       html+='<button onclick="deleteCucciolata('+cu.id+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:15px;flex-shrink:0;padding:6px">🗑</button>';
       html+='</div>';
       html+='</div>';
@@ -6184,10 +6222,10 @@ function showCuccioliModal(cuccId){
   if(!cuccioli.length){
     html='<div style="text-align:center;padding:20px;color:#6B8BB0;font-size:13px">Nessun cucciolo registrato</div>';
   } else {
-    var statoColor={disponibile:'#1a7a4a',prenotato:'#E65100',venduto:'#C0534A'};
-    var statoLabel={disponibile:'🟢 Disponibile',prenotato:'🟡 Prenotato',venduto:'🔴 Venduto'};
+    var statoColor={disponibile:'#1a7a4a',prenotato:'#E65100',ceduto:'#C0534A',mio_cane:'#1565C0'};
+    var statoLabel={disponibile:'🟢 Disponibile',prenotato:'🟠 Prenotato',ceduto:'🔴 Ceduto',mio_cane:'🔵 Mio Cane'};
     cuccioli.forEach(function(p){
-      var stato=p.stato||(p.acquirente&&p.acquirente.stato)||'disponibile';
+      var stato=p.stato||(p.ceduto?'ceduto':null)||(p.acquirente&&p.acquirente.stato)||'disponibile';
       var ultimoPeso=p.pesi&&p.pesi.length?p.pesi[p.pesi.length-1]:null;
       var acquirenti=p.acquirenti||(p.acquirente&&p.acquirente.nome?[p.acquirente]:[]);
       var totAcconti=acquirenti.reduce(function(s,a){return s+(a.acconto||0);},0);
@@ -6257,47 +6295,64 @@ function apreCuccioliDaProle(cuccId){
   showCuccioliModal(cuccId);
 }
 
-var _cedutoState=false;
-function toggleCeduto(){
-  _cedutoState=!_cedutoState;
-  var btn=g('btn-ceduto-toggle');
-  if(btn){
-    btn.textContent=_cedutoState?'ON — Ceduto':'OFF';
-    btn.style.background=_cedutoState?'#C0534A':'#EEF3FB';
-    btn.style.color=_cedutoState?'#fff':'#6B8BB0';
-    btn.style.border=_cedutoState?'none':'1.5px solid #DDEAFF';
+var _statoCucciolo = 'disponibile';
+function setStatoCucciolo(stato){
+  _statoCucciolo = stato;
+  ['disponibile','prenotato','ceduto','mio_cane'].forEach(function(s){
+    var btn = g('stato-btn-'+s);
+    if(!btn) return;
+    btn.style.opacity = s === stato ? '1' : '0.45';
+    btn.style.transform = s === stato ? 'scale(1.06)' : 'scale(1)';
+    btn.style.boxShadow = s === stato ? '0 2px 8px rgba(0,0,0,.18)' : 'none';
+  });
+}
+
+function aggiornaSaldo(){
+  var prezzo = parseFloat(g('pag-prezzo')&&g('pag-prezzo').value)||0;
+  var acconto = parseFloat(g('pag-acconto')&&g('pag-acconto').value)||0;
+  if(g('pag-saldo')) g('pag-saldo').value = prezzo > 0 ? Math.max(0, prezzo-acconto) : '';
+  var badge = g('pag-badge');
+  if(badge){
+    if(!prezzo){ badge.innerHTML=''; return; }
+    if(acconto >= prezzo) badge.innerHTML='<span class="badge badge-green">🟢 Saldato</span>';
+    else if(acconto > 0) badge.innerHTML='<span class="badge badge-orange">🟠 Acconto versato</span>';
+    else badge.innerHTML='<span class="badge badge-red">🔴 Non pagato</span>';
   }
 }
 
 function _creaSchedaCanePerCucciolo(cu, p){
-  if(p.ceduto || p.caneId) return; // già creato o ceduto
-  var tutti=cani.concat(guestCani);
-  var padreObj=tutti.find(function(c){return String(c.id)===String(cu.padre);});
-  var madreObj=tutti.find(function(c){return String(c.id)===String(cu.madre);});
-  var razza=(padreObj&&padreObj.razza)||(madreObj&&madreObj.razza)||'';
-  var pedFlat={};
-  if(padreObj) pedFlat['pos2']={name:padreObj.nome,loi:padreObj.numeroENCI||'',isFounder:false,hd:'',ed:'',titoli:[]};
-  if(madreObj) pedFlat['pos3']={name:madreObj.nome,loi:madreObj.numeroENCI||'',isFounder:false,hd:'',ed:'',titoli:[]};
-  if(padreObj&&padreObj.pedigreeFlat){
-    if(padreObj.pedigreeFlat['pos2']) pedFlat['pos4']=padreObj.pedigreeFlat['pos2'];
-    if(padreObj.pedigreeFlat['pos3']) pedFlat['pos5']=padreObj.pedigreeFlat['pos3'];
-  }
-  if(madreObj&&madreObj.pedigreeFlat){
-    if(madreObj.pedigreeFlat['pos2']) pedFlat['pos6']=madreObj.pedigreeFlat['pos2'];
-    if(madreObj.pedigreeFlat['pos3']) pedFlat['pos7']=madreObj.pedigreeFlat['pos3'];
-  }
-  var nuovoCane={
-    id:Date.now()+Math.floor(Math.random()*10000),
-    nome:p.nome||'Cucciolo',razza:razza,numeroENCI:'',
-    dataNascita:cu.data||'',sesso:p.sesso||'M',microchip:'',colore:p.colore||'',
-    foto:null,vaccinazioni:[],trattamenti:[],
+  if(p.caneId) return;
+  var tutti = cani.concat(guestCani);
+  var padreObj = tutti.find(function(c){return String(c.id)===String(cu.padre);});
+  var madreObj = tutti.find(function(c){return String(c.id)===String(cu.madre);});
+  var razza = (padreObj&&padreObj.razza)||(madreObj&&madreObj.razza)||'';
+  var pedFlat = {};
+  var pF = (padreObj&&padreObj.pedigreeFlat)||{};
+  var mF = (madreObj&&madreObj.pedigreeFlat)||{};
+  function node(dog){ return dog?{name:dog.nome,loi:dog.numeroENCI||'',isFounder:false,hd:'',ed:'',titoli:[]}:null; }
+  function cp(pos, src, k){ var n=src['pos'+k]||src[String(k)]; if(n&&n.name) pedFlat['pos'+pos]=n; }
+  if(padreObj) pedFlat['pos2'] = node(padreObj);
+  if(madreObj) pedFlat['pos3'] = node(madreObj);
+  cp(4,pF,2); cp(5,pF,3); cp(6,mF,2); cp(7,mF,3);
+  cp(8,pF,4); cp(9,pF,5); cp(10,pF,6); cp(11,pF,7);
+  cp(12,mF,4); cp(13,mF,5); cp(14,mF,6); cp(15,mF,7);
+  cp(16,pF,8); cp(17,pF,9); cp(18,pF,10); cp(19,pF,11);
+  cp(20,pF,12); cp(21,pF,13); cp(22,pF,14); cp(23,pF,15);
+  cp(24,mF,8); cp(25,mF,9); cp(26,mF,10); cp(27,mF,11);
+  cp(28,mF,12); cp(29,mF,13); cp(30,mF,14); cp(31,mF,15);
+  var nPed = Object.keys(pedFlat).length;
+  var gens = nPed>=14?4:nPed>=6?3:nPed>=2?2:1;
+  var ts = Date.now() + Math.floor(Math.random()*100000);
+  var nuovoCane = {
+    id:ts, nome:p.nome||'Cucciolo', razza:razza, numeroENCI:'',
+    dataNascita:cu.data||'', sesso:p.sesso||'M', microchip:'', colore:p.colore||'',
+    foto:null, vaccinazioni:[], trattamenti:[],
     displasia:{hd:'',ed:'',dataTest:'',note:''},
-    cac_list:[],cacib_list:[],
-    pedigreeFlat:pedFlat,pedGens:Object.keys(pedFlat).length>0?2:1,
+    cac_list:[], cacib_list:[], pedigreeFlat:pedFlat, pedGens:gens,
     _cucciolataId:cu.id
   };
   cani.push(nuovoCane);
-  p.caneId=nuovoCane.id;
+  p.caneId = nuovoCane.id;
 }
 
 function registraCuccioloComeCane(cuccId, puppyId){
@@ -6389,12 +6444,16 @@ function openAddCucciolo(cuccId){
   g('cucc-puppy-nome').value='';
   g('cucc-puppy-sesso').value='M';
   g('cucc-puppy-colore').value='';
-  g('cucc-puppy-stato').value='disponibile';
-  g('cucc-puppy-prezzo').value='';
   _acquirenti=[];
-  _cedutoState=false;
-  var btn=g('btn-ceduto-toggle');
-  if(btn){btn.textContent='OFF';btn.style.background='#EEF3FB';btn.style.color='#6B8BB0';btn.style.border='1.5px solid #DDEAFF';}
+  _statoCucciolo='disponibile';
+  setStatoCucciolo('disponibile');
+  if(g('pag-prezzo')) g('pag-prezzo').value='';
+  if(g('pag-acconto')) g('pag-acconto').value='';
+  if(g('pag-saldo')) g('pag-saldo').value='';
+  if(g('pag-data-acconto')) g('pag-data-acconto').value='';
+  if(g('pag-note')) g('pag-note').value='';
+  if(g('pag-badge')) g('pag-badge').innerHTML='';
+  if(g('btn-genera-contratto')) g('btn-genera-contratto').style.display='none';
   renderAcquirentiRows();
   show('modal-cucciolo');
 }
@@ -6410,9 +6469,6 @@ function openCuccioloDetail(cuccId, puppyId){
   g('cucc-puppy-nome').value=p.nome||'';
   g('cucc-puppy-sesso').value=p.sesso||'M';
   g('cucc-puppy-colore').value=p.colore||'';
-  g('cucc-puppy-prezzo').value=p.prezzo||'';
-  var stato=p.stato||(p.acquirente&&p.acquirente.stato)||'disponibile';
-  g('cucc-puppy-stato').value=stato;
   // Backward compat: converti vecchio acquirente singolo → array
   if(p.acquirenti&&p.acquirenti.length){
     _acquirenti=p.acquirenti.slice();
@@ -6421,15 +6477,19 @@ function openCuccioloDetail(cuccId, puppyId){
   } else {
     _acquirenti=[];
   }
-  // Ceduto toggle
-  _cedutoState=!!p.ceduto;
-  var btn=g('btn-ceduto-toggle');
-  if(btn){
-    btn.textContent=_cedutoState?'ON — Ceduto':'OFF';
-    btn.style.background=_cedutoState?'#C0534A':'#EEF3FB';
-    btn.style.color=_cedutoState?'#fff':'#6B8BB0';
-    btn.style.border=_cedutoState?'none':'1.5px solid #DDEAFF';
-  }
+  // Stato buttons
+  _statoCucciolo = p.stato || (p.ceduto ? 'ceduto' : (p.caneId ? 'mio_cane' : 'disponibile'));
+  setStatoCucciolo(_statoCucciolo);
+  // Pagamento
+  var pag = p.pagamento || {};
+  if(g('pag-prezzo')) g('pag-prezzo').value = pag.prezzo||'';
+  if(g('pag-acconto')) g('pag-acconto').value = pag.acconto||'';
+  if(g('pag-data-acconto')) g('pag-data-acconto').value = pag.dataAcconto||'';
+  if(g('pag-note')) g('pag-note').value = pag.note||'';
+  aggiornaSaldo();
+  // Mostra bottone contratto se esiste acquirente con nome
+  var acqs = p.acquirenti||(p.acquirente&&p.acquirente.nome?[p.acquirente]:[]);
+  if(g('btn-genera-contratto')) g('btn-genera-contratto').style.display = acqs.length&&acqs[0].nome ? 'block':'none';
   renderAcquirentiRows();
   show('modal-cucciolo');
 }
@@ -6451,8 +6511,13 @@ function saveCucciolo(){
       note:g('acq-note-'+i)?g('acq-note-'+i).value.trim():''
     };
   }).filter(function(a){return a.nome||a.acconto;});
-  var stato=g('cucc-puppy-stato').value;
-  var prezzo=parseFloat(g('cucc-puppy-prezzo').value)||0;
+  var stato=_statoCucciolo||'disponibile';
+  var pag={
+    prezzo: parseFloat(g('pag-prezzo')&&g('pag-prezzo').value)||0,
+    acconto: parseFloat(g('pag-acconto')&&g('pag-acconto').value)||0,
+    dataAcconto: g('pag-data-acconto')?g('pag-data-acconto').value:'',
+    note: g('pag-note')?g('pag-note').value.trim():''
+  };
   if(puppyId){
     var p=cu.cuccioli.find(function(x){return x.id===puppyId;});
     if(p){
@@ -6460,20 +6525,21 @@ function saveCucciolo(){
       p.sesso=g('cucc-puppy-sesso').value;
       p.colore=g('cucc-puppy-colore').value.trim();
       p.stato=stato;
-      p.prezzo=prezzo;
+      p.pagamento=pag;
       p.acquirenti=acquirenti;
       p.acquirente={stato:stato};
-      var eraCeduto=p.ceduto;
-      p.ceduto=_cedutoState;
-      // Se appena ceduto e ha un cane in Miei Cani → rimuovilo
-      if(_cedutoState && !eraCeduto && p.caneId){
+      p.ceduto=(stato==='ceduto');
+      // Se ceduto → rimuovi da cani
+      if(stato==='ceduto' && p.caneId){
         cani=cani.filter(function(c){return String(c.id)!==String(p.caneId);});
+        p.caneId=null;
         renderSidebar();
       }
-      // Se appena NON ceduto e non ha ancora un cane → crea scheda
-      if(!_cedutoState && eraCeduto && !p.caneId){
+      // Se mio_cane → crea cane se non esiste
+      if(stato==='mio_cane' && !p.caneId){
         _creaSchedaCanePerCucciolo(cu, p);
         renderSidebar();
+        toast('✅ '+p.nome+' aggiunto ai tuoi cani!');
       }
     }
   } else {
@@ -6482,13 +6548,14 @@ function saveCucciolo(){
       nome:g('cucc-puppy-nome').value.trim(),
       sesso:g('cucc-puppy-sesso').value,
       colore:g('cucc-puppy-colore').value.trim(),
-      stato:stato, prezzo:prezzo,
-      ceduto:_cedutoState,
+      stato:stato, ceduto:(stato==='ceduto'),
+      pagamento:pag,
       acquirenti:acquirenti, acquirente:{stato:stato},
       pesi:[]
     };
     cu.cuccioli.push(newPuppy);
-    if(!_cedutoState){ _creaSchedaCanePerCucciolo(cu, newPuppy); renderSidebar(); }
+    if(stato==='mio_cane'){ _creaSchedaCanePerCucciolo(cu, newPuppy); renderSidebar(); toast('✅ '+newPuppy.nome+' aggiunto ai tuoi cani!'); }
+    else if(stato!=='ceduto'){ _creaSchedaCanePerCucciolo(cu, newPuppy); renderSidebar(); }
   }
   hide('modal-cucciolo');
   _editCuccId=null; _editPuppyId=null;
@@ -6589,13 +6656,184 @@ getReminders=function(c){
   window.renderAcquirentiRows = renderAcquirentiRows;
   window.addAcquirenteRow = addAcquirenteRow;
   window.removeAcquirenteRow = removeAcquirenteRow;
+  window.setStatoCucciolo = setStatoCucciolo;
+  window.aggiornaSaldo = aggiornaSaldo;
   window.registraCuccioloComeCane = registraCuccioloComeCane;
   window.tornaDaCuccioli = tornaDaCuccioli;
   window.tornaCucciolate = tornaCucciolate;
   window.apreCuccioliDaProle = apreCuccioliDaProle;
-  window.toggleCeduto = toggleCeduto;
   window.renderProle = renderProle;
 })();
+
+function generaContrattoVenditaModal(){
+  if(!_editCuccId || !_editPuppyId) return;
+  generaContrattoVendita(_editCuccId, _editPuppyId);
+}
+
+function generaContrattoVendita(cuccId, puppyId){
+  var cu=cucciolate.find(function(c){return String(c.id)===String(cuccId);});
+  if(!cu) return;
+  var p=(cu.cuccioli||[]).find(function(x){return String(x.id)===String(puppyId);});
+  if(!p) return;
+  var tutti=cani.concat(guestCani);
+  var padreObj=tutti.find(function(c){return String(c.id)===String(cu.padre);});
+  var madreObj=tutti.find(function(c){return String(c.id)===String(cu.madre);});
+  var acq=(p.acquirenti&&p.acquirenti[0])||p.acquirente||{};
+  var pag=p.pagamento||{};
+  var today=new Date().toLocaleDateString('it-IT');
+  var v=profilo;
+  var html='<!DOCTYPE html><html lang="it"><head><meta charset="utf-8">'
+    +'<title>Contratto Cessione — '+p.nome+'</title>'
+    +'<style>body{font-family:Arial,sans-serif;max-width:800px;margin:30px auto;padding:20px;font-size:11pt;line-height:1.5;color:#111}'
+    +'h1{font-size:15pt;text-align:center;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}'
+    +'h2{font-size:12pt;margin-top:20px;margin-bottom:6px;border-bottom:1px solid #555;padding-bottom:4px}'
+    +'.row{display:flex;gap:20px;margin-bottom:6px}.lbl{font-weight:bold;min-width:180px}'
+    +'.firma{margin-top:40px;display:flex;gap:60px}.firma-box{flex:1;border-top:1px solid #333;padding-top:8px;font-size:10pt}'
+    +'@media print{body{margin:15mm}}'
+    +'</style></head><body>'
+    +'<h1>Contratto di Cessione Animale da Compagnia</h1>'
+    +'<p style="text-align:center;font-size:10pt;color:#555">Ai sensi del D.Lgs. 529/1992 e normativa ENCI vigente</p>'
+    +'<h2>👤 Venditore (Allevatore)</h2>'
+    +'<div class="row"><span class="lbl">Nome / Affisso:</span><span>'+(v.nome||'—')+(v.affisso?' — Affisso: '+v.affisso:'')+'</span></div>'
+    +'<div class="row"><span class="lbl">Telefono:</span><span>'+(v.tel||'—')+'</span></div>'
+    +'<div class="row"><span class="lbl">Email:</span><span>'+(v.email||'—')+'</span></div>'
+    +'<h2>👤 Acquirente</h2>'
+    +'<div class="row"><span class="lbl">Nome:</span><span>'+(acq.nome||'—')+'</span></div>'
+    +'<div class="row"><span class="lbl">Telefono:</span><span>'+(acq.tel||'—')+'</span></div>'
+    +'<div class="row"><span class="lbl">Email:</span><span>'+(acq.email||'—')+'</span></div>'
+    +'<h2>🐾 Dati del Cane</h2>'
+    +'<div class="row"><span class="lbl">Nome:</span><span>'+(p.nome||'—')+'</span></div>'
+    +'<div class="row"><span class="lbl">Razza:</span><span>'+(((padreObj||madreObj)&&(padreObj||madreObj).razza)||v.razza||'Pastore Abruzzese Maremmano')+'</span></div>'
+    +'<div class="row"><span class="lbl">Data di nascita:</span><span>'+(cu.data||'—')+'</span></div>'
+    +'<div class="row"><span class="lbl">Sesso:</span><span>'+(p.sesso==='M'?'Maschio':'Femmina')+'</span></div>'
+    +'<div class="row"><span class="lbl">Colore/Mantello:</span><span>'+(p.colore||'—')+'</span></div>'
+    +'<div class="row"><span class="lbl">Microchip:</span><span>'+(p.microchip||'— (da inserire)')+'</span></div>'
+    +'<div class="row"><span class="lbl">Padre:</span><span>'+(padreObj?padreObj.nome+' '+(padreObj.numeroENCI||''):'—')+'</span></div>'
+    +'<div class="row"><span class="lbl">Madre:</span><span>'+(madreObj?madreObj.nome+' '+(madreObj.numeroENCI||''):'—')+'</span></div>'
+    +'<h2>💶 Condizioni Economiche</h2>'
+    +'<div class="row"><span class="lbl">Prezzo concordato:</span><span>'+(pag.prezzo?'€ '+pag.prezzo:'da definire')+'</span></div>'
+    +'<div class="row"><span class="lbl">Acconto versato:</span><span>'+(pag.acconto?'€ '+pag.acconto+(pag.dataAcconto?' in data '+pag.dataAcconto:''):'—')+'</span></div>'
+    +'<div class="row"><span class="lbl">Saldo residuo:</span><span>'+(pag.prezzo&&pag.acconto?'€ '+(pag.prezzo-pag.acconto):'—')+'</span></div>'
+    +'<h2>📋 Clausole</h2>'
+    +'<ol style="font-size:10.5pt;line-height:1.7">'
+    +'<li>Il venditore dichiara che il soggetto è sano alla data di consegna e non presenta patologie manifeste.</li>'
+    +'<li>Il cane è iscritto/iscrivibile al Libro Genealogico ENCI con relativo pedigree.</li>'
+    +'<li>L\'acquirente si impegna a registrare il trasferimento di proprietà presso ENCI entro 30 giorni dalla consegna.</li>'
+    +'<li>Il cane viene ceduto completo di pedigree ENCI e libretto sanitario veterinario aggiornato.</li>'
+    +'<li>L\'acquirente si impegna a garantire al cane cure adeguate nel rispetto del benessere animale.</li>'
+    +'<li>Per qualsiasi controversia è competente il Tribunale del luogo del venditore.</li>'
+    +'</ol>'
+    +'<div style="margin-top:20px;font-size:10pt">Data e luogo: _________________ , '+today+'</div>'
+    +'<div class="firma">'
+    +'<div class="firma-box">Firma del Venditore<br><br><br>'+(v.nome||'')+'</div>'
+    +'<div class="firma-box">Firma dell\'Acquirente<br><br><br>'+(acq.nome||'')+'</div>'
+    +'</div>'
+    +'<script>window.onload=function(){window.print();}<\/script>'
+    +'</body></html>';
+  apriHtmlBlob(html);
+}
+
+function renderCuccioliDashboard(filtro){
+  filtro=filtro||'tutti';
+  // Aggiorna bottoni filtro
+  ['tutti','disponibile','prenotato','ceduto','mio_cane'].forEach(function(f){
+    var btn=g('df-'+f);
+    if(!btn) return;
+    btn.className = f===filtro ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+  });
+  // Raccolta tutti i cuccioli da tutte le cucciolate
+  var tutti=[];
+  cucciolate.forEach(function(cu){
+    (cu.cuccioli||[]).forEach(function(p){
+      tutti.push({cucciolo:p, cucciolata:cu});
+    });
+  });
+  // Stats
+  var tot=tutti.length;
+  var disp=tutti.filter(function(x){return (x.cucciolo.stato||'disponibile')==='disponibile';}).length;
+  var pren=tutti.filter(function(x){return x.cucciolo.stato==='prenotato';}).length;
+  var ced=tutti.filter(function(x){return x.cucciolo.stato==='ceduto'||x.cucciolo.ceduto;}).length;
+  var incasso=tutti.reduce(function(s,x){return s+((x.cucciolo.pagamento&&x.cucciolo.pagamento.acconto)||0);},0);
+  var prezziTot=tutti.reduce(function(s,x){return s+((x.cucciolo.pagamento&&x.cucciolo.pagamento.prezzo)||0);},0);
+  var statsEl=g('cucc-dash-stats');
+  if(statsEl) statsEl.innerHTML=
+    '<div style="background:#E3F2FD;border-radius:10px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;color:#1565C0">'+tot+'</div><div style="font-size:11px;color:#6B8BB0">Totale</div></div>'
+    +'<div style="background:#E8F5E9;border-radius:10px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;color:#1a7a4a">'+disp+'</div><div style="font-size:11px;color:#6B8BB0">Disponibili</div></div>'
+    +'<div style="background:#FFF3E0;border-radius:10px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;color:#E65100">'+pren+'</div><div style="font-size:11px;color:#6B8BB0">Prenotati</div></div>'
+    +'<div style="background:#FFEBEE;border-radius:10px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;color:#C0534A">'+ced+'</div><div style="font-size:11px;color:#6B8BB0">Ceduti</div></div>'
+    +'<div style="background:#F0FFF6;border-radius:10px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;color:#1a7a4a">€'+incasso+'</div><div style="font-size:11px;color:#6B8BB0">Acconti</div></div>'
+    +'<div style="background:#EEF3FB;border-radius:10px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:800;color:#1565C0">€'+prezziTot+'</div><div style="font-size:11px;color:#6B8BB0">Valore totale</div></div>';
+  // Lista filtrata
+  var lista = filtro==='tutti' ? tutti : tutti.filter(function(x){
+    var s=x.cucciolo.stato||(x.cucciolo.ceduto?'ceduto':'disponibile');
+    return s===filtro;
+  });
+  var listEl=g('cucc-dash-list');
+  if(!listEl) return;
+  if(!lista.length){listEl.innerHTML='<div style="text-align:center;padding:20px;color:#6B8BB0">Nessun cucciolo trovato</div>';return;}
+  var scLabel={disponibile:'🟢 Disponibile',prenotato:'🟠 Prenotato',ceduto:'🔴 Ceduto',mio_cane:'🔵 Mio Cane'};
+  var scColor={disponibile:'#1a7a4a',prenotato:'#E65100',ceduto:'#C0534A',mio_cane:'#1565C0'};
+  var html='';
+  lista.forEach(function(item){
+    var p=item.cucciolo, cu=item.cucciolata;
+    var stato=p.stato||(p.ceduto?'ceduto':'disponibile');
+    var pag=p.pagamento||{};
+    var acqs=p.acquirenti||(p.acquirente&&p.acquirente.nome?[p.acquirente]:[]);
+    var eta=cu.data?etaCuccioli(cu.data):'';
+    html+='<div style="background:#F8FAFF;border:1.5px solid #DDEAFF;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
+    html+='<span style="font-size:22px;background:#EEF3FB;border-radius:8px;padding:4px 8px">'+(p.sesso==='M'?'♂':'♀')+'</span>';
+    html+='<div style="flex:1;min-width:120px">';
+    html+='<div style="font-weight:700;font-size:13px">'+(p.nome||'Senza nome')+(p.colore?' <span style="font-size:11px;color:#6B8BB0">'+p.colore+'</span>':'')+'</div>';
+    html+='<div style="font-size:11px;color:#6B8BB0">'+eta+(nomeById(cu.padre)?(' · ♂ '+nomeById(cu.padre)):'')+'</div>';
+    html+='</div>';
+    if(pag.prezzo) html+='<div style="text-align:center"><div style="font-size:13px;font-weight:700;color:#1565C0">€'+pag.prezzo+'</div><div style="font-size:10px;color:#6B8BB0">'+(pag.acconto?'acc. €'+pag.acconto:'nessun acc.')+'</div></div>';
+    if(acqs.length&&acqs[0].nome) html+='<div style="font-size:12px;color:#4A6080">👤 '+acqs[0].nome+(acqs[0].tel?' · 📞 '+acqs[0].tel:'')+'</div>';
+    html+='<span style="font-size:11px;font-weight:700;color:'+(scColor[stato]||'#6B8BB0')+'">'+(scLabel[stato]||stato)+'</span>';
+    html+='</div>';
+  });
+  listEl.innerHTML=html;
+}
+
+function autocompilaModA(cuccId){
+  var cu=cucciolate.find(function(c){return String(c.id)===String(cuccId);});
+  if(!cu) return;
+  openModuliENCI();
+  // Switch a panel A
+  var pa=g('enci-panel-a'),pb=g('enci-panel-b');
+  if(pa) pa.style.display='';
+  if(pb) pb.style.display='none';
+  setTimeout(function(){
+    precompilaDaProfilo('a');
+    if(cu.madre) precompilaFattrice('a', cu.madre);
+    if(cu.padre) precompilaStallone('a', cu.padre);
+    if(cu.data&&g('ma-data-nascita')) g('ma-data-nascita').value=cu.data;
+    if(cu.nati&&g('ma-ntot')) g('ma-ntot').value=cu.nati;
+    if(cu.maschi&&g('ma-nmaschi')) g('ma-nmaschi').value=cu.maschi;
+    if(cu.femmine&&g('ma-nfemmine')) g('ma-nfemmine').value=cu.femmine;
+    toast('✅ Modulo A precompilato!');
+  },100);
+}
+
+function autocompilaModB(cuccId){
+  var cu=cucciolate.find(function(c){return String(c.id)===String(cuccId);});
+  if(!cu) return;
+  openModuliENCI();
+  // Switch a panel B
+  var pa=g('enci-panel-a'),pb=g('enci-panel-b');
+  if(pa) pa.style.display='none';
+  if(pb) pb.style.display='';
+  setTimeout(function(){
+    precompilaDaProfilo('b');
+    if(cu.data&&g('mb-data')) g('mb-data').value=cu.data;
+    if(cu.nati&&g('mb-ntot')) g('mb-ntot').value=cu.nati;
+    if(cu.maschi&&g('mb-nmaschi')) g('mb-nmaschi').value=cu.maschi;
+    if(cu.femmine&&g('mb-nfemmine')) g('mb-nfemmine').value=cu.femmine;
+    if(cu.madre) precompilaFattrice('b', cu.madre);
+    if(cu.padre) precompilaStallone('b', cu.padre);
+    autofillCuccioliB();
+    toast('✅ Modulo B precompilato!');
+  },100);
+}
 
 /* ── Proprietario del Cane (scheda Info) ── */
 function toggleProprForm(){
