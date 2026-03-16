@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '6.8';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '6.9';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1489,7 +1489,10 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 <div id="modal-cucciolo" class="overlay hidden" style="z-index:10001">
   <div class="modal" style="max-width:520px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D47A1">🐾 Dati Cucciolo</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="hide('modal-cucciolo');show('modal-cuccioli-list');" style="background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:8px;padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer;color:#1565C0">← Indietro</button>
+        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D47A1">🐾 Dati Cucciolo</div>
+      </div>
       <button class="btn btn-ghost btn-sm" onclick="hide('modal-cucciolo');_editCuccId=null;_editPuppyId=null;">✕</button>
     </div>
     <input type="hidden" id="cucc-modal-cuccId"/>
@@ -3432,9 +3435,16 @@ function renderSidebar(){
 
     renderReminderSummary();
 
-    // Popola tab "I miei cani"
+    // Popola tab "I miei cani" (escludi cuccioli non "mio cane")
     var byBreed={};
     cani.forEach(function(dog){
+      if(dog._cucciolataId){
+        var cuPar=cucciolate.find(function(c){return String(c.id)===String(dog._cucciolataId);});
+        if(cuPar){
+          var pup=(cuPar.cuccioli||[]).find(function(p){return String(p.caneId)===String(dog.id);});
+          if(!pup||pup.stato!=='mio_cane') return;
+        }
+      }
       var key=(dog.razza&&dog.razza.trim())?dog.razza.trim():'Razza non specificata';
       if(!byBreed[key])byBreed[key]=[];
       byBreed[key].push(dog);
@@ -4577,18 +4587,20 @@ function renderCucciolate(){
 
       html+='<div style="background:#fff;border:1.5px solid #DDEAFF;border-radius:13px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(21,101,192,.06)">';
       // Header cucciolata
-      html+='<div style="display:flex;width:100%;align-items:flex-start;justify-content:space-between;margin-bottom:12px">';
-      html+='<div>';
+      html+='<div style="margin-bottom:12px">';
+      html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">';
+      html+='<div style="min-width:0">';
       html+='<div style="font-weight:700;font-size:15px;color:#1a1a3a">🐶 Cucciolata del '+cu.data+' <span style="font-size:12px;color:#6B8BB0;font-weight:400">'+eta+'</span>'+alertBadge+'</div>';
       html+='<div style="font-size:13px;color:#4A6080;margin-top:3px">♂ <strong>'+padreNome+'</strong> × ♀ <strong>'+madreNome+'</strong></div>';
       if(cu.note)html+='<div style="font-size:12px;color:#6B8BB0;margin-top:2px">📝 '+cu.note+'</div>';
       html+='</div>';
-      html+='<div style="display:flex;gap:4px">';
+      html+='<button onclick="deleteCucciolata('+cu.id+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:15px;flex-shrink:0;padding:4px 6px">🗑</button>';
+      html+='</div>';
+      html+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
       html+='<button onclick="condividiCucciolata('+cu.id+')" style="background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">📲 Condividi</button>';
       html+='<button onclick="showCuccioliModal('+cu.id+')" style="background:linear-gradient(135deg,#1a7a4a,#0f5a35);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">🐾 Cuccioli</button>';
       html+='<button onclick="autocompilaModA('+cu.id+')" style="background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700">📋 Mod.A</button>';
       html+='<button onclick="autocompilaModB('+cu.id+')" style="background:linear-gradient(135deg,#6B3FA0,#4A148C);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700">📋 Mod.B</button>';
-      html+='<button onclick="deleteCucciolata('+cu.id+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:15px;flex-shrink:0;padding:6px">🗑</button>';
       html+='</div>';
       html+='</div>';
       // Badge conteggi
@@ -4776,6 +4788,7 @@ function segnaFatto(cuccId, schedId){
   s.dataFatto=new Date().toISOString().substring(0,10);
   renderCucciolate();
   renderReminderSummary();
+  salvaDB();
 }
 
 function annullaFatto(cuccId, schedId){
@@ -4786,6 +4799,7 @@ function annullaFatto(cuccId, schedId){
   s.fatto=false;s.dataFatto='';
   renderCucciolate();
   renderReminderSummary();
+  salvaDB();
 }
 
 function condividiCucciolata(id){
@@ -6331,8 +6345,8 @@ function showCuccioliModal(cuccId){
     for(var i=0;i<f;i++) cu.cuccioli.push({id:ts++,nome:'Cucciola '+(i+1),sesso:'F',colore:'',stato:'disponibile',ceduto:false,acquirente:{stato:'disponibile'},pesi:[]});
     var extra=tot-m-f;
     for(var i=0;i<extra;i++) cu.cuccioli.push({id:ts++,nome:'Cucciolo '+(m+f+i+1),sesso:'M',colore:'',stato:'disponibile',ceduto:false,acquirente:{stato:'disponibile'},pesi:[]});
-    // Crea scheda cane per ogni cucciolo (ponte automatico)
-    cu.cuccioli.forEach(function(p){ _creaSchedaCanePerCucciolo(cu, p); });
+    // Calcola pedigree per ogni cucciolo (NON aggiunge a cani[])
+    cu.cuccioli.forEach(function(p){ _computaPedigreePerCucciolo(cu, p); });
     salvaDB();
     renderSidebar();
   }
@@ -6350,37 +6364,52 @@ function showCuccioliModal(cuccId){
   if(!cuccioli.length){
     html='<div style="text-align:center;padding:20px;color:#6B8BB0;font-size:13px">Nessun cucciolo registrato</div>';
   } else {
-    var statoColor={disponibile:'#1a7a4a',prenotato:'#E65100',ceduto:'#C0534A',mio_cane:'#1565C0'};
-    var statoLabel={disponibile:'🟢 Disponibile',prenotato:'🟠 Prenotato',ceduto:'🔴 Ceduto',mio_cane:'🔵 Mio Cane'};
-    cuccioli.forEach(function(p){
+    cuccioli.forEach(function(p, idx){
       var stato=p.stato||(p.ceduto?'ceduto':null)||(p.acquirente&&p.acquirente.stato)||'disponibile';
+      var pag=p.pagamento||{};
+      var prezzo=parseFloat(pag.prezzo||p.prezzo)||0;
+      var acconto=parseFloat(pag.acconto)||0;
+      var saldo=prezzo>0?Math.max(0,prezzo-acconto):0;
       var ultimoPeso=p.pesi&&p.pesi.length?p.pesi[p.pesi.length-1]:null;
       var acquirenti=p.acquirenti||(p.acquirente&&p.acquirente.nome?[p.acquirente]:[]);
-      var totAcconti=acquirenti.reduce(function(s,a){return s+(a.acconto||0);},0);
-      html+='<div style="background:#F8FAFF;border:1.5px solid #DDEAFF;border-radius:10px;padding:10px 12px;margin-bottom:8px">';
-      // Riga principale
+      // Colore card basato su stato pagamento
+      var cardBg,cardBorder;
+      if(stato==='mio_cane'){cardBg='#EEF7FF';cardBorder='#1565C0';}
+      else if(stato==='ceduto'||(prezzo>0&&acconto>=prezzo)){cardBg='#F5F5F5';cardBorder='#9E9E9E';}
+      else if(acconto>0&&prezzo>0&&acconto<prezzo){cardBg='#FFF3E0';cardBorder='#FF9800';}
+      else if(stato==='prenotato'||acconto>0){cardBg='#FFF8E1';cardBorder='#FFD180';}
+      else{cardBg='#F0FFF6';cardBorder='#A8D8B8';}
+      // Nome fallback
+      var nomeDisplay=p.nome||(p.sesso==='F'?'Cucciola':'Cucciolo')+' '+(idx+1);
+      html+='<div style="background:'+cardBg+';border:2px solid '+cardBorder+';border-radius:10px;padding:10px 12px;margin-bottom:8px">';
+      // Riga nome + stato selector + pulsanti
       html+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">';
-      html+='<div style="display:flex;align-items:center;gap:8px">';
-      html+='<span style="font-size:20px;background:#EEF3FB;border-radius:8px;padding:4px 7px">'+(p.sesso==='M'?'♂':'♀')+'</span>';
-      html+='<div>';
-      html+='<div style="font-weight:700;font-size:13px">'+(p.nome||'Senza nome')+(p.colore?' <span style="font-size:11px;color:#6B8BB0">'+p.colore+'</span>':'')+'</div>';
+      html+='<div style="display:flex;align-items:center;gap:8px;min-width:0">';
+      html+='<span style="font-size:20px;background:rgba(255,255,255,.7);border-radius:8px;padding:4px 7px;flex-shrink:0">'+(p.sesso==='M'?'♂':'♀')+'</span>';
+      html+='<div style="min-width:0">';
+      html+='<div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+nomeDisplay+(p.colore?' <span style="font-size:11px;color:#6B8BB0">'+p.colore+'</span>':'')+'</div>';
       var infoLine='';
-      if(p.prezzo) infoLine+='<span style="color:#1565C0;font-weight:700">💶 €'+p.prezzo+'</span>';
-      if(totAcconti) infoLine+=(infoLine?' · ':'')+'<span style="color:#1a7a4a">Acconto: €'+totAcconti+'</span>';
+      if(prezzo) infoLine+='<span style="color:#1565C0;font-weight:700">💶 €'+prezzo+'</span>';
+      if(acconto) infoLine+=(infoLine?' · ':'')+'<span style="color:#1a7a4a">Acc: €'+acconto+'</span>';
+      if(prezzo&&saldo>0) infoLine+=(infoLine?' · ':'')+'<span style="color:#E65100">Saldo: €'+saldo+'</span>';
       if(ultimoPeso) infoLine+=(infoLine?' · ':'')+'<span style="color:#6B8BB0">⚖ '+ultimoPeso.grammi+'g</span>';
       if(infoLine) html+='<div style="font-size:11px;margin-top:2px">'+infoLine+'</div>';
       html+='</div></div>';
-      html+='<div style="display:flex;gap:5px;align-items:center">';
-      html+='<span style="font-size:11px;font-weight:700;color:'+(statoColor[stato]||'#6B8BB0')+'">'+(statoLabel[stato]||stato)+'</span>';
-      if(p.ceduto){
-        html+='<span style="background:#FFEBEE;color:#C0534A;border:1.5px solid #FFCDD2;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700">✂ Ceduto</span>';
-      } else if(p.caneId){
+      html+='<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">';
+      // Stato selector inline
+      html+='<select onchange="aggiornaStatoCucciolo('+cuccId+','+p.id+',this.value)" style="border:1.5px solid '+cardBorder+';border-radius:6px;padding:3px 6px;font-size:11px;font-weight:700;background:rgba(255,255,255,.8);cursor:pointer">';
+      html+='<option value="disponibile"'+(stato==='disponibile'?' selected':'')+'>🟢 Disponibile</option>';
+      html+='<option value="prenotato"'+(stato==='prenotato'?' selected':'')+'>🟠 Prenotato</option>';
+      html+='<option value="ceduto"'+(stato==='ceduto'?' selected':'')+'>🔴 Ceduto</option>';
+      html+='<option value="mio_cane"'+(stato==='mio_cane'?' selected':'')+'>🔵 Mio Cane</option>';
+      html+='</select>';
+      if(stato==='mio_cane'&&p.caneId){
         html+='<button onclick="hide(\'modal-cuccioli-list\');openDetail('+p.caneId+')" style="background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer">📋 Scheda</button>';
-      } else {
+      } else if(stato!=='ceduto'&&!p.caneId){
         html+='<button onclick="registraCuccioloComeCane('+cuccId+','+p.id+')" style="background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer">📋 Scheda</button>';
       }
-      html+='<button onclick="hide(\'modal-cuccioli-list\');openCuccioloDetail('+cuccId+','+p.id+')" style="background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1565C0">✏</button>';
-      html+='<button onclick="hide(\'modal-cuccioli-list\');openAggiuntaPeso('+cuccId+','+p.id+')" style="background:#F0FFF6;border:1.5px solid #A8D8B8;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1a7a4a">⚖</button>';
+      html+='<button onclick="hide(\'modal-cuccioli-list\');openCuccioloDetail('+cuccId+','+p.id+')" style="background:rgba(255,255,255,.8);border:1.5px solid #DDEAFF;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1565C0">✏</button>';
+      html+='<button onclick="hide(\'modal-cuccioli-list\');openAggiuntaPeso('+cuccId+','+p.id+')" style="background:rgba(255,255,255,.8);border:1.5px solid #A8D8B8;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1a7a4a">⚖</button>';
       html+='<button onclick="condividiCucciolo('+cuccId+','+p.id+')" style="background:none;border:none;cursor:pointer;color:#1565C0;font-size:13px" title="Condividi scheda">📲</button>';
       html+='<button onclick="deleteCucciolo('+cuccId+','+p.id+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:13px">🗑</button>';
       html+='</div></div>';
@@ -6389,7 +6418,7 @@ function showCuccioliModal(cuccId){
         html+='<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">';
         acquirenti.forEach(function(a){
           if(!a.nome&&!a.acconto) return;
-          html+='<div style="padding:5px 9px;background:#fff;border-radius:7px;border:1px solid #EEF3FB;font-size:12px;color:#4A6080">';
+          html+='<div style="padding:5px 9px;background:rgba(255,255,255,.8);border-radius:7px;border:1px solid rgba(0,0,0,.06);font-size:12px;color:#4A6080">';
           html+='👤 <strong>'+(a.nome||'N.D.')+'</strong>';
           if(a.tel) html+=' · 📞 '+a.tel;
           if(a.email) html+=' · ✉ '+a.email;
@@ -6449,15 +6478,38 @@ function aggiornaSaldo(){
   }
 }
 
-function _creaSchedaCanePerCucciolo(cu, p){
-  if(p.caneId) return;
+function aggiornaStatoCucciolo(cuccId, puppyId, stato){
+  var cu=cucciolate.find(function(c){return String(c.id)===String(cuccId);});
+  if(!cu) return;
+  var p=(cu.cuccioli||[]).find(function(x){return String(x.id)===String(puppyId);});
+  if(!p) return;
+  p.stato=stato;
+  p.ceduto=(stato==='ceduto');
+  p.acquirente=p.acquirente||{};
+  p.acquirente.stato=stato;
+  if(stato==='ceduto'&&p.caneId){
+    cani=cani.filter(function(c){return String(c.id)!==String(p.caneId);});
+    p.caneId=null;
+    renderSidebar();
+  }
+  if(stato==='mio_cane'&&!p.caneId){
+    _creaSchedaCanePerCucciolo(cu, p);
+    renderSidebar();
+    toast('✅ '+p.nome+' aggiunto ai tuoi cani!');
+  }
+  salvaDB();
+  setTimeout(function(){ showCuccioliModal(cuccId); },50);
+}
+
+// Computa il pedigree e lo salva nel cucciolo p (NON crea scheda cane)
+function _computaPedigreePerCucciolo(cu, p){
   var tutti = cani.concat(guestCani);
   var padreObj = tutti.find(function(c){return String(c.id)===String(cu.padre);});
   var madreObj = tutti.find(function(c){return String(c.id)===String(cu.madre);});
-  var razza = (padreObj&&padreObj.razza)||(madreObj&&madreObj.razza)||'';
+  p._razza = (padreObj&&padreObj.razza)||(madreObj&&madreObj.razza)||'';
   var pedFlat = {};
-  var pF = (padreObj&&padreObj.pedigreeFlat)||{};
-  var mF = (madreObj&&madreObj.pedigreeFlat)||{};
+  var pF = (padreObj&&(padreObj.pedigreeFlat||{}))||{};
+  var mF = (madreObj&&(madreObj.pedigreeFlat||{}))||{};
   function node(dog){ return dog?{name:dog.nome,loi:dog.numeroENCI||'',isFounder:false,hd:'',ed:'',titoli:[]}:null; }
   function cp(pos, src, k){ var n=src['pos'+k]||src[String(k)]; if(n&&n.name) pedFlat['pos'+pos]=n; }
   if(padreObj) pedFlat['pos2'] = node(padreObj);
@@ -6469,6 +6521,15 @@ function _creaSchedaCanePerCucciolo(cu, p){
   cp(20,pF,12); cp(21,pF,13); cp(22,pF,14); cp(23,pF,15);
   cp(24,mF,8); cp(25,mF,9); cp(26,mF,10); cp(27,mF,11);
   cp(28,mF,12); cp(29,mF,13); cp(30,mF,14); cp(31,mF,15);
+  p.pedigreeFlat = pedFlat;
+}
+
+// Crea una scheda cane completa solo quando stato === 'mio_cane'
+function _creaSchedaCanePerCucciolo(cu, p){
+  if(p.caneId) return;
+  _computaPedigreePerCucciolo(cu, p);
+  var pedFlat = p.pedigreeFlat || {};
+  var razza = p._razza || '';
   var nPed = Object.keys(pedFlat).length;
   var gens = nPed>=14?4:nPed>=6?3:nPed>=2?2:1;
   var ts = Date.now() + Math.floor(Math.random()*100000);
@@ -6682,9 +6743,9 @@ function saveCucciolo(){
       acquirenti:acquirenti, acquirente:{stato:stato},
       pesi:[]
     };
+    _computaPedigreePerCucciolo(cu, newPuppy);
     cu.cuccioli.push(newPuppy);
     if(stato==='mio_cane'){ _creaSchedaCanePerCucciolo(cu, newPuppy); renderSidebar(); toast('✅ '+newPuppy.nome+' aggiunto ai tuoi cani!'); }
-    else if(stato!=='ceduto'){ _creaSchedaCanePerCucciolo(cu, newPuppy); renderSidebar(); }
   }
   hide('modal-cucciolo');
   _editCuccId=null; _editPuppyId=null;
@@ -6792,6 +6853,7 @@ getReminders=function(c){
   window.tornaCucciolate = tornaCucciolate;
   window.apreCuccioliDaProle = apreCuccioliDaProle;
   window.renderProle = renderProle;
+  window.aggiornaStatoCucciolo = aggiornaStatoCucciolo;
 })();
 
 function generaContrattoVenditaModal(){
@@ -8140,6 +8202,43 @@ function mostraCuccioliPanel(btn){
   s.style.display = isOpen ? 'none' : 'block';
   if(!isOpen) setTimeout(function(){ s.scrollIntoView({behavior:'smooth', block:'nearest'}); }, 50);
 }
+</script>
+<script>
+/* ── Navigazione: intercetta freccia Indietro browser/telefono ── */
+(function(){
+  history.replaceState({nav:0}, '');
+  document.addEventListener('DOMContentLoaded', function(){
+    history.replaceState({nav:0}, '');
+  });
+  window.addEventListener('popstate', function(){
+    // Chiudi il modal più in primo piano
+    var order = [
+      'modal-peso','modal-cucciolo','modal-cuccioli-list',
+      'modal-cucciolate','modal-cuccioli-dashboard',
+      'modal-foto-import','modal-pdf-import','modal-nuovo-cane',
+      'modal-import','modal-moduli-enci','modal-contratto',
+      'modal-cucc-share','modal-tessere','modal-calendario',
+      'modal-profilo','modal-impostazioni-ai','modal-camera'
+    ];
+    for(var i=0;i<order.length;i++){
+      var el=document.getElementById(order[i]);
+      if(el&&!el.classList.contains('hidden')){
+        el.classList.add('hidden');
+        history.pushState({nav:0},'');
+        return;
+      }
+    }
+    // Nessun modal aperto: chiudi il dettaglio cane se aperto
+    var detail=document.getElementById('detail');
+    if(detail&&detail.style.display!=='none'&&!detail.classList.contains('hidden')){
+      if(typeof closeDetail==='function') closeDetail();
+      history.pushState({nav:0},'');
+      return;
+    }
+    // Siamo alla root: push stato per non uscire dall'app
+    history.pushState({nav:0},'');
+  });
+})();
 </script>
 </body>
 </html>
