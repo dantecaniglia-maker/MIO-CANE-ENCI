@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '7.2';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '7.3';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -6555,10 +6555,10 @@ function aggiornaStatoCucciolo(cuccId, puppyId, stato){
       // Cane già esiste: ricalcola sempre il pedigree
       var caneEsistente = cani.find(function(c){return String(c.id)===String(p.caneId);});
       if(caneEsistente){
-        _computaPedigreePerCucciolo(cu, p);
-        caneEsistente.pedigreeFlat = p.pedigreeFlat || {};
+        caneEsistente.pedigreeFlat = _computaPedigreePerCucciolo(cu, p) || {};
         var nPed = Object.keys(caneEsistente.pedigreeFlat).length;
         caneEsistente.pedGens = nPed>=14?4:nPed>=6?3:nPed>=2?2:1;
+        console.log('[MioCane] pedigreeFlat nodi:', nPed);
         renderSidebar();
       } else {
         // caneId punta a un record non più in cani[]: ricrealo
@@ -6604,13 +6604,15 @@ function _computaPedigreePerCucciolo(cu, p){
   cp(28,mF,12);cp(29,mF,13);cp(30,mF,14);cp(31,mF,15);
   p.pedigreeFlat = pedFlat;
   console.log('[Pedigree] nodi compilati:', Object.keys(pedFlat).length);
+  return pedFlat;
 }
 
 // Crea una scheda cane completa solo quando stato === 'mio_cane'
 function _creaSchedaCanePerCucciolo(cu, p){
   if(p.caneId) return;
-  _computaPedigreePerCucciolo(cu, p);
-  var pedFlat = p.pedigreeFlat || {};
+  p.pedigreeFlat = _computaPedigreePerCucciolo(cu, p) || {};
+  console.log('[MioCane] pedigreeFlat nodi:', Object.keys(p.pedigreeFlat).length);
+  var pedFlat = p.pedigreeFlat;
   var razza = p._razza || '';
   var nPed = Object.keys(pedFlat).length;
   var gens = nPed>=14?4:nPed>=6?3:nPed>=2?2:1;
@@ -6625,6 +6627,8 @@ function _creaSchedaCanePerCucciolo(cu, p){
   };
   cani.push(nuovoCane);
   p.caneId = nuovoCane.id;
+  salvaDB();
+  renderSidebar();
 }
 
 function registraCuccioloComeCane(cuccId, puppyId){
@@ -6858,10 +6862,10 @@ function saveCucciolo(){
         } else {
           var ce=cani.find(function(c){return String(c.id)===String(p.caneId);});
           if(ce){
-            _computaPedigreePerCucciolo(cu, p);
-            ce.pedigreeFlat=p.pedigreeFlat||{};
+            ce.pedigreeFlat=_computaPedigreePerCucciolo(cu, p)||{};
             var nP=Object.keys(ce.pedigreeFlat).length;
             ce.pedGens=nP>=14?4:nP>=6?3:nP>=2?2:1;
+            console.log('[MioCane] pedigreeFlat nodi:', nP);
           }
           renderSidebar();
         }
