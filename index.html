@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '5.5';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '5.6';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -6062,7 +6062,9 @@ function addTemperatura(){
 var _editCuccId=null, _editPuppyId=null;
 
 function toggleCuccioli(cuccId){
-  showCuccioliModal(cuccId);
+  var sec = g('cuccioli-section-'+cuccId);
+  if(!sec) return;
+  sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
 }
 function showCuccioliModal(cuccId){
   var cu=cucciolate.find(function(c){return String(c.id)===String(cuccId);});
