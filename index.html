@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '7.7';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '7.8';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -3382,19 +3382,147 @@ function calcolaRequisiti(c){
     mondiale:{ok:cacibs.some(function(x){return x.tipo==='mondiale';})}};}
 
 /* ── COI ── */
-function pedKey(node){if(!node)return null;if(node.loi&&node.loi.trim())return 'L:'+node.loi.trim().toUpperCase();if(node.name&&node.name.trim())return 'N:'+node.name.trim().toLowerCase();return null;}
+function pedKey(node){
+  if(!node)return null;
+  // 1. LOI / RSR / ROI — identificatore ufficiale ENCI (massima priorità)
+  var loi=(node.loi||'').trim().toUpperCase();
+  if(loi)return 'L:'+loi;
+  // 2. Microchip — per cani senza LOI ma identificati
+  var chip=(node.microchip||node.chip||'').trim().toUpperCase();
+  if(chip)return 'C:'+chip;
+  // 3. Nome — fallback (probabile stesso cane, ⚠ non garantito)
+  var nm=(node.name||'').trim().toLowerCase();
+  if(nm)return 'N:'+nm;
+  return null;
+}
 function pedCount(flat){var n=0;for(var p=2;p<=63;p++){var nd=flat[p];if(nd&&(nd.name||nd.loi))n++;}return n;}
-function pedBuildMap(flat){var map={};for(var pos=2;pos<=63;pos++){var node=flat[pos];if(!node||node.isFounder)continue;var key=pedKey(node);if(!key)continue;var depth=Math.floor(Math.log2(pos));if(!map[key])map[key]={name:node.name||'',loi:node.loi||'',depths:[]};map[key].depths.push(depth);}return map;}
+function pedBuildMap(flat){
+  var map={};
+  for(var pos=2;pos<=63;pos++){
+    var node=flat[pos];
+    if(!node||node.isFounder)continue;
+    var key=pedKey(node);
+    if(!key)continue;
+    var depth=Math.floor(Math.log2(pos));
+    var nameOnly=key.indexOf('N:')===0; // nessun ID ufficiale — solo nome
+    if(!map[key])map[key]={name:node.name||'',loi:node.loi||'',depths:[],nameOnly:nameOnly};
+    map[key].depths.push(depth);
+  }
+  return map;
+}
 function calcCOI(sire,dam){
   var sf=sire.pedigreeFlat||{},df=dam.pedigreeFlat||{};
   var sm=pedBuildMap(sf),dm=pedBuildMap(df);
   var totalCOI=0,breakdown=[];
-  Object.keys(sm).forEach(function(key){if(!dm[key])return;var contrib=0;sm[key].depths.forEach(function(d1){dm[key].depths.forEach(function(d2){contrib+=Math.pow(0.5,d1+d2+1);});});if(contrib>0){totalCOI+=contrib;breakdown.push({name:sm[key].name||sm[key].loi||key,loi:sm[key].loi,contrib:contrib});}});
+  Object.keys(sm).forEach(function(key){
+    if(!dm[key])return;
+    var contrib=0;
+    sm[key].depths.forEach(function(d1){dm[key].depths.forEach(function(d2){contrib+=Math.pow(0.5,d1+d2+1);});});
+    if(contrib>0){
+      totalCOI+=contrib;
+      // nameOnly = avviso ⚠ se entrambi i pedigree usano solo il nome per identificare questo antenato
+      var nameOnly=(sm[key].nameOnly&&dm[key].nameOnly);
+      breakdown.push({name:sm[key].name||sm[key].loi||key.slice(2),loi:sm[key].loi,contrib:contrib,nameOnly:nameOnly});
+    }
+  });
   breakdown.sort(function(a,b){return b.contrib-a.contrib;});
   return{pct:totalCOI*100,breakdown:breakdown};
 }
 function coiColor(pct){if(pct<=3)return '#1a7a4a';if(pct<=5)return '#5A8A00';if(pct<=6.25)return '#E65100';if(pct<=12.5)return '#C62828';return '#B71C1C';}
 function coiLabel(pct){if(pct<=3)return'🟢 Ottimo';if(pct<=5)return'🟡 Accettabile';if(pct<=6.25)return'🟠 Limite ENCI';if(pct<=12.5)return'🔴 Attenzione';return'🔴 Sconsigliato';}
+
+/* ── DATABASE GENETICO PER RAZZA ── */
+var GENETIC_DB = {
+  'Pastore Abruzzese Maremmano': {
+    test: ['HD/ED (certificazione ENCI obbligatoria per la razza)'],
+    vietati: [],
+    avvisi: ['Selezione RSR consigliata per preservare il sangue da pastore tradizionale.','Verifica iscrizione al Libro Aperto RSR per soggetti non LOI.'],
+    colori: []
+  },
+  'Pastore Australiano': {
+    test: ['MDR1 (multi-drug resistance — obbligatorio)','CEA (Collie Eye Anomaly)','HD (displasia anca)'],
+    vietati: [{colore:'merle',nota:'Merle × Merle produce cuccioli Double-Merle: alta probabilità di cecità, sordità e malformazioni oculari. Combinazione severamente sconsigliata.',livello:'danger'}],
+    avvisi: ['Verifica genotipo MDR1 prima di somministrare farmaci ivermectina, loperamide, ecc.'],
+    colori: ['merle','blue merle','red merle']
+  },
+  'Border Collie': {
+    test: ['CEA (Collie Eye Anomaly — test DNA)','MDR1 (multi-drug resistance)','HD (displasia anca)'],
+    vietati: [{colore:'merle',nota:'Merle × Merle produce cuccioli Double-Merle con gravi difetti visivi e uditivi. Combinazione severamente sconsigliata.',livello:'danger'}],
+    avvisi: [],
+    colori: ['merle','blue merle']
+  },
+  'Labrador Retriever': {
+    test: ['HD (displasia anca — certificazione ENCI)','ED (displasia gomito)','PRA (atrofia progressiva della retina — test DNA)'],
+    vietati: [],
+    avvisi: ['Test PRA obbligatorio — portatori asintomatici possono trasmettere la malattia.'],
+    colori: []
+  },
+  'Golden Retriever': {
+    test: ['HD (displasia anca)','ED (displasia gomito)','PRA (atrofia progressiva della retina)','Visita cardiologica (SAS/aortica)'],
+    vietati: [],
+    avvisi: ['Monitoraggio cardiaco annuale consigliato per i riproduttori.','Entrambi i genitori devono avere visita cardiologica recente.'],
+    colori: []
+  }
+};
+
+/* Calcola avvisi genetici per la coppia */
+function calcolaAvvisiGenetici(m, f){
+  var avvisi=[];
+  var razza=(m.razza||'').trim();
+  var razzaF=(f.razza||'').trim();
+  var db=GENETIC_DB[razza]||GENETIC_DB[razzaF]||null;
+  if(!db)return avvisi;
+  // Combinazioni vietate per colore
+  if(db.vietati&&db.vietati.length){
+    db.vietati.forEach(function(v){
+      var mc=(m.colore||m.mantello||'').toLowerCase();
+      var fc=(f.colore||f.mantello||'').toLowerCase();
+      var colKey=v.colore.toLowerCase();
+      if(mc.indexOf(colKey)!==-1&&fc.indexOf(colKey)!==-1){
+        avvisi.push({livello:v.livello||'danger',msg:'🔴 '+v.nota});
+      }
+    });
+  }
+  // Test HD mancanti
+  var hdM=m.displasia&&m.displasia.hd;
+  var hdF=f.displasia&&f.displasia.hd;
+  var testsNeed=[];
+  db.test.forEach(function(t){
+    var tl=t.toLowerCase();
+    if(tl.indexOf('hd')===0||tl.indexOf('hd ')===0){if(!hdM||!hdF)testsNeed.push(t);}
+    else if(tl.indexOf('ed')===0||tl.indexOf('ed ')===0){var edM=m.displasia&&m.displasia.ed;var edF=f.displasia&&f.displasia.ed;if(!edM||!edF)testsNeed.push(t);}
+    else testsNeed.push(t); // altri test: sempre segnala
+  });
+  if(testsNeed.length){
+    avvisi.push({livello:'warn',msg:'🟡 Test consigliati per questa razza: '+testsNeed.join(' · ')});
+  }
+  // Avvisi generali
+  db.avvisi.forEach(function(a){avvisi.push({livello:'info',msg:'🟢 '+a});});
+  return avvisi;
+}
+
+/* Calcola punteggio qualità linea 0–100 basato su titoli antenati gen 2–3 */
+function calcQualitaLinea(m, f){
+  var PUNTI={IT:10,CIB:15,EU:20,WD:25};
+  var totalPts=0,totalSlot=0;
+  var mFlat=m.pedigreeFlat||{},fFlat=f.pedigreeFlat||{};
+  function ptsNodo(nd){if(!nd)return 0;var t=titoliFromNode(nd);var p=0;t.forEach(function(tit){p+=PUNTI[tit]||5;});return p;}
+  for(var pos=4;pos<=15;pos++){
+    var nm=mFlat[pos],nf=fFlat[pos];
+    if(nm&&(nm.name||nm.loi)){totalPts+=ptsNodo(nm);totalSlot++;}
+    if(nf&&(nf.name||nf.loi)){totalPts+=ptsNodo(nf);totalSlot++;}
+  }
+  if(!totalSlot)return{score:0,label:'N.D.',color:'#6B8BB0',pts:0,maxPts:0};
+  var maxPts=totalSlot*25; // max = tutti WD
+  var score=Math.min(Math.round(totalPts/maxPts*100),100);
+  var label,color;
+  if(score>=80){label='Elite 🏆';color='#A88A41';}
+  else if(score>=60){label='Alto';color='#1565C0';}
+  else if(score>=40){label='Buono';color='#5A8A00';}
+  else if(score>=20){label='Base';color='#E65100';}
+  else{label='Insufficiente';color='#6B8BB0';}
+  return{score:score,label:label,color:color,pts:totalPts,maxPts:maxPts,slot:totalSlot};
+}
 
 /* ── REMINDERS ── */
 function getReminders(c){
@@ -4226,6 +4354,21 @@ function renderBreedResult(){
   html+='<div style="background:#EEF3FB;border:1.5px solid #BFCFE8;border-radius:10px;padding:13px"><div style="font-weight:700;color:#1565C0;margin-bottom:5px;font-size:14px">♂ '+m.nome+(m._guest?' <span class="badge badge-teal" style="font-size:9px">📥</span>':'')+'</div><div style="font-size:12px;color:#6B8BB0">'+(m.razza||'n.s.')+'</div><div style="font-size:13px;color:#4A6080;margin-top:6px">HD: <strong style="color:#1a1a3a">'+hdM+'</strong></div><div style="margin-top:5px;font-size:12px">'+(titM.length?titM.join(' '):'<span style="color:#6B8BB0">Nessun titolo</span>')+'</div></div>';
   html+='<div style="background:#F9F0FF;border:1.5px solid #CE93D8;border-radius:10px;padding:13px"><div style="font-weight:700;color:#7B1FA2;margin-bottom:5px;font-size:14px">♀ '+f.nome+(f._guest?' <span class="badge badge-teal" style="font-size:9px">📥</span>':'')+'</div><div style="font-size:12px;color:#6B8BB0">'+(f.razza||'n.s.')+'</div><div style="font-size:13px;color:#4A6080;margin-top:6px">HD: <strong style="color:#1a1a3a">'+hdF+'</strong></div><div style="margin-top:5px;font-size:12px">'+(titF.length?titF.join(' '):'<span style="color:#6B8BB0">Nessun titolo</span>')+'</div></div>';
   html+='</div>';
+  // Avvisi Genetici
+  var avvisiGen=calcolaAvvisiGenetici(m,f);
+  if(avvisiGen.length){
+    html+='<div style="background:#fff;border:1.5px solid #DDEAFF;border-radius:12px;padding:14px;margin-bottom:14px">';
+    html+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B8BB0;margin-bottom:10px">🧬 Avvisi Genetici per la Razza</div>';
+    avvisiGen.forEach(function(av){
+      var bg=av.livello==='danger'?'#FFF0EE':av.livello==='warn'?'#FFF8E1':'#F0FFF6';
+      var border=av.livello==='danger'?'#F5C4BE':av.livello==='warn'?'#FFD180':'#A8D8B8';
+      html+='<div style="background:'+bg+';border:1.5px solid '+border+';border-radius:9px;padding:10px 13px;margin-bottom:8px;font-size:13px;line-height:1.5">'+av.msg+'</div>';
+    });
+    html+='</div>';
+  } else {
+    var _rDb=GENETIC_DB[(m.razza||'').trim()]||GENETIC_DB[(f.razza||'').trim()]||null;
+    if(_rDb){html+='<div style="background:#F0FFF6;border:1.5px solid #A8D8B8;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#1a7a4a">🟢 Nessuna combinazione genetica sconsigliata rilevata per questa razza.</div>';}
+  }
   // COI
   var nPM=pedCount(m.pedigreeFlat||{}),nPF=pedCount(f.pedigreeFlat||{});
   if(nPM>0&&nPF>0){
@@ -4263,6 +4406,7 @@ function renderBreedResult(){
         html+='<div style="flex:1">';
         html+='<div style="font-size:14px;font-weight:700;color:#1a1a3a">'+rank+' '+b.name+'</div>';
         if(b.loi)html+='<div style="font-size:11px;color:#6B8BB0;margin-top:1px">LOI: '+b.loi+'</div>';
+        if(b.nameOnly)html+='<div style="font-size:11px;color:#E65100;margin-top:3px;background:#FFF8E1;border-radius:5px;padding:3px 7px">⚠ Identificato solo per nome — nessun LOI/microchip. La corrispondenza non è garantita.</div>';
         html+='</div>';
         html+='<div style="text-align:right;flex-shrink:0;margin-left:12px">';
         html+='<div style="font-size:18px;font-weight:700;color:'+bc2+'">'+bPct.toFixed(2)+'%</div>';
@@ -4380,6 +4524,20 @@ function renderBreedResult(){
     html+='</div>';
   }
 
+  // Qualità Linea
+  var ql=calcQualitaLinea(m,f);
+  html+='<div style="background:#fff;border:1.5px solid #E8D5A0;border-radius:12px;padding:16px;margin-bottom:14px">';
+  html+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#A88A41;margin-bottom:10px">🏅 Qualità Linea Genetica</div>';
+  if(ql.score>0){
+    html+='<div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">';
+    html+='<div style="font-size:38px;font-weight:700;color:'+ql.color+';font-family:\'Playfair Display\',serif">'+ql.score+'</div>';
+    html+='<div><div style="font-size:16px;font-weight:700;color:'+ql.color+'">'+ql.label+'</div><div style="font-size:12px;color:#6B8BB0;margin-top:2px">Score 0–100 sui titoli degli antenati (Gen. 2–3)</div></div></div>';
+    html+='<div style="position:relative;margin-bottom:12px"><div style="height:8px;border-radius:100px;background:linear-gradient(to right,#E65100,#5A8A00,#1565C0,#A88A41);overflow:hidden"></div><div style="position:absolute;top:-2px;left:'+Math.min(ql.score,100)+'%;transform:translateX(-50%);width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid '+ql.color+';box-shadow:0 2px 6px rgba(0,0,0,.2)"></div></div>';
+    html+='<div style="font-size:12px;color:#6B8BB0">Punti titoli: <strong>'+ql.pts+'</strong> su max <strong>'+ql.maxPts+'</strong> ('+ql.slot+' antenati Gen. 2–3)</div>';
+  } else {
+    html+='<div style="font-size:13px;color:#6B8BB0;text-align:center">N.D. — Inserisci i pedigree con titoli per calcolare il punteggio.</div>';
+  }
+  html+='</div>';
   // Valutazione
   var score=0,notes=[];
   var rzOk=(!m.razza&&!f.razza)||(m.razza&&f.razza&&m.razza.toLowerCase()===f.razza.toLowerCase());
