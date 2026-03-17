@@ -1,5 +1,5 @@
 // ── CAMBIA QUESTO NUMERO AD OGNI DEPLOY ──
-const VERSION = '7.6';
+const VERSION = '7.7';
 const CACHE = 'miocane-' + VERSION;
 
 self.addEventListener('message', function(e){
@@ -37,11 +37,27 @@ self.addEventListener('activate', function(e) {
 self.addEventListener('fetch', function(e) {
   if (e.request.method !== 'GET') return;
   if (!e.request.url.startsWith('http')) return;
-  
+
   // Per index.html e deep link (?code= / ?import=): sempre network-first
   var url = e.request.url;
-  if (url.includes('index.html') || url.endsWith('/') ||
-      url.includes('?code=') || url.includes('?import=') ||
+  var isDeepLink = url.includes('?code=') || url.includes('?import=');
+
+  // Notifica le finestre PWA già aperte quando arriva un deep link
+  // (utile quando la PWA è in background e si naviga allo stesso URL)
+  if (isDeepLink) {
+    try {
+      var parsed = new URL(url);
+      var dlCode = parsed.searchParams.get('code');
+      var dlB64  = parsed.searchParams.get('import');
+      self.clients.matchAll({type:'window', includeUncontrolled:true}).then(function(clients){
+        clients.forEach(function(c){
+          c.postMessage({type:'DEEP_LINK_IMPORT', code:dlCode, b64:dlB64});
+        });
+      });
+    } catch(ex) {}
+  }
+
+  if (url.includes('index.html') || url.endsWith('/') || isDeepLink ||
       (url.includes('mio-cane-enci') && url.includes('?'))) {
     e.respondWith(
       fetch(e.request).then(function(res) {

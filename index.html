@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '7.6';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '7.7';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1110,10 +1110,6 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
           <button class="btn btn-primary btn-sm" onclick="openModal()">+ Aggiungi il tuo primo cane</button>
           <button class="btn btn-ghost btn-sm" onclick="triggerImport()">📥 Importa file .enci/.json</button>
         </div>
-        <div style="display:flex;gap:6px;margin-top:8px;width:100%">
-          <input id="import-link-input" type="url" placeholder="Incolla link ricevuto (es. https://mio-cane-enci.vercel.app/?code=...)" style="flex:1;font-size:12px;padding:7px 10px"/>
-          <button class="btn btn-teal btn-sm" onclick="importFromLink()" style="white-space:nowrap">↓ Importa da link</button>
-        </div>
       </div>
 
     </div><!-- /empty-state -->
@@ -1160,10 +1156,6 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
           <div style="font-size:40px;margin-bottom:10px">📥</div>
           <div style="font-weight:700;color:#00838F;margin-bottom:10px">Nessuna scheda importata</div>
           <button class="btn btn-teal btn-sm" onclick="triggerImport()">📥 Importa file .enci/.json</button>
-          <div style="display:flex;gap:6px;margin-top:10px">
-            <input id="import-link-input2" type="url" placeholder="Incolla link ricevuto..." style="flex:1;font-size:12px;padding:7px 10px;text-align:left"/>
-            <button class="btn btn-teal btn-sm" onclick="importFromLink2()" style="white-space:nowrap">↓ Link</button>
-          </div>
         </div>
         <div id="guest-actions" style="display:none;margin-top:10px;text-align:right;padding:0 0 8px">
           <button onclick="clearGuests()" style="background:none;border:none;cursor:pointer;color:#9ab0cc;font-size:12px">🗑 Rimuovi tutte</button>
@@ -1843,19 +1835,23 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 
 <!-- IMPORT CONFERMA -->
 <div id="modal-import" class="overlay hidden">
-  <div class="modal">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#0D47A1">📥 Scheda Ricevuta</div>
-      <button class="btn btn-ghost btn-sm" onclick="hide('modal-import')">✕</button>
+  <div class="modal" style="max-width:480px">
+    <!-- Header benvenuto -->
+    <div style="text-align:center;margin-bottom:18px;padding-bottom:16px;border-bottom:1.5px solid #E0F7FA">
+      <div style="font-size:42px;margin-bottom:10px">📥</div>
+      <div id="import-welcome-msg" style="font-family:'Playfair Display',serif;font-size:19px;font-weight:700;color:#0D47A1;line-height:1.3;margin-bottom:4px">Hai ricevuto una scheda!</div>
+      <div style="font-size:12px;color:#6B8BB0">Ricevuto il <span id="import-data-oggi"></span></div>
     </div>
-    <div id="import-preview"></div>
-    <div style="background:#E0F7FA;border:1.5px solid #80DEEA;border-radius:9px;padding:11px 13px;margin:14px 0;font-size:13px;color:#006064">
-      ✅ Scheda in <strong>sola lettura</strong> — usala nel Breeding Planner per il calcolo COI.
+    <!-- Anteprima cane -->
+    <div id="import-preview" style="margin-bottom:14px"></div>
+    <!-- Info sola lettura -->
+    <div style="background:#E0F7FA;border:1.5px solid #80DEEA;border-radius:9px;padding:10px 13px;margin-bottom:16px;font-size:12px;color:#006064">
+      📋 Scheda in <strong>sola lettura</strong> — usala nel Breeding Planner per il calcolo COI e l'analisi genetica.
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn btn-ghost" onclick="hide('modal-import')">Annulla</button>
-      <button class="btn btn-teal" onclick="confirmImport()">✓ Aggiungi al Breeding Planner</button>
-    </div>
+    <!-- Pulsante principale grande -->
+    <button onclick="confirmImport()" style="width:100%;background:linear-gradient(135deg,#00838F,#006064);color:#fff;border:none;border-radius:12px;padding:16px;font-size:17px;font-weight:700;cursor:pointer;margin-bottom:10px;box-shadow:0 4px 16px rgba(0,131,143,.3);letter-spacing:.02em">✅ Importa scheda</button>
+    <!-- Pulsante rifiuta piccolo -->
+    <button onclick="hide('modal-import')" style="width:100%;background:none;border:1.5px solid #DDEAFF;border-radius:10px;padding:11px;font-size:14px;color:#6B8BB0;cursor:pointer;font-weight:600">✕ Rifiuta</button>
   </div>
 </div>
 
@@ -4038,6 +4034,7 @@ function exportScheda(){
 }
 
 // Gestione import da URL (?code=BINID oppure ?import=BASE64)
+var _lastImportCode = null; // evita doppio trigger per lo stesso link
 function checkURLImport(){
   try{
     var params = new URLSearchParams(window.location.search);
@@ -4045,28 +4042,55 @@ function checkURLImport(){
     var b64  = params.get('import');
     if(!code && !b64) return;
     window.history.replaceState({},'',window.location.pathname);
+    _processImportParams(code, b64);
+  }catch(e){ console.log('Import URL error:', e); }
+}
 
-    if(code){
-      // Carica da jsonbin.io
-      fetch('https://api.jsonbin.io/v3/b/'+code+'/latest')
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        var data = d.record && d.record.scheda;
-        if(!data || !data.nome) throw new Error('Dati non validi');
-        _mostraImportPreview(data);
-      })
-      .catch(function(e){
-        toast('❌ Link non valido o scaduto');
-        console.log('Import code error:', e);
-      });
-    } else if(b64){
-      // Vecchio formato base64
+function _processImportParams(code, b64){
+  if(!code && !b64) return;
+  // Evita di mostrare due volte lo stesso link
+  var key = code || b64.slice(0,20);
+  if(_lastImportCode === key) return;
+  _lastImportCode = key;
+  setTimeout(function(){ _lastImportCode = null; }, 5000); // reset dopo 5s
+
+  if(code){
+    fetch('https://api.jsonbin.io/v3/b/'+code+'/latest')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var data = d.record && d.record.scheda;
+      if(!data || !data.nome) throw new Error('Dati non validi');
+      _mostraImportPreview(data);
+    })
+    .catch(function(e){
+      toast('❌ Link non valido o scaduto');
+      console.log('Import code error:', e);
+    });
+  } else if(b64){
+    try{
       var json = decodeURIComponent(escape(atob(b64)));
       var data = JSON.parse(json);
       if(!data.nome) return;
       _mostraImportPreview(data);
+    }catch(e){ console.log('Import b64 error:', e); }
+  }
+}
+
+// Quando l'app torna in primo piano (es. utente torna dalla PWA dopo aver ricevuto link)
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'visible'){
+    var params = new URLSearchParams(window.location.search);
+    if(params.get('code') || params.get('import')) checkURLImport();
+  }
+});
+
+// Messaggio dal Service Worker (deep link notificato dall'SW a finestre già aperte)
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', function(e){
+    if(e.data && e.data.type === 'DEEP_LINK_IMPORT'){
+      _processImportParams(e.data.code || null, e.data.b64 || null);
     }
-  }catch(e){ console.log('Import URL error:', e); }
+  });
 }
 
 function _mostraImportPreview(data){
@@ -4074,9 +4098,13 @@ function _mostraImportPreview(data){
   pendingImport = data;
   var req = calcolaRequisiti(data);
   var html = schedaPreviewHtml(data,req,'#80DEEA','#00838F');
-  html += '<div style="font-size:11px;color:#6B8BB0;text-align:center;margin-top:8px">Ricevuto il '+new Date().toLocaleDateString('it-IT')+'</div>';
   g('import-preview').innerHTML = html;
-  setTimeout(function(){ show('modal-import'); }, 600);
+  // Messaggio personalizzato con nome cane
+  var wmsg = g('import-welcome-msg');
+  if(wmsg) wmsg.textContent = '📥 Hai ricevuto la scheda di ' + data.nome + '!';
+  var dtEl = g('import-data-oggi');
+  if(dtEl) dtEl.textContent = new Date().toLocaleDateString('it-IT');
+  setTimeout(function(){ show('modal-import'); }, 400);
 }
 
 function copyShareLink(){
@@ -4114,38 +4142,6 @@ function shareViaNative(){
 
 function downloadScheda(){ shareViaNative(); }
 function triggerImport(){ g('import-input').value=''; g('import-input').click(); }
-
-function importFromLink(){ _doImportFromLink(g('import-link-input')); }
-function importFromLink2(){ _doImportFromLink(g('import-link-input2')); }
-function _doImportFromLink(inp){
-  var url=(inp&&inp.value.trim())||'';
-  if(!url){toast('⚠️ Incolla un link valido');return;}
-  try{
-    var parsed=new URL(url);
-    var code=parsed.searchParams.get('code');
-    var b64=parsed.searchParams.get('import');
-    if(code){
-      toast('🔄 Caricamento...');
-      fetch('https://api.jsonbin.io/v3/b/'+code+'/latest')
-        .then(function(r){return r.json();})
-        .then(function(d){
-          var data=d.record&&d.record.scheda;
-          if(!data||!data.nome)throw new Error('Dati non validi');
-          if(inp)inp.value='';
-          _mostraImportPreview(data);
-        })
-        .catch(function(){toast('❌ Link non valido o scaduto');});
-    }else if(b64){
-      var json=decodeURIComponent(escape(atob(b64)));
-      var data=JSON.parse(json);
-      if(!data.nome){toast('❌ Dati non validi');return;}
-      if(inp)inp.value='';
-      _mostraImportPreview(data);
-    }else{
-      toast('❌ Link non riconosciuto — usa il link condiviso dall\'app');
-    }
-  }catch(e){toast('❌ Link non valido: '+e.message);}
-}
 
 function importScheda(input){
   var file=input.files[0]; if(!file) return;
