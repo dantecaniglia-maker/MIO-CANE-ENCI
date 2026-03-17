@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '8.4';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '8.5';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -181,7 +181,9 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 #footer span{color:#C9A961;font-weight:700}
 
 /* BOTTOM NAV */
-#bottom-nav{position:fixed;bottom:0;left:0;width:100%;height:60px;background:#fff;border-top:1.5px solid #DDEAFF;z-index:1000;display:none;align-items:stretch;box-shadow:0 -4px 18px rgba(21,101,192,.12)}
+#bottom-nav{position:fixed;bottom:0;left:0;width:100%;height:60px;background:#fff;border-top:1.5px solid #DDEAFF;z-index:99999;display:none;align-items:stretch;box-shadow:0 -4px 18px rgba(21,101,192,.12)}
+/* SEZIONE REGISTRO (non-overlay, sezione fissa tra header e bottom-nav) */
+#sec-registro{position:fixed;top:54px;left:0;right:0;bottom:0;background:#EEF3FB;overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:200;padding:20px 14px}
 .bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;cursor:pointer;color:#9ab0cc;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:.03em;padding:4px 2px;transition:color .2s;-webkit-tap-highlight-color:transparent}
 .bn-btn>span:first-child{font-size:20px;line-height:1.1}
 .bn-btn.bn-active{color:#1565C0}
@@ -192,6 +194,7 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
   #sidebar{padding-bottom:70px!important}
   #detail{padding-bottom:70px!important}
   .modal{padding-bottom:70px!important}
+  #sec-registro{bottom:60px!important}
   #footer{display:none!important}
 }
 /* SETTINGS MODAL */
@@ -206,7 +209,7 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 /* DARK MODE */
 html[data-theme=dark] body{background:#0F1923!important;color:#D8E8F4!important}
 html[data-theme=dark] header,html[data-theme=dark] #bottom-nav{background:#152030!important;border-color:#1E3558!important}
-html[data-theme=dark] #sidebar,html[data-theme=dark] #detail{background:#0F1923!important}
+html[data-theme=dark] #sidebar,html[data-theme=dark] #detail,html[data-theme=dark] #sec-registro{background:#0F1923!important}
 html[data-theme=dark] #sidebar.full{background:#0F1923!important}
 html[data-theme=dark] .card,html[data-theme=dark] .form-box,html[data-theme=dark] .list-item,html[data-theme=dark] .dog-card,html[data-theme=dark] .breed-card,html[data-theme=dark] .info-cell{background:#152030!important;border-color:#1E3558!important;color:#D8E8F4!important}
 html[data-theme=dark] .modal{background:#152030!important;border-color:#1E3558!important;color:#D8E8F4!important}
@@ -4014,12 +4017,23 @@ function updateBottomNav(tab){
     if(btn) btn.classList.toggle('bn-active', t===tab);
   });
 }
+var _TUTTI_MODAL=[
+  'sec-registro',
+  'modal-breeding','modal-cucciolate','modal-enci',
+  'modal-cuccioli-list','modal-cucciolo','modal-cuccioli-dashboard',
+  'modal-peso','modal-foto-import','modal-cucc-share','modal-share',
+  'modal-import','modal-profilo','modal-calendario','modal-tessere',
+  'modal-moduli-enci','modal-contratto','modal-pdf-import',
+  'modal-camera-guide','modal-impostazioni'
+];
 function _closeAllModals(){
-  // Chiudi tutti i modal overlay (eccetto onboarding e GDPR)
+  // 1. Nasconde la lista esplicita (include sec-registro non-overlay)
+  _TUTTI_MODAL.forEach(function(id){ hide(id); });
+  // 2. Catch-all: qualsiasi overlay rimasto aperto (eccetto onboarding/GDPR)
   var overlays=document.querySelectorAll('.overlay');
   for(var i=0;i<overlays.length;i++){
-    var id=overlays[i].id||'';
-    if(id==='modal-onboarding'||id==='modal-gdpr') continue;
+    var eid=overlays[i].id||'';
+    if(eid==='modal-onboarding'||eid==='modal-gdpr') continue;
     overlays[i].classList.add('hidden');
     overlays[i].style.display='none';
   }
@@ -9170,7 +9184,7 @@ var _REG_ICONS={veterinario:'🏥',alimentazione:'🍖',enci:'🏅',farmaci:'�
 function openRegistro(){
   _regMese=new Date().getMonth(); _regAnno=new Date().getFullYear(); _regTab='entrate';
   renderRegistro();
-  show('modal-registro');
+  show('sec-registro');
 }
 function cambiaRegMese(delta){
   _regMese+=delta;
@@ -9349,13 +9363,10 @@ function mostraCuccioliPanel(btn){
 }
 </script>
 
-<!-- ════ MODAL REGISTRO FINANZIARIO ════ -->
-<div id="modal-registro" class="overlay hidden" style="z-index:10000">
-  <div class="modal" style="max-width:620px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D47A1">💰 Registro Finanziario</div>
-      <button class="btn btn-ghost btn-sm" onclick="hide('modal-registro')">✕</button>
-    </div>
+<!-- ════ SEZIONE REGISTRO FINANZIARIO (non-overlay) ════ -->
+<div id="sec-registro" class="hidden">
+  <div style="max-width:620px;margin:0 auto;background:#fff;border-radius:18px;border:1.5px solid #DDEAFF;padding:24px 20px;box-shadow:0 4px 24px rgba(21,101,192,.10)">
+    <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:18px">💰 Registro Finanziario</div>
     <!-- Navigazione mese/anno -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;background:#EEF3FB;border-radius:12px;padding:10px 16px">
       <button onclick="cambiaRegMese(-1)" style="background:none;border:none;cursor:pointer;font-size:22px;color:#1565C0;padding:0 8px;line-height:1">‹</button>
@@ -9369,12 +9380,11 @@ function mostraCuccioliPanel(btn){
       <button id="reg-tab-entrate" onclick="setRegTab('entrate')" style="flex:1;padding:9px;border-radius:8px;border:2px solid #1a7a4a;background:#E8F5E9;color:#1a7a4a;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s">📈 Entrate</button>
       <button id="reg-tab-uscite" onclick="setRegTab('uscite')" style="flex:1;padding:9px;border-radius:8px;border:2px solid #C0534A;background:#FFEBEE;color:#C0534A;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s">📉 Uscite</button>
     </div>
-    <div id="reg-lista" style="max-height:260px;overflow-y:auto;margin-bottom:14px"></div>
+    <div id="reg-lista" style="max-height:320px;overflow-y:auto;margin-bottom:14px"></div>
     <!-- Form aggiungi -->
     <div id="reg-add-form" style="background:#F8FAFF;border:1.5px solid #DDEAFF;border-radius:12px;padding:14px;margin-bottom:14px"></div>
-    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center">
+    <div style="display:flex;gap:8px;justify-content:flex-start;align-items:center">
       <button onclick="exportRegistroPDF()" style="background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">📄 Export PDF</button>
-      <button onclick="hide('modal-registro')" class="btn btn-ghost btn-sm">Chiudi</button>
     </div>
   </div>
 </div>
