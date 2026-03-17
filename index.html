@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '7.8.1';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '7.8.2';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -7302,8 +7302,13 @@ getReminders=function(c){
 
   var hasSavedData = caricaDB();
   if(!hasSavedData){
-    cani.push(luna, ramon, thor, stella, maxBC, lunaBC, gold, layla);
+    cani.push(luna, ramon);
   }
+  // Aggiungi cani demo razze se non esistono già (per chi ha dati salvati)
+  [thor, stella, maxBC, lunaBC, gold, layla].forEach(function(d){
+    if(!cani.find(function(c){return c.id===d.id;})) cani.push(d);
+  });
+  salvaDB();
   renderSidebar();
   checkURLImport();
   // Esponi funzioni globalmente (erano intrappolate nell'IIFE)
