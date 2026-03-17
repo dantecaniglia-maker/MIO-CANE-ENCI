@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '8.0';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '8.1';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -181,7 +181,7 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 #footer span{color:#C9A961;font-weight:700}
 
 /* BOTTOM NAV */
-#bottom-nav{position:fixed;bottom:0;left:0;right:0;height:60px;background:#fff;border-top:1.5px solid #DDEAFF;z-index:200;display:none;align-items:stretch;box-shadow:0 -4px 18px rgba(21,101,192,.12)}
+#bottom-nav{position:fixed;bottom:0;left:0;width:100%;height:60px;background:#fff;border-top:1.5px solid #DDEAFF;z-index:1000;display:none;align-items:stretch;box-shadow:0 -4px 18px rgba(21,101,192,.12)}
 .bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;cursor:pointer;color:#9ab0cc;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:.03em;padding:4px 2px;transition:color .2s;-webkit-tap-highlight-color:transparent}
 .bn-btn>span:first-child{font-size:20px;line-height:1.1}
 .bn-btn.bn-active{color:#1565C0}
@@ -1541,11 +1541,11 @@ html[data-theme=dark] label{color:#4A9ADE!important}
 
 <!-- ══ BOTTOM NAV ══ -->
 <nav id="bottom-nav">
-  <button id="bn-home" class="bn-btn bn-active" onclick="bnHome()"><span>🏠</span><span>Home</span></button>
-  <button id="bn-reg"  class="bn-btn" onclick="bnRegistro()"><span>💰</span><span>Registro</span></button>
-  <button id="bn-cani" class="bn-btn" onclick="bnCani()"><span>🐕</span><span>I miei cani</span></button>
-  <button id="bn-cucc" class="bn-btn" onclick="bnCucciolate()"><span>🐾</span><span>Cucciolate</span></button>
-  <button id="bn-enci" class="bn-btn" onclick="bnEnci()"><span>🔗</span><span>ENCI Online</span></button>
+  <button id="bn-home"  class="bn-btn bn-active" onclick="bnHome()"><span>🏠</span><span>Home</span></button>
+  <button id="bn-reg"   class="bn-btn" onclick="bnRegistro()"><span>💰</span><span>Registro</span></button>
+  <button id="bn-breed" class="bn-btn" onclick="bnBreeding()"><span>🧬</span><span>Breeding</span></button>
+  <button id="bn-cucc"  class="bn-btn" onclick="bnCucciolate()"><span>🐾</span><span>Cucciolate</span></button>
+  <button id="bn-enci"  class="bn-btn" onclick="bnEnci()"><span>🔗</span><span>ENCI</span></button>
 </nav>
 
 <!-- ══ ONBOARDING PRIMO AVVIO ══ -->
@@ -3987,7 +3987,7 @@ function goHome(){ closeDetail(); }
 var _bottomTab='home';
 function updateBottomNav(tab){
   _bottomTab=tab;
-  ['home','reg','cani','cucc','enci'].forEach(function(t){
+  ['home','reg','breed','cucc','enci'].forEach(function(t){
     var btn=g('bn-'+t);
     if(btn) btn.classList.toggle('bn-active', t===tab);
   });
@@ -4000,10 +4000,9 @@ function bnRegistro(){
   updateBottomNav('reg');
   openRegistro();
 }
-function bnCani(){
-  updateBottomNav('cani');
-  closeDetail();
-  setTimeout(function(){ switchCaniTab('miei'); }, 50);
+function bnBreeding(){
+  updateBottomNav('breed');
+  openBreeding();
 }
 function bnCucciolate(){
   updateBottomNav('cucc');
