@@ -2,7 +2,7 @@
 
 ## Progetto
 - **Nome app:** Mio Cane ENCI *(nome internazionale da decidere)*
-- **Versione attuale:** 7.9
+- **Versione attuale:** 8.0
 
 ## Stack
 - HTML / CSS / JS vanilla — nessun framework
@@ -51,7 +51,7 @@ registro = {
 - Le voci `fonte:'auto'` sono **virtuali** (calcolate da cucciolate, non persistite) — mostrate solo se non esiste già una entry `fonte:'cucciolo'` per quel puppy
 - `_autoRegistroEntrataCucciolo(puppyId, nome, cuccNome, importo, sottoTipo, data)` aggiunge entries persistite quando un cucciolo viene ceduto in `saveCucciolo()`
 
-## Funzionalità principali (v7.9)
+## Funzionalità principali (v8.0)
 - Scheda cane: info, salute, titoli, pedigree (OCR/AI), riproduzione, prole
 - Cucciolate: gestione cuccioli con stati (disponibile/prenotato/ceduto/mio_cane)
 - Cuccioli: pedigree automatico 4 generazioni, sezione finanziaria, contratto ENCI
