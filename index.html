@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '8.6';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '8.7';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -13,7 +13,8 @@
 <meta name="apple-mobile-web-app-title" content="Mio Cane ENCI"/>
 <meta name="description" content="Gestione ufficiale pedigree ENCI — salute, cucciolate, moduli e contratti"/>
 <link rel="manifest" href="manifest.json"/>
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Ccircle cx='256' cy='256' r='256' fill='%230D47A1'/%3E%3Ccircle cx='256' cy='256' r='242' fill='none' stroke='%23C9A961' stroke-width='10'/%3E%3Crect x='249' y='305' width='14' height='75' rx='7' fill='white'/%3E%3Cpath d='M256 380 Q215 408 195 432' stroke='%23C9A961' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 380 Q256 415 256 448' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 380 Q297 408 317 432' stroke='%23C9A961' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 305 Q170 262 128 220' stroke='white' stroke-width='12' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 305 Q342 262 384 220' stroke='white' stroke-width='12' stroke-linecap='round' fill='none'/%3E%3Cpath d='M128 220 Q85 180 65 148' stroke='white' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M128 220 Q145 178 165 148' stroke='white' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M384 220 Q367 178 347 148' stroke='white' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M384 220 Q427 180 447 148' stroke='white' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M65 148 Q48 122 40 100' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M65 148 Q78 120 86 100' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M165 148 Q155 118 150 95' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M165 148 Q178 118 185 95' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M347 148 Q334 118 326 95' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M347 148 Q360 118 366 95' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M447 148 Q436 120 430 100' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M447 148 Q460 120 472 100' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='256' cy='305' r='10' fill='white'/%3E%3Ccircle cx='128' cy='220' r='8' fill='white'/%3E%3Ccircle cx='384' cy='220' r='8' fill='white'/%3E%3Ccircle cx='65' cy='148' r='6' fill='white'/%3E%3Ccircle cx='165' cy='148' r='6' fill='white'/%3E%3Ccircle cx='347' cy='148' r='6' fill='white'/%3E%3Ccircle cx='447' cy='148' r='6' fill='white'/%3E%3C/svg%3E"/>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Ccircle cx='256' cy='256' r='256' fill='%230D47A1'/%3E%3Ccircle cx='256' cy='256' r='242' fill='none' stroke='%23C9A961' stroke-width='10'/%3E%3Crect x='248' y='268' width='16' height='106' rx='8' fill='%232E7D32'/%3E%3Cpath d='M251 274 Q247 284 251 294 Q255 304 251 314 Q247 324 251 334 Q255 344 251 354 Q247 364 251 374' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Cpath d='M261 274 Q265 284 261 294 Q257 304 261 314 Q265 324 261 334 Q257 344 261 354 Q265 364 261 374' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Cline x1='251' y1='284' x2='261' y2='284' stroke='white' stroke-width='1.5'/%3E%3Cline x1='251' y1='304' x2='261' y2='304' stroke='white' stroke-width='1.5'/%3E%3Cline x1='251' y1='324' x2='261' y2='324' stroke='white' stroke-width='1.5'/%3E%3Cline x1='251' y1='344' x2='261' y2='344' stroke='white' stroke-width='1.5'/%3E%3Cline x1='251' y1='364' x2='261' y2='364' stroke='white' stroke-width='1.5'/%3E%3Cpath d='M256 374 Q215 402 195 428' stroke='%23C9A961' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 374 Q256 410 256 442' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 374 Q297 402 317 428' stroke='%23C9A961' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 268 Q170 228 128 196' stroke='%23C9A961' stroke-width='10' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 268 Q342 228 384 196' stroke='%23C9A961' stroke-width='10' stroke-linecap='round' fill='none'/%3E%3Cpath d='M128 196 Q85 158 65 128' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M128 196 Q145 156 165 128' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M384 196 Q367 156 347 128' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M384 196 Q427 158 447 128' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M65 128 Q48 102 40 82' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M65 128 Q78 100 86 82' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M165 128 Q155 100 150 78' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M165 128 Q178 100 185 78' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M347 128 Q334 100 326 78' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M347 128 Q360 100 366 78' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M447 128 Q436 100 430 82' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M447 128 Q460 100 472 82' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='256' cy='268' r='11' fill='%232E7D32'/%3E%3Ccircle cx='128' cy='196' r='8' fill='%23C9A961'/%3E%3Ccircle cx='384' cy='196' r='8' fill='%23C9A961'/%3E%3Ccircle cx='65' cy='128' r='6' fill='%23C9A961'/%3E%3Ccircle cx='165' cy='128' r='6' fill='%23C9A961'/%3E%3Ccircle cx='347' cy='128' r='6' fill='%23C9A961'/%3E%3Ccircle cx='447' cy='128' r='6' fill='%23C9A961'/%3E%3C/svg%3E"/>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Ccircle cx='256' cy='256' r='256' fill='%230D47A1'/%3E%3Ccircle cx='256' cy='256' r='242' fill='none' stroke='%23C9A961' stroke-width='10'/%3E%3Crect x='248' y='268' width='16' height='106' rx='8' fill='%232E7D32'/%3E%3Cpath d='M251 274 Q247 284 251 294 Q255 304 251 314 Q247 324 251 334 Q255 344 251 354 Q247 364 251 374' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Cpath d='M261 274 Q265 284 261 294 Q257 304 261 314 Q265 324 261 334 Q257 344 261 354 Q265 364 261 374' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Cline x1='251' y1='284' x2='261' y2='284' stroke='white' stroke-width='1.5'/%3E%3Cline x1='251' y1='304' x2='261' y2='304' stroke='white' stroke-width='1.5'/%3E%3Cline x1='251' y1='324' x2='261' y2='324' stroke='white' stroke-width='1.5'/%3E%3Cline x1='251' y1='344' x2='261' y2='344' stroke='white' stroke-width='1.5'/%3E%3Cline x1='251' y1='364' x2='261' y2='364' stroke='white' stroke-width='1.5'/%3E%3Cpath d='M256 374 Q215 402 195 428' stroke='%23C9A961' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 374 Q256 410 256 442' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 374 Q297 402 317 428' stroke='%23C9A961' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 268 Q170 228 128 196' stroke='%23C9A961' stroke-width='10' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 268 Q342 228 384 196' stroke='%23C9A961' stroke-width='10' stroke-linecap='round' fill='none'/%3E%3Cpath d='M128 196 Q85 158 65 128' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M128 196 Q145 156 165 128' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M384 196 Q367 156 347 128' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M384 196 Q427 158 447 128' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M65 128 Q48 102 40 82' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M65 128 Q78 100 86 82' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M165 128 Q155 100 150 78' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M165 128 Q178 100 185 78' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M347 128 Q334 100 326 78' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M347 128 Q360 100 366 78' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M447 128 Q436 100 430 82' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M447 128 Q460 100 472 82' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='256' cy='268' r='11' fill='%232E7D32'/%3E%3Ccircle cx='128' cy='196' r='8' fill='%23C9A961'/%3E%3Ccircle cx='384' cy='196' r='8' fill='%23C9A961'/%3E%3Ccircle cx='65' cy='128' r='6' fill='%23C9A961'/%3E%3Ccircle cx='165' cy='128' r='6' fill='%23C9A961'/%3E%3Ccircle cx='347' cy='128' r='6' fill='%23C9A961'/%3E%3Ccircle cx='447' cy='128' r='6' fill='%23C9A961'/%3E%3C/svg%3E"/>
 <script>
 // Registra Service Worker solo su Vercel (non nella preview Claude)
 if('serviceWorker' in navigator && window.location.hostname !== 'www.claudeusercontent.com'){
@@ -1016,26 +1017,31 @@ html[data-theme=dark] label{color:#4A9ADE!important}
     <button id="btn-home" class="hidden btn btn-ghost btn-sm no-print" onclick="goHome()" style="flex-shrink:0;padding:6px 8px;font-size:16px">🏠</button>
     <div style="width:30px;height:30px;flex-shrink:0;background:linear-gradient(135deg,#1565C0,#0D47A1);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(21,101,192,.3)">
       <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
-        <!-- Genealogy tree icon -->
+        <!-- DNA-tree logo -->
         <circle cx="16" cy="16" r="16" fill="#0D47A1"/>
-        <!-- trunk -->
-        <rect x="15" y="18" width="2" height="9" rx="1" fill="white"/>
+        <!-- trunk green -->
+        <rect x="15" y="17" width="2" height="11" rx="1" fill="#2E7D32"/>
+        <!-- DNA helix white -->
+        <path d="M15 18 Q14 20.5 15 23 Q16 25.5 15 28" stroke="white" stroke-width=".9" fill="none" stroke-linecap="round"/>
+        <path d="M17 18 Q18 20.5 17 23 Q16 25.5 17 28" stroke="white" stroke-width=".9" fill="none" stroke-linecap="round"/>
+        <line x1="15" y1="20.5" x2="17" y2="20.5" stroke="white" stroke-width=".7"/>
+        <line x1="15" y1="23" x2="17" y2="23" stroke="white" stroke-width=".7"/>
+        <line x1="15" y1="25.5" x2="17" y2="25.5" stroke="white" stroke-width=".7"/>
         <!-- roots gold -->
-        <path d="M16 27 Q12 29 10 31" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-        <path d="M16 27 Q16 30 16 31.5" stroke="#C9A961" stroke-width="1.1" stroke-linecap="round" fill="none"/>
-        <path d="M16 27 Q20 29 22 31" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-        <!-- Level 1 branches -->
-        <path d="M16 18 Q9 14 6 10" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
-        <path d="M16 18 Q23 14 26 10" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
-        <!-- Level 2 branches -->
-        <path d="M6 10 Q3 7 2 4" stroke="white" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-        <path d="M6 10 Q8 7 10 4" stroke="white" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-        <path d="M26 10 Q24 7 22 4" stroke="white" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-        <path d="M26 10 Q29 7 30 4" stroke="white" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+        <path d="M16 28 Q12 30 10 31.5" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+        <path d="M16 28 Q20 30 22 31.5" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+        <!-- Level 1 gold branches -->
+        <path d="M16 17 Q9 13 6 9" stroke="#C9A961" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <path d="M16 17 Q23 13 26 9" stroke="#C9A961" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <!-- Level 2 gold -->
+        <path d="M6 9 Q3 6 2 4" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+        <path d="M6 9 Q8 6 10 4" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+        <path d="M26 9 Q24 6 22 4" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+        <path d="M26 9 Q29 6 30 4" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
         <!-- nodes -->
-        <circle cx="16" cy="18" r="1.5" fill="white"/>
-        <circle cx="6" cy="10" r="1.2" fill="white"/>
-        <circle cx="26" cy="10" r="1.2" fill="white"/>
+        <circle cx="16" cy="17" r="1.5" fill="#2E7D32"/>
+        <circle cx="6" cy="9" r="1.2" fill="#C9A961"/>
+        <circle cx="26" cy="9" r="1.2" fill="#C9A961"/>
       </svg>
     </div>
     <div style="min-width:0">
@@ -1560,24 +1566,29 @@ html[data-theme=dark] label{color:#4A9ADE!important}
     <div id="onboard-slide-1" class="onboard-slide active">
       <div style="width:96px;height:96px;margin:0 auto 24px;background:rgba(255,255,255,.12);border-radius:24px;display:flex;align-items:center;justify-content:center;border:2px solid rgba(201,169,97,.5);box-shadow:0 8px 32px rgba(0,0,0,.2)">
         <svg width="62" height="62" viewBox="0 0 32 32" fill="none">
-          <!-- trunk -->
-          <rect x="15" y="18" width="2" height="9" rx="1" fill="white"/>
+          <!-- trunk green -->
+          <rect x="15" y="17" width="2" height="11" rx="1" fill="#2E7D32"/>
+          <!-- DNA helix white -->
+          <path d="M15 18 Q14 20.5 15 23 Q16 25.5 15 28" stroke="white" stroke-width=".9" fill="none" stroke-linecap="round"/>
+          <path d="M17 18 Q18 20.5 17 23 Q16 25.5 17 28" stroke="white" stroke-width=".9" fill="none" stroke-linecap="round"/>
+          <line x1="15" y1="20.5" x2="17" y2="20.5" stroke="white" stroke-width=".7"/>
+          <line x1="15" y1="23" x2="17" y2="23" stroke="white" stroke-width=".7"/>
+          <line x1="15" y1="25.5" x2="17" y2="25.5" stroke="white" stroke-width=".7"/>
           <!-- roots gold -->
-          <path d="M16 27 Q12 29 10 31" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-          <path d="M16 27 Q16 30 16 31.5" stroke="#C9A961" stroke-width="1.1" stroke-linecap="round" fill="none"/>
-          <path d="M16 27 Q20 29 22 31" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-          <!-- Level 1 -->
-          <path d="M16 18 Q9 14 6 10" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
-          <path d="M16 18 Q23 14 26 10" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
-          <!-- Level 2 -->
-          <path d="M6 10 Q3 7 2 4" stroke="white" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-          <path d="M6 10 Q8 7 10 4" stroke="white" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-          <path d="M26 10 Q24 7 22 4" stroke="white" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-          <path d="M26 10 Q29 7 30 4" stroke="white" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+          <path d="M16 28 Q12 30 10 31.5" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+          <path d="M16 28 Q20 30 22 31.5" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+          <!-- Level 1 gold -->
+          <path d="M16 17 Q9 13 6 9" stroke="#C9A961" stroke-width="2" stroke-linecap="round" fill="none"/>
+          <path d="M16 17 Q23 13 26 9" stroke="#C9A961" stroke-width="2" stroke-linecap="round" fill="none"/>
+          <!-- Level 2 gold -->
+          <path d="M6 9 Q3 6 2 4" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+          <path d="M6 9 Q8 6 10 4" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+          <path d="M26 9 Q24 6 22 4" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+          <path d="M26 9 Q29 6 30 4" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
           <!-- nodes -->
-          <circle cx="16" cy="18" r="1.5" fill="white"/>
-          <circle cx="6" cy="10" r="1.2" fill="white"/>
-          <circle cx="26" cy="10" r="1.2" fill="white"/>
+          <circle cx="16" cy="17" r="1.5" fill="#2E7D32"/>
+          <circle cx="6" cy="9" r="1.2" fill="#C9A961"/>
+          <circle cx="26" cy="9" r="1.2" fill="#C9A961"/>
         </svg>
       </div>
       <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;margin-bottom:12px;line-height:1.2">Benvenuto in<br/>Mio Cane ENCI</div>
@@ -2658,7 +2669,13 @@ var ENCI_LEGENDA_PROMPT = '\n\nLEGENDA UFFICIALE ENCI (colonna TITOLI VARI a des
   +'ESEMPIO — Pastrano ROI 10/14840:\n'
   +'  Ha lettera D in Titoli Vari\n'
   +'  → titoli: ["D"], hd:null, ed:null\n\n'
-  +'isFounder: non usare mai — lascia sempre false/null.';
+  +'isFounder: non usare mai — lascia sempre false/null.\n\n'
+  +'SIGLE LOI INTERNAZIONALI FCI — tutte valide, preservale intatte:\n'
+  +'Italia: RSR, ROI, LR, GI — Portogallo: PT — Germania: VDH — Francia: LOF\n'
+  +'UK: KC — USA: AKC — FCI generica: FCI — Serbia/Croazia: JR — Polonia: PKR\n'
+  +'Romania: COR — Brasile: LPR — Olanda: NHSB — Russia: RKF — Svezia: SKK\n'
+  +'Slovacchia: SPKP — Ungheria: MET — Rep.Ceca: CMKU — Irlanda: ICF — Canada: CKC\n'
+  +'REGOLA: qualsiasi sequenza 2-6 lettere maiusc. seguita da numeri è un LOI valido. NON scartare cani con sigle non italiane.';
 
 
 
@@ -2775,7 +2792,7 @@ var PEDIGREE_PROMPT_OCR = 'Sei un esperto di pedigree ENCI italiani.\n\n'
   +'  pos4=nonno paterno, pos5=nonna paterna, pos6=nonno materno, pos7=nonna materna\n'
   +'  pos8-11=bisnonni paterni, pos12-15=bisnonni materni, pos16-31=trisnonni\n\n'
   +'REGOLE CRITICHE:\n'
-  +'  1. Prefissi LOI: RSR, ROI, GI91L, LR, LOI — il numero segue (es: RSR 09/74871)\n'
+  +'  1. Prefissi LOI italiani: RSR, ROI, GI, LR — internazionali: PT, VDH, LOF, KC, AKC, JR, PKR, COR, NHSB, RKF, SKK, SPKP, MET, CMKU, CKC, ICF, LPR — TUTTE valide\n'
   +'  2. Il NOME del cane viene DOPO il codice LOI\n'
   +'  3. Correggi: 0↔O, 1↔I, l↔1 nei codici numerici\n'
   +'  4. Se illeggibile → null (NON inventare)\n\n'
@@ -2863,7 +2880,11 @@ function validaECorreggiRisultato(obj){
       // LOI: rimuovi spazi extra e correggi prefissi
       if(anc.loi){
         anc.loi = anc.loi.replace(/\s+/g,' ').trim();
-        anc.loi = anc.loi.replace(/^0SR/i,'RSR').replace(/^0OI/i,'ROI');
+        // Correzioni OCR comuni per sigle italiane
+        anc.loi = anc.loi.replace(/^0SR/i,'RSR').replace(/^0OI/i,'ROI').replace(/^RSR\s*$/i,'').replace(/^ROI\s*$/i,'');
+        // Accetta tutte le sigle LOI internazionali FCI (2-6 lettere + numeri)
+        // PT, VDH, LOF, KC, AKC, FCI, JR, PKR, COR, LPR, NHSB, RKF, SKK, SPKP, MET, CMKU, ICF, CKC, ecc.
+        if(anc.loi && !/^[A-Z]{2,6}[\s\/\d]/.test(anc.loi)) anc.loi = '';
       }
       // Nome tutto maiuscolo → Title Case
       if(anc.name && anc.name === anc.name.toUpperCase() && anc.name.length > 1){
@@ -2927,7 +2948,8 @@ function callAIHybrid(b64, ocrText, onSuccess, onError){
     + 'Se non vedi simboli → "titoli":[] per quella posizione. MAI mettere tutti i titoli.\n'
     + 'ESEMPIO CORRETTO: Ramon pos6 ha * Bellezza+BDFSW → titoli:["IT_B","B","D","F"]\n'
     + 'ESEMPIO CORRETTO: Romeo, Cesarina, Vittoria non hanno simboli → titoli non presenti nel JSON\n\n'
-    + 'Da "RSR 09/74871 ULISSE": name="ULISSE" loi="RSR 09/74871"\n\n'
+    + 'LOI ESEMPI: "RSR 09/74871 ULISSE"→loi="RSR 09/74871" name="ULISSE" — "PT 123/456 THOR"→loi="PT 123/456" name="THOR"\n'
+    + 'Sigle LOI valide: RSR, ROI, LR, GI + internazionali PT, VDH, LOF, KC, AKC, JR, PKR, COR, NHSB, RKF, SKK, SPKP, MET, CMKU, CKC, ICF, LPR — preservale tutte.\n\n'
     + ENCI_LEGENDA_PROMPT + '\n\n'
     + 'Rispondi SOLO con JSON compatto:\n'
     + '{"nome":"","loi":"","razza":"","sesso":"","dataNascita":"","microchip":"",'
@@ -4288,8 +4310,9 @@ function renderPedigree(){
 function parseNomeLOI(raw){
   if(!raw) return {name:'', loi:''};
   raw = raw.trim();
-  // Pattern: RSR, ROI, GI, LR, LOI seguiti da numeri
-  var m = raw.match(/^((?:RSR|ROI|GI|LR|LOI|RSR\d?)\s*[\d\/\-]+)\s*(.*)$/i);
+  // Pattern: qualsiasi sigla LOI internazionale (2-6 lettere) seguita da numeri
+  // Supporta: RSR, ROI, GI, LR, LOI, PT, VDH, LOF, KC, AKC, FCI, JR, PKR, COR, LPR, NHSB, RKF, SKK, SPKP, MET, CMKU, ICF, CKC, ecc.
+  var m = raw.match(/^([A-Z]{2,6}(?:\s*\d[\d\/\-]*)?)\s+(.+)$/i);
   if(m){
     return {loi: m[1].trim(), name: m[2].trim()};
   }
@@ -6191,7 +6214,7 @@ function onPdfPedigreeSelected(input){
       + '1. Se un cane nel documento non ha riga padre/madre compilata → i suoi figli sono null\n'
       + '2. NON inventare antenati. Se non è scritto = null\n'
       + '3. I codici LOI si trovano PRIMA del nome: "RSR 09/74871 ULISSE" → loi="RSR 09/74871", name="ULISSE"\n'
-      + '4. Prefissi validi: RSR, ROI, LR, GI, LOI\n\n'
+      + '4. Prefissi validi italiani: RSR, ROI, LR, GI — internazionali FCI: PT, VDH, LOF, KC, AKC, JR, PKR, COR, NHSB, RKF, SKK, SPKP, MET, CMKU, CKC, ICF, LPR — tutte valide\n\n'
       + 'ESEMPIO VERIFICATO (pedigree Squarcione RSR 25/69758 - Maremmano):\n'
       + 'pos2=Ovidio RSR 18/177932, pos3=Marsorumtransumanza RSR 18/39390\n'
       + 'pos4=Romeo RSR 10/194453, pos5=Cesarina RSR 16/130079\n'
