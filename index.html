@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '7.5';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '7.6';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -6915,6 +6915,11 @@ function saveCucciolo(){
       p.acquirenti=acquirenti;
       p.acquirente={stato:stato};
       p.ceduto=(stato==='ceduto');
+      // Auto-registro entrate quando ceduto
+      if(stato==='ceduto'){
+        if(pag.prezzo>0) _autoRegistroEntrataCucciolo(p.id,p.nome,cu.nomeCucciolata,pag.prezzo,'vendita',null);
+        if(pag.acconto>0) _autoRegistroEntrataCucciolo(p.id,p.nome,cu.nomeCucciolata,pag.acconto,'acconto',pag.dataAcconto||null);
+      }
       // Se ceduto → rimuovi da cani
       if(stato==='ceduto' && p.caneId){
         cani=cani.filter(function(c){return String(c.id)!==String(p.caneId);});
@@ -6952,6 +6957,10 @@ function saveCucciolo(){
     };
     _computaPedigreePerCucciolo(cu, newPuppy);
     cu.cuccioli.push(newPuppy);
+    if(stato==='ceduto'){
+      if(pag.prezzo>0) _autoRegistroEntrataCucciolo(newPuppy.id,newPuppy.nome,cu.nomeCucciolata,pag.prezzo,'vendita',null);
+      if(pag.acconto>0) _autoRegistroEntrataCucciolo(newPuppy.id,newPuppy.nome,cu.nomeCucciolata,pag.acconto,'acconto',pag.dataAcconto||null);
+    }
     if(stato==='mio_cane'){ _creaSchedaCanePerCucciolo(cu, newPuppy); renderSidebar(); toast('✅ '+newPuppy.nome+' aggiunto ai tuoi cani!'); }
   }
   hide('modal-cucciolo');
@@ -8426,14 +8435,22 @@ function setRegTab(tab){
 }
 function getEntrateMensili(anno,mese){
   var res=[];
+  // Entrate manuali / stored (incluse quelle aggiunte automaticamente da saveCucciolo)
   (registro.movimenti||[]).forEach(function(m){
     if(m.tipo!=='entrata'||!m.data)return;
     var d=new Date(m.data);
     if(d.getFullYear()===anno&&d.getMonth()===mese)res.push(m);
   });
+  // Entrate virtuali da cuccioli ceduti (backward compat per dati senza stored entry)
+  // Salta se esiste già una stored entry per questo cucciolo (fonte:'cucciolo')
+  var storedPuppyIds={};
+  (registro.movimenti||[]).forEach(function(m){
+    if(m.fonte==='cucciolo'&&m.puppyId)storedPuppyIds[m.puppyId]=true;
+  });
   (cucciolate||[]).forEach(function(cu){
     (cu.cuccioli||[]).forEach(function(p){
       if(!p.ceduto&&p.stato!=='ceduto')return;
+      if(storedPuppyIds[p.id])return; // già in registro come stored
       var prezzo=(p.pagamento&&p.pagamento.prezzo)||0;
       if(!prezzo)return;
       var dataStr=(p.pagamento&&p.pagamento.dataAcconto)||cu.data||'';
@@ -8522,7 +8539,7 @@ function addMovimento(){
   var cat=g('reg-input-cat')&&g('reg-input-cat').value;
   var desc=(g('reg-input-desc')&&g('reg-input-desc').value.trim())||'';
   if(!data||!importo){toast('⚠️ Inserisci data e importo');return;}
-  registro.movimenti.push({id:Date.now(),data:data,tipo:_regTab,importo:importo,categoria:cat,descrizione:desc||cat,fonte:'manuale'});
+  registro.movimenti.push({id:Date.now(),data:data,tipo:_regTab==='entrate'?'entrata':'uscita',importo:importo,categoria:cat,descrizione:desc||cat,fonte:'manuale'});
   salvaDB();
   renderRegistro();
   toast(_regTab==='entrate'?'✅ Entrata aggiunta':'✅ Uscita aggiunta');
@@ -8549,6 +8566,26 @@ function exportRegistroPDF(){
     +'<div class="saldo" style="background:'+(saldo>=0?'#E8F5E9':'#FFEBEE')+';color:'+sc+'">Saldo: '+(saldo>=0?'▲':'▼')+' €'+Math.abs(saldo).toFixed(0)+'</div>'
     +'<script>window.onload=function(){window.print();}<\/script></body></html>';
   apriHtmlBlob(html);
+}
+
+/* ── Auto-registro da cuccioli ── */
+function _autoRegistroEntrataCucciolo(puppyId, cuccioloNome, cucciolataNome, importo, sottoTipo, dataStr){
+  if(!importo||importo<=0)return;
+  // Evita duplicati: controlla se esiste già una entry con stesso puppyId e sottoTipo
+  var key='cucciolo_'+sottoTipo+'_'+puppyId;
+  if((registro.movimenti||[]).some(function(m){return m._key===key;}))return;
+  var oggi=new Date().toISOString().slice(0,10);
+  registro.movimenti.push({
+    id:Date.now(),
+    data:dataStr||oggi,
+    tipo:'entrata',
+    importo:importo,
+    categoria:'vendita_cucciolo',
+    descrizione:cuccioloNome+(sottoTipo==='acconto'?' (acconto)':'')+' — '+(cucciolataNome||'Cucciolata'),
+    fonte:'cucciolo',
+    puppyId:puppyId,
+    _key:key
+  });
 }
 
 function mostraCuccioliPanel(btn){

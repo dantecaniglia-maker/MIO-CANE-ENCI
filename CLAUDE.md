@@ -2,7 +2,7 @@
 
 ## Progetto
 - **Nome app:** Mio Cane ENCI *(nome internazionale da decidere)*
-- **Versione attuale:** 7.5
+- **Versione attuale:** 7.6
 
 ## Stack
 - HTML / CSS / JS vanilla — nessun framework
@@ -26,8 +26,30 @@
 
 ## Architettura dati (localStorage)
 - Chiave: `miocane_enci_v1`
-- Variabili principali: `cani[]`, `guestCani[]`, `cucciolate[]`, `esposizioni[]`, `tessere{}`, `profilo{}`
+- Variabili principali: `cani[]`, `guestCani[]`, `cucciolate[]`, `esposizioni[]`, `tessere{}`, `profilo{}`, `registro{}`
 - `salvaDB()` / `caricaDB()` gestiscono la persistenza
+
+## Struttura `registro` (Registro Finanziario)
+```js
+registro = {
+  movimenti: [
+    {
+      id: Number,          // Date.now()
+      data: 'YYYY-MM-DD',
+      tipo: 'entrata'|'uscita',   // SEMPRE singolare
+      importo: Number,
+      categoria: 'vendita_cucciolo'|'altro_entrata'|'veterinario'|'alimentazione'|'enci'|'farmaci'|'altro',
+      descrizione: String,
+      fonte: 'manuale'|'cucciolo'|'auto',
+      // solo per fonte:'cucciolo':
+      puppyId: Number,     // p.id del cucciolo
+      _key: 'cucciolo_vendita_<puppyId>'|'cucciolo_acconto_<puppyId>'  // dedup
+    }
+  ]
+}
+```
+- Le voci `fonte:'auto'` sono **virtuali** (calcolate da cucciolate, non persistite) — mostrate solo se non esiste già una entry `fonte:'cucciolo'` per quel puppy
+- `_autoRegistroEntrataCucciolo(puppyId, nome, cuccNome, importo, sottoTipo, data)` aggiunge entries persistite quando un cucciolo viene ceduto in `saveCucciolo()`
 
 ## Funzionalità principali (v6.7)
 - Scheda cane: info, salute, titoli, pedigree (OCR/AI), riproduzione, prole
