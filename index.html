@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '8.3';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '8.4';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4020,30 +4020,27 @@ function _closeAllModals(){
   for(var i=0;i<overlays.length;i++){
     var id=overlays[i].id||'';
     if(id==='modal-onboarding'||id==='modal-gdpr') continue;
-    if(!overlays[i].classList.contains('hidden')) overlays[i].classList.add('hidden');
+    overlays[i].classList.add('hidden');
+    overlays[i].style.display='none';
   }
+  _navStack=[];
 }
-function bnHome(){
-  updateBottomNav('home');
+/* Cambio sezione dalla bottom bar: chiude TUTTO, apre la sezione corretta */
+function switchSection(tab){
   _closeAllModals();
   closeDetail();
+  updateBottomNav(tab);
+  if(tab==='reg')   { openRegistro(); }
+  else if(tab==='breed') { openBreeding(); }
+  else if(tab==='cucc')  { show('modal-cucciolate'); renderCucciolate(); }
+  else if(tab==='enci')  { show('modal-enci'); }
+  // tab==='home': niente da aprire, sidebar già visibile
 }
-function bnRegistro(){
-  updateBottomNav('reg');
-  openRegistro();
-}
-function bnBreeding(){
-  updateBottomNav('breed');
-  openBreeding();
-}
-function bnCucciolate(){
-  updateBottomNav('cucc');
-  show('modal-cucciolate'); renderCucciolate();
-}
-function bnEnci(){
-  updateBottomNav('enci');
-  show('modal-enci');
-}
+function bnHome()      { switchSection('home'); }
+function bnRegistro()  { switchSection('reg'); }
+function bnBreeding()  { switchSection('breed'); }
+function bnCucciolate(){ switchSection('cucc'); }
+function bnEnci()      { switchSection('enci'); }
 
 function deleteCurrent(){
   var c=cur();if(!c)return;
