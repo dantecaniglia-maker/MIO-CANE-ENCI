@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '8.1';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '8.2';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -188,7 +188,10 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 .bn-btn.bn-active>span:first-child{filter:drop-shadow(0 2px 5px rgba(21,101,192,.4))}
 @media(max-width:600px){
   #bottom-nav{display:flex!important}
-  #main-body{padding-bottom:60px!important}
+  #main-body{padding-bottom:70px!important}
+  #sidebar{padding-bottom:70px!important}
+  #detail{padding-bottom:70px!important}
+  .modal{padding-bottom:70px!important}
   #footer{display:none!important}
 }
 /* SETTINGS MODAL */
@@ -3992,8 +3995,18 @@ function updateBottomNav(tab){
     if(btn) btn.classList.toggle('bn-active', t===tab);
   });
 }
+function _closeAllModals(){
+  // Chiudi tutti i modal overlay (eccetto onboarding e GDPR)
+  var overlays=document.querySelectorAll('.overlay');
+  for(var i=0;i<overlays.length;i++){
+    var id=overlays[i].id||'';
+    if(id==='modal-onboarding'||id==='modal-gdpr') continue;
+    if(!overlays[i].classList.contains('hidden')) overlays[i].classList.add('hidden');
+  }
+}
 function bnHome(){
   updateBottomNav('home');
+  _closeAllModals();
   closeDetail();
 }
 function bnRegistro(){
