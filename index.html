@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '7.8.1';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '7.9';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="Mio Cane ENCI"/>
 <meta name="description" content="Gestione ufficiale pedigree ENCI — salute, cucciolate, moduli e contratti"/>
 <link rel="manifest" href="manifest.json"/>
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%230D47A1' rx='80'/%3E%3Cpath d='M128 180c0-75 61-104 104-66l24 22 24-22c43-38 104-9 104 66 0 38-19 70-47 92L256 384 175 272c-28-22-47-54-47-92z' fill='white' opacity='.9'/%3E%3Ccircle cx='192' cy='130' r='22' fill='%23C9A961'/%3E%3Ccircle cx='320' cy='130' r='22' fill='%23C9A961'/%3E%3Ccircle cx='144' cy='176' r='18' fill='%23C9A961'/%3E%3Ccircle cx='368' cy='176' r='18' fill='%23C9A961'/%3E%3C/svg%3E"/>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Ccircle cx='256' cy='256' r='256' fill='%230D47A1'/%3E%3Ccircle cx='256' cy='256' r='241' fill='none' stroke='%23C9A961' stroke-width='14'/%3E%3Cellipse cx='256' cy='360' rx='125' ry='95' fill='white' opacity='.92'/%3E%3Ccircle cx='256' cy='198' r='82' fill='white' opacity='.95'/%3E%3Cellipse cx='186' cy='170' rx='28' ry='50' fill='white' opacity='.85' transform='rotate(-18 186 170)'/%3E%3Cellipse cx='326' cy='170' rx='28' ry='50' fill='white' opacity='.85' transform='rotate(18 326 170)'/%3E%3Cellipse cx='256' cy='214' rx='15' ry='11' fill='%231a1a3a'/%3E%3Ccircle cx='217' cy='188' r='12' fill='%231a1a3a'/%3E%3Ccircle cx='295' cy='188' r='12' fill='%231a1a3a'/%3E%3Crect x='208' y='260' width='96' height='16' rx='8' fill='%23C9A961'/%3E%3C/svg%3E"/>
 <script>
 // Registra Service Worker solo su Vercel (non nella preview Claude)
 if('serviceWorker' in navigator && window.location.hostname !== 'www.claudeusercontent.com'){
@@ -180,12 +180,30 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 #footer{flex-shrink:0;background:#0D47A1;color:rgba(255,255,255,.7);font-size:11px;text-align:center;padding:5px 20px;letter-spacing:.06em}
 #footer span{color:#C9A961;font-weight:700}
 
+/* BOTTOM NAV */
+#bottom-nav{position:fixed;bottom:0;left:0;right:0;height:60px;background:#fff;border-top:1.5px solid #DDEAFF;z-index:200;display:none;align-items:stretch;box-shadow:0 -4px 18px rgba(21,101,192,.12)}
+.bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;cursor:pointer;color:#9ab0cc;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:.03em;padding:4px 2px;transition:color .2s;-webkit-tap-highlight-color:transparent}
+.bn-btn>span:first-child{font-size:20px;line-height:1.1}
+.bn-btn.bn-active{color:#1565C0}
+.bn-btn.bn-active>span:first-child{filter:drop-shadow(0 2px 5px rgba(21,101,192,.4))}
+@media(max-width:600px){
+  #bottom-nav{display:flex!important}
+  #main-body{padding-bottom:60px!important}
+  #footer{display:none!important}
+}
+/* ONBOARDING */
+#modal-onboarding{position:fixed;inset:0;z-index:2000;background:linear-gradient(160deg,#0D47A1,#1565C0 60%,#1976D2);display:flex;align-items:center;justify-content:center;padding:24px}
+.onboard-slide{display:none;text-align:center;width:100%}
+.onboard-slide.active{display:block}
+.onboard-dots{display:flex;gap:8px;justify-content:center;margin-top:28px}
+.onboard-dot{width:8px;height:8px;border-radius:100px;background:rgba(255,255,255,.3);transition:all .3s ease}
+.onboard-dot.active{background:#C9A961;width:22px}
 /* PRINT */
 @media print{
   body{background:#fff!important;overflow:visible!important}
   #app{display:block!important;height:auto!important}
   #main-body{display:block!important;overflow:visible!important}
-  #sidebar,header,#footer,.no-print{display:none!important}
+  #sidebar,header,#footer,#bottom-nav,#modal-onboarding,#modal-gdpr,.no-print{display:none!important}
   #detail{display:block!important;padding:0!important;overflow:visible!important;background:#fff!important}
   .card{border:1px solid #ccc!important;box-shadow:none!important;break-inside:avoid}
   #panel-info,#panel-salute,#panel-campionati{display:block!important}
@@ -968,7 +986,30 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
   <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
     <button id="btn-home" class="hidden btn btn-ghost btn-sm no-print" onclick="goHome()" style="flex-shrink:0;padding:6px 8px;font-size:16px">🏠</button>
     <div style="width:30px;height:30px;flex-shrink:0;background:linear-gradient(135deg,#1565C0,#0D47A1);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(21,101,192,.3)">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 9C3 6.79 4.79 5 7 5C8.1 5 9.1 5.45 9.83 6.17L12 8.34L14.17 6.17C14.9 5.45 15.9 5 17 5C19.21 5 21 6.79 21 9C21 10.1 20.55 11.1 19.83 11.83L12 19.66L4.17 11.83C3.45 11.1 3 10.1 3 9Z" fill="white" opacity="0.9"/><circle cx="7.5" cy="3.5" r="1.5" fill="#C9A961"/><circle cx="16.5" cy="3.5" r="1.5" fill="#C9A961"/><circle cx="4" cy="7" r="1.5" fill="#C9A961"/><circle cx="20" cy="7" r="1.5" fill="#C9A961"/></svg>
+      <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+        <!-- Maremmano portrait icon -->
+        <circle cx="16" cy="16" r="16" fill="#0D47A1"/>
+        <circle cx="16" cy="16" r="14.5" fill="none" stroke="#C9A961" stroke-width="1.2"/>
+        <!-- Body -->
+        <ellipse cx="16" cy="25" rx="8" ry="6" fill="white" opacity=".9"/>
+        <!-- Neck/mane -->
+        <ellipse cx="16" cy="20" rx="7" ry="4.5" fill="white" opacity=".85"/>
+        <!-- Head -->
+        <circle cx="16" cy="14" r="6" fill="white" opacity=".95"/>
+        <!-- Left ear -->
+        <ellipse cx="10.8" cy="11.5" rx="2.2" ry="4" fill="white" opacity=".85" transform="rotate(-18 10.8 11.5)"/>
+        <!-- Right ear -->
+        <ellipse cx="21.2" cy="11.5" rx="2.2" ry="4" fill="white" opacity=".85" transform="rotate(18 21.2 11.5)"/>
+        <!-- Snout -->
+        <ellipse cx="16" cy="16" rx="3" ry="2.2" fill="white"/>
+        <!-- Nose -->
+        <ellipse cx="16" cy="15.2" rx="1.3" ry=".9" fill="#1a1a3a"/>
+        <!-- Eyes -->
+        <circle cx="13.2" cy="13.2" r="1" fill="#1a1a3a"/>
+        <circle cx="18.8" cy="13.2" r="1" fill="#1a1a3a"/>
+        <!-- Gold collar -->
+        <rect x="12.5" y="18" width="7" height="1.4" rx=".7" fill="#C9A961"/>
+      </svg>
     </div>
     <div style="min-width:0">
       <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:#0D47A1;white-space:nowrap">Mio Cane <span style="color:#C9A961">ENCI</span></div>
@@ -1473,6 +1514,94 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 
 <!-- ══ FOOTER ══ -->
 <footer id="footer">Powered by <span>Dante Caniglia</span> &nbsp;·&nbsp; Mio Cane ENCI &nbsp;·&nbsp; <span id="db-status" style="color:#A8D8B8;font-size:10px"></span> &nbsp;<button onclick="resetDB()" style="background:none;border:none;color:rgba(255,255,255,.3);font-size:10px;cursor:pointer;padding:0" title="Cancella tutti i dati">🗑 reset</button></footer>
+
+<!-- ══ BOTTOM NAV ══ -->
+<nav id="bottom-nav">
+  <button id="bn-home" class="bn-btn bn-active" onclick="bnHome()"><span>🏠</span><span>Home</span></button>
+  <button id="bn-cani" class="bn-btn" onclick="bnCani()"><span>🐕</span><span>Cani</span></button>
+  <button id="bn-cucc" class="bn-btn" onclick="bnCucciolate()"><span>🐾</span><span>Cucciolate</span></button>
+  <button id="bn-breed" class="bn-btn" onclick="bnBreeding()"><span>🧬</span><span>Breeding</span></button>
+  <button id="bn-imp" class="bn-btn" onclick="bnImpostazioni()"><span>⚙️</span><span>Impostazioni</span></button>
+</nav>
+
+<!-- ══ ONBOARDING PRIMO AVVIO ══ -->
+<div id="modal-onboarding" class="hidden">
+  <div style="max-width:420px;width:100%;color:#fff">
+
+    <!-- Slide 1: Benvenuto -->
+    <div id="onboard-slide-1" class="onboard-slide active">
+      <div style="width:96px;height:96px;margin:0 auto 24px;background:rgba(255,255,255,.12);border-radius:24px;display:flex;align-items:center;justify-content:center;border:2px solid rgba(201,169,97,.5);box-shadow:0 8px 32px rgba(0,0,0,.2)">
+        <svg width="62" height="62" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="12" r="6" fill="white" opacity=".95"/>
+          <ellipse cx="10.8" cy="9.5" rx="2.2" ry="4" fill="white" opacity=".85" transform="rotate(-18 10.8 9.5)"/>
+          <ellipse cx="21.2" cy="9.5" rx="2.2" ry="4" fill="white" opacity=".85" transform="rotate(18 21.2 9.5)"/>
+          <ellipse cx="16" cy="14" rx="3" ry="2.2" fill="white"/>
+          <ellipse cx="16" cy="13.2" rx="1.3" ry=".9" fill="#1a1a3a"/>
+          <circle cx="13.2" cy="11.2" r="1" fill="#1a1a3a"/>
+          <circle cx="18.8" cy="11.2" r="1" fill="#1a1a3a"/>
+          <ellipse cx="16" cy="22" rx="8" ry="5.5" fill="white" opacity=".88"/>
+          <rect x="12.5" y="16.5" width="7" height="1.4" rx=".7" fill="#C9A961"/>
+        </svg>
+      </div>
+      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;margin-bottom:12px;line-height:1.2">Benvenuto in<br/>Mio Cane ENCI</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.7;margin-bottom:32px">L'app professionale per la gestione del tuo allevamento. Pedigree, salute, cucciolate e moduli ENCI — tutto in un posto.</div>
+      <button class="btn btn-gold" onclick="onboardNext(2)" style="width:100%;font-size:16px;padding:15px;box-shadow:0 4px 20px rgba(201,169,97,.5)">Inizia →</button>
+    </div>
+
+    <!-- Slide 2: Profilo -->
+    <div id="onboard-slide-2" class="onboard-slide">
+      <div style="font-size:44px;margin-bottom:14px">👤</div>
+      <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;margin-bottom:6px">Il tuo Allevamento</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:22px">Puoi completarlo in qualsiasi momento</div>
+      <div style="text-align:left;background:rgba(255,255,255,.1);border-radius:14px;padding:18px;margin-bottom:22px;border:1.5px solid rgba(255,255,255,.15)">
+        <div style="margin-bottom:14px">
+          <label style="color:rgba(255,255,255,.7);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px">Affisso ENCI</label>
+          <input id="ob-affisso" type="text" placeholder="Es. Dell'Alta Murgia" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.25);color:#fff" oninput="g('p-affisso').value=this.value;liveProfilo()"/>
+        </div>
+        <div>
+          <label style="color:rgba(255,255,255,.7);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px">Nome Titolare</label>
+          <input id="ob-nome" type="text" placeholder="Mario Rossi" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.25);color:#fff" oninput="g('p-nome').value=this.value;liveProfilo()"/>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost" onclick="onboardNext(1)" style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.25);flex:1">← Indietro</button>
+        <button class="btn btn-gold" onclick="onboardNext(3)" style="flex:2;font-size:15px">Continua →</button>
+      </div>
+    </div>
+
+    <!-- Slide 3: Aggiungi cane -->
+    <div id="onboard-slide-3" class="onboard-slide">
+      <div style="font-size:50px;margin-bottom:16px">🐕</div>
+      <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;margin-bottom:10px">Aggiungi il tuo primo cane</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.7;margin-bottom:32px">Inserisci nome, razza e data di nascita. Potrai aggiungere pedigree, salute e titoli in seguito.</div>
+      <button class="btn btn-gold" onclick="finishOnboarding(true)" style="width:100%;font-size:16px;padding:15px;box-shadow:0 4px 20px rgba(201,169,97,.5);margin-bottom:12px">+ Aggiungi ora</button>
+      <button onclick="finishOnboarding(false)" style="background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:13px;padding:8px;font-family:'DM Sans',sans-serif;width:100%">Lo faccio più tardi</button>
+    </div>
+
+    <!-- Dots indicatori -->
+    <div class="onboard-dots">
+      <div id="od-1" class="onboard-dot active"></div>
+      <div id="od-2" class="onboard-dot"></div>
+      <div id="od-3" class="onboard-dot"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GDPR PRIVACY ══ -->
+<div id="modal-gdpr" class="overlay hidden" style="z-index:1800;background:rgba(13,71,161,.9);backdrop-filter:blur(8px)">
+  <div class="modal" style="max-width:460px">
+    <div style="text-align:center;margin-bottom:18px">
+      <div style="font-size:42px;margin-bottom:10px">🔒</div>
+      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#0D47A1">Privacy &amp; Dati</div>
+    </div>
+    <div style="background:#F4F7FE;border-radius:12px;padding:16px;margin-bottom:18px;font-size:13px;line-height:1.7;color:#4A6080">
+      <div style="margin-bottom:12px"><strong style="color:#1565C0">💾 Dati sul dispositivo</strong><br/>Tutti i tuoi dati (cani, pedigree, cucciolate, profilo) vengono salvati <strong>esclusivamente sul tuo dispositivo</strong> tramite localStorage. Nessun dato viene trasmesso a server esterni.</div>
+      <div style="margin-bottom:12px"><strong style="color:#7B1FA2">🤖 Gemini AI (opzionale)</strong><br/>La lettura OCR del pedigree utilizza le API di <strong>Google Gemini</strong>. Le immagini vengono inviate ai server Google <em>solo quando richiedi esplicitamente</em> la lettura AI.</div>
+      <div><strong style="color:#1a7a4a">📱 Nessun account richiesto</strong><br/>L'app funziona completamente offline, senza registrazione.</div>
+    </div>
+    <button onclick="acceptGDPR()" class="btn btn-primary" style="width:100%;font-size:15px;padding:13px">✓ Ho capito, continua</button>
+  </div>
+</div>
 
 </div><!-- #app -->
 
@@ -3751,6 +3880,40 @@ function closeDetail(){
   renderSidebar();
 }
 function goHome(){ closeDetail(); }
+
+/* ══════════════════════════════════════
+   BOTTOM NAV
+══════════════════════════════════════ */
+var _bottomTab='home';
+function updateBottomNav(tab){
+  _bottomTab=tab;
+  ['home','cani','cucc','breed','imp'].forEach(function(t){
+    var btn=g('bn-'+t);
+    if(btn) btn.classList.toggle('bn-active', t===tab);
+  });
+}
+function bnHome(){
+  updateBottomNav('home');
+  closeDetail();
+}
+function bnCani(){
+  updateBottomNav('cani');
+  closeDetail();
+  setTimeout(function(){ switchCaniTab('miei'); }, 50);
+}
+function bnCucciolate(){
+  updateBottomNav('cucc');
+  show('modal-cucciolate'); renderCucciolate();
+}
+function bnBreeding(){
+  updateBottomNav('breed');
+  openBreeding();
+}
+function bnImpostazioni(){
+  updateBottomNav('imp');
+  show('modal-profilo'); renderProfilo();
+}
+
 function deleteCurrent(){
   var c=cur();if(!c)return;
   var id=c.id;
@@ -7311,6 +7474,7 @@ getReminders=function(c){
   if(cani.length!==_before) salvaDB();
   renderSidebar();
   checkURLImport();
+  checkOnboarding(hasSavedData);
   // Esponi funzioni globalmente (erano intrappolate nell'IIFE)
   window.renderRiproduzione = renderRiproduzione;
   window.addCalore = addCalore;
@@ -7341,6 +7505,49 @@ getReminders=function(c){
   window.renderProle = renderProle;
   window.aggiornaStatoCucciolo = aggiornaStatoCucciolo;
 })();
+
+/* ══════════════════════════════════════
+   ONBOARDING & GDPR
+══════════════════════════════════════ */
+function checkOnboarding(hadData){
+  if(hadData){
+    // Utente esistente — salta onboarding e GDPR
+    localStorage.setItem('miocane_onboarding_done','1');
+    localStorage.setItem('miocane_gdpr_done','1');
+    return;
+  }
+  if(localStorage.getItem('miocane_onboarding_done')){
+    checkGDPR(); return;
+  }
+  show('modal-onboarding');
+}
+function onboardNext(slide){
+  // Salva valori profilo da slide 2 prima di navigare
+  var aff=g('ob-affisso'), nom=g('ob-nome');
+  if(aff&&aff.value.trim()){ profilo.affisso=aff.value.trim(); var pa=g('p-affisso'); if(pa) pa.value=profilo.affisso; }
+  if(nom&&nom.value.trim()){ profilo.nome=nom.value.trim(); var pn=g('p-nome'); if(pn) pn.value=profilo.nome; }
+  for(var i=1;i<=3;i++){
+    var sl=g('onboard-slide-'+i); if(sl) sl.classList.toggle('active', i===slide);
+    var dt=g('od-'+i); if(dt) dt.classList.toggle('active', i===slide);
+  }
+}
+function finishOnboarding(addDog){
+  var aff=g('ob-affisso'), nom=g('ob-nome');
+  if(aff&&aff.value.trim()) profilo.affisso=aff.value.trim();
+  if(nom&&nom.value.trim()) profilo.nome=nom.value.trim();
+  salvaDB();
+  localStorage.setItem('miocane_onboarding_done','1');
+  hide('modal-onboarding');
+  checkGDPR();
+  if(addDog) setTimeout(function(){ openModal(); }, 350);
+}
+function checkGDPR(){
+  if(!localStorage.getItem('miocane_gdpr_done')) show('modal-gdpr');
+}
+function acceptGDPR(){
+  localStorage.setItem('miocane_gdpr_done','1');
+  hide('modal-gdpr');
+}
 
 function generaContrattoVenditaModal(){
   if(!_editCuccId || !_editPuppyId) return;
