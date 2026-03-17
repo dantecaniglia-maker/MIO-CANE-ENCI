@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '8.2';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '8.3';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1657,10 +1657,23 @@ html[data-theme=dark] label{color:#4A9ADE!important}
           <div id="imp-tema-dot" style="width:16px;height:16px;border-radius:50%;background:#6B8BB0;position:absolute;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.2)"></div>
         </div>
       </div>
-      <div class="imp-item">
+      <div class="imp-item" onclick="toggleNotifPanel()">
         <span class="imp-icon" style="background:#FFF0EE">🔔</span>
-        <div class="imp-text"><div>Notifiche</div><div class="imp-sub">Vaccini, calori, scadenze</div></div>
-        <span style="font-size:10px;font-weight:700;color:#E65100;background:#FFF8E1;border:1px solid #FFD180;border-radius:100px;padding:2px 8px">Presto</span>
+        <div class="imp-text"><div>Notifiche</div><div class="imp-sub" id="notif-sub">Vaccini, trattamenti, esposizioni</div></div>
+        <span id="notif-arr" style="color:#BFCFE8;font-size:18px;transition:transform .25s">›</span>
+      </div>
+      <!-- Pannello notifiche espandibile -->
+      <div id="notif-panel" style="display:none;background:#F4F7FE;border:1.5px solid #DDEAFF;border-radius:12px;padding:14px 16px;margin-bottom:4px">
+        <!-- Riga toggle helper -->
+        <div id="notif-rows"></div>
+        <div style="margin-top:12px">
+          <label style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px">Giorni di anticipo</label>
+          <div style="display:flex;gap:8px">
+            <button id="nant-7"  onclick="setNotifAnticipo(7)"  class="btn btn-ghost btn-sm" style="flex:1">7 gg</button>
+            <button id="nant-14" onclick="setNotifAnticipo(14)" class="btn btn-ghost btn-sm" style="flex:1">14 gg</button>
+            <button id="nant-30" onclick="setNotifAnticipo(30)" class="btn btn-ghost btn-sm" style="flex:1">30 gg</button>
+          </div>
+        </div>
       </div>
 
       <!-- Gruppo: Privacy e dati -->
@@ -1675,6 +1688,12 @@ html[data-theme=dark] label{color:#4A9ADE!important}
         <div class="imp-text"><div>Esporta tutti i dati</div><div class="imp-sub">Backup JSON di cani, cucciolate, profilo</div></div>
         <span class="imp-arr">›</span>
       </div>
+      <div class="imp-item" onclick="g('backup-input').click()">
+        <span class="imp-icon" style="background:#F0FFF6">📥</span>
+        <div class="imp-text"><div>Importa backup</div><div class="imp-sub">Ripristina da file JSON salvato</div></div>
+        <span class="imp-arr">›</span>
+      </div>
+      <input id="backup-input" type="file" accept=".json" style="display:none" onchange="importaBackup(this)"/>
       <div class="imp-item imp-danger" onclick="if(confirm('Cancellare TUTTI i dati? Non recuperabili.')){resetDB();hide('modal-impostazioni');}">
         <span class="imp-icon" style="background:#FFF0EE">🗑</span>
         <div class="imp-text"><div style="color:#C0534A">Cancella tutti i dati</div><div class="imp-sub">Reset completo — irreversibile</div></div>
@@ -7725,6 +7744,80 @@ function esportaDati(){
     URL.revokeObjectURL(url);
     toast('✅ Backup scaricato!');
   }catch(e){ alert('Errore export: '+e.message); }
+}
+
+function importaBackup(input){
+  var file=input.files&&input.files[0];
+  if(!file){ return; }
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      if(!data||(!data.cani&&!data.profilo)) throw new Error('File non valido o incompleto.');
+      if(!confirm('Importare il backup? I dati attuali verranno sostituiti.')) return;
+      if(data.cani)       cani=data.cani;
+      if(data.guestCani)  guestCani=data.guestCani;
+      if(data.cucciolate && typeof cucciolate!=='undefined') cucciolate=data.cucciolate;
+      if(data.esposizioni && typeof esposizioni!=='undefined') esposizioni=data.esposizioni;
+      if(data.profilo)    { profilo=data.profilo; }
+      if(data.tessere)    tessere=data.tessere;
+      if(data.registro)   registro=data.registro;
+      salvaDB();
+      renderSidebar();
+      hide('modal-impostazioni');
+      var nc=cani.length, ncu=(typeof cucciolate!=='undefined'?cucciolate.length:0);
+      toast('✅ '+nc+' can'+(nc===1?'e':'i')+' e '+ncu+' cucciola'+(ncu===1?'ta':'te')+' ripristinat'+(ncu===1?'a':'e')+'!');
+    }catch(ex){ alert('Errore import: '+ex.message); }
+    input.value=''; // reset per permettere re-import stesso file
+  };
+  reader.readAsText(file);
+}
+
+/* ══════════════════════════════════════
+   NOTIFICHE SETTINGS
+══════════════════════════════════════ */
+var _notifDef={vaccini:true,trattamenti:true,esposizioni:true,anticipo:14};
+function _getNotif(){
+  try{ var n=JSON.parse(localStorage.getItem('miocane_notifiche')||'{}'); return Object.assign({},_notifDef,n); }
+  catch(e){ return Object.assign({},_notifDef); }
+}
+function _saveNotif(n){ localStorage.setItem('miocane_notifiche',JSON.stringify(n)); }
+
+function toggleNotifPanel(){
+  var panel=g('notif-panel'), arr=g('notif-arr');
+  var open=panel&&panel.style.display!=='none';
+  if(panel) panel.style.display=open?'none':'block';
+  if(arr) arr.style.transform=open?'':'rotate(90deg)';
+  if(!open) _renderNotifPanel();
+}
+function _renderNotifPanel(){
+  var n=_getNotif();
+  var rows=g('notif-rows'); if(!rows) return;
+  var items=[
+    {key:'vaccini',  label:'Vaccini',     sub:'Avvisa prima della scadenza vaccino'},
+    {key:'trattamenti', label:'Trattamenti', sub:'Antiparassitari, sverminazioni'},
+    {key:'esposizioni', label:'Esposizioni', sub:'Avvisa prima di una gara iscritta'}
+  ];
+  rows.innerHTML=items.map(function(it){
+    var on=n[it.key];
+    return '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #DDEAFF">'
+      +'<div style="flex:1"><div style="font-size:13px;font-weight:600;color:#1a1a3a">'+it.label+'</div>'
+      +'<div style="font-size:11px;color:#6B8BB0;margin-top:1px">'+it.sub+'</div></div>'
+      +'<div onclick="toggleNotif(\''+it.key+'\')" style="width:38px;height:22px;border-radius:11px;background:'+(on?'#1565C0':'#DDEAFF')+';position:relative;cursor:pointer;flex-shrink:0;transition:background .2s">'
+      +'<div style="width:16px;height:16px;border-radius:50%;background:'+(on?'#fff':'#6B8BB0')+';position:absolute;top:3px;left:'+(on?'19':'3')+'px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.2)"></div>'
+      +'</div></div>';
+  }).join('');
+  // Anticipo buttons highlight
+  [7,14,30].forEach(function(d){
+    var btn=g('nant-'+d);
+    if(btn){ btn.style.background=n.anticipo===d?'#1565C0':'#fff'; btn.style.color=n.anticipo===d?'#fff':'#1565C0'; }
+  });
+}
+function toggleNotif(key){
+  var n=_getNotif(); n[key]=!n[key]; _saveNotif(n); _renderNotifPanel();
+}
+function setNotifAnticipo(days){
+  var n=_getNotif(); n.anticipo=days; _saveNotif(n); _renderNotifPanel();
 }
 // Ripristina tema al caricamento
 (function(){
