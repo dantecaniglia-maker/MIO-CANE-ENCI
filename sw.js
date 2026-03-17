@@ -38,8 +38,11 @@ self.addEventListener('fetch', function(e) {
   if (e.request.method !== 'GET') return;
   if (!e.request.url.startsWith('http')) return;
   
-  // Per index.html: sempre network-first (così prende aggiornamenti)
-  if (e.request.url.includes('index.html') || e.request.url.endsWith('/')) {
+  // Per index.html e deep link (?code= / ?import=): sempre network-first
+  var url = e.request.url;
+  if (url.includes('index.html') || url.endsWith('/') ||
+      url.includes('?code=') || url.includes('?import=') ||
+      (url.includes('mio-cane-enci') && url.includes('?'))) {
     e.respondWith(
       fetch(e.request).then(function(res) {
         var clone = res.clone();

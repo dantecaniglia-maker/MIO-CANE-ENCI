@@ -1108,7 +1108,11 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="openModal()">+ Aggiungi il tuo primo cane</button>
-          <button class="btn btn-ghost btn-sm" onclick="triggerImport()">📥 Importa scheda ricevuta</button>
+          <button class="btn btn-ghost btn-sm" onclick="triggerImport()">📥 Importa file .enci/.json</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;width:100%">
+          <input id="import-link-input" type="url" placeholder="Incolla link ricevuto (es. https://mio-cane-enci.vercel.app/?code=...)" style="flex:1;font-size:12px;padding:7px 10px"/>
+          <button class="btn btn-teal btn-sm" onclick="importFromLink()" style="white-space:nowrap">↓ Importa da link</button>
         </div>
       </div>
 
@@ -1152,10 +1156,14 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
           📥 I cani importati sono <strong>in sola lettura</strong> — usali nel <strong>Breeding Planner</strong>.
         </div>
         <div id="tab-guest-list"></div>
-        <div id="guest-list-empty" style="display:none;text-align:center;padding:32px 16px;color:#6B8BB0">
+        <div id="guest-list-empty" style="display:none;text-align:center;padding:20px 16px;color:#6B8BB0">
           <div style="font-size:40px;margin-bottom:10px">📥</div>
-          <div style="font-weight:700;color:#00838F;margin-bottom:6px">Nessuna scheda importata</div>
-          <button class="btn btn-teal btn-sm" onclick="triggerImport()">📥 Importa scheda</button>
+          <div style="font-weight:700;color:#00838F;margin-bottom:10px">Nessuna scheda importata</div>
+          <button class="btn btn-teal btn-sm" onclick="triggerImport()">📥 Importa file .enci/.json</button>
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <input id="import-link-input2" type="url" placeholder="Incolla link ricevuto..." style="flex:1;font-size:12px;padding:7px 10px;text-align:left"/>
+            <button class="btn btn-teal btn-sm" onclick="importFromLink2()" style="white-space:nowrap">↓ Link</button>
+          </div>
         </div>
         <div id="guest-actions" style="display:none;margin-top:10px;text-align:right;padding:0 0 8px">
           <button onclick="clearGuests()" style="background:none;border:none;cursor:pointer;color:#9ab0cc;font-size:12px">🗑 Rimuovi tutte</button>
@@ -4106,6 +4114,38 @@ function shareViaNative(){
 
 function downloadScheda(){ shareViaNative(); }
 function triggerImport(){ g('import-input').value=''; g('import-input').click(); }
+
+function importFromLink(){ _doImportFromLink(g('import-link-input')); }
+function importFromLink2(){ _doImportFromLink(g('import-link-input2')); }
+function _doImportFromLink(inp){
+  var url=(inp&&inp.value.trim())||'';
+  if(!url){toast('⚠️ Incolla un link valido');return;}
+  try{
+    var parsed=new URL(url);
+    var code=parsed.searchParams.get('code');
+    var b64=parsed.searchParams.get('import');
+    if(code){
+      toast('🔄 Caricamento...');
+      fetch('https://api.jsonbin.io/v3/b/'+code+'/latest')
+        .then(function(r){return r.json();})
+        .then(function(d){
+          var data=d.record&&d.record.scheda;
+          if(!data||!data.nome)throw new Error('Dati non validi');
+          if(inp)inp.value='';
+          _mostraImportPreview(data);
+        })
+        .catch(function(){toast('❌ Link non valido o scaduto');});
+    }else if(b64){
+      var json=decodeURIComponent(escape(atob(b64)));
+      var data=JSON.parse(json);
+      if(!data.nome){toast('❌ Dati non validi');return;}
+      if(inp)inp.value='';
+      _mostraImportPreview(data);
+    }else{
+      toast('❌ Link non riconosciuto — usa il link condiviso dall\'app');
+    }
+  }catch(e){toast('❌ Link non valido: '+e.message);}
+}
 
 function importScheda(input){
   var file=input.files[0]; if(!file) return;
@@ -8520,6 +8560,7 @@ function mostraCuccioliPanel(btn){
   s.style.display = isOpen ? 'none' : 'block';
   if(!isOpen) setTimeout(function(){ s.scrollIntoView({behavior:'smooth', block:'nearest'}); }, 50);
 }
+</script>
 
 <!-- ════ MODAL REGISTRO FINANZIARIO ════ -->
 <div id="modal-registro" class="overlay hidden" style="z-index:10000">
@@ -8550,7 +8591,7 @@ function mostraCuccioliPanel(btn){
     </div>
   </div>
 </div>
-</script>
+
 <script>
 /* ── Navigazione: intercetta freccia Indietro browser/telefono ── */
 (function(){
