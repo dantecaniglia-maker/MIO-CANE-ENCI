@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '7.8';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '7.8.1';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -6361,6 +6361,117 @@ function applicaImportData(c, obj){
     pedGens:4
   };
 
+  /* ── CANI DEMO — TEST DATABASE GENETICO RAZZE ── */
+  var thor = {
+    id:3001, nome:'Thor', razza:'Pastore Australiano',
+    numeroENCI:'LOI 20/001122', dataNascita:'2020-05-10', sesso:'M',
+    microchip:'', foto:null, mantello:'merle',
+    vaccinazioni:[], trattamenti:[],
+    displasia:{hd:'A1',ed:'',dataTest:'',note:''},
+    cac_list:[], cacib_list:[],
+    pedigreeFlat:{
+      2:{name:'Blue Storm',loi:'LOI 17/221100',isFounder:false,hd:'A2',titoli:['IT']},
+      3:{name:'Daisy Merle',loi:'LOI 17/334422',isFounder:false,hd:'A1',titoli:[]},
+      4:{name:'Ace of Spades',loi:'LOI 15/101010',isFounder:false,hd:'A1',titoli:['IT','CIB']},
+      5:{name:'Mia',loi:'LOI 15/202020',isFounder:false,hd:'B',titoli:[]},
+      6:{name:'Rex',loi:'LOI 14/303030',isFounder:false,hd:'A2',titoli:['IT']},
+      7:{name:'Lola',loi:'LOI 14/404040',isFounder:false,hd:'A1',titoli:[]}
+    },
+    pedGens:3
+  };
+
+  var stella = {
+    id:3002, nome:'Stella', razza:'Pastore Australiano',
+    numeroENCI:'LOI 20/003344', dataNascita:'2020-08-15', sesso:'F',
+    microchip:'', foto:null, mantello:'merle',
+    vaccinazioni:[], trattamenti:[],
+    displasia:{hd:'A2',ed:'',dataTest:'',note:''},
+    cac_list:[], cacib_list:[],
+    pedigreeFlat:{
+      2:{name:'Shadow Blue',loi:'LOI 16/112233',isFounder:false,hd:'A1',titoli:['IT']},
+      3:{name:'Nala Merle',loi:'LOI 16/445566',isFounder:false,hd:'B',titoli:[]},
+      4:{name:'Storm',loi:'LOI 14/667788',isFounder:false,hd:'A2',titoli:['IT','EU']},
+      5:{name:'Cleo',loi:'LOI 14/778899',isFounder:false,hd:'A1',titoli:[]},
+      6:{name:'Blue Eagle',loi:'LOI 13/889900',isFounder:false,hd:'A1',titoli:['IT']},
+      7:{name:'Misty',loi:'LOI 13/990011',isFounder:false,hd:'A2',titoli:[]}
+    },
+    pedGens:3
+  };
+
+  var maxBC = {
+    id:3003, nome:'Max', razza:'Border Collie',
+    numeroENCI:'LOI 19/005566', dataNascita:'2019-03-20', sesso:'M',
+    microchip:'', foto:null, mantello:'black and white',
+    vaccinazioni:[], trattamenti:[],
+    displasia:{hd:'A1',ed:'A1',dataTest:'',note:''},
+    cac_list:[{data:'2021-06-12',esposizione:'CACIT Milano',tipo:'cac'}],
+    cacib_list:[],
+    pedigreeFlat:{
+      2:{name:'Fly',loi:'LOI 16/123456',isFounder:false,hd:'A1',titoli:['IT']},
+      3:{name:'Nell',loi:'LOI 16/654321',isFounder:false,hd:'A2',titoli:['IT']},
+      4:{name:'Cap',loi:'LOI 13/111222',isFounder:false,hd:'A1',titoli:['IT','CIB']},
+      5:{name:'Meg',loi:'LOI 13/333444',isFounder:false,hd:'A1',titoli:[]},
+      6:{name:'Roy',loi:'LOI 12/555666',isFounder:false,hd:'B',titoli:['IT']},
+      7:{name:'Tess',loi:'LOI 12/777888',isFounder:false,hd:'A2',titoli:[]}
+    },
+    pedGens:3
+  };
+
+  var lunaBC = {
+    id:3004, nome:'Luna BC', razza:'Border Collie',
+    numeroENCI:'LOI 19/007788', dataNascita:'2019-07-04', sesso:'F',
+    microchip:'', foto:null, mantello:'black and white',
+    vaccinazioni:[], trattamenti:[],
+    displasia:{hd:'B',ed:'',dataTest:'',note:''},
+    cac_list:[], cacib_list:[],
+    pedigreeFlat:{
+      2:{name:'Ben',loi:'LOI 15/246810',isFounder:false,hd:'A1',titoli:['IT']},
+      3:{name:'Jess',loi:'LOI 15/135791',isFounder:false,hd:'A2',titoli:[]},
+      4:{name:'Spot',loi:'LOI 12/112233',isFounder:false,hd:'A1',titoli:['IT']},
+      5:{name:'Lassie',loi:'LOI 12/445566',isFounder:false,hd:'B',titoli:['IT','CIB']},
+      6:{name:'Glen',loi:'LOI 11/778899',isFounder:false,hd:'A1',titoli:['IT']},
+      7:{name:'Patch',loi:'LOI 11/001122',isFounder:false,hd:'A2',titoli:[]}
+    },
+    pedGens:3
+  };
+
+  var gold = {
+    id:3005, nome:'Gold', razza:'Golden Retriever',
+    numeroENCI:'LOI 21/009900', dataNascita:'2021-02-14', sesso:'M',
+    microchip:'', foto:null, mantello:'golden',
+    vaccinazioni:[], trattamenti:[],
+    displasia:{hd:'A2',ed:'A1',dataTest:'',note:''},
+    cac_list:[{data:'2022-09-18',esposizione:'CACIT Roma',tipo:'cac'}],
+    cacib_list:[],
+    pedigreeFlat:{
+      2:{name:'Sunny Boy',loi:'LOI 18/300100',isFounder:false,hd:'A1',titoli:['IT','CIB']},
+      3:{name:'Golden Girl',loi:'LOI 18/400200',isFounder:false,hd:'A2',titoli:['IT']},
+      4:{name:'Duke',loi:'LOI 15/500300',isFounder:false,hd:'A1',titoli:['IT','CIB','EU']},
+      5:{name:'Amber',loi:'LOI 15/600400',isFounder:false,hd:'A1',titoli:['IT']},
+      6:{name:'Charlie',loi:'LOI 14/700500',isFounder:false,hd:'B',titoli:['IT']},
+      7:{name:'Honey',loi:'LOI 14/800600',isFounder:false,hd:'A2',titoli:[]}
+    },
+    pedGens:3
+  };
+
+  var layla = {
+    id:3006, nome:'Layla', razza:'Labrador Retriever',
+    numeroENCI:'LOI 21/002211', dataNascita:'2021-04-22', sesso:'F',
+    microchip:'', foto:null, mantello:'chocolate',
+    vaccinazioni:[], trattamenti:[],
+    displasia:{hd:'A1',ed:'A1',dataTest:'',note:''},
+    cac_list:[], cacib_list:[],
+    pedigreeFlat:{
+      2:{name:'Rocco',loi:'LOI 17/910101',isFounder:false,hd:'A1',titoli:['IT']},
+      3:{name:'Bella Lab',loi:'LOI 17/920202',isFounder:false,hd:'A2',titoli:['IT']},
+      4:{name:'Ace',loi:'LOI 14/930303',isFounder:false,hd:'A1',titoli:['IT','CIB']},
+      5:{name:'Coco',loi:'LOI 14/940404',isFounder:false,hd:'B',titoli:[]},
+      6:{name:'Bruno',loi:'LOI 13/950505',isFounder:false,hd:'A1',titoli:['IT']},
+      7:{name:'Molly',loi:'LOI 13/960606',isFounder:false,hd:'A2',titoli:[]}
+    },
+    pedGens:3
+  };
+
 
 /* ══════════════════════════════════════
    ♀ RIPRODUZIONE — Calori & Gravidanza
@@ -7191,7 +7302,7 @@ getReminders=function(c){
 
   var hasSavedData = caricaDB();
   if(!hasSavedData){
-    cani.push(luna, ramon);
+    cani.push(luna, ramon, thor, stella, maxBC, lunaBC, gold, layla);
   }
   renderSidebar();
   checkURLImport();
