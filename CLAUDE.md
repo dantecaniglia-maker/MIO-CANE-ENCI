@@ -61,6 +61,34 @@ registro = {
 - Calendario Esposizioni, Moduli ENCI
 - OCR pedigree via Tesseract + Gemini AI
 
-## Prossimi sviluppi noti
-- Stato "ceduto" deve disattivare alert vaccini nella cucciolata
-- Nome internazionale app da definire
+## Nome internazionale
+- **Nome scelto:** PrimeBreed
+- **Dominio da registrare:** primebreed.com, primebreed.app, primebreed.it
+- **Social da creare:** @primebreed su Instagram, Facebook, TikTok
+
+## Bug aperti da risolvere
+- Alert notifiche non si disattivano in cucciolate
+- "Trattamenti cuccioli" scritto male in home
+- "Clicca per dettagli" in home non funziona
+- Campi editabili post-scansione PDF/foto ancora incompleti
+- Grafico peso cuccioli non funziona
+- Logo da sostituire con immagine fornita da Dante
+- Sigle LOI internazionali (PT, VDH, LOF, KC ecc.) da testare
+
+## Funzionalità da completare
+- Notifiche push reali (toggle presente ma non funziona)
+- Modalità FCI configurata ma vuota
+- Contratto vendita cucciolo digitale
+- Chat allevatori
+- Marketplace cuccioli con Supabase
+- Multi-lingua FCI (Francia, Germania, Spagna)
+- Database genetico completo tutte razze FCI
+- Piano abbonamento Free/Pro
+- GDPR completo
+- Analytics base
+- Vetrina cuccioli automatica su Facebook/sito
+
+## Filosofia app
+- NON bloccare mai l'allevatore — solo avvisi semaforo 🔴🟡🟢
+- Piano gratuito: funzioni base
+- Piano Pro: OCR, Breeding avanzato, Export PDF, FCI internazionale
