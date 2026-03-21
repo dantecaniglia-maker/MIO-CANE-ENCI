@@ -1,5 +1,5 @@
 // ── CAMBIA QUESTO NUMERO AD OGNI DEPLOY ──
-const VERSION = '8.7';
+const VERSION = '9.0';
 const CACHE = 'miocane-' + VERSION;
 
 self.addEventListener('message', function(e){
@@ -37,6 +37,10 @@ self.addEventListener('activate', function(e) {
 self.addEventListener('fetch', function(e) {
   if (e.request.method !== 'GET') return;
   if (!e.request.url.startsWith('http')) return;
+
+  // Survey: mai intercettare, sempre alla rete
+  var reqUrl = e.request.url;
+  if (reqUrl.includes('/survey') || reqUrl.includes('/survey.html')) return;
 
   // Per index.html e deep link (?code= / ?import=): sempre network-first
   var url = e.request.url;
