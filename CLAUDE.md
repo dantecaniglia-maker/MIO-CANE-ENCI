@@ -1,22 +1,35 @@
-# Mio Cane ENCI
+# BreedPed (ex Mio Cane ENCI)
 
 ## Progetto
-- **Nome app:** Mio Cane ENCI *(nome internazionale da decidere)*
-- **Versione attuale:** 8.7
+- **Nome app:** BreedPed *(ex Mio Cane ENCI)*
+- **Versione attuale:** 9.0
+- **Dominio target:** breedped.com / breedped.app / breedped.it
+- **Social:** @breedped su Instagram, Facebook, TikTok
+
+## Repository
+
+| Repo | Descrizione | Deploy |
+|------|-------------|--------|
+| `dantecaniglia-maker/MIO-CANE-ENCI` | App PWA principale | Vercel (auto-deploy) |
+| `dantecaniglia-maker/breedped-website` | Sito landing breedped.com | Da configurare su Vercel |
 
 ## Stack
 - HTML / CSS / JS vanilla — nessun framework
 - PWA (Service Worker in `sw.js`, manifest in `manifest.json`)
 - Single-file app: tutta la logica è in `index.html` (~8000 righe)
 
-## Deploy
+## Deploy app (MIO-CANE-ENCI)
 - **Piattaforma:** Vercel (auto-deploy da GitHub)
-- **Repository:** `dantecaniglia-maker/MIO-CANE-ENCI`
 - **Branch:** `main`
 - **Per deployare:**
   ```
   git add -A && git commit -m "messaggio" && git push
   ```
+
+## vercel.json (app)
+- `survey.html` è registrato come build statico separato
+- Route `/survey(\.html)?` → `survey.html` definita PRIMA della catch-all
+- Il service worker (`sw.js`) NON intercetta `/survey` e `/survey.html` — sempre network
 
 ## Convenzioni importanti
 - **Razza:** usare sempre **"Pastore Abruzzese Maremmano"** — MAI "Maremmano Abruzzese" o "Cane da Pastore Maremmano Abruzzese"
@@ -51,20 +64,16 @@ registro = {
 - Le voci `fonte:'auto'` sono **virtuali** (calcolate da cucciolate, non persistite) — mostrate solo se non esiste già una entry `fonte:'cucciolo'` per quel puppy
 - `_autoRegistroEntrataCucciolo(puppyId, nome, cuccNome, importo, sottoTipo, data)` aggiunge entries persistite quando un cucciolo viene ceduto in `saveCucciolo()`
 
-## Funzionalità principali (v8.0)
+## Funzionalità principali (v9.0)
 - Scheda cane: info, salute, titoli, pedigree (OCR/AI), riproduzione, prole
 - Cucciolate: gestione cuccioli con stati (disponibile/prenotato/ceduto/mio_cane)
 - Cuccioli: pedigree automatico 4 generazioni, sezione finanziaria, contratto ENCI
 - Dashboard cuccioli (sidebar): statistiche vendite, filtri per stato
 - Moduli ENCI A e B: auto-compilazione da cucciolata
-- Breeding Planner potenziato: COI con priorità LOI>microchip>nome, GENETIC_DB 5 razze, avvisi genetici 🔴🟡🟢, qualità linea 0-100
+- Breeding Planner: COI con priorità LOI>microchip>nome, GENETIC_DB 5 razze, avvisi genetici 🔴🟡🟢, qualità linea 0-100
 - Calendario Esposizioni, Moduli ENCI
 - OCR pedigree via Tesseract + Gemini AI
-
-## Nome internazionale
-- **Nome scelto:** PrimeBreed
-- **Dominio da registrare:** primebreed.com, primebreed.app, primebreed.it
-- **Social da creare:** @primebreed su Instagram, Facebook, TikTok
+- Survey utenti su `/survey` (file statico separato, non intercettato dal SW)
 
 ## Bug aperti da risolvere
 - Alert notifiche non si disattivano in cucciolate
