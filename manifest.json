@@ -15,15 +15,15 @@
   "related_applications": [],
   "icons": [
     {
-      "src": "logo.jpeg",
+      "src": "logo-padded.png",
       "sizes": "192x192",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "logo.jpeg",
+      "src": "logo-padded.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ]

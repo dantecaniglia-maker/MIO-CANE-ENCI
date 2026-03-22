@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Genera Logo PWA</title></head>
+<body>
+<p>Generazione logo-padded.png in corso...</p>
+<canvas id="c" width="512" height="512" style="display:none"></canvas>
+<script>
+var img = new Image();
+img.onload = function(){
+  var cv = document.getElementById('c');
+  var ctx = cv.getContext('2d');
+  // Sfondo blu
+  ctx.fillStyle = '#0D47A1';
+  ctx.fillRect(0,0,512,512);
+  // Logo centrato con padding 40px per lato
+  ctx.drawImage(img, 40, 40, 432, 432);
+  // Download automatico
+  var a = document.createElement('a');
+  a.download = 'logo-padded.png';
+  a.href = cv.toDataURL('image/png');
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  document.querySelector('p').textContent = 'logo-padded.png scaricato! Mettilo in questa cartella e fai push.';
+};
+img.src = 'logo.jpeg';
+</script>
+</body>
+</html>
