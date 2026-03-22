@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '8.7';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '9.1';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1319,10 +1319,25 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
       </div>
       <!-- Dati Allevatore cane -->
       <div id="i-allev-box" style="margin-top:10px;background:#F8FAFF;border:1.5px solid #DDEAFF;border-radius:12px;padding:14px">
-        <div style="font-size:11px;font-weight:800;color:#1565C0;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">🏡 Allevatore</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:11px;font-weight:800;color:#1565C0;text-transform:uppercase;letter-spacing:.08em">🏡 Allevatore</div>
+          <button onclick="toggleAllevForm()" class="btn btn-ghost btn-sm" style="font-size:11px" id="btn-allev-edit">✏️ Modifica</button>
+        </div>
+        <div id="i-allev-view" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
           <div style="grid-column:span 2"><span style="color:#6B8BB0">Nome:</span> <span id="ia-nome">—</span></div>
           <div style="grid-column:span 2"><span style="color:#6B8BB0">Indirizzo:</span> <span id="ia-indirizzo">—</span></div>
+        </div>
+        <div id="i-allev-form" style="display:none;margin-top:10px">
+          <div class="form-grid">
+            <div style="grid-column:span 2"><label>Nome e Cognome</label><input id="af-nome" type="text" placeholder="Mario Rossi"/></div>
+            <div style="grid-column:span 2"><label>Via / Indirizzo</label><input id="af-indirizzo" type="text"/></div>
+            <div><label>Città</label><input id="af-citta" type="text"/></div>
+            <div><label>Provincia</label><input id="af-provincia" type="text" placeholder="RM"/></div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+            <button onclick="toggleAllevForm()" class="btn btn-ghost btn-sm">Annulla</button>
+            <button onclick="salvaAllevatore()" class="btn btn-primary btn-sm">✓ Salva</button>
+          </div>
         </div>
       </div>
       <!-- Dati Proprietario cane -->
@@ -2342,7 +2357,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em">Anno</span>
             <div id="enci-anno-view" style="font-size:15px;font-weight:700;color:#C9A961"></div>
-            <input id="enci-anno-edit" type="number" min="2020" max="2030" placeholder="2026" style="width:70px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center;display:none"/>
+            <input id="enci-anno-edit" type="text" inputmode="numeric" maxlength="4" placeholder="2026" style="width:70px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center;display:none"/>
           </div>
         </div>
         <div style="margin-bottom:14px">
@@ -2382,7 +2397,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em">Anno</span>
             <div id="club-anno-view" style="font-size:15px;font-weight:700;color:#C9A961"></div>
-            <input id="club-anno-edit" type="number" min="2020" max="2030" placeholder="2026" style="width:70px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center;display:none"/>
+            <input id="club-anno-edit" type="text" inputmode="numeric" maxlength="4" placeholder="2026" style="width:70px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center;display:none"/>
           </div>
         </div>
         <div style="margin-bottom:14px">
@@ -5018,7 +5033,7 @@ var tessere = {
 };
 
 function tsv(id,val){var el=g(id);if(el)el.textContent=val||'';}
-function ttoggle(editId,viewId,show_edit){var e=g(editId),v=g(viewId);if(!e||!v)return;if(show_edit){e.style.display='';v.style.display='none';}else{e.style.display='none';v.style.display='';}}
+function ttoggle(editId,viewId,show_edit){var e=g(editId),v=g(viewId);if(!e||!v)return;if(show_edit){e.style.removeProperty('display');e.style.display='inline-block';v.style.display='none';}else{e.style.display='none';v.style.removeProperty('display');}}
 function renderTessere(){
   ['enci','club'].forEach(function(t){
     var d=tessere[t];
@@ -8281,7 +8296,7 @@ function toggleProprForm(){
   var isOpen = form.style.display !== 'none';
   if(!isOpen){
     // Apri e popola
-    var c = cani.find(function(x){return x.id===selectedId;});
+    var c = cur();
     var pr = (c&&c.proprietario)||{};
     ['nome','cf','tel','cell','email','via','civico','cap','citta'].forEach(function(f){
       var el=g('pf-'+f); if(el) el.value=pr[f]||'';
@@ -8302,8 +8317,8 @@ function precompilaPropietarioDaProfilo(){
   set('pf-email', p.email);
 }
 function salvaProprietario(){
-  var c = cani.find(function(x){return x.id===selectedId;});
-  if(!c) return;
+  var c = cur();
+  if(!c||c._guest) return;
   c.proprietario = {
     nome: g('pf-nome').value.trim(),
     cf:   g('pf-cf').value.trim(),
@@ -8327,6 +8342,41 @@ function salvaProprietario(){
   g('ip-indirizzo').textContent=ind||'—';
   toggleProprForm();
   toast('✅ Proprietario salvato');
+}
+
+/* ── Allevatore del Cane (scheda Info) ── */
+function toggleAllevForm(){
+  var form = g('i-allev-form'), view = g('i-allev-view');
+  var isOpen = form.style.display !== 'none';
+  if(!isOpen){
+    var c = cur(); if(!c) return;
+    var al = c.allevatore||{};
+    var el=g('af-nome'); if(el) el.value=al.nome||'';
+    el=g('af-indirizzo'); if(el) el.value=al.indirizzo||'';
+    el=g('af-citta'); if(el) el.value=al.citta||'';
+    el=g('af-provincia'); if(el) el.value=al.provincia||'';
+    form.style.display=''; view.style.display='none';
+    g('btn-allev-edit').textContent='✕ Chiudi';
+  } else {
+    form.style.display='none'; view.style.display='';
+    g('btn-allev-edit').textContent='✏️ Modifica';
+  }
+}
+function salvaAllevatore(){
+  var c = cur();
+  if(!c||c._guest) return;
+  c.allevatore = {
+    nome:      g('af-nome').value.trim(),
+    indirizzo: g('af-indirizzo').value.trim(),
+    citta:     g('af-citta').value.trim(),
+    provincia: g('af-provincia').value.trim()
+  };
+  salvaDB();
+  var al = c.allevatore;
+  g('ia-nome').textContent = al.nome||'—';
+  g('ia-indirizzo').textContent = [al.indirizzo,al.citta,al.provincia].filter(Boolean).join(', ')||'—';
+  toggleAllevForm();
+  toast('✅ Allevatore salvato');
 }
 
 /* ── Copia allevatore come proprietario stallone ── */
