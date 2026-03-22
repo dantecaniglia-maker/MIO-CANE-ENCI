@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '10.1';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '10.2';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9805,9 +9805,27 @@ function mostraCuccioliPanel(btn){
 
 <script>
 /* ══ CHATBOT AI ══ */
-var _chatHistory = [];
 var CHAT_LIMIT_FREE = 5;
 var CHAT_STORAGE_KEY = 'breedped_chat_usage_v1';
+var CHAT_HISTORY_KEY = 'breedped_chat_history_v1';
+
+function loadChatHistory(){
+  try{
+    var saved=JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY)||'{}');
+    var today=new Date().toISOString().substring(0,10);
+    if(saved.date!==today) return [];
+    return saved.messages||[];
+  }catch(e){ return []; }
+}
+function saveChatHistory(){
+  var today=new Date().toISOString().substring(0,10);
+  localStorage.setItem(CHAT_HISTORY_KEY,JSON.stringify({
+    date:today,
+    messages:_chatHistory.filter(function(m){ return m.role!=='loading'; })
+  }));
+}
+
+var _chatHistory=loadChatHistory();
 
 function getChatUsage(){
   var today=new Date().toISOString().substring(0,10);
@@ -9840,6 +9858,8 @@ function openChat(){
       ?'Ciao! Sono il tuo assistente BreedPed 🐾 Vedo che stai lavorando con **'+c.nome+'**. Come posso aiutarti?'
       :'Ciao! Sono il tuo assistente BreedPed 🐾 Posso aiutarti su salute, pedigree, riproduzione, normativa ENCI e tutto ciò che riguarda i tuoi cani. Cosa vuoi sapere?';
     addChatMessage('bot',welcome);
+  } else {
+    renderChatMessages();
   }
   updateChatLimitBar();
   show('modal-chat');
@@ -9868,6 +9888,7 @@ function upgradeProPrompt(){
 
 function addChatMessage(role,text){
   _chatHistory.push({role:role,text:text});
+  saveChatHistory();
   renderChatMessages();
 }
 
@@ -9928,6 +9949,8 @@ function sendChat(){
   var MODELS=['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash'];
   var mi=0;
   function tryModel(){
+    var controller=new AbortController();
+    var timeoutId=setTimeout(function(){ controller.abort(); },30000);
     fetch('https://generativelanguage.googleapis.com/v1beta/models/'+MODELS[mi]+':generateContent?key='+_aiKeys.gemini,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -9935,9 +9958,10 @@ function sendChat(){
         system_instruction:{parts:[{text:SYSTEM}]},
         contents:history,
         generationConfig:{maxOutputTokens:300,temperature:0.7}
-      })
+      }),
+      signal:controller.signal
     })
-    .then(function(r){return r.json();})
+    .then(function(r){ clearTimeout(timeoutId); return r.json(); })
     .then(function(d){
       _chatHistory=_chatHistory.filter(function(m){return m.role!=='loading';});
       var reply=(((d.candidates||[])[0]||{}).content||{}).parts;
@@ -9949,7 +9973,13 @@ function sendChat(){
         addChatMessage('bot','⚠️ Errore nella risposta AI. Riprova tra un momento.');
       }
     })
-    .catch(function(){
+    .catch(function(err){
+      clearTimeout(timeoutId);
+      if(err.name==='AbortError'){
+        _chatHistory=_chatHistory.filter(function(m){return m.role!=='loading';});
+        addChatMessage('bot','⏱ Risposta troppo lenta. Riprova tra un momento.');
+        return;
+      }
       if(mi<MODELS.length-1){ mi++; tryModel(); return; }
       _chatHistory=_chatHistory.filter(function(m){return m.role!=='loading';});
       addChatMessage('bot','⚠️ Errore di connessione. Controlla la tua chiave API Gemini nelle Impostazioni → AI.');
