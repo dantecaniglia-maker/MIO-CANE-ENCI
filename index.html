@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '9.2';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '9.3';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -2331,7 +2331,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em">Anno</span>
             <div id="enci-anno-view" style="font-size:15px;font-weight:700;color:#C9A961"></div>
-            <input id="enci-anno-edit" type="text" inputmode="numeric" maxlength="4" placeholder="2026" style="width:70px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center;display:none"/>
+            <input id="enci-anno-edit" type="text" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="2026" style="width:70px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center;display:none"/>
           </div>
         </div>
         <div style="margin-bottom:14px">
@@ -2371,7 +2371,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em">Anno</span>
             <div id="club-anno-view" style="font-size:15px;font-weight:700;color:#C9A961"></div>
-            <input id="club-anno-edit" type="text" inputmode="numeric" maxlength="4" placeholder="2026" style="width:70px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center;display:none"/>
+            <input id="club-anno-edit" type="text" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="2026" style="width:70px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center;display:none"/>
           </div>
         </div>
         <div style="margin-bottom:14px">
@@ -6007,7 +6007,7 @@ var _bigliettoInProgress = false;
 function stampaBigliettoVisita(){
   if(_bigliettoInProgress) return;
   _bigliettoInProgress = true;
-  setTimeout(function(){ _bigliettoInProgress = false; }, 3000);
+  setTimeout(function(){ _bigliettoInProgress = false; }, 5000);
 
   var p = profilo || {};
   var logoHtml = '';
