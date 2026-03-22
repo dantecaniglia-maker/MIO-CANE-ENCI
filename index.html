@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '9.5';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '9.6';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4392,7 +4392,7 @@ function savePed(pos,field,value){
   var badge=g('ped-stats-badge');
   if(badge)badge.textContent=nPed>0?nPed+' antenati inseriti':'Nessun antenato — clicca per compilare';
   // Controllo duplicati pedigree
-  if((field==='name'||field==='loi'||field==='microchip') && value && value.length>2){
+  if((field==='name'||field==='loi'||field==='microchip') && value && value.length>3){
     cercaDuplicatoPed(pos, field, value);
   }
   renderSidebar();
@@ -4414,6 +4414,7 @@ function cercaDuplicatoPed(pos, campo, valore){
   }
   if(trovato){
     banner.style.display='';
+    banner.scrollIntoView({behavior:'smooth',block:'nearest'});
     banner.innerHTML='⚠️ <strong>Cane già presente:</strong> '+esc(trovato.nome)
       +(trovato.numeroENCI?' &mdash; LOI: '+esc(trovato.numeroENCI):'')
       +(trovato.microchip?' &mdash; Chip: '+esc(trovato.microchip):'')
@@ -6180,6 +6181,9 @@ function applicaPdfImport(){
   if(g('review-sesso'))       _pdfImportData.sesso       = g('review-sesso').value              || _pdfImportData.sesso;
   if(g('review-data')) _pdfImportData.dataNascita = g('review-data').value        || _pdfImportData.dataNascita;
   if(g('review-microchip'))   _pdfImportData.microchip   = g('review-microchip').value.trim()   || _pdfImportData.microchip;
+  if(g('review-mantello'))    _pdfImportData.mantello    = g('review-mantello').value.trim()    || _pdfImportData.mantello;
+  if(g('review-allevatore-nome')){  _pdfImportData.allevatore=_pdfImportData.allevatore||{}; _pdfImportData.allevatore.nome=g('review-allevatore-nome').value.trim()||(_pdfImportData.allevatore||{}).nome; }
+  if(g('review-proprietario-nome')){ _pdfImportData.proprietario=_pdfImportData.proprietario||{}; _pdfImportData.proprietario.nome=g('review-proprietario-nome').value.trim()||(_pdfImportData.proprietario||{}).nome; }
   applicaImportData(c, _pdfImportData);
   hide('modal-pdf-import');
   renderDettaglio(c.id);
@@ -7830,9 +7834,14 @@ function salvaPeso(){
   p.pesi.sort(function(a,b){return a.data.localeCompare(b.data);});
   salvaDB();
   hide('modal-peso');
+  toast('✅ Peso salvato: '+grammi+'g — totale '+p.pesi.length+' misurazioni');
   renderCucciolate();
-  toast('✅ Peso salvato: '+grammi+'g');
-  setTimeout(function(){ var sec=g('cuccioli-section-'+cuccId); if(sec) sec.style.display=''; },50);
+  setTimeout(function(){
+    var sec=g('cuccioli-section-'+cuccId);
+    if(sec) sec.style.display='';
+    var puppyEl=document.querySelector('[data-puppy-id="'+puppyId+'"]');
+    if(puppyEl) puppyEl.scrollIntoView({behavior:'smooth',block:'nearest'});
+  },100);
 }
 
 /* estendi getReminders con calori e gravidanza */
