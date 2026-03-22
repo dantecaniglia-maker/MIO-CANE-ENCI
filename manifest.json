@@ -1,7 +1,7 @@
 {
-  "name": "Mio Cane ENCI",
-  "short_name": "Mio Cane",
-  "description": "Gestione ufficiale pedigree ENCI",
+  "name": "BreedPed",
+  "short_name": "BreedPed",
+  "description": "Il pedigree intelligente per allevatori",
   "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",

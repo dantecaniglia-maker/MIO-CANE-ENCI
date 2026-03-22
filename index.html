@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '9.1';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '9.2';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mio Cane ENCI</title>
+<title>BreedPed</title>
 <!-- PWA -->
 <meta name="theme-color" content="#0D47A1"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-<meta name="apple-mobile-web-app-title" content="Mio Cane ENCI"/>
+<meta name="apple-mobile-web-app-title" content="BreedPed"/>
 <meta name="description" content="Gestione ufficiale pedigree ENCI — salute, cucciolate, moduli e contratti"/>
 <link rel="manifest" href="manifest.json"/>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Ccircle cx='256' cy='256' r='256' fill='%230D47A1'/%3E%3Ccircle cx='256' cy='256' r='242' fill='none' stroke='%23C9A961' stroke-width='10'/%3E%3Crect x='248' y='268' width='16' height='106' rx='8' fill='%232E7D32'/%3E%3Cpath d='M251 274 Q247 284 251 294 Q255 304 251 314 Q247 324 251 334 Q255 344 251 354 Q247 364 251 374' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Cpath d='M261 274 Q265 284 261 294 Q257 304 261 314 Q265 324 261 334 Q257 344 261 354 Q265 364 261 374' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Cline x1='251' y1='284' x2='261' y2='284' stroke='white' stroke-width='1.5'/%3E%3Cline x1='251' y1='304' x2='261' y2='304' stroke='white' stroke-width='1.5'/%3E%3Cline x1='251' y1='324' x2='261' y2='324' stroke='white' stroke-width='1.5'/%3E%3Cline x1='251' y1='344' x2='261' y2='344' stroke='white' stroke-width='1.5'/%3E%3Cline x1='251' y1='364' x2='261' y2='364' stroke='white' stroke-width='1.5'/%3E%3Cpath d='M256 374 Q215 402 195 428' stroke='%23C9A961' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 374 Q256 410 256 442' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 374 Q297 402 317 428' stroke='%23C9A961' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 268 Q170 228 128 196' stroke='%23C9A961' stroke-width='10' stroke-linecap='round' fill='none'/%3E%3Cpath d='M256 268 Q342 228 384 196' stroke='%23C9A961' stroke-width='10' stroke-linecap='round' fill='none'/%3E%3Cpath d='M128 196 Q85 158 65 128' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M128 196 Q145 156 165 128' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M384 196 Q367 156 347 128' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M384 196 Q427 158 447 128' stroke='%23C9A961' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Cpath d='M65 128 Q48 102 40 82' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M65 128 Q78 100 86 82' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M165 128 Q155 100 150 78' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M165 128 Q178 100 185 78' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M347 128 Q334 100 326 78' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M347 128 Q360 100 366 78' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M447 128 Q436 100 430 82' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M447 128 Q460 100 472 82' stroke='%23C9A961' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='256' cy='268' r='11' fill='%232E7D32'/%3E%3Ccircle cx='128' cy='196' r='8' fill='%23C9A961'/%3E%3Ccircle cx='384' cy='196' r='8' fill='%23C9A961'/%3E%3Ccircle cx='65' cy='128' r='6' fill='%23C9A961'/%3E%3Ccircle cx='165' cy='128' r='6' fill='%23C9A961'/%3E%3Ccircle cx='347' cy='128' r='6' fill='%23C9A961'/%3E%3Ccircle cx='447' cy='128' r='6' fill='%23C9A961'/%3E%3C/svg%3E"/>
@@ -358,7 +358,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
       <div id="bp-web-row" style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;color:rgba(255,255,255,.6);width:56px">Web</span><span id="bp-web" style="font-size:12px"></span></div>
       <div id="bp-prov-row" style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;color:rgba(255,255,255,.6);width:56px">Sede</span><span id="bp-prov" style="font-size:13px"></span></div>
     </div>
-    <div style="margin-top:12px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);font-size:8px;color:rgba(255,255,255,.4);text-align:right">Mio Cane ENCI</div>
+    <div style="margin-top:12px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);font-size:8px;color:rgba(255,255,255,.4);text-align:right">BreedPed</div>
   </div>
 </div>
 
@@ -1037,38 +1037,12 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
   <!-- SINISTRA: logo + titolo -->
   <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
     <button id="btn-home" class="hidden btn btn-ghost btn-sm no-print" onclick="goHome()" style="flex-shrink:0;padding:6px 8px;font-size:16px">🏠</button>
-    <div style="width:30px;height:30px;flex-shrink:0;background:linear-gradient(135deg,#1565C0,#0D47A1);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(21,101,192,.3)">
-      <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
-        <!-- DNA-tree logo -->
-        <circle cx="16" cy="16" r="16" fill="#0D47A1"/>
-        <!-- trunk green -->
-        <rect x="15" y="17" width="2" height="11" rx="1" fill="#2E7D32"/>
-        <!-- DNA helix white -->
-        <path d="M15 18 Q14 20.5 15 23 Q16 25.5 15 28" stroke="white" stroke-width=".9" fill="none" stroke-linecap="round"/>
-        <path d="M17 18 Q18 20.5 17 23 Q16 25.5 17 28" stroke="white" stroke-width=".9" fill="none" stroke-linecap="round"/>
-        <line x1="15" y1="20.5" x2="17" y2="20.5" stroke="white" stroke-width=".7"/>
-        <line x1="15" y1="23" x2="17" y2="23" stroke="white" stroke-width=".7"/>
-        <line x1="15" y1="25.5" x2="17" y2="25.5" stroke="white" stroke-width=".7"/>
-        <!-- roots gold -->
-        <path d="M16 28 Q12 30 10 31.5" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-        <path d="M16 28 Q20 30 22 31.5" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-        <!-- Level 1 gold branches -->
-        <path d="M16 17 Q9 13 6 9" stroke="#C9A961" stroke-width="2" stroke-linecap="round" fill="none"/>
-        <path d="M16 17 Q23 13 26 9" stroke="#C9A961" stroke-width="2" stroke-linecap="round" fill="none"/>
-        <!-- Level 2 gold -->
-        <path d="M6 9 Q3 6 2 4" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-        <path d="M6 9 Q8 6 10 4" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-        <path d="M26 9 Q24 6 22 4" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-        <path d="M26 9 Q29 6 30 4" stroke="#C9A961" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-        <!-- nodes -->
-        <circle cx="16" cy="17" r="1.5" fill="#2E7D32"/>
-        <circle cx="6" cy="9" r="1.2" fill="#C9A961"/>
-        <circle cx="26" cy="9" r="1.2" fill="#C9A961"/>
-      </svg>
+    <div style="width:34px;height:34px;flex-shrink:0;border-radius:8px;overflow:hidden;box-shadow:0 2px 6px rgba(21,101,192,.3)">
+      <img src="logo.jpeg" style="width:100%;height:100%;object-fit:cover"/>
     </div>
     <div style="min-width:0">
-      <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:#0D47A1;white-space:nowrap">Mio Cane <span style="color:#C9A961">ENCI</span></div>
-      <div class="hide-mobile" style="font-size:8px;color:#6B8BB0;letter-spacing:.1em;text-transform:uppercase">Gestione Pedigree</div>
+      <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:#0D47A1;white-space:nowrap">Breed<span style="color:#C9A961">Ped</span></div>
+      <div class="hide-mobile" style="font-size:8px;color:#6B8BB0;letter-spacing:.1em;text-transform:uppercase">Il pedigree intelligente</div>
     </div>
   </div>
   <!-- DESTRA: bottoni azione -->
@@ -1271,7 +1245,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
   <!-- DETAIL -->
   <main id="detail" class="hidden">
     <div class="print-header">
-      <div style="font-size:24px;font-weight:700;color:#1565C0">LIBRETTO SANITARIO — Mio Cane ENCI</div>
+      <div style="font-size:24px;font-weight:700;color:#1565C0">LIBRETTO SANITARIO — BreedPed</div>
       <div style="font-size:12px;color:#555;margin-top:4px">Stampato il <span id="print-date"></span> • Powered by Dante Caniglia</div>
     </div>
 
@@ -1586,7 +1560,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
 </div>
 
 <!-- ══ FOOTER ══ -->
-<footer id="footer">Powered by <span>Dante Caniglia</span> &nbsp;·&nbsp; Mio Cane ENCI &nbsp;·&nbsp; <span id="db-status" style="color:#A8D8B8;font-size:10px"></span> &nbsp;<button onclick="resetDB()" style="background:none;border:none;color:rgba(255,255,255,.3);font-size:10px;cursor:pointer;padding:0" title="Cancella tutti i dati">🗑 reset</button></footer>
+<footer id="footer">Powered by <span>Dante Caniglia</span> &nbsp;·&nbsp; BreedPed &nbsp;·&nbsp; <span id="db-status" style="color:#A8D8B8;font-size:10px"></span> &nbsp;<button onclick="resetDB()" style="background:none;border:none;color:rgba(255,255,255,.3);font-size:10px;cursor:pointer;padding:0" title="Cancella tutti i dati">🗑 reset</button></footer>
 
 <!-- ══ BOTTOM NAV ══ -->
 <nav id="bottom-nav">
@@ -1630,7 +1604,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
           <circle cx="26" cy="9" r="1.2" fill="#C9A961"/>
         </svg>
       </div>
-      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;margin-bottom:12px;line-height:1.2">Benvenuto in<br/>Mio Cane ENCI</div>
+      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;margin-bottom:12px;line-height:1.2">Benvenuto in<br/>BreedPed</div>
       <div style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.7;margin-bottom:32px">L'app professionale per la gestione del tuo allevamento. Pedigree, salute, cucciolate e moduli ENCI — tutto in un posto.</div>
       <button class="btn btn-gold" onclick="onboardNext(2)" style="width:100%;font-size:16px;padding:15px;box-shadow:0 4px 20px rgba(201,169,97,.5)">Inizia →</button>
     </div>
@@ -1681,7 +1655,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
     <div style="background:linear-gradient(135deg,#0D47A1,#1565C0);padding:20px 24px 16px;display:flex;align-items:center;justify-content:space-between">
       <div>
         <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff">⚙️ Impostazioni</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Mio Cane ENCI v<span id="imp-version"></span></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">BreedPed v<span id="imp-version"></span></div>
       </div>
       <button onclick="hide('modal-impostazioni')" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:50%;width:34px;height:34px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
     </div>
@@ -1762,7 +1736,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
 
       <!-- Versione -->
       <div style="text-align:center;padding:18px 0 4px">
-        <div style="font-size:12px;color:#6B8BB0">Mio Cane ENCI — versione <strong id="imp-version2"></strong></div>
+        <div style="font-size:12px;color:#6B8BB0">BreedPed — versione <strong id="imp-version2"></strong></div>
         <div style="font-size:11px;color:#9ab0cc;margin-top:3px">Made with ❤️ by Dante Caniglia</div>
       </div>
     </div>
@@ -4696,13 +4670,13 @@ function copyShareLink(){
 function shareVia(platform){
   var link=window._shareLink||'';
   var nome=window._shareNome||'un cane';
-  var testo='🐾 Ti condivido la scheda pedigree di *'+nome+'* su Mio Cane ENCI.\nClicca il link per importarla direttamente:\n'+link;
+  var testo='🐾 Ti condivido la scheda pedigree di *'+nome+'* su BreedPed.\nClicca il link per importarla direttamente:\n'+link;
   if(platform==='whatsapp'){
     window.open('https://wa.me/?text='+encodeURIComponent(testo),'_blank');
   } else if(platform==='telegram'){
-    window.open('https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent('🐾 '+nome+' — Mio Cane ENCI'),'_blank');
+    window.open('https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent('🐾 '+nome+' — BreedPed'),'_blank');
   } else if(platform==='email'){
-    window.open('mailto:?subject='+encodeURIComponent('Scheda '+nome+' — Mio Cane ENCI')+'&body='+encodeURIComponent(testo),'_blank');
+    window.open('mailto:?subject='+encodeURIComponent('Scheda '+nome+' — BreedPed')+'&body='+encodeURIComponent(testo),'_blank');
   }
 }
 
@@ -5556,7 +5530,7 @@ function condividiCucciolata(id){
   var kn=profilo.affisso||profilo.nome||'';
   var cont=[profilo.tel,profilo.email].filter(Boolean).join(' · ');
   if(kn||cont){html+='<div style="margin-top:14px;padding-top:12px;border-top:1.5px solid #DDEAFF;font-size:12px;color:#6B8BB0">🏡 '+(kn?'<strong style="color:#1a1a3a">'+kn+'</strong> · ':'')+cont+'</div>';}
-  html+='<div style="margin-top:8px;font-size:10px;color:#BFCFE8;text-align:right">Powered by Dante Caniglia · Mio Cane ENCI</div>';
+  html+='<div style="margin-top:8px;font-size:10px;color:#BFCFE8;text-align:right">Powered by Dante Caniglia · BreedPed</div>';
   html+='</div>';
   g('cucc-share-preview').innerHTML=html;
   show('modal-cucc-share');
@@ -5770,7 +5744,7 @@ function condividiCucciolo(cuccId, puppyId){
     if(cont) html+=(kn?' · ':'')+cont;
     html+='</div>';
   }
-  html+='<div style="margin-top:10px;font-size:10px;color:#BFCFE8;text-align:right">📲 mio-cane-enci.vercel.app · Mio Cane ENCI</div>';
+  html+='<div style="margin-top:10px;font-size:10px;color:#BFCFE8;text-align:right">📲 breedped.com · BreedPed</div>';
   html+='</div>';
 
   var full='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -6053,16 +6027,16 @@ function stampaBigliettoVisita(){
     +'*{margin:0;padding:0;box-sizing:border-box}'
     +'@page{size:A5 landscape;margin:10mm}'
     +'body{background:#f0f4fb;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:"DM Sans",sans-serif}'
-    +'.card{width:480px;background:linear-gradient(135deg,#0D47A1,#1565C0);border-radius:20px;padding:30px 34px;color:#fff;box-shadow:0 12px 40px rgba(13,71,161,.4)}'
+    +'.card{width:600px;background:linear-gradient(135deg,#0D47A1,#1565C0);border-radius:20px;padding:36px 40px;color:#fff;box-shadow:0 12px 40px rgba(13,71,161,.4)}'
     +'.top{display:flex;align-items:center;gap:18px;margin-bottom:20px}'
     +'.avatar{width:68px;height:68px;border-radius:14px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:34px;flex-shrink:0;overflow:hidden}'
     +'.avatar img{width:100%;height:100%;object-fit:cover}'
-    +'.affisso{font-family:"Playfair Display",serif;font-size:22px;font-weight:700;line-height:1.2}'
+    +'.affisso{font-family:"Playfair Display",serif;font-size:26px;font-weight:700;line-height:1.2}'
     +'.razza{font-size:13px;color:rgba(255,255,255,.65);margin-top:4px}'
     +'.divider{border:none;border-top:1px solid rgba(255,255,255,.2);margin:16px 0}'
     +'.row{display:flex;gap:12px;align-items:center;margin-bottom:8px}'
     +'.lbl{font-size:11px;color:rgba(255,255,255,.55);width:68px;flex-shrink:0;text-transform:uppercase;letter-spacing:.05em}'
-    +'.row span:last-child{font-size:15px;font-weight:600}'
+    +'.row span:last-child{font-size:17px;font-weight:600}'
     +'.footer{margin-top:18px;font-size:9px;color:rgba(255,255,255,.3);text-align:right;border-top:1px solid rgba(255,255,255,.1);padding-top:8px}'
     +'@media print{body{background:#fff;min-height:0;display:block;padding:0}'
     +'.card{margin:0 auto;box-shadow:none}}'
@@ -8250,10 +8224,7 @@ function autocompilaModA(cuccId){
   if(!cu) return;
   hide('modal-cucciolate');
   openModuliENCI();
-  // Switch a panel A
-  var pa=g('enci-panel-a'),pb=g('enci-panel-b');
-  if(pa) pa.style.display='';
-  if(pb) pb.style.display='none';
+  switchEnciTab('a');
   setTimeout(function(){
     precompilaDaProfilo('a');
     if(cu.madre) precompilaFattrice('a', cu.madre);
@@ -8273,10 +8244,7 @@ function autocompilaModB(cuccId){
   if(!cu) return;
   hide('modal-cucciolate');
   openModuliENCI();
-  // Switch a panel B
-  var pa=g('enci-panel-a'),pb=g('enci-panel-b');
-  if(pa) pa.style.display='none';
-  if(pb) pb.style.display='';
+  switchEnciTab('b');
   setTimeout(function(){
     precompilaDaProfilo('b');
     if(cu.data&&g('mb-data')) g('mb-data').value=cu.data;
@@ -8639,7 +8607,7 @@ function generaPdfContratto(){
     +'</div>'
     +'</div>'
 
-    +'<div class="footer">Contratto generato da Mio Cane ENCI · '+oggi+' · Le parti dichiarano di aver letto e compreso il presente documento</div>'
+    +'<div class="footer">Contratto generato da BreedPed · '+oggi+' · Le parti dichiarano di aver letto e compreso il presente documento</div>'
     +'</div>'
     +'<script>window.onload=function(){window.print();}<\/script>'
     +'</body></html>';
@@ -8662,7 +8630,7 @@ function generaCondividiContratto(){
     +'📅 Data monta: '+fmtData(data)+'\n'
     +'💰 Compenso: '+tipoTxt+'\n\n'
     +'Il contratto completo firmato è allegato in PDF.\n'
-    +'_Generato con Mio Cane ENCI_';
+    +'_Generato con BreedPed_';
 
   // Download PDF + apertura WhatsApp
   generaPdfContratto();
@@ -9174,7 +9142,7 @@ function generaPdfModelloA(){
     +'<div class="legenda"><strong>LEGENDA:</strong> (1) Campo facoltativo riservato ai titolari di affisso riconosciuto ENCI-FCI. '
     +'(2) Campo obbligatorio riservato al numero di microchip di iscrizione anagrafe canina se diverso da quello riportato sul pedigree. '
     +'(3) Le tariffe sono reperibili sul sito: https://www.enci.it/tariffe. Nel caso di stallone iscritto a Libro estero allegare copia del Certificato genealogico FCI.</div>'
-    +'<div style="font-size:8pt;color:#999;text-align:right;margin-top:4px">F-7233_10 · Generato da Mio Cane ENCI</div>'
+    +'<div style="font-size:8pt;color:#999;text-align:right;margin-top:4px">F-7233_10 · Generato da BreedPed</div>'
 
     +'</div>' // .page
     +'<script>window.onload=function(){window.print();}<\/script>'
@@ -9300,7 +9268,7 @@ function generaPdfModelloB(){
     +'<div class="spazio-enci"><strong>SPAZIO RISERVATO ALL\'ENCI</strong><br>'
     +'<div style="display:flex;justify-content:space-around;margin-top:6px;font-size:8.5pt">'
     +'<span>Timbro della Delegazione</span><span>giorno ___ mese ___ anno ___</span></div></div>'
-    +'<div style="font-size:8pt;color:#999;text-align:right;margin-top:4px">Generato da Mio Cane ENCI · F-7234_08</div>'
+    +'<div style="font-size:8pt;color:#999;text-align:right;margin-top:4px">Generato da BreedPed · F-7234_08</div>'
     +'</div>'; // fine pag 1
 
   // Pagine cuccioli (4 per pagina)
