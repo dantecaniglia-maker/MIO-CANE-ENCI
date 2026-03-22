@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '9.7';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '9.8';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -7383,6 +7383,50 @@ function showCuccioliModal(cuccId){
         });
         html+='</div>';
       }
+      // Grafico peso
+      if(p.pesi&&p.pesi.length>0){
+        html+='<div style="margin-top:8px">';
+        if(p.pesi.length>=2){
+          var pesiSorted=p.pesi.slice().sort(function(a,b){return a.data.localeCompare(b.data);});
+          var vals=pesiSorted.map(function(w){return w.grammi;});
+          var minV=Math.min.apply(null,vals), maxV=Math.max.apply(null,vals);
+          var W=220, H=60, padL=6, padR=6, padT=6, padB=18;
+          var xS=function(i){return padL+(i/(pesiSorted.length-1))*(W-padL-padR);};
+          var yS=function(v){return padT+(1-(v-minV)/Math.max(maxV-minV,1))*(H-padT-padB);};
+          var polyPts=pesiSorted.map(function(w,i){return xS(i)+','+yS(w.grammi);}).join(' ');
+          var areaPts=xS(0)+','+(H-padB)+' '+polyPts+' '+xS(pesiSorted.length-1)+','+(H-padB);
+          var svgDots=pesiSorted.map(function(w,i){
+            var cx=xS(i),cy=yS(w.grammi),isLast=i===pesiSorted.length-1;
+            return '<circle cx="'+cx+'" cy="'+cy+'" r="'+(isLast?4:2.5)+'" fill="'+(isLast?'#1565C0':'#6B8BB0')+'"/>'
+              +'<text x="'+cx+'" y="'+(H-2)+'" text-anchor="middle" font-size="8" fill="#9ab0cc">'+w.data.substring(5)+'</text>';
+          }).join('');
+          var lastVal=vals[vals.length-1];
+          var delta=lastVal-vals[0];
+          var deltaStr=delta>0?'+'+delta+'g':delta+'g';
+          var deltaColor=delta>0?'#1a7a4a':'#C0534A';
+          html+='<div style="display:flex;align-items:center;gap:10px">';
+          html+='<svg width="'+W+'" height="'+H+'" style="flex-shrink:0;overflow:visible">'
+            +'<defs><linearGradient id="pg'+p.id+'m" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1565C0" stop-opacity=".15"/><stop offset="100%" stop-color="#1565C0" stop-opacity="0"/></linearGradient></defs>'
+            +'<polygon points="'+areaPts+'" fill="url(#pg'+p.id+'m)"/>'
+            +'<polyline points="'+polyPts+'" fill="none" stroke="#1565C0" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>'
+            +svgDots+'</svg>';
+          html+='<div style="text-align:right;flex-shrink:0">'
+            +'<div style="font-size:15px;font-weight:800;color:#1565C0">'+lastVal+'g</div>'
+            +'<div style="font-size:10px;font-weight:700;color:'+deltaColor+'">'+deltaStr+'</div>'
+            +'<div style="font-size:10px;color:#9ab0cc">'+pesiSorted.length+' mis.</div>'
+            +'</div></div>';
+        } else {
+          html+='<div style="display:flex;gap:4px;flex-wrap:wrap">';
+          p.pesi.forEach(function(w){
+            html+='<div style="background:rgba(255,255,255,.7);border-radius:5px;padding:3px 6px;font-size:10px;text-align:center"><div style="font-weight:700;color:#1565C0">'+w.grammi+'g</div><div style="color:#6B8BB0">'+w.data.substring(5)+'</div></div>';
+          });
+          html+='</div>';
+        }
+        html+='<button onclick="hide(\'modal-cuccioli-list\');openAggiuntaPeso('+cuccId+','+p.id+')" style="margin-top:5px;background:rgba(255,255,255,.7);border:1.5px dashed #BFCFE8;border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;color:#1565C0;font-weight:700">+⚖ Aggiungi peso</button>';
+        html+='</div>';
+      } else {
+        html+='<button onclick="hide(\'modal-cuccioli-list\');openAggiuntaPeso('+cuccId+','+p.id+')" style="margin-top:6px;background:rgba(255,255,255,.7);border:1.5px dashed #BFCFE8;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;color:#1565C0;font-weight:700">+ Primo peso</button>';
+      }
       html+='</div>';
     });
   }
@@ -7836,21 +7880,7 @@ function salvaPeso(){
   hide('modal-peso');
   toast('✅ Peso salvato: '+grammi+'g — totale '+p.pesi.length+' misurazioni');
   renderCucciolate();
-  setTimeout(function(){
-    // Riapri sezione cuccioli
-    var sec=g('cuccioli-section-'+cuccId);
-    if(sec) sec.style.display='block';
-    // Riapri body cucciolata se esiste
-    var cuccEl=g('cucc-body-'+cuccId);
-    if(cuccEl) cuccEl.style.display='';
-    // Scroll al cucciolo specifico
-    var allPuppies=document.querySelectorAll('[data-puppy-id]');
-    allPuppies.forEach(function(el){
-      if(parseInt(el.dataset.puppyId)===puppyId){
-        el.scrollIntoView({behavior:'smooth',block:'nearest'});
-      }
-    });
-  },150);
+  showCuccioliModal(cuccId);
 }
 
 /* estendi getReminders con calori e gravidanza */
