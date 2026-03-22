@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '9.3';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '9.4';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -5012,42 +5012,56 @@ function renderTessere(){
   ['enci','club'].forEach(function(t){
     var d=tessere[t];
     var locked=d.locked;
-    var sv=tsv, toggle=ttoggle;
     if(t==='enci'){
-      sv('enci-nome-view', d.nome||'— Nome non inserito —');
-      sv('enci-num-view',  d.numero||'· · · · · ·');
-      sv('enci-anno-view', d.anno||'—');
+      tsv('enci-nome-view', d.nome||'— Nome non inserito —');
+      tsv('enci-num-view',  d.numero||'· · · · · ·');
+      tsv('enci-anno-view', d.anno||'—');
+      var eNome=g('enci-nome-edit'), eNum=g('enci-num-edit'), eAnno=g('enci-anno-edit');
       if(!locked){
-        g('enci-nome-edit').value=d.nome||'';
-        g('enci-num-edit').value=d.numero||'';
-        g('enci-anno-edit').value=d.anno||String(new Date().getFullYear());
+        if(eNome) eNome.value=d.nome||'';
+        if(eNum)  eNum.value=d.numero||'';
+        if(eAnno){ eAnno.value=d.anno||String(new Date().getFullYear()); eAnno.style.display='inline-block'; }
+        g('enci-anno-view').style.display='none';
+        if(eNome){ eNome.style.display='inline-block'; g('enci-nome-view').style.display='none'; }
+        if(eNum){  eNum.style.display='inline-block';  g('enci-num-view').style.display='none'; }
+      } else {
+        if(eAnno) eAnno.style.display='none';
+        g('enci-anno-view').style.display='';
+        if(eNome) eNome.style.display='none'; g('enci-nome-view').style.display='';
+        if(eNum)  eNum.style.display='none';  g('enci-num-view').style.display='';
       }
-      toggle('enci-nome-edit','enci-nome-view',!locked);
-      toggle('enci-num-edit','enci-num-view',!locked);
-      toggle('enci-anno-edit','enci-anno-view',!locked);
-      var lb=g('enci-lock-badge');
-      var btn=g('enci-lock-btn');
-      if(locked){lb.textContent='🔒 Bloccata';lb.style.background='rgba(201,169,97,.25)';lb.style.color='#C9A961';btn.textContent='🔓 Sblocca';}
-      else{lb.textContent='✏️ Modifica';lb.style.background='rgba(255,255,255,.15)';lb.style.color='rgba(255,255,255,.8)';btn.textContent='🔒 Blocca';}
+      var lb=g('enci-lock-badge'), btn=g('enci-lock-btn');
+      if(lb&&btn){
+        if(locked){lb.textContent='🔒 Bloccata';lb.style.background='rgba(201,169,97,.25)';lb.style.color='#C9A961';btn.textContent='🔓 Sblocca';}
+        else{lb.textContent='✏️ In modifica';lb.style.background='rgba(255,255,255,.15)';lb.style.color='rgba(255,255,255,.8)';btn.textContent='🔒 Blocca';}
+      }
     } else {
-      sv('club-titolo-view', d.titolo||'— Nome club —');
-      sv('club-nome-view',   d.nome||'— Nome non inserito —');
-      sv('club-num-view',    d.numero||'· · · · · ·');
-      sv('club-anno-view',   d.anno||'—');
+      tsv('club-titolo-view', d.titolo||'— Nome club —');
+      tsv('club-nome-view',   d.nome||'— Nome non inserito —');
+      tsv('club-num-view',    d.numero||'· · · · · ·');
+      tsv('club-anno-view',   d.anno||'—');
+      var cTit=g('club-titolo-edit'), cNome=g('club-nome-edit'), cNum=g('club-num-edit'), cAnno=g('club-anno-edit');
       if(!locked){
-        g('club-titolo-edit').value=d.titolo||'';
-        g('club-nome-edit').value=d.nome||'';
-        g('club-num-edit').value=d.numero||'';
-        g('club-anno-edit').value=d.anno||String(new Date().getFullYear());
+        if(cTit)  cTit.value=d.titolo||'';
+        if(cNome) cNome.value=d.nome||'';
+        if(cNum)  cNum.value=d.numero||'';
+        if(cAnno){ cAnno.value=d.anno||String(new Date().getFullYear()); cAnno.style.display='inline-block'; }
+        g('club-anno-view').style.display='none';
+        if(cTit){  cTit.style.display='inline-block';  g('club-titolo-view').style.display='none'; }
+        if(cNome){ cNome.style.display='inline-block'; g('club-nome-view').style.display='none'; }
+        if(cNum){  cNum.style.display='inline-block';  g('club-num-view').style.display='none'; }
+      } else {
+        if(cAnno) cAnno.style.display='none';
+        g('club-anno-view').style.display='';
+        if(cTit)  cTit.style.display='none';  g('club-titolo-view').style.display='';
+        if(cNome) cNome.style.display='none'; g('club-nome-view').style.display='';
+        if(cNum)  cNum.style.display='none';  g('club-num-view').style.display='';
       }
-      toggle('club-titolo-edit','club-titolo-view',!locked);
-      toggle('club-nome-edit','club-nome-view',!locked);
-      toggle('club-num-edit','club-num-view',!locked);
-      toggle('club-anno-edit','club-anno-view',!locked);
-      var lb2=g('club-lock-badge');
-      var btn2=g('club-lock-btn');
-      if(locked){lb2.textContent='🔒 Bloccata';lb2.style.background='rgba(201,169,97,.25)';lb2.style.color='#C9A961';btn2.textContent='🔓 Sblocca';}
-      else{lb2.textContent='✏️ Modifica';lb2.style.background='rgba(255,255,255,.15)';lb2.style.color='rgba(255,255,255,.8)';btn2.textContent='🔒 Blocca';}
+      var lb2=g('club-lock-badge'), btn2=g('club-lock-btn');
+      if(lb2&&btn2){
+        if(locked){lb2.textContent='🔒 Bloccata';lb2.style.background='rgba(201,169,97,.25)';lb2.style.color='#C9A961';btn2.textContent='🔓 Sblocca';}
+        else{lb2.textContent='✏️ In modifica';lb2.style.background='rgba(255,255,255,.15)';lb2.style.color='rgba(255,255,255,.8)';btn2.textContent='🔒 Blocca';}
+      }
     }
   });
 }
