@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '9.4';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '9.5';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -2331,7 +2331,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em">Anno</span>
             <div id="enci-anno-view" style="font-size:15px;font-weight:700;color:#C9A961"></div>
-            <input id="enci-anno-edit" type="text" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="2026" style="width:70px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center;display:none"/>
+            <input id="enci-anno-edit" type="text" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="2026" style="width:70px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center"/>
           </div>
         </div>
         <div style="margin-bottom:14px">
@@ -2371,7 +2371,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em">Anno</span>
             <div id="club-anno-view" style="font-size:15px;font-weight:700;color:#C9A961"></div>
-            <input id="club-anno-edit" type="text" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="2026" style="width:70px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center;display:none"/>
+            <input id="club-anno-edit" type="text" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="2026" style="width:70px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center"/>
           </div>
         </div>
         <div style="margin-bottom:14px">
@@ -5009,26 +5009,27 @@ var tessere = {
 function tsv(id,val){var el=g(id);if(el)el.textContent=val||'';}
 function ttoggle(editId,viewId,show_edit){var e=g(editId),v=g(viewId);if(!e||!v)return;if(show_edit){e.style.removeProperty('display');e.style.display='inline-block';v.style.display='none';}else{e.style.display='none';v.style.removeProperty('display');}}
 function renderTessere(){
+  // Anno: sempre modificabile, indipendente dal locked
+  var eAnnoE=g('enci-anno-edit'), eAnnoC=g('club-anno-edit');
+  if(eAnnoE){ if(!eAnnoE.value) eAnnoE.value=tessere.enci.anno||String(new Date().getFullYear()); eAnnoE.style.display='inline-block'; }
+  if(eAnnoC){ if(!eAnnoC.value) eAnnoC.value=tessere.club.anno||String(new Date().getFullYear()); eAnnoC.style.display='inline-block'; }
+  var av=g('enci-anno-view'), cv=g('club-anno-view');
+  if(av) av.style.display='none';
+  if(cv) cv.style.display='none';
+
   ['enci','club'].forEach(function(t){
     var d=tessere[t];
     var locked=d.locked;
     if(t==='enci'){
       tsv('enci-nome-view', d.nome||'— Nome non inserito —');
       tsv('enci-num-view',  d.numero||'· · · · · ·');
-      tsv('enci-anno-view', d.anno||'—');
-      var eNome=g('enci-nome-edit'), eNum=g('enci-num-edit'), eAnno=g('enci-anno-edit');
+      var eNome=g('enci-nome-edit'), eNum=g('enci-num-edit');
       if(!locked){
-        if(eNome) eNome.value=d.nome||'';
-        if(eNum)  eNum.value=d.numero||'';
-        if(eAnno){ eAnno.value=d.anno||String(new Date().getFullYear()); eAnno.style.display='inline-block'; }
-        g('enci-anno-view').style.display='none';
-        if(eNome){ eNome.style.display='inline-block'; g('enci-nome-view').style.display='none'; }
-        if(eNum){  eNum.style.display='inline-block';  g('enci-num-view').style.display='none'; }
+        if(eNome){ eNome.value=d.nome||''; eNome.style.display='inline-block'; g('enci-nome-view').style.display='none'; }
+        if(eNum){  eNum.value=d.numero||''; eNum.style.display='inline-block';  g('enci-num-view').style.display='none'; }
       } else {
-        if(eAnno) eAnno.style.display='none';
-        g('enci-anno-view').style.display='';
-        if(eNome) eNome.style.display='none'; g('enci-nome-view').style.display='';
-        if(eNum)  eNum.style.display='none';  g('enci-num-view').style.display='';
+        if(eNome){ eNome.style.display='none'; g('enci-nome-view').style.display=''; }
+        if(eNum){  eNum.style.display='none';  g('enci-num-view').style.display=''; }
       }
       var lb=g('enci-lock-badge'), btn=g('enci-lock-btn');
       if(lb&&btn){
@@ -5039,23 +5040,15 @@ function renderTessere(){
       tsv('club-titolo-view', d.titolo||'— Nome club —');
       tsv('club-nome-view',   d.nome||'— Nome non inserito —');
       tsv('club-num-view',    d.numero||'· · · · · ·');
-      tsv('club-anno-view',   d.anno||'—');
-      var cTit=g('club-titolo-edit'), cNome=g('club-nome-edit'), cNum=g('club-num-edit'), cAnno=g('club-anno-edit');
+      var cTit=g('club-titolo-edit'), cNome=g('club-nome-edit'), cNum=g('club-num-edit');
       if(!locked){
-        if(cTit)  cTit.value=d.titolo||'';
-        if(cNome) cNome.value=d.nome||'';
-        if(cNum)  cNum.value=d.numero||'';
-        if(cAnno){ cAnno.value=d.anno||String(new Date().getFullYear()); cAnno.style.display='inline-block'; }
-        g('club-anno-view').style.display='none';
-        if(cTit){  cTit.style.display='inline-block';  g('club-titolo-view').style.display='none'; }
-        if(cNome){ cNome.style.display='inline-block'; g('club-nome-view').style.display='none'; }
-        if(cNum){  cNum.style.display='inline-block';  g('club-num-view').style.display='none'; }
+        if(cTit){  cTit.value=d.titolo||'';  cTit.style.display='inline-block';  g('club-titolo-view').style.display='none'; }
+        if(cNome){ cNome.value=d.nome||'';   cNome.style.display='inline-block'; g('club-nome-view').style.display='none'; }
+        if(cNum){  cNum.value=d.numero||'';  cNum.style.display='inline-block';  g('club-num-view').style.display='none'; }
       } else {
-        if(cAnno) cAnno.style.display='none';
-        g('club-anno-view').style.display='';
-        if(cTit)  cTit.style.display='none';  g('club-titolo-view').style.display='';
-        if(cNome) cNome.style.display='none'; g('club-nome-view').style.display='';
-        if(cNum)  cNum.style.display='none';  g('club-num-view').style.display='';
+        if(cTit){  cTit.style.display='none';  g('club-titolo-view').style.display=''; }
+        if(cNome){ cNome.style.display='none'; g('club-nome-view').style.display=''; }
+        if(cNum){  cNum.style.display='none';  g('club-num-view').style.display=''; }
       }
       var lb2=g('club-lock-badge'), btn2=g('club-lock-btn');
       if(lb2&&btn2){
@@ -5088,19 +5081,20 @@ function toggleLock(t){
   salvaDB();
 }
 
-// Auto-save on input change (not locked)
+// Auto-save on input change
 document.addEventListener('input', function(e){
   var id=e.target.id||'';
+  // Anno: sempre salvato (non dipende da locked)
+  if(id==='enci-anno-edit'){ tessere.enci.anno=e.target.value; salvaDB(); return; }
+  if(id==='club-anno-edit'){ tessere.club.anno=e.target.value; salvaDB(); return; }
   if(id.startsWith('enci-')&&!tessere.enci.locked){
     if(id==='enci-nome-edit')tessere.enci.nome=e.target.value;
     if(id==='enci-num-edit')tessere.enci.numero=e.target.value;
-    if(id==='enci-anno-edit')tessere.enci.anno=e.target.value;
   }
   if(id.startsWith('club-')&&!tessere.club.locked){
     if(id==='club-titolo-edit')tessere.club.titolo=e.target.value;
     if(id==='club-nome-edit')tessere.club.nome=e.target.value;
     if(id==='club-num-edit')tessere.club.numero=e.target.value;
-    if(id==='club-anno-edit')tessere.club.anno=e.target.value;
   }
 });
 
