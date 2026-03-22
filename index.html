@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '9.6';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '9.7';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -5330,7 +5330,7 @@ function renderCucciolate(){
           var statoColor={disponibile:'#1a7a4a',prenotato:'#E65100',venduto:'#C0534A'}[stato];
           var statoLabel={disponibile:'🟢 Disponibile',prenotato:'🟡 Prenotato',venduto:'🔴 Venduto'}[stato];
           var ultimoPeso=p.pesi&&p.pesi.length?p.pesi[p.pesi.length-1]:null;
-          html+='<div style="background:#F8FAFF;border:1.5px solid #DDEAFF;border-radius:10px;padding:10px 12px;margin-bottom:7px">';
+          html+='<div data-puppy-id="'+p.id+'" style="background:#F8FAFF;border:1.5px solid #DDEAFF;border-radius:10px;padding:10px 12px;margin-bottom:7px">';
           html+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">';
           html+='<div style="display:flex;align-items:center;gap:8px">';
           html+='<span style="font-size:20px;background:#EEF3FB;border-radius:8px;padding:4px 7px">'+(p.sesso==='M'?'♂':'♀')+'</span>';
@@ -7837,11 +7837,20 @@ function salvaPeso(){
   toast('✅ Peso salvato: '+grammi+'g — totale '+p.pesi.length+' misurazioni');
   renderCucciolate();
   setTimeout(function(){
+    // Riapri sezione cuccioli
     var sec=g('cuccioli-section-'+cuccId);
-    if(sec) sec.style.display='';
-    var puppyEl=document.querySelector('[data-puppy-id="'+puppyId+'"]');
-    if(puppyEl) puppyEl.scrollIntoView({behavior:'smooth',block:'nearest'});
-  },100);
+    if(sec) sec.style.display='block';
+    // Riapri body cucciolata se esiste
+    var cuccEl=g('cucc-body-'+cuccId);
+    if(cuccEl) cuccEl.style.display='';
+    // Scroll al cucciolo specifico
+    var allPuppies=document.querySelectorAll('[data-puppy-id]');
+    allPuppies.forEach(function(el){
+      if(parseInt(el.dataset.puppyId)===puppyId){
+        el.scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
+    });
+  },150);
 }
 
 /* estendi getReminders con calori e gravidanza */
