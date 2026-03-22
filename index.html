@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '9.9';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '10.0';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -255,7 +255,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
   body{background:#fff!important;overflow:visible!important}
   #app{display:block!important;height:auto!important}
   #main-body{display:block!important;overflow:visible!important}
-  #sidebar,header,#footer,#bottom-nav,#modal-onboarding,#modal-gdpr,.no-print{display:none!important}
+  #sidebar,header,#footer,#bottom-nav,#modal-onboarding,#modal-gdpr,.no-print,#chat-fab,#chat-fab-badge{display:none!important}
   #detail{display:block!important;padding:0!important;overflow:visible!important;background:#fff!important}
   .card{border:1px solid #ccc!important;box-shadow:none!important;break-inside:avoid}
   #panel-info,#panel-salute,#panel-campionati{display:block!important}
@@ -338,6 +338,11 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
     grid-template-columns:1fr!important;
   }
 }
+@keyframes pulse-gold{
+  0%,100%{box-shadow:0 4px 18px rgba(201,169,97,.5);}
+  50%{box-shadow:0 4px 28px rgba(201,169,97,.85);}
+}
+#chat-fab.hidden{display:none!important}
 </style>
 </head>
 <body>
@@ -9768,6 +9773,196 @@ function mostraCuccioliPanel(btn){
     </div>
   </div>
 </div>
+
+<!-- ════ FAB CHATBOT ════ -->
+<div id="chat-fab" onclick="openChat()" style="position:fixed;bottom:72px;right:16px;z-index:9998;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#C9A961,#A88A41);box-shadow:0 4px 18px rgba(201,169,97,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;font-size:26px;animation:pulse-gold 2.5s infinite">🤖</div>
+<div id="chat-fab-badge" style="position:fixed;bottom:114px;right:14px;z-index:9999;background:#C0534A;color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:700;display:none"></div>
+
+<!-- ════ MODAL CHATBOT ════ -->
+<div id="modal-chat" class="overlay hidden">
+  <div class="modal" style="max-width:480px;height:85vh;display:flex;flex-direction:column;padding:0;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#0D47A1,#1565C0);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:38px;height:38px;border-radius:50%;background:rgba(201,169,97,.25);border:2px solid #C9A961;display:flex;align-items:center;justify-content:center;font-size:20px">🤖</div>
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-weight:700;color:#fff;font-size:15px">BreedPed Assistant</div>
+          <div id="chat-context-label" style="font-size:11px;color:rgba(255,255,255,.6)">Assistente per allevatori</div>
+        </div>
+      </div>
+      <button onclick="hide('modal-chat')" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:#F4F7FE"></div>
+    <div style="padding:12px 16px;background:#fff;border-top:1.5px solid #DDEAFF;flex-shrink:0">
+      <div id="chat-limit-bar" style="font-size:11px;color:#6B8BB0;margin-bottom:8px;display:none"></div>
+      <div style="display:flex;gap:8px">
+        <textarea id="chat-input" rows="2" placeholder="Scrivi la tua domanda..." style="flex:1;resize:none;border:1.5px solid #DDEAFF;border-radius:10px;padding:8px 12px;font-size:14px;font-family:'DM Sans',sans-serif" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+        <button onclick="sendChat()" id="chat-send-btn" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:20px;cursor:pointer;flex-shrink:0">➤</button>
+      </div>
+      <div style="font-size:10px;color:#9ab0cc;margin-top:6px;text-align:center">Powered by Gemini AI · Non sostituisce il veterinario</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══ CHATBOT AI ══ */
+var _chatHistory = [];
+var CHAT_LIMIT_FREE = 5;
+var CHAT_STORAGE_KEY = 'breedped_chat_usage_v1';
+
+function getChatUsage(){
+  var today=new Date().toISOString().substring(0,10);
+  var data=JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY)||'{}');
+  if(data.date!==today) return {date:today,count:0};
+  return data;
+}
+function incrementChatUsage(){
+  var usage=getChatUsage(); usage.count++;
+  localStorage.setItem(CHAT_STORAGE_KEY,JSON.stringify(usage));
+  return usage.count;
+}
+function isPro(){ return !!(profilo&&profilo.isPro); }
+
+function openChat(){
+  var c=cur();
+  var ctxLabel='Assistente per allevatori';
+  var ctxPrompt='';
+  if(c){
+    ctxLabel='🐕 Contesto: '+c.nome+(c.razza?' ('+c.razza+')':'');
+    ctxPrompt='Il cane attualmente selezionato si chiama "'+c.nome+'"'
+      +(c.razza?', razza '+c.razza:'')
+      +(c.sesso?', sesso '+(c.sesso==='M'?'maschio':'femmina'):'')
+      +(c.dataNascita?', nato il '+c.dataNascita:'')+'. ';
+  }
+  g('chat-context-label').textContent=ctxLabel;
+  window._chatContextPrompt=ctxPrompt;
+  if(_chatHistory.length===0){
+    var welcome=c
+      ?'Ciao! Sono il tuo assistente BreedPed 🐾 Vedo che stai lavorando con **'+c.nome+'**. Come posso aiutarti?'
+      :'Ciao! Sono il tuo assistente BreedPed 🐾 Posso aiutarti su salute, pedigree, riproduzione, normativa ENCI e tutto ciò che riguarda i tuoi cani. Cosa vuoi sapere?';
+    addChatMessage('bot',welcome);
+  }
+  updateChatLimitBar();
+  show('modal-chat');
+  setTimeout(function(){ var inp=g('chat-input'); if(inp) inp.focus(); },300);
+}
+
+function updateChatLimitBar(){
+  var bar=g('chat-limit-bar'), badge=g('chat-fab-badge');
+  if(!bar) return;
+  if(isPro()){ bar.style.display='none'; if(badge) badge.style.display='none'; return; }
+  var usage=getChatUsage();
+  var rimaste=Math.max(0,CHAT_LIMIT_FREE-usage.count);
+  bar.style.display='';
+  bar.innerHTML=rimaste>0
+    ?'💬 '+rimaste+' domande gratuite rimanenti oggi — <strong onclick="upgradeProPrompt()" style="color:#C9A961;cursor:pointer">Passa a Pro →</strong>'
+    :'⚠️ Hai esaurito le domande gratuite di oggi — <strong onclick="upgradeProPrompt()" style="color:#C9A961;cursor:pointer">Passa a Pro →</strong>';
+  if(badge){
+    if(rimaste>0){ badge.textContent=rimaste; badge.style.display=''; }
+    else { badge.textContent='!'; badge.style.display=''; }
+  }
+}
+
+function upgradeProPrompt(){
+  alert('🚀 Piano Pro BreedPed\n\nCon il piano Pro hai:\n✅ Domande illimitate al chatbot AI\n✅ 3 annunci/mese vetrina cuccioli\n✅ OCR pedigree illimitato\n✅ Export PDF avanzato\n\nProssimamente disponibile su breedped.com');
+}
+
+function addChatMessage(role,text){
+  _chatHistory.push({role:role,text:text});
+  renderChatMessages();
+}
+
+function renderChatMessages(){
+  var container=g('chat-messages'); if(!container) return;
+  container.innerHTML=_chatHistory.map(function(msg){
+    if(msg.role==='loading'){
+      return '<div style="display:flex;gap:8px;align-items:flex-end">'
+        +'<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#C9A961,#A88A41);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🤖</div>'
+        +'<div style="background:#fff;border:1.5px solid #DDEAFF;border-radius:14px 14px 14px 2px;padding:10px 14px;font-size:13px;color:#6B8BB0">⏳ Sto pensando...</div>'
+        +'</div>';
+    }
+    if(msg.role==='bot'){
+      var html=msg.text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');
+      return '<div style="display:flex;gap:8px;align-items:flex-end">'
+        +'<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#C9A961,#A88A41);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🤖</div>'
+        +'<div style="background:#fff;border:1.5px solid #DDEAFF;border-radius:14px 14px 14px 2px;padding:10px 14px;font-size:13px;color:#1a1a3a;max-width:85%;line-height:1.5">'+html+'</div>'
+        +'</div>';
+    }
+    return '<div style="display:flex;justify-content:flex-end">'
+      +'<div style="background:linear-gradient(135deg,#1565C0,#0D47A1);border-radius:14px 14px 2px 14px;padding:10px 14px;font-size:13px;color:#fff;max-width:85%;line-height:1.5">'+esc(msg.text)+'</div>'
+      +'</div>';
+  }).join('');
+  container.scrollTop=container.scrollHeight;
+}
+
+function sendChat(){
+  if(!_aiKeys||!_aiKeys.gemini){
+    addChatMessage('bot','⚠️ Per usare il chatbot serve una chiave API Gemini. Vai su Impostazioni → AI per configurarla.');
+    return;
+  }
+  if(!isPro()){
+    var usage=getChatUsage();
+    if(usage.count>=CHAT_LIMIT_FREE){
+      addChatMessage('bot','Hai esaurito le **5 domande gratuite** di oggi 😔\n\nCon il **Piano Pro** hai domande illimitate, annunci cuccioli e molto altro.\n\nProssimamente su breedped.com 🚀');
+      return;
+    }
+  }
+  var input=g('chat-input');
+  var text=(input.value||'').trim(); if(!text) return;
+  input.value='';
+  addChatMessage('user',text);
+  addChatMessage('loading','');
+  incrementChatUsage();
+  updateChatLimitBar();
+
+  var SYSTEM='Sei BreedPed Assistant, un esperto cinofilo e consulente per allevatori italiani. '
+    +'Rispondi sempre in italiano in modo chiaro, pratico e professionale. '
+    +'Sei esperto di: razze canine, salute dei cani, riproduzione, pedigree ENCI/FCI, '
+    +'normativa italiana sull\'allevamento, nutrizione, comportamento, displasia, genetica canina. '
+    +'Rispondi in modo conciso (massimo 150 parole) ma completo. '
+    +'Se la domanda riguarda sintomi gravi, consiglia sempre il veterinario. '
+    +(window._chatContextPrompt||'');
+
+  var history=_chatHistory
+    .filter(function(m){ return m.role==='user'||m.role==='bot'; })
+    .slice(-6)
+    .map(function(m){
+      return {role:m.role==='user'?'user':'model',
+              parts:[{text:m.role==='user'?m.text:m.text.replace(/<[^>]+>/g,'')}]};
+    });
+
+  var MODELS=['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash'];
+  var mi=0;
+  function tryModel(){
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/'+MODELS[mi]+':generateContent?key='+_aiKeys.gemini,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        system_instruction:{parts:[{text:SYSTEM}]},
+        contents:history,
+        generationConfig:{maxOutputTokens:300,temperature:0.7}
+      })
+    })
+    .then(function(r){return r.json();})
+    .then(function(d){
+      _chatHistory=_chatHistory.filter(function(m){return m.role!=='loading';});
+      var reply=(((d.candidates||[])[0]||{}).content||{}).parts;
+      if(reply&&reply[0]&&reply[0].text){
+        addChatMessage('bot',reply[0].text);
+      } else if(mi<MODELS.length-1){
+        mi++; tryModel();
+      } else {
+        addChatMessage('bot','⚠️ Errore nella risposta AI. Riprova tra un momento.');
+      }
+    })
+    .catch(function(){
+      if(mi<MODELS.length-1){ mi++; tryModel(); return; }
+      _chatHistory=_chatHistory.filter(function(m){return m.role!=='loading';});
+      addChatMessage('bot','⚠️ Errore di connessione. Controlla la tua chiave API Gemini nelle Impostazioni → AI.');
+    });
+  }
+  tryModel();
+}
+</script>
 
 <script>
 /* ── Navigazione: intercetta freccia Indietro browser/telefono ── */
