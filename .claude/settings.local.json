@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"/c/Users/DANTE CANIGLIA\" config user.email)",
+      "Bash(git -C \"/c/Users/DANTE CANIGLIA/Downloads/APP MIO CANE ENCI/files\" config user.email)",
+      "Bash(git config:*)"
+    ]
+  }
+}
