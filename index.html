@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '9.8';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '9.9';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -3624,6 +3624,16 @@ function addCaneFromFoto(){
   var obj=_nuovoCaneFotoData;if(!obj)return;
   var nome=(g('nf-nome')&&g('nf-nome').value.trim())||obj.nome||'';
   if(!nome){alert('Inserisci almeno il nome');return;}
+  var chip=(g('nf-chip')&&g('nf-chip').value.trim())||obj.microchip||'';
+  var loi=(g('nf-loi')&&g('nf-loi').value.trim())||obj.loi||'';
+  var dup=_checkDuplicatoCane(nome,chip,loi);
+  if(dup){
+    var motivo=[];
+    if(chip&&(dup.microchip||'').trim().toUpperCase()===chip.toUpperCase()) motivo.push('stesso microchip ('+chip+')');
+    if(loi&&(dup.numeroENCI||'').trim().toUpperCase()===loi.toUpperCase())  motivo.push('stesso LOI/ROI ('+loi+')');
+    if((dup.nome||'').trim().toLowerCase()===nome.toLowerCase())            motivo.push('stesso nome');
+    if(!confirm('⚠️ Esiste già una scheda "'+dup.nome+'" con '+motivo.join(', ')+'.\nVuoi aggiungerlo comunque?')) return;
+  }
   var c={
     id:Date.now(), nome:nome,
     razza:(g('nf-razza')&&g('nf-razza').value.trim())||obj.razza||'',
@@ -3664,15 +3674,38 @@ function addCaneFromFoto(){
 function closeModal(){hide('modal');}
 function previewFoto(input){var file=input.files[0];if(!file)return;var r=new FileReader();r.onload=function(e){fotoBase64=e.target.result;g('foto-preview').innerHTML='<img src="'+fotoBase64+'" style="width:100%;height:100%;object-fit:cover"/>';};r.readAsDataURL(file);}
 
+/* ── CONTROLLO DUPLICATI CANE ── */
+function _checkDuplicatoCane(nome, chip, loi){
+  // Ritorna il primo cane duplicato trovato in cani[], o null
+  var nomeN=(nome||'').trim().toLowerCase();
+  var chipN=(chip||'').trim().toUpperCase();
+  var loiN=(loi||'').trim().toUpperCase();
+  return cani.find(function(c){
+    if(chipN && (c.microchip||'').trim().toUpperCase()===chipN) return true;
+    if(loiN  && (c.numeroENCI||'').trim().toUpperCase()===loiN)  return true;
+    if(nomeN && (c.nome||'').trim().toLowerCase()===nomeN)        return true;
+    return false;
+  })||null;
+}
+
 /* ── ADD CANE ── */
 function addCane(){
   var nome=g('new-nome').value.trim();if(!nome){alert('Inserisci il nome');return;}
-  var c={id:Date.now(),nome:nome,razza:g('new-razza').value.trim(),numeroENCI:g('new-enci').value,
-    dataNascita:g('new-data').value,sesso:g('new-sesso').value,microchip:g('new-chip').value,
+  var chip=g('new-chip').value.trim();
+  var loi=g('new-enci').value.trim();
+  var dup=_checkDuplicatoCane(nome,chip,loi);
+  if(dup){
+    var motivo=[];
+    if(chip&&(dup.microchip||'').trim().toUpperCase()===chip.toUpperCase()) motivo.push('stesso microchip ('+chip+')');
+    if(loi&&(dup.numeroENCI||'').trim().toUpperCase()===loi.toUpperCase())   motivo.push('stesso LOI/ROI ('+loi+')');
+    if((dup.nome||'').trim().toLowerCase()===nome.toLowerCase())             motivo.push('stesso nome');
+    if(!confirm('⚠️ Esiste già una scheda "'+dup.nome+'" con '+motivo.join(', ')+'.\nVuoi aggiungerlo comunque?')) return;
+  }
+  var c={id:Date.now(),nome:nome,razza:g('new-razza').value.trim(),numeroENCI:loi,
+    dataNascita:g('new-data').value,sesso:g('new-sesso').value,microchip:chip,
     foto:fotoBase64,vaccinazioni:[],trattamenti:[],displasia:{hd:'',ed:'',dataTest:'',note:''},
     cac_list:[],cacib_list:[],pedigreeFlat:{},pedGens:1};
-  cani.push(c);closeModal();renderSidebar();
-  // Apri il cane direttamente sul tab pedigree
+  cani.push(c);salvaDB();closeModal();renderSidebar();
   openDetail(c.id,'pedigree');
 }
 
