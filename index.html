@@ -1188,10 +1188,10 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
               </div>
               <span style="margin-left:auto;color:#BFCFE8;font-size:18px">›</span>
             </div>
-            <div onclick="openRegistro()" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;cursor:pointer;transition:background .15s;border:1.5px solid #A5D6A7;background:linear-gradient(135deg,#F1F8E9,#E8F5E9)" onmouseover="this.style.background='#DCEDC8'" onmouseout="this.style.background='linear-gradient(135deg,#F1F8E9,#E8F5E9)'">
-              <div style="width:38px;height:38px;background:#C8E6C9;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">💰</div>
-              <div><div style="font-weight:700;font-size:14px;color:#1a1a3a">Registro</div><div style="font-size:12px;color:#6B8BB0">Entrate, uscite e saldo mensile</div></div>
-              <span style="margin-left:auto;color:#A5D6A7;font-size:18px">›</span>
+            <div onclick="show('modal-calendario');renderCalendario()" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;cursor:pointer;transition:background .15s;border:1.5px solid #DDEAFF" onmouseover="this.style.background='#EEF3FB'" onmouseout="this.style.background='#fff'">
+              <div style="width:38px;height:38px;background:#FDF6E3;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🗓</div>
+              <div><div style="font-weight:700;font-size:14px;color:#1a1a3a">Calendario Esposizioni</div><div style="font-size:12px;color:#6B8BB0">Show, raduni, CAC</div></div>
+              <span style="margin-left:auto;color:#BFCFE8;font-size:18px">›</span>
             </div>
           </div>
         </div>
@@ -1489,6 +1489,8 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
         </div>
         <!-- Contenuto espandibile -->
         <div id="ped-body" style="padding:18px 20px">
+          <!-- Banner duplicato pedigree -->
+          <div id="ped-dup-banner" style="display:none;background:#FFF8E1;border:1.5px solid #C9A961;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#7A5A00"></div>
           <div id="ped-tree"></div>
         </div>
       </div>
@@ -1799,6 +1801,11 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
     </div>
     <input type="hidden" id="cucc-modal-cuccId"/>
     <input type="hidden" id="cucc-modal-puppyId"/>
+    <!-- Toolbar azioni scheda cucciolo -->
+    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+      <button onclick="stampaCucciolo()" style="background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;color:#1565C0">📄 Esporta PDF</button>
+      <button onclick="whatsappCucciolo()" style="background:#E8F5E9;border:1.5px solid #A5D6A7;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;color:#1a7a4a">🟢 Invia su WhatsApp</button>
+    </div>
     <div class="form-grid" style="margin-bottom:14px">
       <div><label>Nome</label><input type="text" id="cucc-puppy-nome" placeholder="Es. Argo"/></div>
       <div><label>Sesso</label>
@@ -2335,7 +2342,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em">Anno</span>
             <div id="enci-anno-view" style="font-size:15px;font-weight:700;color:#C9A961"></div>
-            <input id="enci-anno-edit" type="text" placeholder="2026" maxlength="4" style="width:60px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center;display:none"/>
+            <input id="enci-anno-edit" type="number" min="2020" max="2030" placeholder="2026" style="width:70px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center;display:none"/>
           </div>
         </div>
         <div style="margin-bottom:14px">
@@ -2375,7 +2382,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em">Anno</span>
             <div id="club-anno-view" style="font-size:15px;font-weight:700;color:#C9A961"></div>
-            <input id="club-anno-edit" type="text" placeholder="2026" maxlength="4" style="width:60px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center;display:none"/>
+            <input id="club-anno-edit" type="number" min="2020" max="2030" placeholder="2026" style="width:70px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 7px;font-size:13px;font-weight:700;color:#C9A961;text-align:center;display:none"/>
           </div>
         </div>
         <div style="margin-bottom:14px">
@@ -2409,10 +2416,10 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
       <button class="btn btn-ghost btn-sm" onclick="hide('modal-enci')">✕</button>
     </div>
     <a class="enci-btn" href="https://www.enci.it" target="_blank"><span style="font-size:22px">🐕</span><div><div style="font-weight:600;color:#0D47A1">ENCI.it — Sito Ufficiale</div><div style="font-size:12px;color:#6B8BB0">Home, notizie, regolamenti</div></div><span style="margin-left:auto;color:#6B8BB0">↗</span></a>
-    <a class="enci-btn" href="https://www.enci.it/enci-online/accedi" target="_blank"><span style="font-size:22px">👤</span><div><div style="font-weight:600;color:#0D47A1">ENCI Online — Area Personale</div><div style="font-size:12px;color:#6B8BB0">Cani, certificati, pedigree</div></div><span style="margin-left:auto;color:#6B8BB0">↗</span></a>
+    <a class="enci-btn" href="https://www.enci.it/servizi-online" target="_blank"><span style="font-size:22px">👤</span><div><div style="font-weight:600;color:#0D47A1">ENCI Online — Area Personale</div><div style="font-size:12px;color:#6B8BB0">Cani, certificati, pedigree</div></div><span style="margin-left:auto;color:#6B8BB0">↗</span></a>
     <a class="enci-btn" href="https://www.encishow.it" target="_blank"><span style="font-size:22px">🏆</span><div><div style="font-weight:600;color:#0D47A1">ENCI Show — Esposizioni</div><div style="font-size:12px;color:#6B8BB0">Iscrizioni e calendari show</div></div><span style="margin-left:auto;color:#6B8BB0">↗</span></a>
-    <a class="enci-btn" href="https://www.enci.it/il-cane-in-italia/libri-genealogici" target="_blank"><span style="font-size:22px">📚</span><div><div style="font-weight:600;color:#0D47A1">Libro Genealogico / LOI</div><div style="font-size:12px;color:#6B8BB0">Registro genealogico ufficiale</div></div><span style="margin-left:auto;color:#6B8BB0">↗</span></a>
-    <a class="enci-btn" href="https://www.enci.it/utilita-allevatori" target="_blank"><span style="font-size:22px">🏡</span><div><div style="font-weight:600;color:#0D47A1">Area Allevatori</div><div style="font-size:12px;color:#6B8BB0">Cucciolate, iscrizione LOI, RSR</div></div><span style="margin-left:auto;color:#6B8BB0">↗</span></a>
+    <a class="enci-btn" href="https://www.enci.it/libro-genealogico" target="_blank"><span style="font-size:22px">📚</span><div><div style="font-weight:600;color:#0D47A1">Libro Genealogico / LOI</div><div style="font-size:12px;color:#6B8BB0">Registro genealogico ufficiale</div></div><span style="margin-left:auto;color:#6B8BB0">↗</span></a>
+    <a class="enci-btn" href="https://www.enci.it/allevatori" target="_blank"><span style="font-size:22px">🏡</span><div><div style="font-weight:600;color:#0D47A1">Area Allevatori</div><div style="font-size:12px;color:#6B8BB0">Cucciolate, iscrizione LOI, RSR</div></div><span style="margin-left:auto;color:#6B8BB0">↗</span></a>
   </div>
 </div>
 
@@ -4395,7 +4402,53 @@ function savePed(pos,field,value){
   var nPed=pedCount(c.pedigreeFlat);
   var badge=g('ped-stats-badge');
   if(badge)badge.textContent=nPed>0?nPed+' antenati inseriti':'Nessun antenato — clicca per compilare';
+  // Controllo duplicati pedigree
+  if((field==='name'||field==='loi'||field==='microchip') && value && value.length>2){
+    cercaDuplicatoPed(pos, field, value);
+  }
   renderSidebar();
+}
+
+/* ── Riconoscimento duplicati pedigree ── */
+function cercaDuplicatoPed(pos, campo, valore){
+  var banner=g('ped-dup-banner');
+  if(!banner) return;
+  var tuttiCani=cani.concat(guestCani);
+  var trovato=null;
+  var v=valore.trim().toLowerCase();
+  if(campo==='loi'){
+    trovato=tuttiCani.find(function(c){return c.numeroENCI&&c.numeroENCI.trim().toLowerCase()===v;});
+  } else if(campo==='microchip'){
+    trovato=tuttiCani.find(function(c){return c.microchip&&c.microchip.trim().toLowerCase()===v;});
+  } else if(campo==='name'){
+    trovato=tuttiCani.find(function(c){return c.nome&&c.nome.trim().toLowerCase()===v;});
+  }
+  if(trovato){
+    banner.style.display='';
+    banner.innerHTML='⚠️ <strong>Cane già presente:</strong> '+esc(trovato.nome)
+      +(trovato.numeroENCI?' &mdash; LOI: '+esc(trovato.numeroENCI):'')
+      +(trovato.microchip?' &mdash; Chip: '+esc(trovato.microchip):'')
+      +' &nbsp;<button onclick="importaDatiPed('+pos+','+trovato.id+')" style="background:#C9A961;color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">✓ Usa questo cane</button>'
+      +' <button onclick="this.parentElement.style.display=\'none\'" style="background:none;border:none;cursor:pointer;font-size:15px;color:#7A5A00;margin-left:4px">✕</button>';
+  }
+}
+
+function importaDatiPed(pos, caneId){
+  var c=cani.concat(guestCani).find(function(x){return x.id==caneId;});
+  if(!c) return;
+  var cur_=cur(); if(!cur_||cur_._guest) return;
+  if(!cur_.pedigreeFlat) cur_.pedigreeFlat={};
+  if(!cur_.pedigreeFlat[pos]) cur_.pedigreeFlat[pos]={};
+  var nd=cur_.pedigreeFlat[pos];
+  nd.name=c.nome||nd.name||'';
+  nd.loi=c.numeroENCI||nd.loi||'';
+  if(c.microchip) nd.microchip=c.microchip;
+  if(c.titoli&&c.titoli.length) nd.titoli=c.titoli.slice();
+  var banner=g('ped-dup-banner');
+  if(banner) banner.style.display='none';
+  salvaDB();
+  renderPedigree();
+  toast('✅ Dati importati: '+esc(c.nome));
 }
 function savePedTitolo(pos,titolo,checked){
   var c=cur();if(!c||c._guest)return;
@@ -5492,6 +5545,96 @@ function condividiCucciolata(id){
   html+='</div>';
   g('cucc-share-preview').innerHTML=html;
   show('modal-cucc-share');
+}
+
+/* ══ EXPORT PDF SCHEDA CUCCIOLO ══ */
+function stampaCucciolo(){
+  var cuccId=_editCuccId, puppyId=_editPuppyId;
+  if(!cuccId||!puppyId){ toast('Nessun cucciolo aperto'); return; }
+  var cu=cucciolate.find(function(c){return String(c.id)===String(cuccId);});
+  var p=cu?(cu.cuccioli||[]).find(function(x){return String(x.id)===String(puppyId);}):null;
+  if(!p){ toast('Dati non trovati'); return; }
+  var acq=(p.acquirenti&&p.acquirenti.length)?p.acquirenti[0]:(p.acquirente||{});
+  var pag=p.pagamento||{};
+  var pr=profilo||{};
+  var stato=p.stato||(p.ceduto?'ceduto':'disponibile');
+  var statoLabel={disponibile:'🟢 Disponibile',prenotato:'🟠 Prenotato',ceduto:'🔴 Ceduto',mio_cane:'🔵 Mio Cane'};
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8">'
+    +'<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">'
+    +'<style>'
+    +'*{margin:0;padding:0;box-sizing:border-box}'
+    +'@page{size:A4;margin:18mm}'
+    +'body{font-family:"DM Sans",sans-serif;color:#1a1a2e;background:#fff}'
+    +'.header{background:linear-gradient(135deg,#0D47A1,#1565C0);color:#fff;padding:22px 28px;border-radius:12px;margin-bottom:18px}'
+    +'.header h1{font-family:"Playfair Display",serif;font-size:24px;margin-bottom:4px}'
+    +'.header p{font-size:12px;opacity:.75}'
+    +'.kennel{font-size:13px;font-weight:600;color:#C9A961}'
+    +'.section{border:1.5px solid #DDEAFF;border-radius:10px;padding:14px 18px;margin-bottom:14px}'
+    +'.section-title{font-size:10px;font-weight:800;color:#1565C0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}'
+    +'.row{display:flex;gap:16px;margin-bottom:6px}'
+    +'.row label{font-size:11px;color:#6B8BB0;width:100px;flex-shrink:0}'
+    +'.row span{font-size:13px;font-weight:600}'
+    +'.stato{display:inline-block;font-size:12px;font-weight:700;padding:3px 12px;border-radius:100px;background:#E8F5E9;color:#1a7a4a}'
+    +'.footer{margin-top:20px;font-size:10px;color:#BFCFE8;text-align:center;border-top:1px solid #EEF3FB;padding-top:10px}'
+    +'@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}'
+    +'</style></head><body>'
+    +'<div class="header">'
+    +'<div class="kennel">'+esc(pr.affisso||'Kennel')+(pr.razza?' — '+esc(pr.razza):'')+'</div>'
+    +'<h1>🐾 Scheda Cucciolo</h1>'
+    +'<p>'+(cu.nomeCucciolata?esc(cu.nomeCucciolata)+' — ':'')+new Date().toLocaleDateString('it-IT')+'</p>'
+    +'</div>'
+    +'<div class="section">'
+    +'<div class="section-title">Dati Cucciolo</div>'
+    +'<div class="row"><label>Nome</label><span>'+(p.nome||'—')+'</span></div>'
+    +'<div class="row"><label>Sesso</label><span>'+(p.sesso==='M'?'♂ Maschio':'♀ Femmina')+'</span></div>'
+    +'<div class="row"><label>Mantello</label><span>'+(p.colore||'—')+'</span></div>'
+    +'<div class="row"><label>Microchip</label><span>'+(p.microchip||'—')+'</span></div>'
+    +'<div class="row"><label>Stato</label><span class="stato">'+(statoLabel[stato]||stato)+'</span></div>'
+    +'</div>'
+    +(cu.padre||cu.madre?
+      '<div class="section">'
+      +'<div class="section-title">Genitori</div>'
+      +(cu.padre?'<div class="row"><label>Padre ♂</label><span>'+esc(nomeById(cu.padre)||String(cu.padre))+'</span></div>':'')
+      +(cu.madre?'<div class="row"><label>Madre ♀</label><span>'+esc(nomeById(cu.madre)||String(cu.madre))+'</span></div>':'')
+      +'</div>':'')
+    +(pag.prezzo?
+      '<div class="section">'
+      +'<div class="section-title">Pagamento</div>'
+      +'<div class="row"><label>Prezzo</label><span>€'+pag.prezzo+'</span></div>'
+      +(pag.acconto?'<div class="row"><label>Acconto</label><span>€'+pag.acconto+'</span></div>':'')
+      +'</div>':'')
+    +(acq.nome?
+      '<div class="section">'
+      +'<div class="section-title">Acquirente</div>'
+      +'<div class="row"><label>Nome</label><span>'+esc(acq.nome)+'</span></div>'
+      +(acq.tel||acq.cell?'<div class="row"><label>Telefono</label><span>'+esc(acq.tel||acq.cell)+'</span></div>':'')
+      +(acq.email?'<div class="row"><label>E-mail</label><span>'+esc(acq.email)+'</span></div>':'')
+      +'</div>':'')
+    +'<div class="footer">BreedPed — Gestione allevamento professionale · '+esc(pr.nome||'')+'</div>'
+    +'<script>window.onload=function(){window.print();}<\/script>'
+    +'</body></html>';
+  apriHtmlBlob(html);
+}
+
+/* ══ WHATSAPP CUCCIOLO ══ */
+function whatsappCucciolo(){
+  var cuccId=_editCuccId, puppyId=_editPuppyId;
+  var cu=cucciolate.find(function(c){return String(c.id)===String(cuccId);});
+  var p=cu?(cu.cuccioli||[]).find(function(x){return String(x.id)===String(puppyId);}):null;
+  var pr=profilo||{};
+  var testo='🐾 *Cucciolo disponibile!*\n';
+  if(p&&p.nome) testo+='Nome: '+p.nome+'\n';
+  if(p&&p.sesso) testo+='Sesso: '+(p.sesso==='M'?'♂ Maschio':'♀ Femmina')+'\n';
+  if(p&&p.colore) testo+='Mantello: '+p.colore+'\n';
+  if(cu&&(cu.padre||cu.madre)){
+    if(cu.padre) testo+='Padre: '+esc(nomeById(cu.padre)||'')+'\n';
+    if(cu.madre) testo+='Madre: '+esc(nomeById(cu.madre)||'')+'\n';
+  }
+  if(p&&p.pagamento&&p.pagamento.prezzo) testo+='Prezzo: €'+p.pagamento.prezzo+'\n';
+  if(pr.affisso) testo+='\nAllevamento: '+pr.affisso;
+  if(pr.tel) testo+='\nContatti: '+pr.tel;
+  testo+='\n\n📱 Gestione: '+window.location.origin+window.location.pathname;
+  window.open('https://wa.me/?text='+encodeURIComponent(testo),'_blank','noopener');
 }
 
 /* Condivisione dalla scheda dettaglio cucciolo (modal-cucciolo) */
@@ -8101,9 +8244,11 @@ function autocompilaModA(cuccId){
     if(cu.madre) precompilaFattrice('a', cu.madre);
     if(cu.padre) precompilaStallone('a', cu.padre);
     if(cu.data&&g('ma-data-nascita')) g('ma-data-nascita').value=cu.data;
+    if(cu.dataMonta&&g('ma-data-monta')) g('ma-data-monta').value=cu.dataMonta;
     if(cu.nati&&g('ma-ntot')) g('ma-ntot').value=cu.nati;
     if(cu.maschi&&g('ma-nmaschi')) g('ma-nmaschi').value=cu.maschi;
     if(cu.femmine&&g('ma-nfemmine')) g('ma-nfemmine').value=cu.femmine;
+    if(cu.nomeCucciolata&&g('ma-nome-cucciolata')) g('ma-nome-cucciolata').value=cu.nomeCucciolata;
     toast('✅ Modulo A precompilato!');
   },100);
 }
@@ -8761,10 +8906,14 @@ function autofillCuccioliB(){
     for(var i=0; i<Math.min(tot,12); i++) aggiungiRigaCucciolo();
   } else {
     cuccioli.slice(0,12).forEach(function(p){
-      var acq = p.acquirente||{};
+      // Prendi primo acquirente da array (nuovo) o da acquirente singolo (vecchio)
+      var acq = (p.acquirenti && p.acquirenti.length) ? p.acquirenti[0] : (p.acquirente||{});
+      var via = [acq.via, acq.civico, acq.cap, acq.citta].filter(Boolean).join(', ') || acq.indirizzo || '';
       aggiungiRigaCucciolo({
         nome: p.nome||'', sesso: p.sesso||'M', colore: p.colore||'',
-        acqNome: acq.nome||'', acqCell: acq.tel||'', acqEmail: acq.email||''
+        microchip: p.microchip||'',
+        acqNome: acq.nome||'', acqCell: acq.tel||acq.cell||'',
+        acqEmail: acq.email||'', acqCf: acq.cf||'', acqVia: via
       });
     });
   }
