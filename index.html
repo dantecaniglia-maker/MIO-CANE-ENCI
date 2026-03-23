@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '10.4';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '10.5';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4208,12 +4208,119 @@ function apriVetrina(cuccId){
   };
   aggiornaCounterVetrina();
   show('modal-vetrina');
+  caricaMieiAnnunci();
 }
 
 function aggiornaCounterVetrina(){
   var mese = new Date().toISOString().substring(0,7);
   var used = parseInt(localStorage.getItem('breedped_annunci_'+mese)||'0');
   g('vetrina-counter').textContent = 'Annunci utilizzati: '+used+'/3 questo mese';
+}
+
+async function caricaMieiAnnunci(){
+  var whatsapp = profilo.tel || '';
+  if(!whatsapp){ g('vet-miei-annunci').innerHTML=''; return; }
+  try {
+    var resp = await fetch(
+      SUPABASE_URL+'/rest/v1/annunci?allevatore_whatsapp=eq.'+
+      encodeURIComponent(whatsapp)+'&stato=eq.attivo&select=*',{
+      headers:{
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer '+SUPABASE_KEY
+      }
+    });
+    var annunci = await resp.json();
+    renderMieiAnnunci(annunci);
+  } catch(e){
+    g('vet-miei-annunci').innerHTML='';
+  }
+}
+
+function renderMieiAnnunci(annunci){
+  var el = g('vet-miei-annunci');
+  if(!annunci||!annunci.length){ el.innerHTML=''; return; }
+  var html = '<div style="margin-bottom:16px">'
+    +'<div style="font-weight:700;color:#0D47A1;font-size:13px;margin-bottom:10px">'
+    +'📋 I tuoi annunci attivi ('+annunci.length+')</div>';
+  annunci.forEach(function(a){
+    var eta = Math.floor((new Date()-new Date(a.data_nascita))/864e5);
+    html += '<div style="background:#F4F7FE;border:1.5px solid #DDEAFF;'
+      +'border-radius:10px;padding:12px;margin-bottom:8px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+      +'<div style="font-weight:700;font-size:13px">'+a.razza+'</div>'
+      +'<div style="font-size:11px;color:#6B8BB0">'+eta+' giorni · €'+a.prezzo+'</div>'
+      +'</div>'
+      +'<div style="font-size:12px;color:#6B8BB0;margin-bottom:10px">'
+      +'♂ '+a.maschi_disponibili+' · ♀ '+a.femmine_disponibili+' disponibili'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">'
+      +'<div><label style="font-size:10px">♂ Maschi disp.</label>'
+      +'<input type="number" min="0" value="'+a.maschi_disponibili+'" '
+      +'id="upd-maschi-'+a.id+'" style="text-align:center;padding:4px"/></div>'
+      +'<div><label style="font-size:10px">♀ Femmine disp.</label>'
+      +'<input type="number" min="0" value="'+a.femmine_disponibili+'" '
+      +'id="upd-femmine-'+a.id+'" style="text-align:center;padding:4px"/></div>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px">'
+      +'<button onclick="aggiornaDisponibilita(\''+a.id+'\')" style="'
+      +'flex:1;background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;'
+      +'border:none;border-radius:8px;padding:7px;font-size:12px;font-weight:700;cursor:pointer">'
+      +'💾 Aggiorna</button>'
+      +'<button onclick="chiudiAnnuncio(\''+a.id+'\')" style="'
+      +'background:#FFEBEE;color:#C0534A;border:1.5px solid #F5C4BE;'
+      +'border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer">'
+      +'🔴 Chiudi</button>'
+      +'</div>'
+      +'</div>';
+  });
+  html += '</div><hr style="border:none;border-top:1.5px solid #DDEAFF;margin-bottom:16px"/>';
+  el.innerHTML = html;
+}
+
+async function aggiornaDisponibilita(annuncioId){
+  var maschi = parseInt(g('upd-maschi-'+annuncioId).value)||0;
+  var femmine = parseInt(g('upd-femmine-'+annuncioId).value)||0;
+  var stato = (maschi+femmine===0) ? 'esaurito' : 'attivo';
+  try {
+    await fetch(SUPABASE_URL+'/rest/v1/annunci?id=eq.'+annuncioId,{
+      method:'PATCH',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer '+SUPABASE_KEY
+      },
+      body: JSON.stringify({
+        maschi_disponibili: maschi,
+        femmine_disponibili: femmine,
+        stato: stato
+      })
+    });
+    toast(stato==='esaurito'
+      ? '✅ Annuncio chiuso — cuccioli esauriti'
+      : '✅ Disponibilità aggiornata: ♂'+maschi+' ♀'+femmine);
+    caricaMieiAnnunci();
+  } catch(e){
+    toast('❌ Errore aggiornamento');
+  }
+}
+
+async function chiudiAnnuncio(annuncioId){
+  if(!confirm('Chiudere questo annuncio? Non sarà più visibile nella vetrina.')) return;
+  try {
+    await fetch(SUPABASE_URL+'/rest/v1/annunci?id=eq.'+annuncioId,{
+      method:'PATCH',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer '+SUPABASE_KEY
+      },
+      body: JSON.stringify({ stato: 'chiuso' })
+    });
+    toast('✅ Annuncio chiuso');
+    caricaMieiAnnunci();
+  } catch(e){
+    toast('❌ Errore');
+  }
 }
 
 async function pubblicaVetrina(){
@@ -4236,6 +4343,11 @@ async function pubblicaVetrina(){
   var razza = (madre&&madre.razza)||cu.razza||profilo.razza||'';
   var visionabili = document.querySelector('input[name="vet-visionabili"]:checked').value === 'si';
   var btn = g('vet-publish-btn');
+  // Timeout di sicurezza: sblocca sempre dopo 15s
+  setTimeout(function(){
+    var b = g('vet-publish-btn');
+    if(b){ b.disabled=false; b.textContent='🚀 Pubblica Annuncio'; }
+  }, 15000);
   btn.disabled = true;
   btn.textContent = '🤖 Controllo AI in corso...';
   g('vet-status').textContent = '';
@@ -4288,6 +4400,8 @@ async function pubblicaVetrina(){
     if(!resp.ok) throw new Error('Errore Supabase: '+resp.status);
     await resp.json();
     localStorage.setItem('breedped_annunci_'+mese, String(used+1));
+    btn.disabled = false;
+    btn.textContent = '🚀 Pubblica Annuncio';
     hide('modal-vetrina');
     toast('🎉 Annuncio pubblicato su BreedPed Vetrina!');
   } catch(err) {
@@ -10241,6 +10355,8 @@ function sendChat(){
         placeholder="Es. Cuccioli con carattere eccellente, genitori campioni, cresciuti in famiglia con bambini..."></textarea>
       <div id="vet-char-count" style="font-size:11px;color:#6B8BB0;text-align:right">0/500</div>
     </div>
+    <!-- I miei annunci attivi -->
+    <div id="vet-miei-annunci" style="margin-bottom:20px"></div>
     <!-- Pulsante pubblica -->
     <button onclick="pubblicaVetrina()" id="vet-publish-btn" style="
       width:100%;background:linear-gradient(135deg,#C9A961,#A88A41);
