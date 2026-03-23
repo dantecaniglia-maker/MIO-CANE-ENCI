@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '10.5';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '10.6';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4174,6 +4174,7 @@ function bnVetrina(){
 }
 
 function apriVetrina(cuccId){
+  window._vetrinaFotoBase64 = [];
   _vetrinaCuccId = cuccId;
   var cu = cucciolate.find(function(c){ return c.id===cuccId; });
   if(!cu){ alert('Cucciolata non trovata'); return; }
@@ -4195,6 +4196,15 @@ function apriVetrina(cuccId){
     +'<div><span style="color:#6B8BB0">Madre:</span> <strong>'+madreNome+(madreHD?' (HD:'+madreHD+')':'')+'</strong></div>'
     +'<div><span style="color:#6B8BB0">Padre:</span> <strong>'+padreNome+(padreHD?' (HD:'+padreHD+')':'')+'</strong></div>'
     +'</div>';
+  // Foto automatiche da madre, padre e cuccioli disponibili
+  var fotoAuto = [];
+  if(madre && madre.foto) fotoAuto.push(madre.foto);
+  if(padre && padre.foto) fotoAuto.push(padre.foto);
+  (cu.cuccioli||[]).filter(function(p){
+    return p.stato==='disponibile' && p.foto;
+  }).slice(0,2).forEach(function(p){ fotoAuto.push(p.foto); });
+  window._vetrinaFotoBase64 = fotoAuto.slice(0,3);
+
   var disponibili = (cu.cuccioli||[]).filter(function(p){ return p.stato==='disponibile'; });
   var maschi = disponibili.filter(function(p){ return p.sesso==='M'; }).length;
   var femmine = disponibili.filter(function(p){ return p.sesso==='F'; }).length;
@@ -4208,6 +4218,7 @@ function apriVetrina(cuccId){
   };
   aggiornaCounterVetrina();
   show('modal-vetrina');
+  renderVetrinaFotoPreview();
   caricaMieiAnnunci();
 }
 
@@ -4215,6 +4226,76 @@ function aggiornaCounterVetrina(){
   var mese = new Date().toISOString().substring(0,7);
   var used = parseInt(localStorage.getItem('breedped_annunci_'+mese)||'0');
   g('vetrina-counter').textContent = 'Annunci utilizzati: '+used+'/3 questo mese';
+}
+
+function aggiungiVetrinaFoto(input){
+  var files = Array.from(input.files);
+  var max = 3;
+  var current = window._vetrinaFotoBase64 ? window._vetrinaFotoBase64.length : 0;
+  if(current >= max){ toast('⚠️ Massimo 3 foto per annuncio'); return; }
+  files.slice(0, max - current).forEach(function(file){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var img = new Image();
+      img.onload = function(){
+        var canvas = document.createElement('canvas');
+        var MAX = 800;
+        var ratio = Math.min(MAX/img.width, MAX/img.height, 1);
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        // Comprimi progressivamente fino a max 200KB
+        var quality = 0.75;
+        var compressed = canvas.toDataURL('image/jpeg', quality);
+        while(compressed.length > 200000 && quality > 0.1){
+          quality -= 0.1;
+          compressed = canvas.toDataURL('image/jpeg', quality);
+        }
+        // Se ancora troppo grande riduci dimensioni
+        if(compressed.length > 200000){
+          canvas.width = Math.round(canvas.width * 0.7);
+          canvas.height = Math.round(canvas.height * 0.7);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          compressed = canvas.toDataURL('image/jpeg', 0.6);
+        }
+        if(!window._vetrinaFotoBase64) window._vetrinaFotoBase64 = [];
+        if(window._vetrinaFotoBase64.length < max){
+          window._vetrinaFotoBase64.push(compressed);
+          renderVetrinaFotoPreview();
+          toast('📷 Foto aggiunta ('+Math.round(compressed.length/1024)+'KB)');
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function renderVetrinaFotoPreview(){
+  var container = g('vet-foto-preview');
+  if(!container) return;
+  var fotos = window._vetrinaFotoBase64 || [];
+  container.innerHTML = fotos.map(function(src, i){
+    return '<div style="position:relative;width:80px;height:80px">'
+      +'<img src="'+src+'" style="width:80px;height:80px;object-fit:cover;'
+      +'border-radius:8px;border:2px solid #DDEAFF"/>'
+      +'<button onclick="rimuoviVetrinaFoto('+i+')" style="'
+      +'position:absolute;top:-6px;right:-6px;background:#C0534A;'
+      +'color:#fff;border:none;border-radius:50%;width:20px;height:20px;'
+      +'cursor:pointer;font-size:12px;line-height:1;padding:0">✕</button>'
+      +'</div>';
+  }).join('');
+  var btn = g('vet-foto-btn');
+  if(btn) btn.textContent = fotos.length >= 3
+    ? '✅ 3 foto aggiunte (massimo)'
+    : '📷 Aggiungi foto ('+(3-fotos.length)+' rimanenti)';
+}
+
+function rimuoviVetrinaFoto(idx){
+  if(window._vetrinaFotoBase64) window._vetrinaFotoBase64.splice(idx, 1);
+  renderVetrinaFotoPreview();
 }
 
 async function caricaMieiAnnunci(){
@@ -4383,6 +4464,7 @@ async function pubblicaVetrina(){
     visionabili: visionabili,
     indirizzo: g('vet-indirizzo').value.trim() || null,
     descrizione: descrizione || null,
+    foto_urls: window._vetrinaFotoBase64 || [],
     ai_approved: true,
     stato: 'attivo'
   };
@@ -10347,6 +10429,19 @@ function sendChat(){
     <div style="margin-bottom:14px">
       <label>Email (opzionale)</label>
       <input type="email" id="vet-email" placeholder="email@esempio.com"/>
+    </div>
+    <!-- Foto cuccioli -->
+    <div style="margin-bottom:14px">
+      <label>Foto cuccioli (max 3)</label>
+      <div id="vet-foto-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
+      <button onclick="document.getElementById('vet-foto-input').click()" id="vet-foto-btn" style="
+        background:#EEF3FB;border:1.5px dashed #BFCFE8;border-radius:8px;
+        padding:10px 16px;font-size:13px;font-weight:700;color:#1565C0;
+        cursor:pointer;width:100%">
+        📷 Aggiungi foto cuccioli
+      </button>
+      <input type="file" id="vet-foto-input" accept="image/*" multiple
+        style="display:none" onchange="aggiungiVetrinaFoto(this)"/>
     </div>
     <!-- Descrizione -->
     <div style="margin-bottom:20px">
