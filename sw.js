@@ -40,7 +40,11 @@ self.addEventListener('fetch', function(e) {
 
   // Survey: mai intercettare, sempre alla rete
   var reqUrl = e.request.url;
-  if (reqUrl.includes('/survey') || reqUrl.includes('/survey.html')) return;
+  if (reqUrl.includes('/survey') ||
+      reqUrl.includes('/survey.html') ||
+      reqUrl.includes('breedped.com') ||
+      reqUrl.includes('/vetrina') ||
+      reqUrl.includes('/annuncio')) return;
 
   // Per index.html e deep link (?code= / ?import=): sempre network-first
   var url = e.request.url;
