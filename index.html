@@ -4225,14 +4225,16 @@ function apriVetrina(cuccId){
     +_genitoreCard(padreInfo,'♂ Padre')
     +'</div>';
 
-  // Foto automatiche da madre, padre e cuccioli disponibili
+  // Salva foto genitori separatamente per upload dedicato
+  window._vetrinaMadreFoto = madreInfo.foto || null;
+  window._vetrinaPadreFoto = padreInfo.foto || null;
+
+  // Foto cuccioli per _vetrinaFotoBase64 (max 3)
   var fotoAuto = [];
-  if(madreInfo.foto) fotoAuto.push(madreInfo.foto);
-  if(padreInfo.foto) fotoAuto.push(padreInfo.foto);
   (cu.cuccioli||[]).filter(function(p){
     return p.stato==='disponibile' && p.foto;
-  }).slice(0,2).forEach(function(p){ fotoAuto.push(p.foto); });
-  window._vetrinaFotoBase64 = fotoAuto.slice(0,3);
+  }).slice(0,3).forEach(function(p){ fotoAuto.push(p.foto); });
+  window._vetrinaFotoBase64 = fotoAuto;
 
   var disponibili = (cu.cuccioli||[]).filter(function(p){ return p.stato==='disponibile'; });
   var maschi = disponibili.filter(function(p){ return p.sesso==='M'; }).length;
@@ -4558,15 +4560,32 @@ async function pubblicaVetrina(){
   }
   btn.textContent = '📷 Upload foto in corso...';
   var fotoUrls = [];
+  var madreFotoUrl = null;
+  var padreFotoUrl = null;
+
+  // Upload foto cuccioli
   var fotos = window._vetrinaFotoBase64 || [];
   for(var i=0; i<fotos.length; i++){
     try {
-      var url = await uploadFotoSupabase(fotos[i], 'foto_'+i+'.jpg');
+      var url = await uploadFotoSupabase(fotos[i], 'cucciolo_'+i+'.jpg');
       fotoUrls.push(url);
-    } catch(e){
-      console.warn('Upload foto '+i+' fallito:', e);
-    }
+    } catch(e){ console.warn('Upload foto cucciolo '+i+' fallito:', e); }
   }
+
+  // Upload foto madre
+  if(window._vetrinaMadreFoto){
+    try {
+      madreFotoUrl = await uploadFotoSupabase(window._vetrinaMadreFoto, 'madre.jpg');
+    } catch(e){ console.warn('Upload foto madre fallito:', e); }
+  }
+
+  // Upload foto padre
+  if(window._vetrinaPadreFoto){
+    try {
+      padreFotoUrl = await uploadFotoSupabase(window._vetrinaPadreFoto, 'padre.jpg');
+    } catch(e){ console.warn('Upload foto padre fallito:', e); }
+  }
+
   btn.textContent = '⏳ Pubblicazione in corso...';
   var annuncio = {
     allevatore_nome: profilo.nome || profilo.affisso || 'Allevatore',
@@ -4594,6 +4613,8 @@ async function pubblicaVetrina(){
     indirizzo: g('vet-indirizzo').value.trim() || null,
     descrizione: descrizione || null,
     foto_urls: fotoUrls,
+    madre_foto_url: madreFotoUrl,
+    padre_foto_url: padreFotoUrl,
     ai_approved: true,
     stato: 'attivo'
   };
