@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '10.3';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '10.4';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1574,6 +1574,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
   <button id="bn-breed" class="bn-btn" onclick="bnBreeding()"><span>🧬</span><span>Breeding</span></button>
   <button id="bn-cucc"  class="bn-btn" onclick="bnCucciolate()"><span>🐾</span><span>Cucciolate</span></button>
   <button id="bn-enci"  class="bn-btn" onclick="bnEnci()"><span>🔗</span><span>ENCI</span></button>
+  <button id="bn-vetrina" class="bn-btn" onclick="bnVetrina()"><span>🏪</span><span>Vetrina</span></button>
 </nav>
 
 <!-- ══ ONBOARDING PRIMO AVVIO ══ -->
@@ -3172,6 +3173,9 @@ var PEDIGREE_PROMPT = 'Sei un esperto di pedigree ENCI italiani. Leggi questa fo
 ══════════════════════════════════════════════════════ */
 var AI_KEYS_STORAGE = 'miocane_ai_keys_v1';
 var _aiKeys = JSON.parse(localStorage.getItem(AI_KEYS_STORAGE)||'{}');
+var SUPABASE_URL = 'https://rjiymkharnwxpdeytshu.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_v7r-AM_JP5EoPKjKHd6ImQ_w5sNVcOQ';
+var _vetrinaCuccId = null;
 // Compatibilità con vecchia chiave Gemini
 if(!_aiKeys.gemini && localStorage.getItem('miocane_gemini_v1')){
   _aiKeys.gemini = localStorage.getItem('miocane_gemini_v1');
@@ -4164,6 +4168,159 @@ function bnRegistro()  { switchSection('reg'); }
 function bnBreeding()  { switchSection('breed'); }
 function bnCucciolate(){ switchSection('cucc'); }
 function bnEnci()      { switchSection('enci'); }
+function bnVetrina(){
+  setBnActive('bn-vetrina');
+  window.open('https://breedped.com/vetrina','_blank');
+}
+
+function apriVetrina(cuccId){
+  _vetrinaCuccId = cuccId;
+  var cu = cucciolate.find(function(c){ return c.id===cuccId; });
+  if(!cu){ alert('Cucciolata non trovata'); return; }
+  var madre = cani.concat(guestCani).find(function(c){ return c.id===cu.madre; });
+  var padre = cani.concat(guestCani).find(function(c){ return c.id===cu.padre; });
+  var madreNome = madre?madre.nome:(cu.madreNome||'N.D.');
+  var padreNome = padre?padre.nome:(cu.padreNome||'N.D.');
+  var madreHD = madre&&madre.displasia?madre.displasia.hd:'';
+  var padreHD = padre&&padre.displasia?padre.displasia.hd:'';
+  var razza = (madre&&madre.razza)||cu.razza||profilo.razza||'N.D.';
+  var dataN = cu.data ? new Date(cu.data).toLocaleDateString('it-IT') : 'N.D.';
+  var eta = cu.data ? Math.floor((new Date()-new Date(cu.data))/864e5) : 0;
+  g('vetrina-info-cucc').innerHTML =
+    '<div style="font-weight:700;color:#0D47A1;margin-bottom:8px">📋 Dati cucciolata (pre-compilati)</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">'
+    +'<div><span style="color:#6B8BB0">Razza:</span> <strong>'+razza+'</strong></div>'
+    +'<div><span style="color:#6B8BB0">Nati il:</span> <strong>'+dataN+'</strong></div>'
+    +'<div><span style="color:#6B8BB0">Età:</span> <strong>'+eta+' giorni</strong></div>'
+    +'<div><span style="color:#6B8BB0">Madre:</span> <strong>'+madreNome+(madreHD?' (HD:'+madreHD+')':'')+'</strong></div>'
+    +'<div><span style="color:#6B8BB0">Padre:</span> <strong>'+padreNome+(padreHD?' (HD:'+padreHD+')':'')+'</strong></div>'
+    +'</div>';
+  var disponibili = (cu.cuccioli||[]).filter(function(p){ return p.stato==='disponibile'; });
+  var maschi = disponibili.filter(function(p){ return p.sesso==='M'; }).length;
+  var femmine = disponibili.filter(function(p){ return p.sesso==='F'; }).length;
+  g('vet-maschi').value = maschi;
+  g('vet-femmine').value = femmine;
+  if(profilo.tel) g('vet-whatsapp').value = profilo.tel;
+  if(profilo.email) g('vet-email').value = profilo.email;
+  if(profilo.prov) g('vet-indirizzo').value = profilo.prov;
+  g('vet-descrizione').oninput = function(){
+    g('vet-char-count').textContent = this.value.length+'/500';
+  };
+  aggiornaCounterVetrina();
+  show('modal-vetrina');
+}
+
+function aggiornaCounterVetrina(){
+  var mese = new Date().toISOString().substring(0,7);
+  var used = parseInt(localStorage.getItem('breedped_annunci_'+mese)||'0');
+  g('vetrina-counter').textContent = 'Annunci utilizzati: '+used+'/3 questo mese';
+}
+
+async function pubblicaVetrina(){
+  var cu = cucciolate.find(function(c){ return c.id===_vetrinaCuccId; });
+  if(!cu) return;
+  var whatsapp = g('vet-whatsapp').value.trim();
+  var prezzo = parseInt(g('vet-prezzo').value);
+  var regione = g('vet-regione').value;
+  var maschi = parseInt(g('vet-maschi').value)||0;
+  var femmine = parseInt(g('vet-femmine').value)||0;
+  if(!whatsapp){ alert('Inserisci il numero WhatsApp'); return; }
+  if(!prezzo){ alert('Inserisci il prezzo'); return; }
+  if(!regione){ alert('Seleziona la regione'); return; }
+  if(maschi+femmine===0){ alert('Inserisci almeno 1 cucciolo disponibile'); return; }
+  var mese = new Date().toISOString().substring(0,7);
+  var used = parseInt(localStorage.getItem('breedped_annunci_'+mese)||'0');
+  if(used >= 3){ alert('Hai raggiunto il limite di 3 annunci questo mese!'); return; }
+  var madre = cani.concat(guestCani).find(function(c){ return c.id===cu.madre; });
+  var padre = cani.concat(guestCani).find(function(c){ return c.id===cu.padre; });
+  var razza = (madre&&madre.razza)||cu.razza||profilo.razza||'';
+  var visionabili = document.querySelector('input[name="vet-visionabili"]:checked').value === 'si';
+  var btn = g('vet-publish-btn');
+  btn.disabled = true;
+  btn.textContent = '🤖 Controllo AI in corso...';
+  g('vet-status').textContent = '';
+  var descrizione = g('vet-descrizione').value.trim();
+  var aiOk = await controlloAIAnnuncio(razza, descrizione, prezzo);
+  if(!aiOk.ok){
+    btn.disabled = false;
+    btn.textContent = '🚀 Pubblica Annuncio';
+    g('vet-status').innerHTML = '<span style="color:#C0534A">⚠️ '+aiOk.msg+'</span>';
+    return;
+  }
+  btn.textContent = '⏳ Pubblicazione in corso...';
+  var annuncio = {
+    allevatore_nome: profilo.nome || profilo.affisso || 'Allevatore',
+    allevatore_affisso: profilo.affisso || '',
+    allevatore_regione: regione,
+    allevatore_whatsapp: whatsapp,
+    allevatore_telefono: g('vet-telefono').value.trim() || null,
+    allevatore_email: g('vet-email').value.trim() || null,
+    razza: razza,
+    data_nascita: cu.data || new Date().toISOString().substring(0,10),
+    madre_nome: madre?madre.nome:(cu.madreNome||''),
+    madre_loi: madre?madre.numeroENCI||'':'',
+    madre_hd: madre&&madre.displasia?madre.displasia.hd||'':'',
+    madre_ed: madre&&madre.displasia?madre.displasia.ed||'':'',
+    padre_nome: padre?padre.nome:(cu.padreNome||''),
+    padre_loi: padre?padre.numeroENCI||'':'',
+    padre_hd: padre&&padre.displasia?padre.displasia.hd||'':'',
+    padre_ed: padre&&padre.displasia?padre.displasia.ed||'':'',
+    maschi_disponibili: maschi,
+    femmine_disponibili: femmine,
+    prezzo: prezzo,
+    visionabili: visionabili,
+    indirizzo: g('vet-indirizzo').value.trim() || null,
+    descrizione: descrizione || null,
+    ai_approved: true,
+    stato: 'attivo'
+  };
+  try {
+    var resp = await fetch(SUPABASE_URL+'/rest/v1/annunci', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer '+SUPABASE_KEY,
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(annuncio)
+    });
+    if(!resp.ok) throw new Error('Errore Supabase: '+resp.status);
+    await resp.json();
+    localStorage.setItem('breedped_annunci_'+mese, String(used+1));
+    hide('modal-vetrina');
+    toast('🎉 Annuncio pubblicato su BreedPed Vetrina!');
+  } catch(err) {
+    btn.disabled = false;
+    btn.textContent = '🚀 Pubblica Annuncio';
+    g('vet-status').innerHTML = '<span style="color:#C0534A">❌ Errore: '+err.message+'</span>';
+  }
+}
+
+async function controlloAIAnnuncio(razza, descrizione, prezzo){
+  if(!_aiKeys.gemini) return {ok:true};
+  try {
+    var prompt = 'Controlla questo annuncio di vendita cucciolo:\n'
+      +'Razza: '+razza+'\n'
+      +'Prezzo: €'+prezzo+'\n'
+      +'Descrizione: '+(descrizione||'(nessuna)')+'\n\n'
+      +'Rispondi SOLO con JSON: {"ok":true} se va bene, '
+      +'{"ok":false,"msg":"motivo breve"} se c\'è spam, prezzi assurdi '
+      +'(sotto €100 o sopra €50000), parolacce o contenuti inappropriati.';
+    var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+_aiKeys.gemini,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],
+        generationConfig:{maxOutputTokens:50,temperature:0}})
+    });
+    var d = await resp.json();
+    var txt = ((d.candidates||[])[0]||{}).content?.parts?.[0]?.text||'';
+    txt = txt.replace(/```json|```/g,'').trim();
+    return JSON.parse(txt);
+  } catch(e){
+    return {ok:true};
+  }
+}
 
 function deleteCurrent(){
   var c=cur();if(!c)return;
@@ -5300,6 +5457,7 @@ function renderCucciolate(){
       html+='<button onclick="showCuccioliModal('+cu.id+')" style="background:linear-gradient(135deg,#1a7a4a,#0f5a35);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">🐾 Cuccioli</button>';
       html+='<button onclick="autocompilaModA('+cu.id+')" style="background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700">📋 Mod.A</button>';
       html+='<button onclick="autocompilaModB('+cu.id+')" style="background:linear-gradient(135deg,#6B3FA0,#4A148C);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700">📋 Mod.B</button>';
+      html+='<button onclick="apriVetrina('+cu.id+')" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;cursor:pointer;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px">🏪 Pubblica Vetrina</button>';
       html+='</div>';
       html+='</div>';
       // Badge conteggi
@@ -9997,5 +10155,103 @@ function sendChat(){
   });
 })();
 </script>
+
+<!-- ══ MODAL VETRINA MARKETPLACE ══ -->
+<div id="modal-vetrina" class="overlay hidden">
+  <div class="modal" style="max-width:520px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D47A1">
+        🏪 Pubblica su Vetrina BreedPed
+      </div>
+      <button onclick="hide('modal-vetrina')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#6B8BB0">✕</button>
+    </div>
+    <!-- Badge Premium -->
+    <div style="background:linear-gradient(135deg,#C9A961,#A88A41);border-radius:10px;padding:10px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">👑</span>
+      <div>
+        <div style="color:#fff;font-weight:700;font-size:13px">Piano Premium</div>
+        <div id="vetrina-counter" style="color:rgba(255,255,255,.8);font-size:11px">Annunci utilizzati: 0/3 questo mese</div>
+      </div>
+    </div>
+    <!-- Info cucciolata (pre-compilata) -->
+    <div id="vetrina-info-cucc" style="background:#EEF3FB;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px"></div>
+    <!-- Cuccioli disponibili -->
+    <div style="margin-bottom:14px">
+      <label>Cuccioli disponibili</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:10px">♂ Maschi</label>
+          <input type="number" id="vet-maschi" min="0" value="0" style="text-align:center"/>
+        </div>
+        <div>
+          <label style="font-size:10px">♀ Femmine</label>
+          <input type="number" id="vet-femmine" min="0" value="0" style="text-align:center"/>
+        </div>
+      </div>
+    </div>
+    <!-- Prezzo -->
+    <div style="margin-bottom:14px">
+      <label>Prezzo per cucciolo (€)</label>
+      <input type="number" id="vet-prezzo" min="0" placeholder="Es. 1200"/>
+    </div>
+    <!-- Visionabili -->
+    <div style="margin-bottom:14px">
+      <label>I cuccioli sono visionabili di persona?</label>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0">
+          <input type="radio" name="vet-visionabili" value="si" checked> Sì
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0">
+          <input type="radio" name="vet-visionabili" value="no"> No
+        </label>
+      </div>
+      <input type="text" id="vet-indirizzo" placeholder="Città/Provincia (es. Avezzano, AQ)" style="margin-top:8px"/>
+    </div>
+    <!-- Regione -->
+    <div style="margin-bottom:14px">
+      <label>Regione</label>
+      <select id="vet-regione">
+        <option value="">Seleziona regione...</option>
+        <option>Abruzzo</option><option>Basilicata</option><option>Calabria</option>
+        <option>Campania</option><option>Emilia-Romagna</option><option>Friuli-Venezia Giulia</option>
+        <option>Lazio</option><option>Liguria</option><option>Lombardia</option>
+        <option>Marche</option><option>Molise</option><option>Piemonte</option>
+        <option>Puglia</option><option>Sardegna</option><option>Sicilia</option>
+        <option>Toscana</option><option>Trentino-Alto Adige</option><option>Umbria</option>
+        <option>Valle d'Aosta</option><option>Veneto</option>
+      </select>
+    </div>
+    <!-- Contatti -->
+    <div style="margin-bottom:14px">
+      <label>WhatsApp (obbligatorio)</label>
+      <input type="tel" id="vet-whatsapp" placeholder="+39 333 1234567"/>
+    </div>
+    <div style="margin-bottom:14px">
+      <label>Telefono (opzionale)</label>
+      <input type="tel" id="vet-telefono" placeholder="+39 333 1234567"/>
+    </div>
+    <div style="margin-bottom:14px">
+      <label>Email (opzionale)</label>
+      <input type="email" id="vet-email" placeholder="email@esempio.com"/>
+    </div>
+    <!-- Descrizione -->
+    <div style="margin-bottom:20px">
+      <label>Descrizione annuncio (max 500 caratteri)</label>
+      <textarea id="vet-descrizione" rows="4" maxlength="500"
+        placeholder="Es. Cuccioli con carattere eccellente, genitori campioni, cresciuti in famiglia con bambini..."></textarea>
+      <div id="vet-char-count" style="font-size:11px;color:#6B8BB0;text-align:right">0/500</div>
+    </div>
+    <!-- Pulsante pubblica -->
+    <button onclick="pubblicaVetrina()" id="vet-publish-btn" style="
+      width:100%;background:linear-gradient(135deg,#C9A961,#A88A41);
+      color:#fff;border:none;border-radius:12px;padding:16px;
+      font-size:16px;font-weight:700;cursor:pointer;
+      box-shadow:0 4px 16px rgba(201,169,97,.4)">
+      🚀 Pubblica Annuncio
+    </button>
+    <div id="vet-status" style="margin-top:12px;text-align:center;font-size:13px;font-weight:600"></div>
+  </div>
+</div>
+
 </body>
 </html>
