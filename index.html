@@ -4289,9 +4289,8 @@ function onDetFotoSelected(input){
 }
 
 function aggiornaCounterVetrina(){
-  var mese = new Date().toISOString().substring(0,7);
-  var used = parseInt(localStorage.getItem('breedped_annunci_'+mese)||'0');
-  g('vetrina-counter').textContent = 'Annunci utilizzati: '+used+'/3 questo mese';
+  var el = g('vetrina-counter');
+  if(el) el.style.display='none';
 }
 
 function aggiungiVetrinaFoto(input){
@@ -4537,9 +4536,6 @@ async function pubblicaVetrina(){
   if(!prezzo){ alert('Inserisci il prezzo'); return; }
   if(!regione){ alert('Seleziona la regione'); return; }
   if(maschi+femmine===0){ alert('Inserisci almeno 1 cucciolo disponibile'); return; }
-  var mese = new Date().toISOString().substring(0,7);
-  var used = parseInt(localStorage.getItem('breedped_annunci_'+mese)||'0');
-  if(used >= 3){ alert('Hai raggiunto il limite di 3 annunci questo mese!'); return; }
   var madre = cani.concat(guestCani).find(function(c){ return c.id===cu.madre; });
   var padre = cani.concat(guestCani).find(function(c){ return c.id===cu.padre; });
   var razza = (madre&&madre.razza)||cu.razza||profilo.razza||'';
@@ -4615,7 +4611,6 @@ async function pubblicaVetrina(){
     });
     if(!resp.ok) throw new Error('Errore Supabase: '+resp.status);
     await resp.json();
-    localStorage.setItem('breedped_annunci_'+mese, String(used+1));
     btn.disabled = false;
     btn.textContent = '🚀 Pubblica Annuncio';
     hide('modal-vetrina');
