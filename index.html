@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '10.6';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '10.7';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1257,7 +1257,8 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
     <!-- Dog header -->
     <div class="no-print" style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
       <div style="display:flex;align-items:center;gap:16px">
-        <div id="det-avatar" style="width:66px;height:66px;border-radius:16px;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#1565C0,#0D47A1);border:3px solid #BFCFE8;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;box-shadow:0 4px 16px rgba(21,101,192,.25)">🐾</div>
+        <div id="det-avatar" onclick="uploadFotoCane()" style="width:66px;height:66px;border-radius:16px;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#1565C0,#0D47A1);border:3px solid #BFCFE8;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;box-shadow:0 4px 16px rgba(21,101,192,.25);cursor:pointer;position:relative" title="Clicca per aggiungere foto">🐾<div style="position:absolute;bottom:0;right:0;background:rgba(0,0,0,.45);width:100%;text-align:center;font-size:9px;color:#fff;padding:2px 0">📷 Foto</div></div>
+        <input id="det-foto-input" type="file" accept="image/*" style="display:none" onchange="onDetFotoSelected(this)"/>
         <div>
           <h1 id="det-nome" style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#0D47A1"></h1>
           <div id="det-sub" style="color:#1565C0;font-size:13px;margin-top:3px"></div>
@@ -4180,26 +4181,55 @@ function apriVetrina(cuccId){
   if(!cu){ alert('Cucciolata non trovata'); return; }
   var madre = cani.concat(guestCani).find(function(c){ return c.id===cu.madre; });
   var padre = cani.concat(guestCani).find(function(c){ return c.id===cu.padre; });
-  var madreNome = madre?madre.nome:(cu.madreNome||'N.D.');
-  var padreNome = padre?padre.nome:(cu.padreNome||'N.D.');
-  var madreHD = madre&&madre.displasia?madre.displasia.hd:'';
-  var padreHD = padre&&padre.displasia?padre.displasia.hd:'';
+  var madreInfo = {
+    nome: madre?madre.nome:(cu.madreNome||'N.D.'),
+    loi: madre?madre.numeroENCI||'':'',
+    hd: madre&&madre.displasia?madre.displasia.hd||'':'',
+    ed: madre&&madre.displasia?madre.displasia.ed||'':'',
+    titoli: madre?((madre.titoli||[]).join(', ')):'',
+    foto: madre?madre.foto||null:null
+  };
+  var padreInfo = {
+    nome: padre?padre.nome:(cu.padreNome||'N.D.'),
+    loi: padre?padre.numeroENCI||'':'',
+    hd: padre&&padre.displasia?padre.displasia.hd||'':'',
+    ed: padre&&padre.displasia?padre.displasia.ed||'':'',
+    titoli: padre?((padre.titoli||[]).join(', ')):'',
+    foto: padre?padre.foto||null:null
+  };
   var razza = (madre&&madre.razza)||cu.razza||profilo.razza||'N.D.';
   var dataN = cu.data ? new Date(cu.data).toLocaleDateString('it-IT') : 'N.D.';
   var eta = cu.data ? Math.floor((new Date()-new Date(cu.data))/864e5) : 0;
+
+  function _genitoreCard(info, label){
+    var fotoHtml = info.foto
+      ? '<img src="'+info.foto+'" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #DDEAFF;cursor:pointer" onclick="var o=document.createElement(\'div\');o.style.cssText=\'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99999;display:flex;align-items:center;justify-content:center\';o.innerHTML=\'<img src=\\\''+info.foto+'\\\' style=\\\'max-width:90%;max-height:85vh;border-radius:12px\\\'/>\';o.onclick=function(){o.remove()};document.body.appendChild(o)"/>'
+      : '<div style="width:44px;height:44px;border-radius:50%;background:#EEF3FB;display:flex;align-items:center;justify-content:center;font-size:20px">🐕</div>';
+    var details = '<div style="font-size:10px;color:#6B8BB0">'+label+'</div>'
+      +'<div style="font-weight:700;font-size:12px;color:#1a1a3a">'+info.nome+'</div>';
+    if(info.hd) details += '<div style="font-size:10px;color:#1565C0">HD:'+info.hd+(info.ed?' ED:'+info.ed:'')+'</div>';
+    if(info.loi) details += '<div style="font-size:10px;color:#6B8BB0">LOI: '+info.loi+'</div>';
+    if(info.titoli) details += '<div style="font-size:10px;color:#1a7a4a;font-weight:600">🏆 '+info.titoli+'</div>';
+    return '<div style="display:flex;align-items:center;gap:8px">'+fotoHtml
+      +'<div>'+details+'</div></div>';
+  }
+
   g('vetrina-info-cucc').innerHTML =
-    '<div style="font-weight:700;color:#0D47A1;margin-bottom:8px">📋 Dati cucciolata (pre-compilati)</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">'
+    '<div style="font-weight:700;color:#0D47A1;margin-bottom:8px;font-size:13px">📋 Dati cucciolata (pre-compilati)</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;margin-bottom:10px">'
     +'<div><span style="color:#6B8BB0">Razza:</span> <strong>'+razza+'</strong></div>'
     +'<div><span style="color:#6B8BB0">Nati il:</span> <strong>'+dataN+'</strong></div>'
     +'<div><span style="color:#6B8BB0">Età:</span> <strong>'+eta+' giorni</strong></div>'
-    +'<div><span style="color:#6B8BB0">Madre:</span> <strong>'+madreNome+(madreHD?' (HD:'+madreHD+')':'')+'</strong></div>'
-    +'<div><span style="color:#6B8BB0">Padre:</span> <strong>'+padreNome+(padreHD?' (HD:'+padreHD+')':'')+'</strong></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +_genitoreCard(madreInfo,'♀ Madre')
+    +_genitoreCard(padreInfo,'♂ Padre')
     +'</div>';
+
   // Foto automatiche da madre, padre e cuccioli disponibili
   var fotoAuto = [];
-  if(madre && madre.foto) fotoAuto.push(madre.foto);
-  if(padre && padre.foto) fotoAuto.push(padre.foto);
+  if(madreInfo.foto) fotoAuto.push(madreInfo.foto);
+  if(padreInfo.foto) fotoAuto.push(padreInfo.foto);
   (cu.cuccioli||[]).filter(function(p){
     return p.stato==='disponibile' && p.foto;
   }).slice(0,2).forEach(function(p){ fotoAuto.push(p.foto); });
@@ -4220,6 +4250,42 @@ function apriVetrina(cuccId){
   show('modal-vetrina');
   renderVetrinaFotoPreview();
   caricaMieiAnnunci();
+}
+
+function uploadFotoCane(){
+  var c=cur(); if(!c||c._guest) return;
+  g('det-foto-input').click();
+}
+
+function onDetFotoSelected(input){
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var canvas=document.createElement('canvas');
+      var MAX=600;
+      var ratio=Math.min(MAX/img.width,MAX/img.height,1);
+      canvas.width=img.width*ratio;
+      canvas.height=img.height*ratio;
+      var ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      var quality=0.75;
+      var compressed=canvas.toDataURL('image/jpeg',quality);
+      while(compressed.length>150000&&quality>0.1){
+        quality-=0.1;
+        compressed=canvas.toDataURL('image/jpeg',quality);
+      }
+      var c=cur(); if(!c) return;
+      c.foto=compressed;
+      salvaDB();
+      g('det-avatar').innerHTML='<img src="'+compressed+'" style="width:100%;height:100%;object-fit:cover"/>';
+      toast('✅ Foto aggiornata!');
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value='';
 }
 
 function aggiornaCounterVetrina(){
@@ -4404,6 +4470,61 @@ async function chiudiAnnuncio(annuncioId){
   }
 }
 
+function mostraAnteprimaAnnuncio(){
+  var cu=cucciolate.find(function(c){return c.id===_vetrinaCuccId;});
+  if(!cu) return;
+  var madre=cani.concat(guestCani).find(function(c){return c.id===cu.madre;});
+  var padre=cani.concat(guestCani).find(function(c){return c.id===cu.padre;});
+  var razza=(madre&&madre.razza)||cu.razza||profilo.razza||'';
+  var prezzo=g('vet-prezzo').value;
+  var maschi=g('vet-maschi').value;
+  var femmine=g('vet-femmine').value;
+  var desc=g('vet-descrizione').value;
+  var fotos=window._vetrinaFotoBase64||[];
+  var eta=cu.data?Math.floor((new Date()-new Date(cu.data))/864e5):0;
+  var html='<div style="max-width:400px;margin:0 auto;font-family:\'DM Sans\',sans-serif">';
+  if(fotos.length){
+    html+='<div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:14px">';
+    fotos.forEach(function(f){
+      html+='<img src="'+f+'" style="width:120px;height:90px;object-fit:cover;border-radius:10px;flex-shrink:0"/>';
+    });
+    html+='</div>';
+  }
+  html+='<div style="background:#EEF3FB;border-radius:12px;padding:14px;margin-bottom:12px">';
+  html+='<div style="font-weight:700;font-size:16px;color:#0D47A1;margin-bottom:4px">'+razza+'</div>';
+  html+='<div style="font-size:13px;color:#1a1a3a">♂ '+maschi+' maschi · ♀ '+femmine+' femmine · '+eta+' giorni</div>';
+  html+='<div style="font-size:20px;font-weight:700;color:#1a7a4a;margin-top:6px">€'+prezzo+'</div>';
+  html+='</div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">';
+  [['\u2640 Madre',madre],['\u2642 Padre',padre]].forEach(function(pair){
+    var label=pair[0], genitore=pair[1];
+    html+='<div style="background:#fff;border:1.5px solid #DDEAFF;border-radius:10px;padding:10px;text-align:center">';
+    if(genitore&&genitore.foto){
+      html+='<img src="'+genitore.foto+'" style="width:50px;height:50px;object-fit:cover;border-radius:50%;margin-bottom:6px"/>';
+    } else {
+      html+='<div style="width:50px;height:50px;border-radius:50%;background:#EEF3FB;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:22px">🐕</div>';
+    }
+    html+='<div style="font-size:11px;color:#6B8BB0">'+label+'</div>';
+    html+='<div style="font-weight:700;font-size:12px">'+(genitore?genitore.nome:'N.D.')+'</div>';
+    if(genitore&&genitore.displasia&&genitore.displasia.hd)
+      html+='<div style="font-size:10px;color:#1565C0">HD: '+genitore.displasia.hd+'</div>';
+    if(genitore&&genitore.titoli&&genitore.titoli.length)
+      html+='<div style="font-size:10px;color:#1a7a4a;font-weight:600">🏆 '+(genitore.titoli||[]).join(', ')+'</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  if(desc) html+='<div style="font-size:13px;color:#4A6080;font-style:italic">'+desc+'</div>';
+  html+='</div>';
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.innerHTML='<div style="background:#fff;border-radius:16px;padding:20px;max-width:440px;width:100%;max-height:85vh;overflow-y:auto">'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:14px">'
+    +'<div style="font-weight:700;color:#0D47A1">👁 Anteprima annuncio</div>'
+    +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer">✕</button>'
+    +'</div>'+html+'</div>';
+  document.body.appendChild(overlay);
+}
+
 async function pubblicaVetrina(){
   var cu = cucciolate.find(function(c){ return c.id===_vetrinaCuccId; });
   if(!cu) return;
@@ -4440,6 +4561,17 @@ async function pubblicaVetrina(){
     g('vet-status').innerHTML = '<span style="color:#C0534A">⚠️ '+aiOk.msg+'</span>';
     return;
   }
+  btn.textContent = '📷 Upload foto in corso...';
+  var fotoUrls = [];
+  var fotos = window._vetrinaFotoBase64 || [];
+  for(var i=0; i<fotos.length; i++){
+    try {
+      var url = await uploadFotoSupabase(fotos[i], 'foto_'+i+'.jpg');
+      fotoUrls.push(url);
+    } catch(e){
+      console.warn('Upload foto '+i+' fallito:', e);
+    }
+  }
   btn.textContent = '⏳ Pubblicazione in corso...';
   var annuncio = {
     allevatore_nome: profilo.nome || profilo.affisso || 'Allevatore',
@@ -4454,17 +4586,19 @@ async function pubblicaVetrina(){
     madre_loi: madre?madre.numeroENCI||'':'',
     madre_hd: madre&&madre.displasia?madre.displasia.hd||'':'',
     madre_ed: madre&&madre.displasia?madre.displasia.ed||'':'',
+    madre_titoli: madre?((madre.titoli||[]).join(', ')):'',
     padre_nome: padre?padre.nome:(cu.padreNome||''),
     padre_loi: padre?padre.numeroENCI||'':'',
     padre_hd: padre&&padre.displasia?padre.displasia.hd||'':'',
     padre_ed: padre&&padre.displasia?padre.displasia.ed||'':'',
+    padre_titoli: padre?((padre.titoli||[]).join(', ')):'',
     maschi_disponibili: maschi,
     femmine_disponibili: femmine,
     prezzo: prezzo,
     visionabili: visionabili,
     indirizzo: g('vet-indirizzo').value.trim() || null,
     descrizione: descrizione || null,
-    foto_urls: window._vetrinaFotoBase64 || [],
+    foto_urls: fotoUrls,
     ai_approved: true,
     stato: 'attivo'
   };
@@ -4516,6 +4650,30 @@ async function controlloAIAnnuncio(razza, descrizione, prezzo){
   } catch(e){
     return {ok:true};
   }
+}
+
+async function uploadFotoSupabase(base64, filename){
+  var arr=base64.split(',');
+  var mime=arr[0].match(/:(.*?);/)[1];
+  var bstr=atob(arr[1]);
+  var n=bstr.length;
+  var u8arr=new Uint8Array(n);
+  while(n--){ u8arr[n]=bstr.charCodeAt(n); }
+  var blob=new Blob([u8arr],{type:mime});
+  var path='annunci/'+Date.now()+'_'+filename;
+  var resp=await fetch(
+    SUPABASE_URL+'/storage/v1/object/breedped-foto/'+path,{
+    method:'POST',
+    headers:{
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer '+SUPABASE_KEY,
+      'Content-Type': mime,
+      'x-upsert': 'true'
+    },
+    body: blob
+  });
+  if(!resp.ok) throw new Error('Upload foto fallito');
+  return SUPABASE_URL+'/storage/v1/object/public/breedped-foto/'+path;
 }
 
 function deleteCurrent(){
@@ -10452,6 +10610,13 @@ function sendChat(){
     </div>
     <!-- I miei annunci attivi -->
     <div id="vet-miei-annunci" style="margin-bottom:20px"></div>
+    <!-- Anteprima -->
+    <button onclick="mostraAnteprimaAnnuncio()" style="
+      width:100%;background:#EEF3FB;border:1.5px solid #DDEAFF;
+      border-radius:12px;padding:14px;font-size:14px;font-weight:700;
+      color:#1565C0;cursor:pointer;margin-bottom:10px">
+      👁 Anteprima annuncio
+    </button>
     <!-- Pulsante pubblica -->
     <button onclick="pubblicaVetrina()" id="vet-publish-btn" style="
       width:100%;background:linear-gradient(135deg,#C9A961,#A88A41);
