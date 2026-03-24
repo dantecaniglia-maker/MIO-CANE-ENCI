@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '10.7';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '10.8';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -36,6 +36,7 @@ if('serviceWorker' in navigator && window.location.hostname !== 'www.claudeuserc
 }
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;font-family:'DM Sans',sans-serif;background:#EEF3FB;color:#1a1a3a;overflow:hidden}
@@ -1717,6 +1718,14 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
         </div>
       </div>
 
+      <!-- Account -->
+      <div style="font-size:10px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.12em;margin:14px 0 6px;padding-left:4px">Account</div>
+      <div id="user-info-bar" style="background:#EEF3FB;border-radius:10px;padding:12px;margin-bottom:8px;font-size:13px;display:none">
+        <span style="color:#6B8BB0">Connesso come:</span>
+        <strong id="user-email-display"></strong>
+      </div>
+      <button onclick="logout()" style="width:100%;background:#FFEBEE;color:#C0534A;border:1.5px solid #F5C4BE;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:4px">🚪 Disconnetti account</button>
+
       <!-- Gruppo: Privacy e dati -->
       <div style="font-size:10px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.12em;margin:14px 0 6px;padding-left:4px">Privacy &amp; Dati</div>
       <div class="imp-item" onclick="hide('modal-impostazioni');show('modal-gdpr')">
@@ -3177,6 +3186,26 @@ var _aiKeys = JSON.parse(localStorage.getItem(AI_KEYS_STORAGE)||'{}');
 var SUPABASE_URL = 'https://rjiymkharnwxpdeytshu.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_v7r-AM_JP5EoPKjKHd6ImQ_w5sNVcOQ';
 var _vetrinaCuccId = null;
+
+var _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+var _currentUser = null;
+
+_supabase.auth.onAuthStateChange(async function(event, session){
+  if(event === 'SIGNED_IN' && session){
+    _currentUser = session.user;
+    await onUserSignedIn(session.user);
+  } else if(event === 'SIGNED_OUT'){
+    _currentUser = null;
+    onUserSignedOut();
+  }
+});
+
+_supabase.auth.getSession().then(function(result){
+  if(result.data && result.data.session){
+    _currentUser = result.data.session.user;
+    onUserSignedIn(result.data.session.user);
+  }
+});
 // Compatibilità con vecchia chiave Gemini
 if(!_aiKeys.gemini && localStorage.getItem('miocane_gemini_v1')){
   _aiKeys.gemini = localStorage.getItem('miocane_gemini_v1');
@@ -4172,6 +4201,128 @@ function bnEnci()      { switchSection('enci'); }
 function bnVetrina(){
   window.open('https://breedped.com/vetrina','_blank');
 }
+
+/* ══ AUTH ══ */
+async function loginGoogle(){
+  var status = g('login-status');
+  if(status) status.textContent = '⏳ Apertura Google...';
+  var result = await _supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + window.location.pathname }
+  });
+  if(result.error && status) status.textContent = '❌ '+result.error.message;
+}
+
+async function loginEmail(){
+  var email = g('login-email').value.trim();
+  var password = g('login-password').value;
+  var status = g('login-status');
+  if(!email||!password){ status.textContent='Inserisci email e password'; return; }
+  status.textContent = '⏳ Accesso in corso...';
+  var result = await _supabase.auth.signInWithPassword({ email: email, password: password });
+  if(result.error) status.textContent = '❌ '+result.error.message;
+}
+
+async function registraEmail(){
+  var email = g('login-email').value.trim();
+  var password = g('login-password').value;
+  var status = g('login-status');
+  if(!email||!password){ status.textContent='Inserisci email e password'; return; }
+  if(password.length < 6){ status.textContent='Password minimo 6 caratteri'; return; }
+  status.textContent = '⏳ Creazione account...';
+  var result = await _supabase.auth.signUp({ email: email, password: password });
+  if(result.error){
+    status.textContent = '❌ '+result.error.message;
+  } else {
+    status.style.color = '#1a7a4a';
+    status.textContent = '✅ Controlla la tua email per confermare!';
+  }
+}
+
+async function logout(){
+  await _supabase.auth.signOut();
+  toast('👋 Disconnesso');
+}
+
+async function onUserSignedIn(user){
+  var ml = g('modal-login');
+  if(ml) ml.style.display = 'none';
+  var bar = g('user-info-bar');
+  var emailEl = g('user-email-display');
+  if(bar) bar.style.display = '';
+  if(emailEl) emailEl.textContent = user.email||'';
+  await sincronizzaProfilo(user);
+  await caricaDatiCloud(user.id);
+  toast('👋 Benvenuto! '+(user.email||''));
+}
+
+function onUserSignedOut(){
+  var ml = g('modal-login');
+  if(ml) ml.style.display = 'flex';
+}
+
+/* ══ SINCRONIZZAZIONE ══ */
+async function sincronizzaProfilo(user){
+  try {
+    var res = await _supabase.from('profili').select('*').eq('id', user.id).single();
+    if(res.error && res.error.code === 'PGRST116'){
+      await _supabase.from('profili').insert({
+        id: user.id, affisso: profilo.affisso||'', nome: profilo.nome||user.email||'',
+        prov: profilo.prov||'', tel: profilo.tel||'', email: user.email||'',
+        razza: profilo.razza||'', web: profilo.web||'', note: profilo.note||'',
+        logo: profilo.logo||null
+      });
+    } else if(res.data){
+      Object.assign(profilo, res.data);
+      renderProfilo();
+    }
+  } catch(e){ console.warn('sincronizzaProfilo error:', e); }
+}
+
+async function caricaDatiCloud(userId){
+  try {
+    var caniRes = await _supabase.from('cani').select('*').eq('user_id', userId);
+    if(caniRes.data && caniRes.data.length > 0){
+      var cloudCani = caniRes.data.map(function(r){ return r.dati; });
+      cloudCani.forEach(function(c){
+        if(!cani.find(function(x){ return x.id === c.id; })) cani.push(c);
+      });
+    } else {
+      await salvaDatiCloud(userId);
+    }
+    var cuccRes = await _supabase.from('cucciolate').select('*').eq('user_id', userId);
+    if(cuccRes.data && cuccRes.data.length > 0){
+      var cloudCucc = cuccRes.data.map(function(r){ return r.dati; });
+      cloudCucc.forEach(function(cu){
+        if(!cucciolate.find(function(x){ return x.id === cu.id; })) cucciolate.push(cu);
+      });
+    } else {
+      await salvaCucciolateCloud(userId);
+    }
+    salvaDB();
+    renderSidebar();
+    renderCucciolate();
+  } catch(e){ console.warn('caricaDatiCloud error:', e); }
+}
+
+async function salvaDatiCloud(userId){
+  try {
+    for(var i=0; i<cani.length; i++){
+      await _supabase.from('cani').upsert({ id: cani[i].id, user_id: userId, dati: cani[i] });
+    }
+  } catch(e){ console.warn('salvaDatiCloud error:', e); }
+}
+
+async function salvaCucciolateCloud(userId){
+  try {
+    for(var i=0; i<cucciolate.length; i++){
+      await _supabase.from('cucciolate').upsert({ id: cucciolate[i].id, user_id: userId, dati: cucciolate[i] });
+    }
+  } catch(e){ console.warn('salvaCucciolateCloud error:', e); }
+}
+
+// Override salvaDB per sincronizzare anche su cloud
+var _origSalvaDB = null; // inizializzato dopo caricaDB
 
 function apriVetrina(cuccId){
   window._vetrinaFotoBase64 = [];
@@ -8480,6 +8631,24 @@ getReminders=function(c){
 };
 
 
+  // Override salvaDB per sync cloud (fatto qui, dopo che salvaDB è definita)
+  _origSalvaDB = salvaDB;
+  salvaDB = function(){
+    _origSalvaDB();
+    if(_currentUser){
+      salvaDatiCloud(_currentUser.id);
+      salvaCucciolateCloud(_currentUser.id);
+    }
+  };
+
+  // Mostra login se non autenticato
+  _supabase.auth.getSession().then(function(result){
+    if(!result.data || !result.data.session){
+      var ml = g('modal-login');
+      if(ml) ml.style.display = 'flex';
+    }
+  });
+
   var hasSavedData = caricaDB();
   if(!hasSavedData){
     cani.push(luna, ramon);
@@ -10524,6 +10693,32 @@ function sendChat(){
   });
 })();
 </script>
+
+<!-- ══ MODAL LOGIN ══ -->
+<div id="modal-login" class="overlay" style="display:none;z-index:99999">
+  <div class="modal" style="max-width:380px;text-align:center;padding:40px 32px">
+    <div style="margin-bottom:24px">
+      <div style="width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,#1565C0,#0D47A1);display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto;box-shadow:0 8px 24px rgba(13,71,161,.3)">🐾</div>
+    </div>
+    <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#0D47A1;margin-bottom:8px">Breed<span style="color:#C9A961">Ped</span></div>
+    <div style="font-size:14px;color:#6B8BB0;margin-bottom:32px">Il pedigree intelligente 🐾</div>
+    <button onclick="loginGoogle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#fff;border:2px solid #DDEAFF;border-radius:12px;padding:14px 20px;font-size:15px;font-weight:600;color:#1a1a3a;cursor:pointer;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);transition:all .2s" onmouseover="this.style.borderColor='#1565C0'" onmouseout="this.style.borderColor='#DDEAFF'">
+      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Accedi con Google
+    </button>
+    <div style="display:flex;align-items:center;gap:12px;margin:16px 0">
+      <div style="flex:1;height:1px;background:#DDEAFF"></div>
+      <span style="font-size:12px;color:#9ab0cc">oppure</span>
+      <div style="flex:1;height:1px;background:#DDEAFF"></div>
+    </div>
+    <input type="email" id="login-email" placeholder="Email" style="margin-bottom:10px"/>
+    <input type="password" id="login-password" placeholder="Password" style="margin-bottom:16px"/>
+    <button onclick="loginEmail()" style="width:100%;background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px">Accedi</button>
+    <button onclick="registraEmail()" style="width:100%;background:#EEF3FB;color:#1565C0;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:20px">Crea account</button>
+    <div id="login-status" style="font-size:13px;color:#C0534A;min-height:20px"></div>
+    <div style="font-size:11px;color:#9ab0cc;margin-top:16px">Continuando accetti i <a href="https://breedped.com" style="color:#1565C0">Termini di servizio</a> di BreedPed</div>
+  </div>
+</div>
 
 <!-- ══ MODAL VETRINA MARKETPLACE ══ -->
 <div id="modal-vetrina" class="overlay hidden">
