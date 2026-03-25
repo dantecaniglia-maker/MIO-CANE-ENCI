@@ -4379,6 +4379,17 @@ function apriVetrina(cuccId){
   // Salva foto genitori separatamente per upload dedicato
   window._vetrinaMadreFoto = madreInfo.foto || null;
   window._vetrinaPadreFoto = padreInfo.foto || null;
+  // Aggiorna preview nel modal
+  setTimeout(function(){
+    var mp = g('vet-madre-foto-preview');
+    var pp = g('vet-padre-foto-preview');
+    if(mp) mp.innerHTML = window._vetrinaMadreFoto
+      ? '<img src="'+window._vetrinaMadreFoto+'" style="width:100%;height:100%;object-fit:cover"/>'
+      : '📷 Foto Madre';
+    if(pp) pp.innerHTML = window._vetrinaPadreFoto
+      ? '<img src="'+window._vetrinaPadreFoto+'" style="width:100%;height:100%;object-fit:cover"/>'
+      : '📷 Foto Padre';
+  }, 80);
 
   // Foto cuccioli per _vetrinaFotoBase64 (max 3)
   var fotoAuto = [];
@@ -4488,6 +4499,40 @@ function aggiungiVetrinaFoto(input){
     reader.readAsDataURL(file);
   });
   input.value = '';
+}
+
+function _comprimiESetFotoGenitore(file, varName, previewId){
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var img = new Image();
+    img.onload = function(){
+      var canvas = document.createElement('canvas');
+      var MAX = 800;
+      var ratio = Math.min(MAX/img.width, MAX/img.height, 1);
+      canvas.width = img.width * ratio;
+      canvas.height = img.height * ratio;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      var quality = 0.75;
+      var compressed = canvas.toDataURL('image/jpeg', quality);
+      while(compressed.length > 200000 && quality > 0.1){ quality -= 0.1; compressed = canvas.toDataURL('image/jpeg', quality); }
+      window[varName] = compressed;
+      var preview = g(previewId);
+      if(preview) preview.innerHTML = '<img src="'+compressed+'" style="width:100%;height:100%;object-fit:cover"/>';
+      toast('📷 Foto caricata ('+Math.round(compressed.length/1024)+'KB)');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function onVetrinaMadreFotoSelected(input){
+  if(!input.files||!input.files[0]) return;
+  _comprimiESetFotoGenitore(input.files[0], '_vetrinaMadreFoto', 'vet-madre-foto-preview');
+  input.value='';
+}
+function onVetrinaPadreFotoSelected(input){
+  if(!input.files||!input.files[0]) return;
+  _comprimiESetFotoGenitore(input.files[0], '_vetrinaPadreFoto', 'vet-padre-foto-preview');
+  input.value='';
 }
 
 function renderVetrinaFotoPreview(){
@@ -4647,11 +4692,11 @@ function mostraAnteprimaAnnuncio(){
   html+='<div style="font-size:20px;font-weight:700;color:#1a7a4a;margin-top:6px">€'+prezzo+'</div>';
   html+='</div>';
   html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">';
-  [['\u2640 Madre',madre],['\u2642 Padre',padre]].forEach(function(pair){
-    var label=pair[0], genitore=pair[1];
+  [['\u2640 Madre',madre,window._vetrinaMadreFoto],['\u2642 Padre',padre,window._vetrinaPadreFoto]].forEach(function(pair){
+    var label=pair[0], genitore=pair[1], fotoUrl=pair[2];
     html+='<div style="background:#fff;border:1.5px solid #DDEAFF;border-radius:10px;padding:10px;text-align:center">';
-    if(genitore&&genitore.foto){
-      html+='<img src="'+genitore.foto+'" style="width:50px;height:50px;object-fit:cover;border-radius:50%;margin-bottom:6px"/>';
+    if(fotoUrl){
+      html+='<img src="'+fotoUrl+'" style="width:50px;height:50px;object-fit:cover;border-radius:50%;margin-bottom:6px"/>';
     } else {
       html+='<div style="width:50px;height:50px;border-radius:50%;background:#EEF3FB;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:22px">🐕</div>';
     }
@@ -10817,6 +10862,26 @@ function sendChat(){
     <div style="margin-bottom:14px">
       <label>Email (opzionale)</label>
       <input type="email" id="vet-email" placeholder="email@esempio.com"/>
+    </div>
+    <!-- Foto genitori -->
+    <div style="margin-bottom:14px">
+      <label>Foto madre e padre (opzionale)</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div id="vet-madre-foto-preview" onclick="document.getElementById('vet-madre-foto-input').click()"
+            style="width:100%;height:80px;border-radius:10px;background:#EEF3FB;border:1.5px dashed #BFCFE8;display:flex;align-items:center;justify-content:center;margin-bottom:4px;overflow:hidden;cursor:pointer;font-size:12px;color:#6B8BB0">
+            📷 Foto Madre
+          </div>
+          <input type="file" id="vet-madre-foto-input" accept="image/*" style="display:none" onchange="onVetrinaMadreFotoSelected(this)"/>
+        </div>
+        <div>
+          <div id="vet-padre-foto-preview" onclick="document.getElementById('vet-padre-foto-input').click()"
+            style="width:100%;height:80px;border-radius:10px;background:#EEF3FB;border:1.5px dashed #BFCFE8;display:flex;align-items:center;justify-content:center;margin-bottom:4px;overflow:hidden;cursor:pointer;font-size:12px;color:#6B8BB0">
+            📷 Foto Padre
+          </div>
+          <input type="file" id="vet-padre-foto-input" accept="image/*" style="display:none" onchange="onVetrinaPadreFotoSelected(this)"/>
+        </div>
+      </div>
     </div>
     <!-- Foto cuccioli -->
     <div style="margin-bottom:14px">
