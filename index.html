@@ -4538,8 +4538,20 @@ function onVetrinaPadreFotoSelected(input){
 function renderVetrinaFotoPreview(){
   var container = g('vet-foto-preview');
   if(!container) return;
-  var fotos = window._vetrinaFotoBase64 || [];
-  container.innerHTML = fotos.map(function(src, i){
+  var esistenti = window._vetrinaFotoUrlsEsistenti || [];
+  var nuove = window._vetrinaFotoBase64 || [];
+  var totale = esistenti.length + nuove.length;
+  var html = esistenti.map(function(src, i){
+    return '<div style="position:relative;width:80px;height:80px">'
+      +'<img src="'+src+'" style="width:80px;height:80px;object-fit:cover;'
+      +'border-radius:8px;border:2px solid #C9A961"/>'
+      +'<button onclick="rimuoviFotoEsistente('+i+')" style="'
+      +'position:absolute;top:-6px;right:-6px;background:#C0534A;'
+      +'color:#fff;border:none;border-radius:50%;width:20px;height:20px;'
+      +'cursor:pointer;font-size:12px;line-height:1;padding:0">✕</button>'
+      +'</div>';
+  }).join('');
+  html += nuove.map(function(src, i){
     return '<div style="position:relative;width:80px;height:80px">'
       +'<img src="'+src+'" style="width:80px;height:80px;object-fit:cover;'
       +'border-radius:8px;border:2px solid #DDEAFF"/>'
@@ -4549,10 +4561,16 @@ function renderVetrinaFotoPreview(){
       +'cursor:pointer;font-size:12px;line-height:1;padding:0">✕</button>'
       +'</div>';
   }).join('');
+  container.innerHTML = html;
   var btn = g('vet-foto-btn');
-  if(btn) btn.textContent = fotos.length >= 3
+  if(btn) btn.textContent = totale >= 3
     ? '✅ 3 foto aggiunte (massimo)'
-    : '📷 Aggiungi foto ('+(3-fotos.length)+' rimanenti)';
+    : '📷 Aggiungi foto ('+(3-totale)+' rimanenti)';
+}
+
+function rimuoviFotoEsistente(idx){
+  if(window._vetrinaFotoUrlsEsistenti) window._vetrinaFotoUrlsEsistenti.splice(idx,1);
+  renderVetrinaFotoPreview();
 }
 
 function rimuoviVetrinaFoto(idx){
@@ -4604,26 +4622,15 @@ function renderMieiAnnunci(annunci){
       +'<input type="number" min="0" value="'+a.femmine_disponibili+'" '
       +'id="upd-femmine-'+a.id+'" style="text-align:center;padding:4px"/></div>'
       +'</div>'
-      +'<!-- form modifica (nascosta) -->'
-      +'<div id="mod-form-'+a.id+'" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid #DDEAFF">'
-      +'<div style="margin-bottom:6px"><label style="font-size:10px">💶 Prezzo (€)</label>'
-      +'<input type="number" id="mod-prezzo-'+a.id+'" value="'+a.prezzo+'" style="padding:4px"/></div>'
-      +'<div style="margin-bottom:8px"><label style="font-size:10px">📝 Descrizione</label>'
-      +'<textarea id="mod-desc-'+a.id+'" rows="3" maxlength="500" style="width:100%;box-sizing:border-box;font-size:12px;padding:6px;border:1.5px solid #DDEAFF;border-radius:8px;font-family:inherit">'+( a.descrizione||'')+'</textarea></div>'
-      +'<button onclick="salvaModificaAnnuncio(\''+a.id+'\')" style="'
-      +'width:100%;background:linear-gradient(135deg,#1a7a4a,#145c38);color:#fff;'
-      +'border:none;border-radius:8px;padding:7px;font-size:12px;font-weight:700;cursor:pointer">'
-      +'💾 Salva modifiche</button>'
-      +'</div>'
-      +'<div style="display:flex;gap:6px;margin-top:8px">'
+      +'<div style="display:flex;gap:6px;margin-top:4px">'
       +'<button onclick="aggiornaDisponibilita(\''+a.id+'\')" style="'
       +'flex:1;background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;'
       +'border:none;border-radius:8px;padding:7px;font-size:12px;font-weight:700;cursor:pointer">'
-      +'💾 Aggiorna</button>'
-      +'<button onclick="toggleModificaAnnuncio(\''+a.id+'\')" id="mod-btn-'+a.id+'" style="'
+      +'💾 Salva</button>'
+      +'<button onclick="modificaAnnuncioCompleto('+JSON.stringify(a).replace(/'/g,"\\'")+')\" style="'
       +'background:#EEF3FB;color:#1565C0;border:1.5px solid #DDEAFF;'
       +'border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer">'
-      +'✏️ Modifica</button>'
+      +'✏️ Modifica tutto</button>'
       +'<button onclick="chiudiAnnuncio(\''+a.id+'\')" style="'
       +'background:#FFEBEE;color:#C0534A;border:1.5px solid #F5C4BE;'
       +'border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer">'
@@ -4681,36 +4688,79 @@ async function chiudiAnnuncio(annuncioId){
   }
 }
 
-function toggleModificaAnnuncio(id){
-  var form = g('mod-form-'+id);
-  var btn  = g('mod-btn-'+id);
-  if(!form) return;
-  var visible = form.style.display !== 'none';
-  form.style.display = visible ? 'none' : 'block';
-  if(btn) btn.textContent = visible ? '✏️ Modifica' : '✕ Annulla';
+function modificaAnnuncioCompleto(a){
+  // Prepara variabili globali per la modifica
+  window._annuncioInModifica = a.id;
+  window._vetrinaFotoUrlsEsistenti = (a.foto_urls || []).slice();
+  window._vetrinaFotoBase64 = [];
+  window._vetrinaMadreFoto = a.madre_foto_url || null;
+  window._vetrinaPadreFoto = a.padre_foto_url || null;
+  // Trova la cucciolata collegata
+  var cu = a.cucciolata_id
+    ? cucciolate.find(function(c){ return c.id === a.cucciolata_id; })
+    : null;
+  if(cu) _vetrinaCuccId = cu.id;
+  // Riapri il modal (se chiuso) e pre-compila campi
+  show('modal-vetrina');
+  setTimeout(function(){
+    // Contatti
+    if(g('vet-whatsapp')) g('vet-whatsapp').value = a.allevatore_whatsapp || '';
+    if(g('vet-telefono')) g('vet-telefono').value = a.allevatore_telefono || '';
+    if(g('vet-email'))    g('vet-email').value    = a.allevatore_email    || '';
+    if(g('vet-regione'))  g('vet-regione').value  = a.allevatore_regione  || '';
+    if(g('vet-indirizzo'))g('vet-indirizzo').value= a.indirizzo           || '';
+    if(g('vet-maschi'))   g('vet-maschi').value   = a.maschi_disponibili  || 0;
+    if(g('vet-femmine'))  g('vet-femmine').value  = a.femmine_disponibili || 0;
+    if(g('vet-prezzo'))   g('vet-prezzo').value   = a.prezzo              || '';
+    if(g('vet-descrizione')) g('vet-descrizione').value = a.descrizione   || '';
+    // Radio visionabili
+    var radios = document.querySelectorAll('input[name="vet-visionabili"]');
+    radios.forEach(function(r){ r.checked = (r.value === (a.visionabili ? 'si' : 'no')); });
+    // Foto previews
+    renderVetrinaFotoPreview();
+    var mp = g('vet-madre-foto-preview');
+    var pp = g('vet-padre-foto-preview');
+    if(mp) mp.innerHTML = window._vetrinaMadreFoto
+      ? '<img src="'+window._vetrinaMadreFoto+'" style="width:100%;height:100%;object-fit:cover"/>'
+      : '📷 Foto Madre';
+    if(pp) pp.innerHTML = window._vetrinaPadreFoto
+      ? '<img src="'+window._vetrinaPadreFoto+'" style="width:100%;height:100%;object-fit:cover"/>'
+      : '📷 Foto Padre';
+    // Cambia testo bottone pubblica
+    var btn = g('vet-publish-btn');
+    if(btn) btn.textContent = '💾 Aggiorna Annuncio';
+    // Banner modifica
+    var status = g('vet-status');
+    if(status) status.innerHTML = '<span style="color:#1565C0;font-size:12px">✏️ Stai modificando un annuncio esistente</span>';
+  }, 80);
 }
 
-async function salvaModificaAnnuncio(annuncioId){
-  var prezzo = parseInt(g('mod-prezzo-'+annuncioId).value)||0;
-  var desc   = g('mod-desc-'+annuncioId).value.trim();
-  if(!prezzo){ toast('⚠️ Inserisci un prezzo valido'); return; }
+async function _syncDisponibilitaAnnuncio(cuccId){
   try {
-    var resp = await fetch(SUPABASE_URL+'/rest/v1/annunci?id=eq.'+annuncioId,{
+    var cu = cucciolate.find(function(c){ return c.id===cuccId; });
+    if(!cu) return;
+    var maschi  = (cu.cuccioli||[]).filter(function(p){ return p.sesso==='m' && (p.stato||'disponibile')==='disponibile'; }).length;
+    var femmine = (cu.cuccioli||[]).filter(function(p){ return p.sesso==='f' && (p.stato||'disponibile')==='disponibile'; }).length;
+    var stato   = (maschi+femmine===0) ? 'esaurito' : 'attivo';
+    var resp = await fetch(
+      SUPABASE_URL+'/rest/v1/annunci?cucciolata_id=eq.'+cuccId+'&select=id,stato',
+      { headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY }}
+    );
+    var lista = await resp.json();
+    var attivo = (lista||[]).find(function(a){ return a.stato==='attivo'||a.stato==='esaurito'; });
+    if(!attivo) return;
+    await fetch(SUPABASE_URL+'/rest/v1/annunci?id=eq.'+attivo.id, {
       method:'PATCH',
       headers:{
         'Content-Type':'application/json',
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer '+SUPABASE_KEY,
-        'Prefer': 'return=minimal'
+        'apikey':SUPABASE_KEY,
+        'Authorization':'Bearer '+SUPABASE_KEY,
+        'Prefer':'return=minimal'
       },
-      body: JSON.stringify({ prezzo: prezzo, descrizione: desc })
+      body: JSON.stringify({ maschi_disponibili:maschi, femmine_disponibili:femmine, stato:stato })
     });
-    if(!resp.ok) throw new Error(resp.status);
-    toast('✅ Annuncio aggiornato');
-    caricaMieiAnnunci();
-  } catch(e){
-    toast('❌ Errore salvataggio');
-  }
+    console.log('[Vetrina] Auto-sync disponibilità:',maschi,'M',femmine,'F →',stato);
+  } catch(e){ console.warn('[Vetrina] Sync fallito:',e); }
 }
 
 function mostraAnteprimaAnnuncio(){
@@ -4806,30 +4856,33 @@ async function pubblicaVetrina(){
   var madreFotoUrl = null;
   var padreFotoUrl = null;
 
-  // Upload foto cuccioli
+  // Foto esistenti (modalità modifica) + nuove
+  fotoUrls = (window._vetrinaFotoUrlsEsistenti || []).slice();
   var fotos = window._vetrinaFotoBase64 || [];
-  for(var i=0; i<fotos.length; i++){
+  for(var i=0; i<fotos.length && fotoUrls.length<3; i++){
     try {
       var url = await uploadFotoSupabase(fotos[i], 'cucciolo_'+i+'.jpg');
       fotoUrls.push(url);
     } catch(e){ console.warn('Upload foto cucciolo '+i+' fallito:', e); }
   }
 
-  // Upload foto madre
-  if(window._vetrinaMadreFoto){
-    try {
-      madreFotoUrl = await uploadFotoSupabase(window._vetrinaMadreFoto, 'madre.jpg');
-    } catch(e){ console.warn('Upload foto madre fallito:', e); }
-  }
+  // Foto madre: se già URL la teniamo, se base64 la carichiamo
+  var mf = window._vetrinaMadreFoto;
+  if(mf && mf.startsWith('data:')){
+    try { madreFotoUrl = await uploadFotoSupabase(mf, 'madre.jpg'); }
+    catch(e){ console.warn('Upload foto madre fallito:', e); }
+  } else { madreFotoUrl = mf || null; }
 
-  // Upload foto padre
-  if(window._vetrinaPadreFoto){
-    try {
-      padreFotoUrl = await uploadFotoSupabase(window._vetrinaPadreFoto, 'padre.jpg');
-    } catch(e){ console.warn('Upload foto padre fallito:', e); }
-  }
+  // Foto padre
+  var pf = window._vetrinaPadreFoto;
+  if(pf && pf.startsWith('data:')){
+    try { padreFotoUrl = await uploadFotoSupabase(pf, 'padre.jpg'); }
+    catch(e){ console.warn('Upload foto padre fallito:', e); }
+  } else { padreFotoUrl = pf || null; }
 
-  btn.textContent = '⏳ Pubblicazione in corso...';
+  var isModifica = !!window._annuncioInModifica;
+  btn.textContent = isModifica ? '⏳ Aggiornamento in corso...' : '⏳ Pubblicazione in corso...';
+
   var annuncio = {
     allevatore_nome: profilo.nome || profilo.affisso || 'Allevatore',
     allevatore_affisso: profilo.affisso || '',
@@ -4859,28 +4912,38 @@ async function pubblicaVetrina(){
     madre_foto_url: madreFotoUrl,
     padre_foto_url: padreFotoUrl,
     ai_approved: true,
-    stato: 'attivo'
+    stato: 'attivo',
+    cucciolata_id: _vetrinaCuccId
   };
   try {
-    var resp = await fetch(SUPABASE_URL+'/rest/v1/annunci', {
-      method: 'POST',
+    var fetchUrl, fetchMethod;
+    if(isModifica){
+      fetchUrl = SUPABASE_URL+'/rest/v1/annunci?id=eq.'+window._annuncioInModifica;
+      fetchMethod = 'PATCH';
+    } else {
+      fetchUrl = SUPABASE_URL+'/rest/v1/annunci';
+      fetchMethod = 'POST';
+    }
+    var resp = await fetch(fetchUrl, {
+      method: fetchMethod,
       headers: {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_KEY,
         'Authorization': 'Bearer '+SUPABASE_KEY,
-        'Prefer': 'return=representation'
+        'Prefer': 'return=minimal'
       },
       body: JSON.stringify(annuncio)
     });
     if(!resp.ok) throw new Error('Errore Supabase: '+resp.status);
-    await resp.json();
+    window._annuncioInModifica = null;
+    window._vetrinaFotoUrlsEsistenti = [];
     btn.disabled = false;
     btn.textContent = '🚀 Pubblica Annuncio';
     hide('modal-vetrina');
-    toast('🎉 Annuncio pubblicato su BreedPed Vetrina!');
+    toast(isModifica ? '✅ Annuncio aggiornato!' : '🎉 Annuncio pubblicato su BreedPed Vetrina!');
   } catch(err) {
     btn.disabled = false;
-    btn.textContent = '🚀 Pubblica Annuncio';
+    btn.textContent = isModifica ? '💾 Aggiorna Annuncio' : '🚀 Pubblica Annuncio';
     g('vet-status').innerHTML = '<span style="color:#C0534A">❌ Errore: '+err.message+'</span>';
   }
 }
@@ -8672,6 +8735,7 @@ function saveCucciolo(){
   hide('modal-cucciolo');
   _editCuccId=null; _editPuppyId=null;
   renderCucciolate(); salvaDB();
+  _syncDisponibilitaAnnuncio(cuccId);
   setTimeout(function(){ showCuccioliModal(cuccId); },50);
 }
 
