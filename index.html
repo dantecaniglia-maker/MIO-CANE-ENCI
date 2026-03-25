@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '10.9';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.0';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1050,6 +1050,10 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
       <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:#0D47A1;white-space:nowrap">Breed<span style="color:#C9A961">Ped</span></div>
       <div class="hide-mobile" style="font-size:8px;color:#6B8BB0;letter-spacing:.1em;text-transform:uppercase">Il pedigree intelligente</div>
     </div>
+    <div id="modalita-badge" onclick="g('modal-modalita').style.display='flex'"
+      style="display:none;font-size:10px;font-weight:700;color:#C9A961;cursor:pointer;background:rgba(201,169,97,.1);border:1px solid rgba(201,169,97,.3);border-radius:20px;padding:2px 8px;white-space:nowrap;flex-shrink:0;margin-left:6px">
+      🏆 Allevatore
+    </div>
   </div>
   <!-- DESTRA: bottoni azione -->
   <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
@@ -1703,6 +1707,11 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
         <span class="imp-icon" style="background:#FFF0EE">🔔</span>
         <div class="imp-text"><div>Notifiche</div><div class="imp-sub" id="notif-sub">Vaccini, trattamenti, esposizioni</div></div>
         <span id="notif-arr" style="color:#BFCFE8;font-size:18px;transition:transform .25s">›</span>
+      </div>
+      <div class="imp-item" onclick="hide('modal-impostazioni');g('modal-modalita').style.display='flex'">
+        <span class="imp-icon" style="background:#FFFBF0">🔄</span>
+        <div class="imp-text"><div>Cambia modalità</div><div class="imp-sub">Allevatore · Famiglia · Agility · Caccia</div></div>
+        <span class="imp-arr">›</span>
       </div>
       <!-- Pannello notifiche espandibile -->
       <div id="notif-panel" style="display:none;background:#F4F7FE;border:1.5px solid #DDEAFF;border-radius:12px;padding:14px 16px;margin-bottom:4px">
@@ -4255,6 +4264,12 @@ async function onUserSignedIn(user){
   await sincronizzaProfilo(user);
   await caricaDatiCloud(user.id);
   toast('👋 Benvenuto! '+(user.email||''));
+  var modSalvata = getModalita();
+  if(!modSalvata){
+    g('modal-modalita').style.display = 'flex';
+  } else {
+    applicaModalita(modSalvata);
+  }
   checkNotificheAlAvvio();
 }
 
@@ -9051,6 +9066,35 @@ function importaBackup(input){
    NOTIFICHE SETTINGS
 ══════════════════════════════════════ */
 var _notifDef={vaccini:true,trattamenti:true,esposizioni:true,anticipo:14};
+/* ── MODALITÀ UTENTE ── */
+var _modalitaKey = 'breedped_modalita_v1';
+
+function getModalita(){
+  return localStorage.getItem(_modalitaKey) || null;
+}
+
+function scegliModalita(mod){
+  if(mod === 'agility' || mod === 'caccia'){
+    toast('🚀 ' + (mod==='agility'?'Agility':'Caccia') + ' — Prossimamente!');
+    return;
+  }
+  localStorage.setItem(_modalitaKey, mod);
+  g('modal-modalita').style.display = 'none';
+  if(_currentUser){
+    _supabase.from('profili').update({modalita: mod}).eq('id', _currentUser.id).then(function(){});
+  }
+  applicaModalita(mod);
+  toast('✅ Modalità ' + (mod==='allevatore'?'Allevatore':'Famiglia') + ' attivata!');
+}
+
+function applicaModalita(mod){
+  var badge = g('modalita-badge');
+  if(badge){
+    badge.style.display = '';
+    badge.textContent = mod === 'allevatore' ? '🏆 Allevatore' : '🏠 Famiglia';
+  }
+}
+
 /* ── NOTIFICHE PUSH REALI ── */
 async function richiediPermessoNotifiche(){
   if(!('Notification' in window)){
@@ -11066,6 +11110,50 @@ function sendChat(){
     <button onclick="registraEmail()" style="width:100%;background:#EEF3FB;color:#1565C0;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:20px">Crea account</button>
     <div id="login-status" style="font-size:13px;color:#C0534A;min-height:20px"></div>
     <div style="font-size:11px;color:#9ab0cc;margin-top:16px">Continuando accetti i <a href="https://breedped.com" style="color:#1565C0">Termini di servizio</a> di BreedPed</div>
+  </div>
+</div>
+
+<!-- ══ MODAL SELEZIONE MODALITÀ ══ -->
+<div id="modal-modalita" class="overlay" style="display:none;z-index:99998">
+  <div class="modal" style="max-width:420px;padding:32px 24px;text-align:center">
+    <img src="logo.jpeg" style="width:80px;height:80px;border-radius:20px;object-fit:cover;box-shadow:0 8px 24px rgba(201,169,97,.4);margin-bottom:20px" onerror="this.style.display='none'"/>
+    <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#0D47A1;margin-bottom:8px">
+      Come vuoi usare<br>Breed<span style="color:#C9A961">Ped</span>?
+    </div>
+    <div style="font-size:13px;color:#6B8BB0;margin-bottom:28px">
+      Scegli la tua modalità principale.<br>Potrai cambiarla in qualsiasi momento.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
+      <div onclick="scegliModalita('allevatore')" style="border:2px solid #DDEAFF;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:#fff"
+        onmouseover="this.style.borderColor='#C9A961';this.style.background='#FFFBF0'"
+        onmouseout="this.style.borderColor='#DDEAFF';this.style.background='#fff'">
+        <div style="font-size:36px;margin-bottom:10px">🏆</div>
+        <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Allevatore</div>
+        <div style="font-size:11px;color:#6B8BB0;line-height:1.4">Pedigree, cucciolate,<br>moduli ENCI, breeding</div>
+      </div>
+      <div onclick="scegliModalita('famiglia')" style="border:2px solid #DDEAFF;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:#fff"
+        onmouseover="this.style.borderColor='#C9A961';this.style.background='#FFFBF0'"
+        onmouseout="this.style.borderColor='#DDEAFF';this.style.background='#fff'">
+        <div style="font-size:36px;margin-bottom:10px">🏠</div>
+        <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Cane di Famiglia</div>
+        <div style="font-size:11px;color:#6B8BB0;line-height:1.4">Diario, salute, famiglia<br>condivisa</div>
+      </div>
+      <div onclick="scegliModalita('agility')" style="border:2px solid #DDEAFF;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:#fff"
+        onmouseover="this.style.borderColor='#C9A961';this.style.background='#FFFBF0'"
+        onmouseout="this.style.borderColor='#DDEAFF';this.style.background='#fff'">
+        <div style="font-size:36px;margin-bottom:10px">🏃</div>
+        <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Agility</div>
+        <div style="font-size:11px;color:#6B8BB0;line-height:1.4">Percorsi, timer, gare<br>e statistiche<br><span style="color:#C9A961;font-weight:700">Prossimamente</span></div>
+      </div>
+      <div onclick="scegliModalita('caccia')" style="border:2px solid #DDEAFF;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:#fff"
+        onmouseover="this.style.borderColor='#C9A961';this.style.background='#FFFBF0'"
+        onmouseout="this.style.borderColor='#DDEAFF';this.style.background='#fff'">
+        <div style="font-size:36px;margin-bottom:10px">🎯</div>
+        <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Caccia</div>
+        <div style="font-size:11px;color:#6B8BB0;line-height:1.4">Prove FIDASC, GPS<br>statistiche lavoro<br><span style="color:#C9A961;font-weight:700">Prossimamente</span></div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#9ab0cc">Puoi aggiungere altre modalità in Impostazioni</div>
   </div>
 </div>
 
