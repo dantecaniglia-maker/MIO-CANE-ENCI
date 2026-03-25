@@ -4604,11 +4604,26 @@ function renderMieiAnnunci(annunci){
       +'<input type="number" min="0" value="'+a.femmine_disponibili+'" '
       +'id="upd-femmine-'+a.id+'" style="text-align:center;padding:4px"/></div>'
       +'</div>'
-      +'<div style="display:flex;gap:6px">'
+      +'<!-- form modifica (nascosta) -->'
+      +'<div id="mod-form-'+a.id+'" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid #DDEAFF">'
+      +'<div style="margin-bottom:6px"><label style="font-size:10px">💶 Prezzo (€)</label>'
+      +'<input type="number" id="mod-prezzo-'+a.id+'" value="'+a.prezzo+'" style="padding:4px"/></div>'
+      +'<div style="margin-bottom:8px"><label style="font-size:10px">📝 Descrizione</label>'
+      +'<textarea id="mod-desc-'+a.id+'" rows="3" maxlength="500" style="width:100%;box-sizing:border-box;font-size:12px;padding:6px;border:1.5px solid #DDEAFF;border-radius:8px;font-family:inherit">'+( a.descrizione||'')+'</textarea></div>'
+      +'<button onclick="salvaModificaAnnuncio(\''+a.id+'\')" style="'
+      +'width:100%;background:linear-gradient(135deg,#1a7a4a,#145c38);color:#fff;'
+      +'border:none;border-radius:8px;padding:7px;font-size:12px;font-weight:700;cursor:pointer">'
+      +'💾 Salva modifiche</button>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px;margin-top:8px">'
       +'<button onclick="aggiornaDisponibilita(\''+a.id+'\')" style="'
       +'flex:1;background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;'
       +'border:none;border-radius:8px;padding:7px;font-size:12px;font-weight:700;cursor:pointer">'
       +'💾 Aggiorna</button>'
+      +'<button onclick="toggleModificaAnnuncio(\''+a.id+'\')" id="mod-btn-'+a.id+'" style="'
+      +'background:#EEF3FB;color:#1565C0;border:1.5px solid #DDEAFF;'
+      +'border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer">'
+      +'✏️ Modifica</button>'
       +'<button onclick="chiudiAnnuncio(\''+a.id+'\')" style="'
       +'background:#FFEBEE;color:#C0534A;border:1.5px solid #F5C4BE;'
       +'border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer">'
@@ -4663,6 +4678,38 @@ async function chiudiAnnuncio(annuncioId){
     caricaMieiAnnunci();
   } catch(e){
     toast('❌ Errore');
+  }
+}
+
+function toggleModificaAnnuncio(id){
+  var form = g('mod-form-'+id);
+  var btn  = g('mod-btn-'+id);
+  if(!form) return;
+  var visible = form.style.display !== 'none';
+  form.style.display = visible ? 'none' : 'block';
+  if(btn) btn.textContent = visible ? '✏️ Modifica' : '✕ Annulla';
+}
+
+async function salvaModificaAnnuncio(annuncioId){
+  var prezzo = parseInt(g('mod-prezzo-'+annuncioId).value)||0;
+  var desc   = g('mod-desc-'+annuncioId).value.trim();
+  if(!prezzo){ toast('⚠️ Inserisci un prezzo valido'); return; }
+  try {
+    var resp = await fetch(SUPABASE_URL+'/rest/v1/annunci?id=eq.'+annuncioId,{
+      method:'PATCH',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer '+SUPABASE_KEY,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ prezzo: prezzo, descrizione: desc })
+    });
+    if(!resp.ok) throw new Error(resp.status);
+    toast('✅ Annuncio aggiornato');
+    caricaMieiAnnunci();
+  } catch(e){
+    toast('❌ Errore salvataggio');
   }
 }
 
