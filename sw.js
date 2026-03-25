@@ -1,5 +1,5 @@
 // ── CAMBIA QUESTO NUMERO AD OGNI DEPLOY ──
-const VERSION = '10.8';
+const VERSION = '10.9';
 const CACHE = 'miocane-' + VERSION;
 
 self.addEventListener('message', function(e){
@@ -30,6 +30,22 @@ self.addEventListener('activate', function(e) {
       );
     }).then(function() {
       return self.clients.claim(); // Prende controllo di tutte le tab aperte
+    })
+  );
+});
+
+self.addEventListener('notificationclick', function(e){
+  e.notification.close();
+  var url = (e.notification.data && e.notification.data.url) || '/';
+  e.waitUntil(
+    clients.matchAll({type:'window', includeUncontrolled:true})
+    .then(function(cls){
+      for(var i=0;i<cls.length;i++){
+        if(cls[i].url.includes(self.location.origin)){
+          return cls[i].focus();
+        }
+      }
+      return clients.openWindow(url);
     })
   );
 });

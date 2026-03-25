@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '10.8';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '10.9';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1716,6 +1716,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
             <button id="nant-30" onclick="setNotifAnticipo(30)" class="btn btn-ghost btn-sm" style="flex:1">30 gg</button>
           </div>
         </div>
+        <div id="notif-test-wrap"></div>
       </div>
 
       <!-- Account -->
@@ -4254,6 +4255,7 @@ async function onUserSignedIn(user){
   await sincronizzaProfilo(user);
   await caricaDatiCloud(user.id);
   toast('👋 Benvenuto! '+(user.email||''));
+  checkNotificheAlAvvio();
 }
 
 function onUserSignedOut(){
@@ -9049,6 +9051,121 @@ function importaBackup(input){
    NOTIFICHE SETTINGS
 ══════════════════════════════════════ */
 var _notifDef={vaccini:true,trattamenti:true,esposizioni:true,anticipo:14};
+/* ── NOTIFICHE PUSH REALI ── */
+async function richiediPermessoNotifiche(){
+  if(!('Notification' in window)){
+    toast('⚠️ Questo browser non supporta le notifiche');
+    return false;
+  }
+  if(Notification.permission === 'granted') return true;
+  if(Notification.permission === 'denied'){
+    toast('⚠️ Notifiche bloccate — abilitale nelle impostazioni del browser');
+    return false;
+  }
+  var result = await Notification.requestPermission();
+  return result === 'granted';
+}
+
+function inviaNotifica(titolo, corpo, icona, tag){
+  if(Notification.permission !== 'granted') return;
+  if(!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+  navigator.serviceWorker.ready.then(function(reg){
+    reg.showNotification(titolo, {
+      body: corpo,
+      icon: icona || '/logo.jpeg',
+      badge: '/logo.jpeg',
+      tag: tag || 'breedped-notif',
+      vibrate: [200, 100, 200],
+      requireInteraction: false,
+      data: { url: window.location.href }
+    });
+  });
+}
+
+function checkEInviaNotifiche(){
+  var n = _getNotif();
+  if(!n.vaccini && !n.trattamenti && !n.esposizioni) return;
+  var anticipo = n.anticipo || 7;
+  var oggi = new Date(); oggi.setHours(0,0,0,0);
+
+  cani.forEach(function(c){
+    if(n.vaccini){
+      (c.vaccinazioni||[]).forEach(function(v){
+        if(!v.prossimaDose) return;
+        var d = Math.floor((new Date(v.prossimaDose) - oggi) / 864e5);
+        if(d >= 0 && d <= anticipo){
+          inviaNotifica(
+            '💉 Vaccino in scadenza — ' + c.nome,
+            v.tipo + ' tra ' + d + ' giorni (' + v.prossimaDose + ')',
+            '/logo.jpeg',
+            'vaccino-' + c.id + '-' + v.tipo
+          );
+        } else if(d < 0){
+          inviaNotifica(
+            '🔴 Vaccino SCADUTO — ' + c.nome,
+            v.tipo + ' scaduto da ' + Math.abs(d) + ' giorni!',
+            '/logo.jpeg',
+            'vaccino-scaduto-' + c.id + '-' + v.tipo
+          );
+        }
+      });
+    }
+    if(n.trattamenti){
+      (c.trattamenti||[]).forEach(function(t){
+        if(!t.prossimaTrattamento) return;
+        var d = Math.floor((new Date(t.prossimaTrattamento) - oggi) / 864e5);
+        if(d >= 0 && d <= anticipo){
+          inviaNotifica(
+            '💊 Trattamento in scadenza — ' + c.nome,
+            t.tipoTrattamento + ' tra ' + d + ' giorni',
+            '/logo.jpeg',
+            'tratt-' + c.id + '-' + t.tipoTrattamento
+          );
+        }
+      });
+    }
+  });
+
+  if(n.esposizioni){
+    (esposizioni||[]).forEach(function(e){
+      if(!e.data) return;
+      var d = Math.floor((new Date(e.data) - oggi) / 864e5);
+      if(d >= 0 && d <= anticipo){
+        inviaNotifica(
+          '🏆 Esposizione tra ' + d + ' giorni',
+          (e.nome||'Esposizione') + ' — ' + (e.luogo||''),
+          '/logo.jpeg',
+          'expo-' + e.id
+        );
+      }
+    });
+  }
+}
+
+function checkNotificheAlAvvio(){
+  var ultimo = parseInt(localStorage.getItem('bp_last_notif_check')||'0');
+  var ora = Date.now();
+  if(ora - ultimo < 4*60*60*1000) return;
+  localStorage.setItem('bp_last_notif_check', String(ora));
+  if(Notification.permission === 'granted'){
+    checkEInviaNotifiche();
+  }
+}
+
+function testNotifica(){
+  richiediPermessoNotifiche().then(function(granted){
+    if(granted){
+      inviaNotifica(
+        '🐾 BreedPed — Test notifica',
+        'Le notifiche funzionano correttamente!',
+        '/logo.jpeg',
+        'test-' + Date.now()
+      );
+      toast('✅ Notifica inviata!');
+    }
+  });
+}
+
 function _getNotif(){
   try{ var n=JSON.parse(localStorage.getItem('miocane_notifiche')||'{}'); return Object.assign({},_notifDef,n); }
   catch(e){ return Object.assign({},_notifDef); }
@@ -9084,9 +9201,24 @@ function _renderNotifPanel(){
     var btn=g('nant-'+d);
     if(btn){ btn.style.background=n.anticipo===d?'#1565C0':'#fff'; btn.style.color=n.anticipo===d?'#fff':'#1565C0'; }
   });
+  // Test button
+  var testWrap=g('notif-test-wrap');
+  if(testWrap) testWrap.innerHTML='<button onclick="testNotifica()" style="width:100%;margin-top:12px;background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:8px;padding:8px;font-size:12px;font-weight:600;color:#1565C0;cursor:pointer">🔔 Invia notifica di test</button>';
 }
 function toggleNotif(key){
-  var n=_getNotif(); n[key]=!n[key]; _saveNotif(n); _renderNotifPanel();
+  var n=_getNotif();
+  var wasOff = !n[key];
+  n[key]=!n[key]; _saveNotif(n); _renderNotifPanel();
+  if(wasOff){ // appena attivato
+    richiediPermessoNotifiche().then(function(granted){
+      if(granted){
+        toast('✅ Notifiche attivate!');
+        checkEInviaNotifiche();
+      } else {
+        var nn=_getNotif(); nn[key]=false; _saveNotif(nn); _renderNotifPanel();
+      }
+    });
+  }
 }
 function setNotifAnticipo(days){
   var n=_getNotif(); n.anticipo=days; _saveNotif(n); _renderNotifPanel();
