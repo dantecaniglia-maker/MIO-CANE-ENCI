@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.0';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.1';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4250,10 +4250,13 @@ async function registraEmail(){
 }
 
 async function logout(){
-  await _supabase.auth.signOut();
-  localStorage.removeItem('breedped_modalita_v1');
-  toast('👋 Disconnesso');
-  setTimeout(function(){ window.location.reload(); }, 800);
+  try {
+    await _supabase.auth.signOut();
+  } catch(e){ console.warn('signOut error:', e); }
+  var aiKeys = localStorage.getItem('miocane_ai_keys_v1');
+  localStorage.clear();
+  if(aiKeys) localStorage.setItem('miocane_ai_keys_v1', aiKeys);
+  window.location.href = window.location.href.split('?')[0] + '?logout=' + Date.now();
 }
 
 async function onUserSignedIn(user){
