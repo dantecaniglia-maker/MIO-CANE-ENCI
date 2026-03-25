@@ -4329,8 +4329,8 @@ function apriVetrina(cuccId){
   _vetrinaCuccId = cuccId;
   var cu = cucciolate.find(function(c){ return c.id===cuccId; });
   if(!cu){ alert('Cucciolata non trovata'); return; }
-  var madre = cani.concat(guestCani).find(function(c){ return c.id===cu.madre; });
-  var padre = cani.concat(guestCani).find(function(c){ return c.id===cu.padre; });
+  var madre = cani.concat(guestCani).find(function(c){ return String(c.id)===String(cu.madre); });
+  var padre = cani.concat(guestCani).find(function(c){ return String(c.id)===String(cu.padre); });
   var madreInfo = {
     nome: madre?madre.nome:(cu.madreNome||'N.D.'),
     loi: madre?madre.numeroENCI||'':'',
@@ -4766,8 +4766,8 @@ async function _syncDisponibilitaAnnuncio(cuccId){
 function mostraAnteprimaAnnuncio(){
   var cu=cucciolate.find(function(c){return c.id===_vetrinaCuccId;});
   if(!cu) return;
-  var madre=cani.concat(guestCani).find(function(c){return c.id===cu.madre;});
-  var padre=cani.concat(guestCani).find(function(c){return c.id===cu.padre;});
+  var madre=cani.concat(guestCani).find(function(c){return String(c.id)===String(cu.madre);});
+  var padre=cani.concat(guestCani).find(function(c){return String(c.id)===String(cu.padre);});
   var razza=(madre&&madre.razza)||cu.razza||profilo.razza||'';
   var prezzo=g('vet-prezzo').value;
   var maschi=g('vet-maschi').value;
@@ -4830,8 +4830,8 @@ async function pubblicaVetrina(){
   if(!prezzo){ alert('Inserisci il prezzo'); return; }
   if(!regione){ alert('Seleziona la regione'); return; }
   if(maschi+femmine===0){ alert('Inserisci almeno 1 cucciolo disponibile'); return; }
-  var madre = cani.concat(guestCani).find(function(c){ return c.id===cu.madre; });
-  var padre = cani.concat(guestCani).find(function(c){ return c.id===cu.padre; });
+  var madre = cani.concat(guestCani).find(function(c){ return String(c.id)===String(cu.madre); });
+  var padre = cani.concat(guestCani).find(function(c){ return String(c.id)===String(cu.padre); });
   var razza = (madre&&madre.razza)||cu.razza||profilo.razza||'';
   var visionabili = document.querySelector('input[name="vet-visionabili"]:checked').value === 'si';
   var btn = g('vet-publish-btn');
