@@ -4251,7 +4251,9 @@ async function registraEmail(){
 
 async function logout(){
   await _supabase.auth.signOut();
+  localStorage.removeItem('breedped_modalita_v1');
   toast('👋 Disconnesso');
+  setTimeout(function(){ window.location.reload(); }, 800);
 }
 
 async function onUserSignedIn(user){
@@ -9092,6 +9094,24 @@ function applicaModalita(mod){
   if(badge){
     badge.style.display = '';
     badge.textContent = mod === 'allevatore' ? '🏆 Allevatore' : '🏠 Famiglia';
+  }
+  if(mod === 'famiglia'){
+    var banner = g('famiglia-coming-soon');
+    if(!banner){
+      banner = document.createElement('div');
+      banner.id = 'famiglia-coming-soon';
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:#F4F7FE;z-index:9990;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center';
+      banner.innerHTML = '<img src="logo.jpeg" style="width:100px;height:100px;border-radius:24px;object-fit:cover;margin-bottom:24px;box-shadow:0 8px 32px rgba(201,169,97,.4)" onerror="this.style.display=\'none\'"/>'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:28px;font-weight:700;color:#0D47A1;margin-bottom:12px">🏠 Cane di Famiglia</div>'
+        +'<div style="font-size:16px;color:#6B8BB0;margin-bottom:32px;max-width:320px;line-height:1.6">La sezione dedicata alle famiglie è in arrivo!<br><br>Diario condiviso, compiti, salute del cane<br>e molto altro — pensato per tutta la famiglia 🐾</div>'
+        +'<div style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border-radius:12px;padding:14px 28px;font-size:15px;font-weight:700;margin-bottom:16px">🚀 Prossimamente</div>'
+        +'<button onclick="scegliModalita(\'allevatore\')" style="background:#EEF3FB;color:#1565C0;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:600;cursor:pointer">← Torna alla modalità Allevatore</button>';
+      document.body.appendChild(banner);
+    }
+    banner.style.display = 'flex';
+  } else {
+    var b = g('famiglia-coming-soon');
+    if(b) b.style.display = 'none';
   }
 }
 
