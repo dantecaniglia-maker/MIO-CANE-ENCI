@@ -4580,17 +4580,33 @@ function rimuoviVetrinaFoto(idx){
 
 async function caricaMieiAnnunci(){
   var whatsapp = profilo.tel || '';
-  if(!whatsapp){ g('vet-miei-annunci').innerHTML=''; return; }
+  var email = (_currentUser && _currentUser.email) || profilo.email || '';
+  if(!whatsapp && !email){ g('vet-miei-annunci').innerHTML=''; return; }
   try {
-    var resp = await fetch(
-      SUPABASE_URL+'/rest/v1/annunci?allevatore_whatsapp=eq.'+
-      encodeURIComponent(whatsapp)+'&stato=eq.attivo&select=*',{
-      headers:{
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer '+SUPABASE_KEY
-      }
-    });
-    var annunci = await resp.json();
+    var annunci = [];
+    // Cerca per whatsapp
+    if(whatsapp){
+      var r1 = await fetch(
+        SUPABASE_URL+'/rest/v1/annunci?allevatore_whatsapp=eq.'+
+        encodeURIComponent(whatsapp)+'&stato=eq.attivo&select=*',{
+        headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY }
+      });
+      var d1 = await r1.json();
+      if(Array.isArray(d1)) annunci = annunci.concat(d1);
+    }
+    // Cerca per email se non trovato tramite whatsapp
+    if(!annunci.length && email){
+      var r2 = await fetch(
+        SUPABASE_URL+'/rest/v1/annunci?allevatore_email=eq.'+
+        encodeURIComponent(email)+'&stato=eq.attivo&select=*',{
+        headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY }
+      });
+      var d2 = await r2.json();
+      if(Array.isArray(d2)) annunci = annunci.concat(d2);
+    }
+    // Deduplica per id
+    var seen = {};
+    annunci = annunci.filter(function(a){ if(seen[a.id]) return false; seen[a.id]=true; return true; });
     renderMieiAnnunci(annunci);
   } catch(e){
     g('vet-miei-annunci').innerHTML='';
