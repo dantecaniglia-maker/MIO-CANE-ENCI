@@ -4819,27 +4819,47 @@ async function controlloAIAnnuncio(razza, descrizione, prezzo){
 }
 
 async function uploadFotoSupabase(base64, filename){
-  var arr=base64.split(',');
-  var mime=arr[0].match(/:(.*?);/)[1];
-  var bstr=atob(arr[1]);
-  var n=bstr.length;
-  var u8arr=new Uint8Array(n);
-  while(n--){ u8arr[n]=bstr.charCodeAt(n); }
-  var blob=new Blob([u8arr],{type:mime});
-  var path='annunci/'+Date.now()+'_'+filename;
-  var resp=await fetch(
-    SUPABASE_URL+'/storage/v1/object/breedped-foto/'+path,{
-    method:'POST',
-    headers:{
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer '+SUPABASE_KEY,
-      'Content-Type': mime,
-      'x-upsert': 'true'
-    },
-    body: blob
-  });
-  if(!resp.ok) throw new Error('Upload foto fallito');
-  return SUPABASE_URL+'/storage/v1/object/public/breedped-foto/'+path;
+  try {
+    var arr = base64.split(',');
+    var mime = arr[0].match(/:(.*?);/)[1];
+    var bstr = atob(arr[1]);
+    var n = bstr.length;
+    var u8arr = new Uint8Array(n);
+    while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+    var blob = new Blob([u8arr], {type: mime});
+
+    console.log('Upload foto:', filename, 'size:', blob.size, 'mime:', mime);
+
+    var path = 'annunci/' + Date.now() + '_' + filename;
+    var uploadUrl = SUPABASE_URL + '/storage/v1/object/breedped-foto/' + path;
+
+    console.log('Upload URL:', uploadUrl);
+
+    var resp = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': mime,
+        'x-upsert': 'true'
+      },
+      body: blob
+    });
+
+    console.log('Upload response status:', resp.status);
+    var respText = await resp.text();
+    console.log('Upload response body:', respText);
+
+    if(!resp.ok) throw new Error('Upload fallito: ' + resp.status + ' ' + respText);
+
+    var publicUrl = SUPABASE_URL + '/storage/v1/object/public/breedped-foto/' + path;
+    console.log('URL pubblico:', publicUrl);
+    return publicUrl;
+
+  } catch(e){
+    console.error('uploadFotoSupabase ERROR:', e);
+    throw e;
+  }
 }
 
 function deleteCurrent(){
