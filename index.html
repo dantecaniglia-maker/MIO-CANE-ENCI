@@ -2194,7 +2194,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
       <div style="grid-column:span 2"><label>Affisso ENCI *</label><input id="p-affisso" type="text" placeholder="Es. Dell'Alta Murgia" oninput="liveProfilo()"/></div>
       <div><label>Nome Titolare</label><input id="p-nome" type="text" placeholder="Mario Rossi" oninput="liveProfilo()"/></div>
       <div><label>Provincia</label><input id="p-prov" type="text" placeholder="Es. Bari (BA)" oninput="liveProfilo()"/></div>
-      <div><label>Telefono</label><input id="p-tel" type="tel" placeholder="+39 333 0000000" oninput="liveProfilo()"/></div>
+      <div><label>Telefono</label><div style="display:flex;gap:6px"><select id="p-tel-prefix" style="flex:0 0 auto;padding:6px 4px;border-radius:8px;border:1.5px solid #BFCFE8;background:#fff;font-size:13px;color:#082d6b;cursor:pointer" onchange="liveProfilo()"><option value="+39">🇮🇹 +39</option><option value="+49">🇩🇪 +49</option><option value="+33">🇫🇷 +33</option><option value="+34">🇪🇸 +34</option><option value="+351">🇵🇹 +351</option><option value="+44">🇬🇧 +44</option><option value="+31">🇳🇱 +31</option><option value="+32">🇧🇪 +32</option><option value="+43">🇦🇹 +43</option><option value="+41">🇨🇭 +41</option><option value="+48">🇵🇱 +48</option><option value="+40">🇷🇴 +40</option><option value="+420">🇨🇿 +420</option><option value="+36">🇭🇺 +36</option><option value="+46">🇸🇪 +46</option><option value="+47">🇳🇴 +47</option><option value="+45">🇩🇰 +45</option><option value="+358">🇫🇮 +358</option><option value="+421">🇸🇰 +421</option><option value="+385">🇭🇷 +385</option><option value="+386">🇸🇮 +386</option><option value="+359">🇧🇬 +359</option><option value="+30">🇬🇷 +30</option><option value="+381">🇷🇸 +381</option></select><input id="p-tel-number" type="tel" placeholder="333 0000000" style="flex:1" oninput="liveProfilo()"/></div></div>
       <div><label>Email</label><input id="p-email" type="email" placeholder="kennel@esempio.it" oninput="liveProfilo()"/></div>
       <div style="grid-column:span 2"><label>Razza / Razze allevate</label><input id="p-razza" type="text" placeholder="Es. Cane Corso, Pastore Maremmano" oninput="liveProfilo()"/></div>
       <div style="grid-column:span 2"><label>Sito Web / Social</label><input id="p-web" type="text" placeholder="www.kennelexample.it" oninput="liveProfilo()"/></div>
@@ -4403,7 +4403,7 @@ function apriVetrina(cuccId){
   var femmine = disponibili.filter(function(p){ return p.sesso==='F'; }).length;
   g('vet-maschi').value = maschi;
   g('vet-femmine').value = femmine;
-  if(profilo.tel) g('vet-whatsapp').value = profilo.tel;
+  if(profilo.tel) setPhoneField('vet-prefix-wa','vet-number-wa', profilo.tel);
   if(profilo.email) g('vet-email').value = profilo.email;
   if(profilo.prov) g('vet-indirizzo').value = profilo.prov;
   g('vet-descrizione').oninput = function(){
@@ -4720,8 +4720,8 @@ function modificaAnnuncioCompleto(a){
   show('modal-vetrina');
   setTimeout(function(){
     // Contatti
-    if(g('vet-whatsapp')) g('vet-whatsapp').value = a.allevatore_whatsapp || '';
-    if(g('vet-telefono')) g('vet-telefono').value = a.allevatore_telefono || '';
+    setPhoneField('vet-prefix-wa','vet-number-wa', a.allevatore_whatsapp || '');
+    setPhoneField('vet-prefix-tel','vet-number-tel', a.allevatore_telefono || '');
     if(g('vet-email'))    g('vet-email').value    = a.allevatore_email    || '';
     if(g('vet-regione'))  g('vet-regione').value  = a.allevatore_regione  || '';
     if(g('vet-indirizzo'))g('vet-indirizzo').value= a.indirizzo           || '';
@@ -4837,7 +4837,7 @@ function mostraAnteprimaAnnuncio(){
 async function pubblicaVetrina(){
   var cu = cucciolate.find(function(c){ return c.id===_vetrinaCuccId; });
   if(!cu) return;
-  var whatsapp = g('vet-whatsapp').value.trim();
+  var whatsapp = getPhoneFull('vet-prefix-wa','vet-number-wa');
   var prezzo = parseInt(g('vet-prezzo').value);
   var regione = g('vet-regione').value;
   var maschi = parseInt(g('vet-maschi').value)||0;
@@ -4904,7 +4904,7 @@ async function pubblicaVetrina(){
     allevatore_affisso: profilo.affisso || '',
     allevatore_regione: regione,
     allevatore_whatsapp: whatsapp,
-    allevatore_telefono: g('vet-telefono').value.trim() || null,
+    allevatore_telefono: getPhoneFull('vet-prefix-tel','vet-number-tel') || null,
     allevatore_email: g('vet-email').value.trim() || null,
     razza: razza,
     data_nascita: cu.data || new Date().toISOString().substring(0,10),
@@ -6014,7 +6014,7 @@ function renderProfilo(){
   g('p-affisso').value  = profilo.affisso;
   g('p-nome').value     = profilo.nome;
   g('p-prov').value     = profilo.prov;
-  g('p-tel').value      = profilo.tel;
+  setPhoneField('p-tel-prefix','p-tel-number', profilo.tel);
   g('p-email').value    = profilo.email;
   g('p-razza').value    = profilo.razza;
   g('p-web').value      = profilo.web;
@@ -6022,11 +6022,36 @@ function renderProfilo(){
   updateKennelCard();
 }
 
+// Prefisso telefonico: combina select + input
+function getPhoneFull(prefixId, numId){
+  var prefix = g(prefixId) ? g(prefixId).value : '+39';
+  var num = g(numId) ? g(numId).value.trim() : '';
+  if(!num) return '';
+  return prefix + ' ' + num;
+}
+// Separa un numero completo (es. "+39 333 123") nei due campi
+function setPhoneField(prefixId, numId, fullNumber){
+  if(!fullNumber){ if(g(numId)) g(numId).value=''; return; }
+  var PREFIXES = ['+358','+351','+421','+420','+385','+386','+359','+381',
+                  '+49','+33','+34','+44','+31','+32','+43','+41','+48',
+                  '+40','+36','+46','+47','+45','+30','+39'];
+  var matched = '';
+  for(var i=0;i<PREFIXES.length;i++){
+    if(fullNumber.startsWith(PREFIXES[i])){ matched=PREFIXES[i]; break; }
+  }
+  if(matched && g(prefixId)){
+    g(prefixId).value = matched;
+    g(numId).value = fullNumber.slice(matched.length).trim();
+  } else {
+    if(g(numId)) g(numId).value = fullNumber;
+  }
+}
+
 function liveProfilo(){
   profilo.affisso = g('p-affisso').value;
   profilo.nome    = g('p-nome').value;
   profilo.prov    = g('p-prov').value;
-  profilo.tel     = g('p-tel').value;
+  profilo.tel     = getPhoneFull('p-tel-prefix','p-tel-number');
   profilo.email   = g('p-email').value;
   profilo.razza   = g('p-razza').value;
   profilo.web     = g('p-web').value;
@@ -10980,11 +11005,67 @@ function sendChat(){
     <!-- Contatti -->
     <div style="margin-bottom:14px">
       <label>WhatsApp (obbligatorio)</label>
-      <input type="tel" id="vet-whatsapp" placeholder="+39 333 1234567"/>
+      <div style="display:flex;gap:6px">
+        <select id="vet-prefix-wa" style="flex:0 0 auto;padding:6px 4px;border-radius:8px;border:1.5px solid #BFCFE8;background:#fff;font-size:13px;color:#082d6b;cursor:pointer">
+          <option value="+39">🇮🇹 +39</option>
+          <option value="+49">🇩🇪 +49</option>
+          <option value="+33">🇫🇷 +33</option>
+          <option value="+34">🇪🇸 +34</option>
+          <option value="+351">🇵🇹 +351</option>
+          <option value="+44">🇬🇧 +44</option>
+          <option value="+31">🇳🇱 +31</option>
+          <option value="+32">🇧🇪 +32</option>
+          <option value="+43">🇦🇹 +43</option>
+          <option value="+41">🇨🇭 +41</option>
+          <option value="+48">🇵🇱 +48</option>
+          <option value="+40">🇷🇴 +40</option>
+          <option value="+420">🇨🇿 +420</option>
+          <option value="+36">🇭🇺 +36</option>
+          <option value="+46">🇸🇪 +46</option>
+          <option value="+47">🇳🇴 +47</option>
+          <option value="+45">🇩🇰 +45</option>
+          <option value="+358">🇫🇮 +358</option>
+          <option value="+421">🇸🇰 +421</option>
+          <option value="+385">🇭🇷 +385</option>
+          <option value="+386">🇸🇮 +386</option>
+          <option value="+359">🇧🇬 +359</option>
+          <option value="+30">🇬🇷 +30</option>
+          <option value="+381">🇷🇸 +381</option>
+        </select>
+        <input type="tel" id="vet-number-wa" placeholder="333 1234567" style="flex:1"/>
+      </div>
     </div>
     <div style="margin-bottom:14px">
       <label>Telefono (opzionale)</label>
-      <input type="tel" id="vet-telefono" placeholder="+39 333 1234567"/>
+      <div style="display:flex;gap:6px">
+        <select id="vet-prefix-tel" style="flex:0 0 auto;padding:6px 4px;border-radius:8px;border:1.5px solid #BFCFE8;background:#fff;font-size:13px;color:#082d6b;cursor:pointer">
+          <option value="+39">🇮🇹 +39</option>
+          <option value="+49">🇩🇪 +49</option>
+          <option value="+33">🇫🇷 +33</option>
+          <option value="+34">🇪🇸 +34</option>
+          <option value="+351">🇵🇹 +351</option>
+          <option value="+44">🇬🇧 +44</option>
+          <option value="+31">🇳🇱 +31</option>
+          <option value="+32">🇧🇪 +32</option>
+          <option value="+43">🇦🇹 +43</option>
+          <option value="+41">🇨🇭 +41</option>
+          <option value="+48">🇵🇱 +48</option>
+          <option value="+40">🇷🇴 +40</option>
+          <option value="+420">🇨🇿 +420</option>
+          <option value="+36">🇭🇺 +36</option>
+          <option value="+46">🇸🇪 +46</option>
+          <option value="+47">🇳🇴 +47</option>
+          <option value="+45">🇩🇰 +45</option>
+          <option value="+358">🇫🇮 +358</option>
+          <option value="+421">🇸🇰 +421</option>
+          <option value="+385">🇭🇷 +385</option>
+          <option value="+386">🇸🇮 +386</option>
+          <option value="+359">🇧🇬 +359</option>
+          <option value="+30">🇬🇷 +30</option>
+          <option value="+381">🇷🇸 +381</option>
+        </select>
+        <input type="tel" id="vet-number-tel" placeholder="333 1234567" style="flex:1"/>
+      </div>
     </div>
     <div style="margin-bottom:14px">
       <label>Email (opzionale)</label>
