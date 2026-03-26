@@ -1,103 +1,138 @@
 # BreedPed (ex Mio Cane ENCI)
 
 ## Progetto
-- **Nome app:** BreedPed *(ex Mio Cane ENCI)*
-- **Versione attuale:** 9.0
-- **Dominio target:** breedped.com / breedped.app / breedped.it
-- **Social:** @breedped su Instagram, Facebook, TikTok
+- **Nome app:** BreedPed
+- **Versione attuale:** 11.2
+- **Dominio:** breedped.com
+- **Social:** @breedped su Instagram, Facebook, TikTok, YouTube
+- **Sviluppatore:** Dante Caniglia — Avezzano (AQ)
 
 ## Repository
 
 | Repo | Descrizione | Deploy |
 |------|-------------|--------|
 | `dantecaniglia-maker/MIO-CANE-ENCI` | App PWA principale | Vercel (auto-deploy) |
-| `dantecaniglia-maker/breedped-website` | Sito landing breedped.com | Da configurare su Vercel |
+| `dantecaniglia-maker/breedped-website` | Sito landing breedped.com | Vercel (auto-deploy) |
 
 ## Stack
 - HTML / CSS / JS vanilla — nessun framework
 - PWA (Service Worker in `sw.js`, manifest in `manifest.json`)
-- Single-file app: tutta la logica è in `index.html` (~8000 righe)
+- Single-file app: tutta la logica è in `index.html` (~11.000 righe)
+- **Backend:** Supabase (database + auth + storage)
+- **AI:** Gemini 2.5-flash per OCR pedigree + Chatbot
 
-## Deploy app (MIO-CANE-ENCI)
-- **Piattaforma:** Vercel (auto-deploy da GitHub)
-- **Branch:** `main`
-- **Per deployare:**
-  ```
-  git add -A && git commit -m "messaggio" && git push
-  ```
+## Deploy
+```
+# App
+cd "/c/Users/DANTE CANIGLIA/Downloads/APP MIO CANE ENCI/files"
+git add -A && git commit -m "messaggio" && git push
 
-## vercel.json (app)
-- `survey.html` è registrato come build statico separato
-- Route `/survey(\.html)?` → `survey.html` definita PRIMA della catch-all
-- Il service worker (`sw.js`) NON intercetta `/survey` e `/survey.html` — sempre network
+# Sito
+cd "/c/Users/DANTE CANIGLIA/breedped-website"
+git add -A && git commit -m "messaggio" && git push
+```
+
+## Supabase
+- **URL:** https://rjiymkharnwxpdeytshu.supabase.co
+- **Key:** sb_publishable_v7r-AM_JP5EoPKjKHd6ImQ_w5sNVcOQ
+- **Tabelle:** profili, cani, cucciolate, annunci, annunci_clicks,
+  famiglie, famiglia_membri, famiglia_cani, famiglia_log,
+  famiglia_compiti, famiglia_percorsi
+- **Storage bucket:** breedped-foto (pubblico)
+
+## Autenticazione
+- Login Google OAuth (configurato su Google Cloud Console)
+- Login Email/Password
+- Sessione persistente — non richiede login ad ogni accesso
+- Logout pulisce tutto: localStorage, sessionStorage, cookie, SW cache
 
 ## Convenzioni importanti
-- **Razza:** usare sempre **"Pastore Abruzzese Maremmano"** — MAI "Maremmano Abruzzese" o "Cane da Pastore Maremmano Abruzzese"
-- **DEBUG_MODE:** `true` durante lo sviluppo, `false` prima del lancio in produzione (definita in cima a `index.html`)
-- **APP_VERSION:** aggiornare in `index.html` (variabile JS in cima) e in `sw.js` (`const VERSION`) ad ogni release
-- **IIFE scope:** le funzioni dentro l'IIFE (righe ~5762-6324) non sono globali — vanno esposte con `window.nomeFunc = nomeFunc` alla fine dell'IIFE
+- **Razza:** usare sempre **"Pastore Abruzzese Maremmano"**
+- **Nome brand:** sempre **BreedPed** (MAI "Breed Ped" con spazio)
+- **Logo:** file `logo.jpeg` nella cartella app e sito
+- **Colori:** #0D47A1 (blu) + #C9A961 (oro)
+- **Font:** Playfair Display + DM Sans
+- **Credits:** sempre "Powered by Dante Caniglia"
+- **DEBUG_MODE:** `true` sviluppo, `false` produzione
+- **APP_VERSION:** aggiornare in `index.html` e `sw.js` ad ogni release
 
 ## Architettura dati (localStorage)
-- Chiave: `miocane_enci_v1`
-- Variabili principali: `cani[]`, `guestCani[]`, `cucciolate[]`, `esposizioni[]`, `tessere{}`, `profilo{}`, `registro{}`
-- `salvaDB()` / `caricaDB()` gestiscono la persistenza
+- Chiave principale: `miocane_enci_v1`
+- Variabili: `cani[]`, `guestCani[]`, `cucciolate[]`, `esposizioni[]`,
+  `tessere{}`, `profilo{}`, `registro{}`
+- `salvaDB()` / `caricaDB()` — persistenza locale
+- Sync automatica su Supabase ad ogni salvataggio (quando loggato)
 
-## Struttura `registro` (Registro Finanziario)
-```js
-registro = {
-  movimenti: [
-    {
-      id: Number,          // Date.now()
-      data: 'YYYY-MM-DD',
-      tipo: 'entrata'|'uscita',   // SEMPRE singolare
-      importo: Number,
-      categoria: 'vendita_cucciolo'|'altro_entrata'|'veterinario'|'alimentazione'|'enci'|'farmaci'|'altro',
-      descrizione: String,
-      fonte: 'manuale'|'cucciolo'|'auto',
-      // solo per fonte:'cucciolo':
-      puppyId: Number,     // p.id del cucciolo
-      _key: 'cucciolo_vendita_<puppyId>'|'cucciolo_acconto_<puppyId>'  // dedup
-    }
-  ]
-}
-```
-- Le voci `fonte:'auto'` sono **virtuali** (calcolate da cucciolate, non persistite) — mostrate solo se non esiste già una entry `fonte:'cucciolo'` per quel puppy
-- `_autoRegistroEntrataCucciolo(puppyId, nome, cuccNome, importo, sottoTipo, data)` aggiunge entries persistite quando un cucciolo viene ceduto in `saveCucciolo()`
+## Modalità app
+Selezione al primo login:
+- 🏆 **Allevatore** — attiva (pedigree, cucciolate, ENCI, breeding)
+- 🏠 **Cane di Famiglia** — in sviluppo
+- 🏃 **Agility** — prossimamente
+- 🎯 **Caccia** — prossimamente
 
-## Funzionalità principali (v9.0)
-- Scheda cane: info, salute, titoli, pedigree (OCR/AI), riproduzione, prole
-- Cucciolate: gestione cuccioli con stati (disponibile/prenotato/ceduto/mio_cane)
-- Cuccioli: pedigree automatico 4 generazioni, sezione finanziaria, contratto ENCI
-- Dashboard cuccioli (sidebar): statistiche vendite, filtri per stato
-- Moduli ENCI A e B: auto-compilazione da cucciolata
-- Breeding Planner: COI con priorità LOI>microchip>nome, GENETIC_DB 5 razze, avvisi genetici 🔴🟡🟢, qualità linea 0-100
-- Calendario Esposizioni, Moduli ENCI
-- OCR pedigree via Tesseract + Gemini AI
-- Survey utenti su `/survey` (file statico separato, non intercettato dal SW)
+## Funzionalità attive (v11.2)
+- Scheda cane con foto cliccabile per upload
+- Pedigree AI (OCR foto/PDF con Gemini)
+- Cucciolate con gestione cuccioli completa
+- Breeding Planner COI + qualità linea 0-100
+- Moduli ENCI A e B auto-compilati
+- Registro Finanziario
+- Calendario Esposizioni
+- Chatbot AI (Gemini) con prompt arricchito
+- Vetrina marketplace cuccioli (Supabase)
+- Login Google + Email con sessione persistente
+- Notifiche push reali (vaccini, trattamenti, esposizioni)
+- Selezione modalità al login
 
-## Bug aperti da risolvere
-- Alert notifiche non si disattivano in cucciolate
-- "Trattamenti cuccioli" scritto male in home
-- "Clicca per dettagli" in home non funziona
-- Campi editabili post-scansione PDF/foto ancora incompleti
-- Grafico peso cuccioli non funziona
-- Logo da sostituire con immagine fornita da Dante
-- Sigle LOI internazionali (PT, VDH, LOF, KC ecc.) da testare
+## Piani abbonamento (da implementare)
 
-## Funzionalità da completare
-- Notifiche push reali (toggle presente ma non funziona)
-- Modalità FCI configurata ma vuota
-- Contratto vendita cucciolo digitale
-- Chat allevatori
-- Marketplace cuccioli con Supabase
-- Multi-lingua FCI (Francia, Germania, Spagna)
-- Database genetico completo tutte razze FCI
-- Piano abbonamento Free/Pro
-- GDPR completo
-- Analytics base
-- Vetrina cuccioli automatica su Facebook/sito
+### Allevatore
+| Piano | Prezzo | Feature |
+|-------|--------|---------|
+| Free | €0 | Base (1 cane) |
+| Pro | €9,99/mese | Tutto incluso |
 
-## Filosofia app
-- NON bloccare mai l'allevatore — solo avvisi semaforo 🔴🟡🟢
-- Piano gratuito: funzioni base
-- Piano Pro: OCR, Breeding avanzato, Export PDF, FCI internazionale
+### Famiglia
+| Piano | Prezzo | Cani | Membri |
+|-------|--------|------|--------|
+| Free | €0 | 1 | 1 |
+| Family | €4,99/mese | 2 | 6 |
+| +cane extra | +€1,99/mese | +1 | — |
+
+### Bundle
+- Pro Allevatore + Family = €11,99/mese
+- Piano Totale = €12,99/mese
+
+## Modulo Famiglia (in sviluppo)
+- Sistema codice invito (FAM-XXXX)
+- Ruoli: 👑 Admin / ✏️ Membro / 👀 Ospite
+- Diario condiviso (pasti, uscite, note, foto, farmaci, visite)
+- Compiti con notifica in-app + WhatsApp
+- GPS percorsi 3D con altimetria
+- Scheda emergenza PDF
+- Grafici peso e attività
+- Badge gamification
+- Album foto milestones
+- Integrazione collare GPS (Tractive/Weenect) — futuro
+
+## Sito breedped.com
+- `index.html` — landing page
+- `survey.html` — questionario utenti (Google Sheets)
+- `vetrina.html` — marketplace cuccioli pubblico
+- `annuncio.html` — pagina annuncio dedicata
+- `REGOLE.md` — regole brand per Claude Code
+- `vercel.json` — no-cache headers su tutti i file HTML
+
+## Prossime priorità
+1. Piano Free/Pro con paywall
+2. Modulo Famiglia completo
+3. Indici morfologici professionali (scheda cane)
+4. GDPR completo
+5. Multi-lingua FCI (IT/EN/FR/DE/ES)
+6. Modulo Agility
+7. Modulo Caccia Pro + GPS collare
+
+## File importanti
+- App: `C:\Users\DANTE CANIGLIA\Downloads\APP MIO CANE ENCI\files`
+- Sito: `C:\Users\DANTE CANIGLIA\breedped-website`
+- Logo: `C:\Users\DANTE CANIGLIA\Downloads\APP MIO CANE ENCI\ALTRO\logo\`
