@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.6';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.7';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9130,7 +9130,7 @@ var _famigliaCani = [];
 var _famigliaLog = [];
 var _famigliaCompiti = [];
 var _famigliaCaneSelezionato = null;
-var _famTabAttiva = 'diario';
+var _famTabAttiva = 'home';
 
 function getModalita(){
   return localStorage.getItem(_modalitaKey) || null;
@@ -9185,10 +9185,11 @@ function applicaModalita(mod){
         +'<div id="fam-cane-hero" style="padding:20px"></div>'
         // Tab bar
         +'<div style="display:flex;background:#fff;border-bottom:1.5px solid #DDEAFF;position:sticky;top:0;z-index:10">'
-          +'<button onclick="switchFamTab(\'diario\')" id="ftab-diario" class="ftab" style="flex:1;padding:12px;border:none;background:transparent;font-size:11px;font-weight:700;color:#1565C0;cursor:pointer;border-bottom:2px solid #1565C0">📖 Diario</button>'
+          +'<button onclick="switchFamTab(\'home\')" id="ftab-home" class="ftab" style="flex:1;padding:12px;border:none;background:transparent;font-size:11px;font-weight:700;color:#1565C0;cursor:pointer;border-bottom:2px solid #1565C0">🏠 Home</button>'
+          +'<button onclick="switchFamTab(\'diario\')" id="ftab-diario" class="ftab" style="flex:1;padding:12px;border:none;background:transparent;font-size:11px;font-weight:700;color:#9ab0cc;cursor:pointer">📖 Diario</button>'
           +'<button onclick="switchFamTab(\'compiti\')" id="ftab-compiti" class="ftab" style="flex:1;padding:12px;border:none;background:transparent;font-size:11px;font-weight:700;color:#9ab0cc;cursor:pointer">✅ Compiti</button>'
-          +'<button onclick="switchFamTab(\'percorsi\')" id="ftab-percorsi" class="ftab" style="flex:1;padding:12px;border:none;background:transparent;font-size:11px;font-weight:700;color:#9ab0cc;cursor:pointer">🗺️ Percorsi</button>'
-          +'<button onclick="switchFamTab(\'famiglia\')" id="ftab-famiglia" class="ftab" style="flex:1;padding:12px;border:none;background:transparent;font-size:11px;font-weight:700;color:#9ab0cc;cursor:pointer">👨‍👩‍👧 Famiglia</button>'
+          +'<button onclick="switchFamTab(\'percorsi\')" id="ftab-percorsi" class="ftab" style="flex:1;padding:12px;border:none;background:transparent;font-size:11px;font-weight:700;color:#9ab0cc;cursor:pointer">🗺️</button>'
+          +'<button onclick="switchFamTab(\'famiglia\')" id="ftab-famiglia" class="ftab" style="flex:1;padding:12px;border:none;background:transparent;font-size:11px;font-weight:700;color:#9ab0cc;cursor:pointer">👨‍👩‍👧</button>'
         +'</div>'
         // Contenuto tab
         +'<div id="fam-tab-content" style="padding:16px"></div>';
@@ -9249,38 +9250,6 @@ function renderHomeFamiglia(){
   var cane = _famigliaCaneSelezionato || _famigliaCani[0];
   _famigliaCaneSelezionato = cane;
 
-  // Stats oggi (ora locale, non UTC)
-  var now = new Date();
-  var oggi = now.getFullYear()+'-'
-    +String(now.getMonth()+1).padStart(2,'0')+'-'
-    +String(now.getDate()).padStart(2,'0');
-  var logOggi = _famigliaLog.filter(function(l){
-    if(!l.created_at) return false;
-    var d = new Date(l.created_at);
-    var ds = d.getFullYear()+'-'
-      +String(d.getMonth()+1).padStart(2,'0')+'-'
-      +String(d.getDate()).padStart(2,'0');
-    return ds === oggi;
-  });
-  var pastiOggi    = logOggi.filter(function(l){return l.tipo==='pasto';}).length;
-  var usciteOggi   = logOggi.filter(function(l){return l.tipo==='uscita';}).length;
-  var farmaciOggi  = logOggi.filter(function(l){return l.tipo==='farmaco';}).length;
-  var fotoOggi     = logOggi.filter(function(l){return l.tipo==='foto';}).length;
-
-  // Grafico settimana
-  var settimana = [];
-  for(var i=6;i>=0;i--){
-    var d = new Date(); d.setDate(d.getDate()-i);
-    var ds = d.toISOString().substring(0,10);
-    var gg = ['Do','Lu','Ma','Me','Gi','Ve','Sa'][d.getDay()];
-    var cnt = _famigliaLog.filter(function(l){
-      return l.created_at && l.created_at.substring(0,10)===ds;
-    }).length;
-    settimana.push({giorno:gg, data:ds, count:cnt, oggi:i===0});
-  }
-  var maxCnt = Math.max.apply(null, settimana.map(function(s){return s.count;}));
-  if(maxCnt===0) maxCnt=1;
-
   var statoMsg = 'Tutto ok oggi 🟢';
 
   // Selettore cani
@@ -9305,11 +9274,8 @@ function renderHomeFamiglia(){
     ? (ultimoLog.nickname_autore||'Tu')+' · '+tipoLogLabel(ultimoLog.tipo)+' '+tempoFa(ultimoLog.created_at)
     : 'Nessuna attività recente';
 
-  var circ = 2*Math.PI*20;
-
+  // Solo hero cane — la dashboard va nel tab-content tramite switchFamTab
   hero.innerHTML = selettore
-
-  // ── HERO CANE ──
   +'<div style="background:linear-gradient(135deg,#0D47A1,#1565C0);border-radius:20px;padding:20px;margin-bottom:14px;position:relative;overflow:hidden">'
   +'<div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;border-radius:50%;background:rgba(201,169,97,.1)"></div>'
   +'<div style="display:flex;gap:16px;align-items:center">'
@@ -9323,17 +9289,57 @@ function renderHomeFamiglia(){
   +'<span style="font-size:11px;font-weight:600;color:#fff">'+statoMsg+'</span>'
   +'</div>'
   +'<div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:6px;font-style:italic">'+ultimoTxt+'</div>'
-  +'</div></div></div>'
+  +'</div></div></div>';
 
-  // ── RING ATTIVITÀ OGGI ──
-  +'<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
-  +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px">Attività di oggi</div>'
+  switchFamTab('home');
+}
+
+function renderHealthDashboard(container){
+  var cane = _famigliaCaneSelezionato;
+  if(!cane){ container.innerHTML=''; return; }
+
+  // Stats oggi (ora locale)
+  var now = new Date();
+  var oggi = now.getFullYear()+'-'
+    +String(now.getMonth()+1).padStart(2,'0')+'-'
+    +String(now.getDate()).padStart(2,'0');
+  var logOggi = _famigliaLog.filter(function(l){
+    if(!l.created_at) return false;
+    var d = new Date(l.created_at);
+    var ds = d.getFullYear()+'-'
+      +String(d.getMonth()+1).padStart(2,'0')+'-'
+      +String(d.getDate()).padStart(2,'0');
+    return ds === oggi;
+  });
+  var pastiOggi   = logOggi.filter(function(l){return l.tipo==='pasto';}).length;
+  var usciteOggi  = logOggi.filter(function(l){return l.tipo==='uscita';}).length;
+  var farmaciOggi = logOggi.filter(function(l){return l.tipo==='farmaco';}).length;
+  var fotoOggi    = logOggi.filter(function(l){return l.tipo==='foto';}).length;
+  var circ = 2*Math.PI*20;
+
+  // Grafico settimana
+  var settimana = [];
+  for(var i=6;i>=0;i--){
+    var dd = new Date(); dd.setDate(dd.getDate()-i);
+    var ds2 = dd.toISOString().substring(0,10);
+    var gg = ['Do','Lu','Ma','Me','Gi','Ve','Sa'][dd.getDay()];
+    var cnt = _famigliaLog.filter(function(l){
+      return l.created_at && l.created_at.substring(0,10)===ds2;
+    }).length;
+    settimana.push({giorno:gg, count:cnt, oggi:i===0});
+  }
+  var maxCnt = Math.max.apply(null, settimana.map(function(s){return s.count;}));
+  if(maxCnt===0) maxCnt=1;
+
+  container.innerHTML =
+  // Ring attività
+  '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
+  +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px">⭕ Attività di oggi</div>'
   +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'
-  +[
-    {ico:'🍖',label:'Pasti',   val:pastiOggi,   max:3, color:'#E65100', tipo:'pasto'},
-    {ico:'🦮',label:'Uscite',  val:usciteOggi,  max:3, color:'#1a7a4a', tipo:'uscita'},
-    {ico:'💊',label:'Farmaci', val:farmaciOggi, max:1, color:'#1565C0', tipo:'farmaco'},
-    {ico:'📸',label:'Foto',    val:fotoOggi,    max:1, color:'#C9A961', tipo:'foto'}
+  +[{ico:'🍖',label:'Pasti',val:pastiOggi,max:3,color:'#E65100',tipo:'pasto'},
+    {ico:'🦮',label:'Uscite',val:usciteOggi,max:3,color:'#1a7a4a',tipo:'uscita'},
+    {ico:'💊',label:'Farmaci',val:farmaciOggi,max:1,color:'#1565C0',tipo:'farmaco'},
+    {ico:'📸',label:'Foto',val:fotoOggi,max:1,color:'#C9A961',tipo:'foto'}
   ].map(function(item){
     var pct = Math.min(100, Math.round(item.val/item.max*100));
     var dash = Math.round(circ*pct/100);
@@ -9350,9 +9356,9 @@ function renderHomeFamiglia(){
   }).join('')
   +'</div></div>'
 
-  // ── GRAFICO SETTIMANA ──
+  // Grafico settimana
   +'<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
-  +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px">Questa settimana</div>'
+  +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px">📊 Questa settimana</div>'
   +'<div style="display:flex;align-items:flex-end;gap:6px;height:60px">'
   +settimana.map(function(s){
     var h = Math.max(4, Math.round(s.count/maxCnt*52));
@@ -9363,7 +9369,7 @@ function renderHomeFamiglia(){
   }).join('')
   +'</div></div>'
 
-  // ── FEED FAMIGLIA ──
+  // Feed famiglia
   +(_famigliaMembers.length > 1
     ? '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
       +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">👨‍👩‍👧 Famiglia — chi ha fatto cosa</div>'
@@ -9371,7 +9377,6 @@ function renderHomeFamiglia(){
       +_famigliaLog.slice(0,3).map(function(log){
         var me = _famigliaMembers.find(function(m){return m.user_id===log.user_id;});
         var emoji = (me&&me.emoji)||'🐾';
-        var icone={pasto:'🍖',uscita:'🦮',peso:'⚖️',nota:'📝',foto:'📸',farmaco:'💊',visita:'🏥',vaccino:'💉'};
         return '<div style="display:flex;align-items:center;gap:10px">'
           +'<div style="width:32px;height:32px;border-radius:50%;background:#EEF3FB;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+emoji+'</div>'
           +'<div style="flex:1;font-size:12px;color:#4A6080"><strong>'+(log.nickname_autore||'Tu')+'</strong> · '+tipoLogLabel(log.tipo)+'</div>'
@@ -9381,7 +9386,7 @@ function renderHomeFamiglia(){
       +'</div></div>'
     : '')
 
-  // ── COMPITI ──
+  // Compiti in evidenza
   +(_famigliaCompiti.length > 0
     ? '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
@@ -9397,9 +9402,9 @@ function renderHomeFamiglia(){
       +'</div></div>'
     : '')
 
-  // ── QUICK ACTIONS ──
+  // Quick actions
   +'<div style="background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
-  +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Registra adesso</div>'
+  +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">➕ Registra adesso</div>'
   +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'
   +[['🍖','Pasto','pasto'],['🦮','Uscita','uscita'],['💊','Farmaco','farmaco'],['⚖️','Peso','peso'],
     ['💉','Vaccino','vaccino'],['🏥','Visita','visita'],['📝','Nota','nota'],['📸','Foto','foto']]
@@ -9410,8 +9415,6 @@ function renderHomeFamiglia(){
       +'</button>';
   }).join('')
   +'</div></div>';
-
-  switchFamTab(_famTabAttiva);
 }
 
 function tipoLogLabel(tipo){
@@ -9433,11 +9436,12 @@ function switchFamTab(tab){
     var id = b.id.replace('ftab-','');
     var att = id === tab;
     b.style.color = att?'#1565C0':'#9ab0cc';
-    b.style.borderBottom = att?'2px solid #1565C0':'none';
+    b.style.borderBottom = att?'2px solid #1565C0':'2px solid transparent';
   });
   var content = g('fam-tab-content');
   if(!content) return;
-  if(tab==='diario') renderDiarioFamiglia(content);
+  if(tab==='home') renderHealthDashboard(content);
+  else if(tab==='diario') renderDiarioFamiglia(content);
   else if(tab==='compiti') renderCompitiFamiglia(content);
   else if(tab==='percorsi') renderPercorsiFamiglia(content);
   else if(tab==='famiglia') renderMembriFamiglia(content);
@@ -9648,7 +9652,6 @@ async function salvaLogFamiglia(tipo, btn){
     btn.closest('[style*=fixed]').remove();
     await caricaLogFamiglia();
     renderHomeFamiglia();
-    switchFamTab('diario');
     toast('✅ '+tipoLogLabel(tipo)+' registrata!');
   } catch(e){
     btn.disabled=false; btn.textContent='✓ Salva';
