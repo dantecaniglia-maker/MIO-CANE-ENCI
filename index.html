@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.5';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.6';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9249,10 +9249,18 @@ function renderHomeFamiglia(){
   var cane = _famigliaCaneSelezionato || _famigliaCani[0];
   _famigliaCaneSelezionato = cane;
 
-  // Stats oggi
-  var oggi = new Date().toISOString().substring(0,10);
+  // Stats oggi (ora locale, non UTC)
+  var now = new Date();
+  var oggi = now.getFullYear()+'-'
+    +String(now.getMonth()+1).padStart(2,'0')+'-'
+    +String(now.getDate()).padStart(2,'0');
   var logOggi = _famigliaLog.filter(function(l){
-    return l.created_at && l.created_at.substring(0,10) === oggi;
+    if(!l.created_at) return false;
+    var d = new Date(l.created_at);
+    var ds = d.getFullYear()+'-'
+      +String(d.getMonth()+1).padStart(2,'0')+'-'
+      +String(d.getDate()).padStart(2,'0');
+    return ds === oggi;
   });
   var pastiOggi    = logOggi.filter(function(l){return l.tipo==='pasto';}).length;
   var usciteOggi   = logOggi.filter(function(l){return l.tipo==='uscita';}).length;
@@ -9436,14 +9444,20 @@ function switchFamTab(tab){
 }
 
 function renderDiarioFamiglia(container){
+  var header = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+    +'<div style="font-weight:700;color:#0D47A1">📖 Diario</div>'
+    +'<button onclick="aggiungiLogFamiglia(\'nota\')" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">+ Log</button>'
+    +'</div>';
   if(_famigliaLog.length === 0){
-    container.innerHTML = '<div style="text-align:center;padding:40px;color:#6B8BB0">'
+    container.innerHTML = header
+      +'<div style="text-align:center;padding:40px;color:#6B8BB0">'
       +'<div style="font-size:40px;margin-bottom:12px">📖</div>'
       +'<div style="font-weight:600">Nessuna attività ancora</div>'
       +'<div style="font-size:13px;margin-top:4px">Usa i pulsanti rapidi per registrare la prima attività!</div></div>';
     return;
   }
-  container.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px">'
+  container.innerHTML = header
+    +'<div style="display:flex;flex-direction:column;gap:10px">'
     +_famigliaLog.map(function(log){
       var icone = {pasto:'🍖',uscita:'🦮',peso:'⚖️',nota:'📝',foto:'📸',farmaco:'💊',visita:'🏥',vaccino:'💉'};
       return '<div style="background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(13,71,161,.06);display:flex;gap:12px;align-items:flex-start">'
@@ -9578,7 +9592,7 @@ function aggiungiLogFamiglia(tipo){
   if(!_famigliaDati || !_famigliaCaneSelezionato){
     toast('Prima crea o unisciti a una famiglia!'); return;
   }
-  var label = {pasto:'Pasto',uscita:'Uscita',farmaco:'Farmaco',foto:'Foto',nota:'Nota',peso:'Peso'}[tipo]||tipo;
+  var label = {pasto:'Pasto',uscita:'Uscita',farmaco:'Farmaco',foto:'Foto',nota:'Nota',peso:'Peso',vaccino:'Vaccino',visita:'Visita veterinaria'}[tipo]||tipo;
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
   var extraField = '';
@@ -9591,11 +9605,19 @@ function aggiungiLogFamiglia(tipo){
     +'<div style="margin-bottom:12px"><label>Note (opzionale)</label>'
     +'<textarea id="log-testo" rows="3" placeholder="Es. Ha mangiato tutto con appetito..."></textarea></div>'
     +'<div style="margin-bottom:16px"><label>Foto (opzionale)</label>'
-    +'<input type="file" id="log-foto-input" accept="image/*" style="width:auto"/></div>'
+    +'<input type="file" id="log-foto-input" accept="image/*" style="width:auto"/>'
+    +'<div id="log-foto-preview" style="margin-top:8px"></div></div>'
     +'<div style="display:flex;gap:10px">'
     +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="flex:1;background:#EEF3FB;color:#6B8BB0;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
     +'<button onclick="salvaLogFamiglia(\''+tipo+'\',this)" style="flex:2;background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva</button>'
-    +'</div></div>';
+    +'</div></div>'
+    +'<script>document.getElementById("log-foto-input").addEventListener("change",function(){'
+    +'var f=this.files[0];if(!f)return;'
+    +'var r=new FileReader();'
+    +'r.onload=function(e){'
+    +'var p=document.getElementById("log-foto-preview");'
+    +'if(p)p.innerHTML=\'<img src="\'+e.target.result+\'" style="width:100%;border-radius:8px;max-height:150px;object-fit:cover"/>\';};'
+    +'r.readAsDataURL(f);});<\/script>';
   document.body.appendChild(overlay);
 }
 
@@ -9626,6 +9648,7 @@ async function salvaLogFamiglia(tipo, btn){
     btn.closest('[style*=fixed]').remove();
     await caricaLogFamiglia();
     renderHomeFamiglia();
+    switchFamTab('diario');
     toast('✅ '+tipoLogLabel(tipo)+' registrata!');
   } catch(e){
     btn.disabled=false; btn.textContent='✓ Salva';
