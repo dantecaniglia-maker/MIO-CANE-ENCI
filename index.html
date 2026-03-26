@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.7';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.8';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1661,7 +1661,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
 </div>
 
 <!-- ══ IMPOSTAZIONI ══ -->
-<div id="modal-impostazioni" class="overlay hidden" style="z-index:500;align-items:flex-end">
+<div id="modal-impostazioni" class="overlay hidden" style="z-index:9995;align-items:flex-end">
   <div class="modal" style="max-width:480px;border-radius:22px 22px 0 0;padding:0;overflow:hidden">
     <!-- Header -->
     <div style="background:linear-gradient(135deg,#0D47A1,#1565C0);padding:20px 24px 16px;display:flex;align-items:center;justify-content:space-between">
@@ -4264,8 +4264,11 @@ async function logout(){
     +'<div style="font-size:16px;font-weight:600;color:#0D47A1">Disconnessione in corso...</div>';
   document.body.appendChild(ov);
 
-  // 1. Invalida sessione su Supabase (scope global = tutti i dispositivi)
-  try { await _supabase.auth.signOut({ scope: 'global' }); } catch(e){ console.warn(e); }
+  // 1. Invalida sessione Supabase (local: più affidabile con chiave pubblica)
+  _currentUser = null;
+  _famigliaDati = null; _famigliaMembers = []; _famigliaCani = [];
+  _famigliaLog = []; _famigliaCompiti = []; _famigliaCaneSelezionato = null;
+  try { await _supabase.auth.signOut(); } catch(e){ console.warn(e); }
 
   // 2. Preserva AI keys poi svuota tutto il localStorage
   var aiKeys = localStorage.getItem('miocane_ai_keys_v1');
@@ -4305,7 +4308,7 @@ async function logout(){
   // 7. Forza reload hard bypassando qualsiasi cache
   setTimeout(function(){
     window.location.replace(window.location.origin + '/?_=' + Date.now());
-  }, 400);
+  }, 800);
 }
 
 async function onUserSignedIn(user){
@@ -9161,8 +9164,10 @@ function applicaModalita(mod){
   if(oldBanner) oldBanner.style.display = 'none';
 
   if(mod === 'famiglia'){
-    // Crea home famiglia se non esiste
-    if(!g('home-famiglia')){
+    // Ricrea sempre home famiglia (struttura sempre aggiornata)
+    var _oldHf = g('home-famiglia');
+    if(_oldHf) _oldHf.remove();
+    {
       var hf = document.createElement('div');
       hf.id = 'home-famiglia';
       hf.style.cssText = 'display:none;position:fixed;inset:0;background:#F4F7FE;z-index:9990;overflow-y:auto;padding-bottom:80px';
