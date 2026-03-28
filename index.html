@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.14';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.15';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9215,13 +9215,13 @@ async function caricaFamiglia(){
   if(!_currentUser){ console.warn('[Famiglia] nessun utente loggato'); return; }
   console.log('[Famiglia] carico per user:', _currentUser.id);
 
-  // Timeout di sicurezza: se Supabase non risponde in 8s mostra il wizard
+  // Timeout di sicurezza: se Supabase non risponde in 15s mostra il wizard
   var timedOut = false;
   var timeoutId = setTimeout(function(){
     timedOut = true;
     console.warn('[Famiglia] timeout — mostro wizard');
     mostraWizardFamiglia();
-  }, 8000);
+  }, 15000);
 
   try {
     // Step 1: cerca il membro
@@ -9747,15 +9747,21 @@ async function creaFamiglia(){
   console.log('[Famiglia] crea famiglia:', nomeFam, 'user:', _currentUser.id);
   var codice = 'FAM-'+Math.random().toString(36).substr(2,4).toUpperCase();
   try {
-    var res = await _supabase.from('famiglie').insert({
+    var ins = await _supabase.from('famiglie').insert({
       nome_famiglia: nomeFam,
       admin_uid: _currentUser.id,
       codice_invito: codice,
       codice_scadenza: new Date(Date.now()+30*24*60*60*1000).toISOString()
-    }).select().single();
-    console.log('[Famiglia] famiglia creata:', res.data, 'errore:', res.error);
-    if(res.error) throw res.error;
-    _famigliaDati = res.data;
+    });
+    console.log('[Famiglia] insert result:', ins.error||'ok');
+    if(ins.error) throw ins.error;
+    var sel = await _supabase.from('famiglie')
+      .select('*')
+      .eq('codice_invito', codice)
+      .single();
+    console.log('[Famiglia] select result:', sel.error||sel.data);
+    if(sel.error) throw sel.error;
+    _famigliaDati = sel.data;
     var res2 = await _supabase.from('famiglia_membri').insert({
       famiglia_id: _famigliaDati.id,
       user_id: _currentUser.id,
