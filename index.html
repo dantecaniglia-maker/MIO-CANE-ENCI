@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.15';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.16';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -3203,8 +3203,6 @@ var _loggingOut = false;
 
 _supabase.auth.onAuthStateChange(async function(event, session){
   if(_loggingOut) return;
-  // Se siamo in flusso logout, ignora qualsiasi evento auth
-  if(window.location.search.includes('logout')) return;
   if(event === 'SIGNED_IN' && session){
     _currentUser = session.user;
     await onUserSignedIn(session.user);
@@ -3214,17 +3212,7 @@ _supabase.auth.onAuthStateChange(async function(event, session){
   }
 });
 
-_supabase.auth.getSession().then(async function(result){
-  // Arriviamo da logout — forza disconnessione e mostra login
-  if(window.location.search.includes('logout')){
-    history.replaceState({}, document.title, '/');
-    _loggingOut = true;
-    try { await _supabase.auth.signOut(); } catch(e){}
-    _loggingOut = false;
-    _currentUser = null;
-    onUserSignedOut();
-    return;
-  }
+_supabase.auth.getSession().then(function(result){
   if(result.data && result.data.session){
     _currentUser = result.data.session.user;
     onUserSignedIn(result.data.session.user);
@@ -4264,50 +4252,24 @@ async function registraEmail(){
 }
 
 async function logout(){
-  if(_loggingOut) return;
-  _loggingOut = true;
+  try { await _supabase.auth.signOut({scope:'global'}); } catch(e){}
 
-  // Mostra overlay
-  var ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;'
-    +'z-index:999999;display:flex;align-items:center;justify-content:center;'
-    +'flex-direction:column;gap:16px;font-family:DM Sans,sans-serif';
-  ov.innerHTML = '<div style="font-size:40px">🔒</div>'
-    +'<div style="font-size:16px;font-weight:600;color:#0D47A1">Disconnessione in corso...</div>';
-  document.body.appendChild(ov);
+  // Cancella TUTTO
+  try { localStorage.clear(); } catch(e){}
+  try { sessionStorage.clear(); } catch(e){}
 
-  // Fallback: se qualcosa va storto, resetta dopo 4s così l'utente può riprovare
-  var fallback = setTimeout(function(){
-    _loggingOut = false;
-    if(ov.parentNode) ov.remove();
-  }, 4000);
-
-  try {
-    // 1. Sign out da Supabase
-    _currentUser = null;
-    try { await _supabase.auth.signOut(); } catch(e){}
-
-    // 2. Salva dati da preservare tra sessioni
-    var _savedMod = localStorage.getItem(_modalitaKey);
-    var _savedAiKeys = localStorage.getItem(AI_KEYS_STORAGE);
-
-    // 3. Svuota storage
-    localStorage.clear();
-    sessionStorage.clear();
-
-    // 4. Ripristina preferenze permanenti
-    if(_savedMod) localStorage.setItem(_modalitaKey, _savedMod);
-    if(_savedAiKeys) localStorage.setItem(AI_KEYS_STORAGE, _savedAiKeys);
-
-    // 5. Redirect con ?logout=1 — getSession() vedrà il flag e non ripristinerà la sessione
-    clearTimeout(fallback);
-    window.location.replace('/?logout=1');
-  } catch(e){
-    clearTimeout(fallback);
-    _loggingOut = false;
-    if(ov.parentNode) ov.remove();
-    toast('Errore disconnessione, riprova');
+  // Deregistra Service Worker e svuota cache
+  if('serviceWorker' in navigator){
+    try {
+      var regs = await navigator.serviceWorker.getRegistrations();
+      for(var r of regs) await r.unregister();
+      var keys = await caches.keys();
+      for(var k of keys) await caches.delete(k);
+    } catch(e){}
   }
+
+  // Forza ricarica totale
+  window.location.href = '/?t=' + Date.now();
 }
 
 async function onUserSignedIn(user){
