@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.13';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.14';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9724,7 +9724,7 @@ function mostraWizardFamiglia(){
     +'<div style="width:100%;max-width:320px;background:#fff;border:1.5px solid #DDEAFF;border-radius:12px;padding:16px;margin-bottom:12px">'
     +'<div style="font-weight:700;color:#1a1a3a;margin-bottom:10px;font-size:14px">🏠 Crea la tua famiglia</div>'
     +'<input id="fam-nome-input" type="text" placeholder="Es. Famiglia Rossi" style="margin-bottom:10px"/>'
-    +'<button onclick="creaFamiglia()" style="width:100%;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer">Crea famiglia</button>'
+    +'<button id="btn-crea-famiglia" onclick="this.disabled=true;this.textContent=\'⏳ Creo...\';creaFamiglia()" style="width:100%;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer">Crea famiglia</button>'
     +'</div>'
     // Sezione codice invito
     +'<div style="width:100%;max-width:320px;background:#fff;border:1.5px solid #DDEAFF;border-radius:12px;padding:16px">'
@@ -9774,6 +9774,8 @@ async function creaFamiglia(){
   } catch(e){
     console.error('[Famiglia] errore crea:', e);
     toast('❌ Errore: '+(e.message||JSON.stringify(e)));
+    var btnCrea = g('btn-crea-famiglia');
+    if(btnCrea){ btnCrea.disabled=false; btnCrea.textContent='Crea famiglia'; }
   }
 }
 
