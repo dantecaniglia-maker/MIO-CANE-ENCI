@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.8';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.9';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -24,7 +24,7 @@ if('serviceWorker' in navigator && window.location.hostname !== 'www.claudeuserc
       newSW.addEventListener('statechange', function(){
         if(newSW.state==='installed' && navigator.serviceWorker.controller){
           newSW.postMessage({type:'SKIP_WAITING'});
-          window.location.reload();
+          // NON fare reload qui — aspetta controllerchange
         }
       });
     });
@@ -4255,7 +4255,7 @@ async function logout(){
   if(_loggingOut) return;
   _loggingOut = true;
 
-  // Mostra overlay di disconnessione
+  // Mostra overlay
   var ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;'
     +'z-index:999999;display:flex;align-items:center;justify-content:center;'
@@ -4264,51 +4264,30 @@ async function logout(){
     +'<div style="font-size:16px;font-weight:600;color:#0D47A1">Disconnessione in corso...</div>';
   document.body.appendChild(ov);
 
-  // 1. Invalida sessione Supabase (local: più affidabile con chiave pubblica)
-  _currentUser = null;
-  _famigliaDati = null; _famigliaMembers = []; _famigliaCani = [];
-  _famigliaLog = []; _famigliaCompiti = []; _famigliaCaneSelezionato = null;
-  try { await _supabase.auth.signOut(); } catch(e){ console.warn(e); }
+  // Fallback: se qualcosa va storto, resetta dopo 4s così l'utente può riprovare
+  var fallback = setTimeout(function(){
+    _loggingOut = false;
+    if(ov.parentNode) ov.remove();
+  }, 4000);
 
-  // 2. Preserva AI keys poi svuota tutto il localStorage
-  var aiKeys = localStorage.getItem('miocane_ai_keys_v1');
-  localStorage.clear();
-  sessionStorage.clear();
-  if(aiKeys) localStorage.setItem('miocane_ai_keys_v1', aiKeys);
-
-  // 3. Cancella tutti i cookie (Supabase li usa su alcuni browser)
-  document.cookie.split(';').forEach(function(c){
-    var name = c.split('=')[0].trim();
-    document.cookie = name + '=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/';
-    document.cookie = name + '=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/;domain=' + location.hostname;
-  });
-
-  // 4. Svuota tutte le cache del Service Worker
-  if('caches' in window){
-    try {
-      var cacheKeys = await caches.keys();
-      await Promise.all(cacheKeys.map(function(k){ return caches.delete(k); }));
-    } catch(e){}
-  }
-
-  // 5. De-registra Service Worker (verrà ri-registrato al prossimo avvio)
-  if(navigator.serviceWorker){
-    try {
-      var regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(function(r){ return r.unregister(); }));
-    } catch(e){}
-  }
-
-  // 6. Cancella IndexedDB di Supabase se presente
   try {
-    var dbs = await indexedDB.databases();
-    dbs.forEach(function(db){ indexedDB.deleteDatabase(db.name); });
-  } catch(e){}
+    // 1. Sign out da Supabase
+    _currentUser = null;
+    try { await _supabase.auth.signOut(); } catch(e){}
 
-  // 7. Forza reload hard bypassando qualsiasi cache
-  setTimeout(function(){
-    window.location.replace(window.location.origin + '/?_=' + Date.now());
-  }, 800);
+    // 2. Svuota storage
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // 3. Redirect — il SW serve index.html da network-first, getSession() troverà nulla
+    clearTimeout(fallback);
+    window.location.replace('/');
+  } catch(e){
+    clearTimeout(fallback);
+    _loggingOut = false;
+    if(ov.parentNode) ov.remove();
+    toast('Errore disconnessione, riprova');
+  }
 }
 
 async function onUserSignedIn(user){
