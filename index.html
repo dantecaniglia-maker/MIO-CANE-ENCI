@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.11';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.12';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9214,31 +9214,60 @@ function applicaModalita(mod){
 async function caricaFamiglia(){
   if(!_currentUser){ console.warn('[Famiglia] nessun utente loggato'); return; }
   console.log('[Famiglia] carico per user:', _currentUser.id);
+
+  // Timeout di sicurezza: se Supabase non risponde in 6s mostra il wizard
+  var timedOut = false;
+  var timeoutId = setTimeout(function(){
+    timedOut = true;
+    console.warn('[Famiglia] timeout — mostro wizard');
+    mostraWizardFamiglia();
+  }, 6000);
+
   try {
-    var res = await _supabase
+    // Step 1: cerca il membro
+    var resMembro = await _supabase
       .from('famiglia_membri')
-      .select('famiglia_id, famiglie(*)')
+      .select('famiglia_id')
       .eq('user_id', _currentUser.id)
-      .single();
-    console.log('[Famiglia] risposta:', res);
-    if(res.error && res.error.code !== 'PGRST116'){
-      console.error('[Famiglia] Errore DB:', res.error);
+      .limit(1);
+    console.log('[Famiglia] membri res:', resMembro);
+    if(timedOut) return;
+
+    if(resMembro.error){
+      console.error('[Famiglia] errore famiglia_membri:', resMembro.error);
+      clearTimeout(timeoutId);
       mostraWizardFamiglia(); return;
     }
-    if(res.data && res.data.famiglie){
-      _famigliaDati = res.data.famiglie;
-      console.log('[Famiglia] famiglia trovata:', _famigliaDati.nome_famiglia);
-    } else {
-      console.log('[Famiglia] nessuna famiglia — mostro wizard');
+    if(!resMembro.data || resMembro.data.length === 0){
+      console.log('[Famiglia] nessuna famiglia trovata — wizard');
+      clearTimeout(timeoutId);
       mostraWizardFamiglia(); return;
     }
+
+    // Step 2: carica dati famiglia
+    var famId = resMembro.data[0].famiglia_id;
+    var resFam = await _supabase.from('famiglie').select('*').eq('id', famId).single();
+    console.log('[Famiglia] famiglie res:', resFam);
+    if(timedOut) return;
+
+    if(resFam.error || !resFam.data){
+      console.error('[Famiglia] errore famiglie:', resFam.error);
+      clearTimeout(timeoutId);
+      mostraWizardFamiglia(); return;
+    }
+
+    clearTimeout(timeoutId);
+    _famigliaDati = resFam.data;
+    console.log('[Famiglia] famiglia OK:', _famigliaDati.nome_famiglia);
     await caricaCanisFamiglia();
     await caricaLogFamiglia();
     await caricaCompitisFamiglia();
     await caricaMembrisFamiglia();
     renderHomeFamiglia();
   } catch(e){
-    console.error('[Famiglia] Eccezione:', e);
+    if(timedOut) return;
+    clearTimeout(timeoutId);
+    console.error('[Famiglia] eccezione:', e);
     mostraWizardFamiglia();
   }
 }
