@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.16';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.17';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9131,7 +9131,7 @@ function applicaModalita(mod){
     {
       var hf = document.createElement('div');
       hf.id = 'home-famiglia';
-      hf.style.cssText = 'display:none;position:fixed;inset:0;background:#F4F7FE;z-index:9990;overflow-y:auto;padding-bottom:80px';
+      hf.style.cssText = 'display:none;position:fixed;inset:0;background:#F4F7FE;z-index:9980;overflow-y:auto;padding-bottom:80px';
       hf.innerHTML =
         // Header
         '<div style="background:linear-gradient(135deg,#0D47A1,#1565C0);padding:20px;display:flex;align-items:center;justify-content:space-between">'
@@ -9145,6 +9145,7 @@ function applicaModalita(mod){
           +'<div style="display:flex;gap:8px">'
             +'<button onclick="apriImpostazioniFamiglia()" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:6px 10px;color:#fff;font-size:18px;cursor:pointer">⚙️</button>'
             +'<button onclick="scegliModalita(\'allevatore\')" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:6px 10px;color:#fff;font-size:11px;font-weight:600;cursor:pointer">🏆 Allevatore</button>'
+            +'<button onclick="logout()" style="background:rgba(255,0,0,.2);border:1px solid rgba(255,0,0,.3);border-radius:8px;padding:6px 10px;color:#fff;font-size:11px;font-weight:600;cursor:pointer">🚪 Esci</button>'
           +'</div>'
         +'</div>'
         // Hero cane
@@ -9201,7 +9202,33 @@ async function caricaFamiglia(){
       mostraWizardFamiglia(); return;
     }
     if(!resMembro.data || resMembro.data.length === 0){
-      console.log('[Famiglia] nessuna famiglia trovata — wizard');
+      console.log('[Famiglia] nessun membro trovato — controllo se admin di una famiglia');
+      // Fallback: l'utente potrebbe essere admin ma senza record membro (es. insert parziale)
+      var resFamAdmin = await _supabase.from('famiglie')
+        .select('*')
+        .eq('admin_uid', _currentUser.id)
+        .limit(1);
+      console.log('[Famiglia] check admin:', resFamAdmin);
+      if(resFamAdmin.data && resFamAdmin.data.length > 0){
+        _famigliaDati = resFamAdmin.data[0];
+        // Ricrea il record membro admin mancante
+        await _supabase.from('famiglia_membri').insert({
+          famiglia_id: _famigliaDati.id,
+          user_id: _currentUser.id,
+          ruolo: 'admin',
+          nickname: 'Admin',
+          emoji: '👑'
+        });
+        console.log('[Famiglia] membro admin ricreato!');
+        await caricaCanisFamiglia();
+        await caricaLogFamiglia();
+        await caricaCompitisFamiglia();
+        await caricaMembrisFamiglia();
+        clearTimeout(timeoutId);
+        renderHomeFamiglia();
+        switchFamTab('home');
+        return;
+      }
       clearTimeout(timeoutId);
       mostraWizardFamiglia(); return;
     }
