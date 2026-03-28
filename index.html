@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.12';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.13';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9215,13 +9215,13 @@ async function caricaFamiglia(){
   if(!_currentUser){ console.warn('[Famiglia] nessun utente loggato'); return; }
   console.log('[Famiglia] carico per user:', _currentUser.id);
 
-  // Timeout di sicurezza: se Supabase non risponde in 6s mostra il wizard
+  // Timeout di sicurezza: se Supabase non risponde in 8s mostra il wizard
   var timedOut = false;
   var timeoutId = setTimeout(function(){
     timedOut = true;
     console.warn('[Famiglia] timeout — mostro wizard');
     mostraWizardFamiglia();
-  }, 6000);
+  }, 8000);
 
   try {
     // Step 1: cerca il membro
@@ -9723,7 +9723,7 @@ function mostraWizardFamiglia(){
     // Sezione crea famiglia (con input inline, senza prompt)
     +'<div style="width:100%;max-width:320px;background:#fff;border:1.5px solid #DDEAFF;border-radius:12px;padding:16px;margin-bottom:12px">'
     +'<div style="font-weight:700;color:#1a1a3a;margin-bottom:10px;font-size:14px">🏠 Crea la tua famiglia</div>'
-    +'<input id="nome-famiglia-input" type="text" placeholder="Es. Famiglia Rossi" style="margin-bottom:10px"/>'
+    +'<input id="fam-nome-input" type="text" placeholder="Es. Famiglia Rossi" style="margin-bottom:10px"/>'
     +'<button onclick="creaFamiglia()" style="width:100%;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer">Crea famiglia</button>'
     +'</div>'
     // Sezione codice invito
@@ -9736,10 +9736,15 @@ function mostraWizardFamiglia(){
 }
 
 async function creaFamiglia(){
-  if(!_currentUser) return;
-  var inp = g('nome-famiglia-input');
-  var nomeFam = inp ? inp.value.trim() : '';
-  if(!nomeFam){ toast('Inserisci il nome della famiglia'); if(inp) inp.focus(); return; }
+  if(!_currentUser){ toast('Devi essere loggato'); return; }
+  // Cerca l'input per nome — supporta entrambi gli id possibili
+  var nomeFam = g('fam-nome-input') ? g('fam-nome-input').value.trim() : null;
+  if(!nomeFam){
+    var inputs = document.querySelectorAll('#wizard-famiglia input[type="text"]');
+    if(inputs.length) nomeFam = inputs[0].value.trim();
+  }
+  if(!nomeFam){ toast('Inserisci il nome della famiglia'); return; }
+  console.log('[Famiglia] crea famiglia:', nomeFam, 'user:', _currentUser.id);
   var codice = 'FAM-'+Math.random().toString(36).substr(2,4).toUpperCase();
   try {
     var res = await _supabase.from('famiglie').insert({
@@ -9748,26 +9753,28 @@ async function creaFamiglia(){
       codice_invito: codice,
       codice_scadenza: new Date(Date.now()+30*24*60*60*1000).toISOString()
     }).select().single();
+    console.log('[Famiglia] famiglia creata:', res.data, 'errore:', res.error);
+    if(res.error) throw res.error;
     _famigliaDati = res.data;
-    await _supabase.from('famiglia_membri').insert({
+    var res2 = await _supabase.from('famiglia_membri').insert({
       famiglia_id: _famigliaDati.id,
       user_id: _currentUser.id,
       ruolo: 'admin',
-      nickname: 'Admin',
+      nickname: nomeFam.split(' ')[0]||'Admin',
       emoji: '👑'
     });
+    console.log('[Famiglia] membro admin aggiunto:', res2.error||'ok');
     var wiz = g('wizard-famiglia');
     if(wiz) wiz.remove();
     toast('🎉 Famiglia "'+nomeFam+'" creata! Codice: '+codice);
-    setTimeout(function(){
-      if(confirm('Famiglia creata! Il tuo codice invito è:\n\n'+codice+'\n\nVuoi condividerlo su WhatsApp?')){
-        var msg = encodeURIComponent('Ciao! Ti invito nella nostra famiglia su BreedPed 🐾\nScarica l\'app e inserisci il codice: '+codice+'\nmio-cane-enci.vercel.app');
-        window.open('https://wa.me/?text='+msg,'_blank');
-      }
-    }, 500);
     await caricaCanisFamiglia();
+    await caricaMembrisFamiglia();
     renderHomeFamiglia();
-  } catch(e){ toast('❌ Errore: '+e.message); }
+    switchFamTab('home');
+  } catch(e){
+    console.error('[Famiglia] errore crea:', e);
+    toast('❌ Errore: '+(e.message||JSON.stringify(e)));
+  }
 }
 
 async function accettaInvitoFamiglia(){
