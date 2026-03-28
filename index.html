@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.10';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.11';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -3202,7 +3202,9 @@ var _currentUser = null;
 var _loggingOut = false;
 
 _supabase.auth.onAuthStateChange(async function(event, session){
-  if(_loggingOut) return; // ignora eventi durante logout
+  if(_loggingOut) return;
+  // Se siamo in flusso logout, ignora qualsiasi evento auth
+  if(window.location.search.includes('logout')) return;
   if(event === 'SIGNED_IN' && session){
     _currentUser = session.user;
     await onUserSignedIn(session.user);
@@ -3212,10 +3214,14 @@ _supabase.auth.onAuthStateChange(async function(event, session){
   }
 });
 
-_supabase.auth.getSession().then(function(result){
-  // Arriviamo da logout — non ripristinare la sessione
+_supabase.auth.getSession().then(async function(result){
+  // Arriviamo da logout — forza disconnessione e mostra login
   if(window.location.search.includes('logout')){
     history.replaceState({}, document.title, '/');
+    _loggingOut = true;
+    try { await _supabase.auth.signOut(); } catch(e){}
+    _loggingOut = false;
+    _currentUser = null;
     onUserSignedOut();
     return;
   }
@@ -9206,21 +9212,24 @@ function applicaModalita(mod){
 ════════════════════════════════════════ */
 
 async function caricaFamiglia(){
-  if(!_currentUser) return;
+  if(!_currentUser){ console.warn('[Famiglia] nessun utente loggato'); return; }
+  console.log('[Famiglia] carico per user:', _currentUser.id);
   try {
     var res = await _supabase
       .from('famiglia_membri')
       .select('famiglia_id, famiglie(*)')
       .eq('user_id', _currentUser.id)
       .single();
+    console.log('[Famiglia] risposta:', res);
     if(res.error && res.error.code !== 'PGRST116'){
-      // Errore reale (RLS, rete, ecc.) — non è "nessun risultato"
-      console.error('[Famiglia] Errore caricamento:', res.error);
+      console.error('[Famiglia] Errore DB:', res.error);
       mostraWizardFamiglia(); return;
     }
     if(res.data && res.data.famiglie){
       _famigliaDati = res.data.famiglie;
+      console.log('[Famiglia] famiglia trovata:', _famigliaDati.nome_famiglia);
     } else {
+      console.log('[Famiglia] nessuna famiglia — mostro wizard');
       mostraWizardFamiglia(); return;
     }
     await caricaCanisFamiglia();
@@ -9673,15 +9682,22 @@ function fileToBase64(file){
 }
 
 function mostraWizardFamiglia(){
-  if(g('wizard-famiglia')) return;
+  var old = g('wizard-famiglia');
+  if(old) old.remove();
   var overlay = document.createElement('div');
   overlay.id = 'wizard-famiglia';
-  overlay.style.cssText = 'position:fixed;inset:0;background:#F4F7FE;z-index:99991;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#F4F7FE;z-index:99991;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center';
   overlay.innerHTML =
     '<img src="logo.jpeg" style="width:80px;height:80px;border-radius:20px;object-fit:cover;margin-bottom:20px;box-shadow:0 8px 32px rgba(201,169,97,.4)" onerror="this.style.display=\'none\'"/>'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:24px;font-weight:700;color:#0D47A1;margin-bottom:8px">Benvenuto in Famiglia!</div>'
-    +'<div style="color:#6B8BB0;font-size:14px;margin-bottom:32px;max-width:320px;line-height:1.6">Crea la tua famiglia o entra in una esistente con un codice di invito</div>'
-    +'<button onclick="creaFamiglia()" style="width:100%;max-width:320px;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px">🏠 Crea la mia famiglia</button>'
+    +'<div style="color:#6B8BB0;font-size:14px;margin-bottom:24px;max-width:320px;line-height:1.6">Crea la tua famiglia o entra in una esistente con un codice di invito</div>'
+    // Sezione crea famiglia (con input inline, senza prompt)
+    +'<div style="width:100%;max-width:320px;background:#fff;border:1.5px solid #DDEAFF;border-radius:12px;padding:16px;margin-bottom:12px">'
+    +'<div style="font-weight:700;color:#1a1a3a;margin-bottom:10px;font-size:14px">🏠 Crea la tua famiglia</div>'
+    +'<input id="nome-famiglia-input" type="text" placeholder="Es. Famiglia Rossi" style="margin-bottom:10px"/>'
+    +'<button onclick="creaFamiglia()" style="width:100%;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer">Crea famiglia</button>'
+    +'</div>'
+    // Sezione codice invito
     +'<div style="width:100%;max-width:320px;background:#fff;border:1.5px solid #DDEAFF;border-radius:12px;padding:16px">'
     +'<div style="font-weight:700;color:#1a1a3a;margin-bottom:10px;font-size:14px">Hai un codice di invito?</div>'
     +'<input id="codice-invito-input" type="text" placeholder="Es. FAM-X7K9" style="text-align:center;font-size:16px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px"/>'
@@ -9692,8 +9708,9 @@ function mostraWizardFamiglia(){
 
 async function creaFamiglia(){
   if(!_currentUser) return;
-  var nomeFam = prompt('Come si chiama la tua famiglia? (es. "Famiglia Rossi")');
-  if(!nomeFam) return;
+  var inp = g('nome-famiglia-input');
+  var nomeFam = inp ? inp.value.trim() : '';
+  if(!nomeFam){ toast('Inserisci il nome della famiglia'); if(inp) inp.focus(); return; }
   var codice = 'FAM-'+Math.random().toString(36).substr(2,4).toUpperCase();
   try {
     var res = await _supabase.from('famiglie').insert({
