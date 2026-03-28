@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.9';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.10';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -3213,6 +3213,12 @@ _supabase.auth.onAuthStateChange(async function(event, session){
 });
 
 _supabase.auth.getSession().then(function(result){
+  // Arriviamo da logout — non ripristinare la sessione
+  if(window.location.search.includes('logout')){
+    history.replaceState({}, document.title, '/');
+    onUserSignedOut();
+    return;
+  }
   if(result.data && result.data.session){
     _currentUser = result.data.session.user;
     onUserSignedIn(result.data.session.user);
@@ -4275,13 +4281,21 @@ async function logout(){
     _currentUser = null;
     try { await _supabase.auth.signOut(); } catch(e){}
 
-    // 2. Svuota storage
+    // 2. Salva dati da preservare tra sessioni
+    var _savedMod = localStorage.getItem(_modalitaKey);
+    var _savedAiKeys = localStorage.getItem(AI_KEYS_STORAGE);
+
+    // 3. Svuota storage
     localStorage.clear();
     sessionStorage.clear();
 
-    // 3. Redirect — il SW serve index.html da network-first, getSession() troverà nulla
+    // 4. Ripristina preferenze permanenti
+    if(_savedMod) localStorage.setItem(_modalitaKey, _savedMod);
+    if(_savedAiKeys) localStorage.setItem(AI_KEYS_STORAGE, _savedAiKeys);
+
+    // 5. Redirect con ?logout=1 — getSession() vedrà il flag e non ripristinerà la sessione
     clearTimeout(fallback);
-    window.location.replace('/');
+    window.location.replace('/?logout=1');
   } catch(e){
     clearTimeout(fallback);
     _loggingOut = false;
@@ -9199,6 +9213,11 @@ async function caricaFamiglia(){
       .select('famiglia_id, famiglie(*)')
       .eq('user_id', _currentUser.id)
       .single();
+    if(res.error && res.error.code !== 'PGRST116'){
+      // Errore reale (RLS, rete, ecc.) — non è "nessun risultato"
+      console.error('[Famiglia] Errore caricamento:', res.error);
+      mostraWizardFamiglia(); return;
+    }
     if(res.data && res.data.famiglie){
       _famigliaDati = res.data.famiglie;
     } else {
@@ -9210,6 +9229,7 @@ async function caricaFamiglia(){
     await caricaMembrisFamiglia();
     renderHomeFamiglia();
   } catch(e){
+    console.error('[Famiglia] Eccezione:', e);
     mostraWizardFamiglia();
   }
 }
@@ -9754,6 +9774,11 @@ function apriAggiungiCaneFamiglia(){
 async function salvaCaneFamiglia(btn){
   var nome = g('nc-nome')&&g('nc-nome').value.trim();
   if(!nome){ toast('Inserisci il nome del cane'); return; }
+  if(!_famigliaDati || !_famigliaDati.id){
+    toast('❌ Errore: famiglia non caricata. Riprova tra un momento.');
+    btn.disabled=false; btn.textContent='🐾 Aggiungi cane';
+    return;
+  }
   btn.disabled=true; btn.textContent='⏳';
   var fotoUrl = null;
   var fotoInput = g('nc-foto');
