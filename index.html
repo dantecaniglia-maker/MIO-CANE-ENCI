@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.18';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.19';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9393,8 +9393,13 @@ function renderHealthDashboard(container){
 
   function mkRing(ico,val,max,color,top,right,bottom,left,tipo){
     var dash = Math.round(circ*Math.min(1,val/max));
+    var pos = 'position:absolute;';
+    if(top!=='auto') pos+='top:'+top+';';
+    if(right!=='auto') pos+='right:'+right+';';
+    if(bottom!=='auto') pos+='bottom:'+bottom+';';
+    if(left!=='auto') pos+='left:'+left+';';
     return '<svg width="90" height="90" viewBox="0 0 90 90" onclick="aggiungiLogFamiglia(\''+tipo+'\')" '
-      +'style="position:absolute;top:'+top+';right:'+right+';bottom:'+bottom+';left:'+left+';transform:rotate(-90deg);cursor:pointer">'
+      +'style="'+pos+'transform:rotate(-90deg);cursor:pointer">'
       +'<circle cx="45" cy="45" r="32" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="9"/>'
       +'<circle cx="45" cy="45" r="32" fill="none" stroke="'+color+'" stroke-width="9" stroke-linecap="round" '
       +'stroke-dasharray="'+dash+' '+circ+'" style="animation:bpRingFill 800ms ease-out"/>'
@@ -9436,10 +9441,10 @@ function renderHealthDashboard(container){
   }).join('')
   +'</div>'
   // Cluster ring destra
-  +'<div style="position:relative;width:120px;height:120px;flex-shrink:0">'
+  +'<div style="position:relative;width:130px;height:130px;flex-shrink:0">'
   +mkRing('🍖',pastiOggi,3,'#C9A961','0','0','auto','auto','pasto')
-  +mkRing('🦮',usciteOggi,3,'rgba(255,255,255,.7)','auto','auto','0','10px','uscita')
-  +mkRing('💊',farmaciOggi,1,'#90CAF9','auto','10px','0','auto','farmaco')
+  +mkRing('🦮',usciteOggi,3,'rgba(255,255,255,.7)','auto','auto','0','0','uscita')
+  +mkRing('💊',farmaciOggi,1,'#90CAF9','auto','0','0','auto','farmaco')
   +'</div>'
   +'</div></div>'
 
