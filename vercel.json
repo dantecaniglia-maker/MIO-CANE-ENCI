@@ -13,9 +13,11 @@
     { "src": "/logo.jpeg", "headers": { "Cache-Control": "public, max-age=31536000" }, "dest": "/logo.jpeg" },
     { "src": "/logo-padded.png", "headers": { "Cache-Control": "public, max-age=31536000" }, "dest": "/logo-padded.png" },
     { "src": "/logo-icon.html", "dest": "/logo-icon.html" },
-    { "src": "/sw.js", "headers": { "Content-Type": "application/javascript", "Cache-Control": "no-cache" }, "dest": "/sw.js" },
-    { "src": "/manifest.json", "headers": { "Content-Type": "application/manifest+json" }, "dest": "/manifest.json" },
+    { "src": "/sw.js", "headers": { "Content-Type": "application/javascript", "Cache-Control": "no-cache, no-store, must-revalidate" }, "dest": "/sw.js" },
+    { "src": "/index.html", "headers": { "Cache-Control": "no-cache, no-store, must-revalidate" }, "dest": "/index.html" },
+    { "src": "/manifest.json", "headers": { "Content-Type": "application/manifest+json", "Cache-Control": "no-cache" }, "dest": "/manifest.json" },
     { "src": "/survey(\\.html)?", "dest": "/survey.html" },
+    { "src": "/", "headers": { "Cache-Control": "no-cache, no-store, must-revalidate" }, "dest": "/index.html" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
