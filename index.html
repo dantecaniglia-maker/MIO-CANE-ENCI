@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.26';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.27';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -193,6 +193,7 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 .bn-btn.bn-active>span:first-child{filter:drop-shadow(0 2px 5px rgba(21,101,192,.4))}
 @media(max-width:600px){
   #bottom-nav{display:flex!important}
+  #bottom-nav.fam-hidden{display:none!important}
   #main-body{padding-bottom:70px!important}
   #sidebar{padding-bottom:70px!important}
   #detail{padding-bottom:70px!important}
@@ -9097,6 +9098,10 @@ var _famigliaCompiti = [];
 var _famigliaCaneSelezionato = null;
 var _famTabAttiva = 'home';
 var _missioniOggi = [];
+var _famigliaPercorsi = [];
+var _gpsAttivo=false, _gpsWatchId=null, _gpsPunti=[];
+var _gpsKm=0, _gpsStartTime=null, _gpsTimerInterval=null;
+var _leafletMap=null, _leafletPolyline=null, _leafletMarker=null;
 var _FAMIGLIA_KEY = 'breedped_famiglia_v1';
 
 function _salvFam(){
@@ -9196,7 +9201,7 @@ function applicaModalita(mod){
       document.body.appendChild(hf);
     }
     g('home-famiglia').style.display = 'block';
-    if(g('bottom-nav')) g('bottom-nav').style.display = 'none';
+    if(g('bottom-nav')) g('bottom-nav').classList.add('fam-hidden');
     // Crea bottom nav famiglia se non esiste
     if(!g('fam-bottom-nav')){
       var fbn = document.createElement('nav');
@@ -9219,7 +9224,7 @@ function applicaModalita(mod){
   } else {
     var hf2 = g('home-famiglia');
     if(hf2) hf2.style.display = 'none';
-    if(g('bottom-nav')) g('bottom-nav').style.display = '';
+    if(g('bottom-nav')) g('bottom-nav').classList.remove('fam-hidden');
     var fbn2 = g('fam-bottom-nav'); if(fbn2) fbn2.style.display = 'none';
     var _fab2 = g('chat-fab'); if(_fab2){ _fab2.style.zIndex='9998'; _fab2.style.bottom='72px'; }
   }
@@ -9291,12 +9296,14 @@ async function _syncFamigliaBackground(mostraWizardSeVuoto){
       _supabase.from('famiglia_cani').select('*').eq('famiglia_id',_famigliaDati.id),
       _supabase.from('famiglia_log').select('*').eq('famiglia_id',_famigliaDati.id).order('created_at',{ascending:false}).limit(50),
       _supabase.from('famiglia_compiti').select('*').eq('famiglia_id',_famigliaDati.id).eq('completato',false),
-      _supabase.from('famiglia_membri').select('*').eq('famiglia_id',_famigliaDati.id)
+      _supabase.from('famiglia_membri').select('*').eq('famiglia_id',_famigliaDati.id),
+      _supabase.from('famiglia_percorsi').select('*').eq('famiglia_id',_famigliaDati.id).order('created_at',{ascending:false}).limit(20)
     ]);
     if(_d[0].data) _famigliaCani = _d[0].data;
     if(_d[1].data) _famigliaLog  = _d[1].data;
-    if(_d[2].data) _famigliaCompiti = _d[2].data;
+    if(_d[2].data) _famigliaCompiti = _d[2].data.map(function(c){ return Object.assign({punti:20},c); });
     if(_d[3].data) _famigliaMembers = _d[3].data;
+    if(_d[4].data) _famigliaPercorsi = _d[4].data;
     _salvFam();
     renderHomeFamiglia();
     switchFamTab('home');
@@ -9773,29 +9780,255 @@ function renderDiarioFamiglia(container){
 }
 
 function renderCompitiFamiglia(container){
-  container.innerHTML = '<div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">'
-    +'<div style="font-weight:700;color:#0D47A1">Compiti del giorno</div>'
-    +'<button onclick="apriAggiungiCompito()" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Compito</button>'
+  var isAdmin = _famigliaDati && _currentUser &&
+    _famigliaDati.admin_uid === _currentUser.id;
+  var mieiCompiti = _famigliaCompiti.filter(function(c){
+    return !c.assegnato_a || c.assegnato_a === _currentUser.id;
+  });
+  var altriCompiti = _famigliaCompiti.filter(function(c){
+    return c.assegnato_a && c.assegnato_a !== _currentUser.id;
+  });
+
+  container.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+    +'<div style="font-weight:700;color:#0D47A1;font-size:16px">✅ Compiti</div>'
+    +(isAdmin?'<button onclick="apriCreaCompitoAdmin()" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Assegna</button>':'')
     +'</div>'
-    +(_famigliaCompiti.length===0
-      ? '<div style="text-align:center;padding:30px;color:#6B8BB0"><div style="font-size:36px;margin-bottom:8px">✅</div><div>Nessun compito pendente!</div></div>'
-      : '<div style="display:flex;flex-direction:column;gap:8px">'
-        +_famigliaCompiti.map(function(c){
-          return '<div style="background:#fff;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(13,71,161,.06)">'
-            +'<button onclick="completaCompito(\''+c.id+'\')" style="width:24px;height:24px;border-radius:50%;border:2px solid #DDEAFF;background:#fff;cursor:pointer;flex-shrink:0"></button>'
-            +'<div style="flex:1"><div style="font-weight:600;font-size:13px">'+c.testo+'</div>'
-            +(c.data_scadenza?'<div style="font-size:11px;color:#6B8BB0">📅 '+c.data_scadenza+'</div>':'')
-            +'</div></div>';
-        }).join('')+'</div>');
+
+    +(mieiCompiti.length>0
+      ? '<div style="font-size:10px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🎯 I miei compiti</div>'
+        +'<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">'
+        +mieiCompiti.map(function(c){
+          var punti = c.punti||20;
+          return '<div style="background:#fff;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(13,71,161,.06);border-left:3px solid #C9A961">'
+            +'<button onclick="completaCompito(\''+c.id+'\')" style="width:26px;height:26px;border-radius:50%;border:2px solid #C9A961;background:#FFF8E7;cursor:pointer;flex-shrink:0;font-size:14px">○</button>'
+            +'<div style="flex:1">'
+              +'<div style="font-weight:600;font-size:13px;color:#1a1a3a">'+(c.testo||c.titolo||'')+'</div>'
+              +(c.data_scadenza?'<div style="font-size:10px;color:#9ab0cc">📅 '+c.data_scadenza+'</div>':'')
+            +'</div>'
+            +'<div style="background:#FFF8E7;border:1px solid #C9A961;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#A88A41">+'+punti+'pt</div>'
+            +'</div>';
+        }).join('')+'</div>'
+      : '<div style="background:#F4F7FE;border-radius:12px;padding:20px;text-align:center;margin-bottom:16px">'
+        +'<div style="font-size:32px;margin-bottom:8px">✅</div>'
+        +'<div style="font-size:13px;color:#6B8BB0">Nessun compito assegnato a te</div>'
+        +'</div>')
+
+    +(isAdmin && altriCompiti.length>0
+      ? '<div style="font-size:10px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">👨‍👩‍👧 Compiti del branco</div>'
+        +'<div style="display:flex;flex-direction:column;gap:8px">'
+        +altriCompiti.map(function(c){
+          var _m = _famigliaMembers.find(function(m){return m.user_id===c.assegnato_a;});
+          var punti = c.punti||20;
+          return '<div style="background:#F4F7FE;border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px;opacity:.85">'
+            +'<div style="font-size:22px">'+(_m?_m.emoji:'🐾')+'</div>'
+            +'<div style="flex:1">'
+              +'<div style="font-size:12px;font-weight:600;color:#4A6080">'+(c.testo||c.titolo||'')+'</div>'
+              +'<div style="font-size:10px;color:#9ab0cc">'+(_m?_m.nickname:'Membro')+'</div>'
+            +'</div>'
+            +'<div style="font-size:11px;font-weight:700;color:#9ab0cc">+'+punti+'pt</div>'
+            +'</div>';
+        }).join('')+'</div>'
+      : '');
+}
+
+function apriCreaCompitoAdmin(){
+  if(!_famigliaDati) return;
+  var membriOptions = _famigliaMembers.map(function(m){
+    return '<option value="'+m.user_id+'">'+m.emoji+' '+m.nickname+'</option>';
+  }).join('');
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:16px">✅ Assegna compito</div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">COMPITO</label>'
+      +'<input type="text" id="compito-admin-testo" placeholder="Es. Porta Rex al parco" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px"/></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">ASSEGNA A</label>'
+      +'<select id="compito-admin-membro" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px">'
+        +'<option value="">Chiunque del branco</option>'+membriOptions+'</select></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">PUNTI (+pt al Dog Score)</label>'
+      +'<div style="display:flex;gap:8px">'
+        +[10,20,30,50].map(function(p){
+          return '<button onclick="document.getElementById(\'compito-admin-punti\').value='+p+';document.querySelectorAll(\'.pt-btn\').forEach(function(b){b.style.background=\'#F4F7FE\';b.style.color=\'#6B8BB0\'});this.style.background=\'#C9A961\';this.style.color=\'#fff\'" '
+            +'class="pt-btn" style="flex:1;padding:8px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:#F4F7FE;color:#6B8BB0">+'+p+'pt</button>';
+        }).join('')
+      +'</div>'
+      +'<input type="hidden" id="compito-admin-punti" value="20"/></div>'
+    +'<div style="display:flex;gap:10px">'
+      +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="flex:1;background:#EEF3FB;color:#6B8BB0;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
+      +'<button onclick="salvaCreaCompitoAdmin(this)" style="flex:2;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Assegna</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+}
+
+async function salvaCreaCompitoAdmin(btn){
+  var testo = (document.getElementById('compito-admin-testo')&&document.getElementById('compito-admin-testo').value.trim())||'';
+  if(!testo){ toast('Scrivi il compito'); return; }
+  var assegnato = document.getElementById('compito-admin-membro')&&document.getElementById('compito-admin-membro').value||null;
+  var punti = parseInt(document.getElementById('compito-admin-punti')&&document.getElementById('compito-admin-punti').value)||20;
+  btn.disabled=true; btn.textContent='⏳';
+  var _res = await _supabase.from('famiglia_compiti').insert({
+    famiglia_id: _famigliaDati.id,
+    cane_id: _famigliaCaneSelezionato&&_famigliaCaneSelezionato.id||null,
+    creato_da: _currentUser.id,
+    testo: testo,
+    assegnato_a: assegnato||null,
+    completato: false
+  }).select().single();
+  btn.closest('[style*=fixed]').remove();
+  var newC = Object.assign({punti:punti}, _res.data||{
+    id:'local-'+Date.now(), famiglia_id:_famigliaDati.id,
+    testo:testo, assegnato_a:assegnato||null,
+    completato:false, created_at:new Date().toISOString()
+  });
+  _famigliaCompiti.unshift(newC);
+  _salvFam();
+  switchFamTab('compiti');
+  toast('✅ Compito assegnato!');
 }
 
 function renderPercorsiFamiglia(container){
-  container.innerHTML = '<div style="text-align:center;padding:20px">'
-    +'<div style="font-size:48px;margin-bottom:12px">🗺️</div>'
-    +'<div style="font-weight:700;color:#0D47A1;font-size:16px;margin-bottom:8px">GPS Percorsi</div>'
-    +'<div style="color:#6B8BB0;font-size:13px;margin-bottom:20px">Traccia le passeggiate con il tuo cane</div>'
-    +'<button onclick="avviaPercorso()" style="background:linear-gradient(135deg,#1a7a4a,#0d5c35);color:#fff;border:none;border-radius:12px;padding:16px 32px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(26,122,74,.3)">▶ Inizia percorso</button>'
-    +'</div>';
+  container.innerHTML =
+    '<div id="fam-gps-ui">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+      +'<div style="font-weight:700;color:#0D47A1;font-size:16px">🗺️ Percorsi GPS</div>'
+      +'<div id="fam-gps-stato" style="font-size:11px;color:#9ab0cc">Pronto</div>'
+    +'</div>'
+    +'<div id="fam-map" style="height:260px;border-radius:16px;overflow:hidden;margin-bottom:12px;background:#EEF3FB;display:flex;align-items:center;justify-content:center">'
+      +'<div style="text-align:center;color:#6B8BB0"><div style="font-size:32px">🗺️</div><div style="font-size:12px;margin-top:8px">La mappa apparirà qui</div></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:10px;margin-bottom:12px">'
+      +'<div style="flex:1;background:#fff;border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(13,71,161,.06)">'
+        +'<div id="fam-gps-km" style="font-size:24px;font-weight:800;color:#0D47A1">0.0</div>'
+        +'<div style="font-size:10px;color:#9ab0cc;font-weight:700">KM</div>'
+      +'</div>'
+      +'<div style="flex:1;background:#fff;border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(13,71,161,.06)">'
+        +'<div id="fam-gps-durata" style="font-size:24px;font-weight:800;color:#0D47A1">0:00</div>'
+        +'<div style="font-size:10px;color:#9ab0cc;font-weight:700">DURATA</div>'
+      +'</div>'
+    +'</div>'
+    +'<button id="fam-gps-btn" onclick="togglePercorso()" style="width:100%;background:linear-gradient(135deg,#1a7a4a,#0d5c35);color:#fff;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(26,122,74,.3)">▶ Inizia percorso</button>'
+    +'</div>'
+    +(_famigliaPercorsi&&_famigliaPercorsi.length>0
+      ? '<div style="margin-top:16px">'
+          +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">📋 Percorsi recenti</div>'
+          +'<div style="display:flex;flex-direction:column;gap:8px">'
+          +_famigliaPercorsi.slice(0,5).map(function(p){
+            return '<div style="background:#fff;border-radius:10px;padding:12px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(13,71,161,.06)">'
+              +'<div style="font-size:24px">🦮</div>'
+              +'<div style="flex:1"><div style="font-weight:600;font-size:13px">'+(p.nome||'Passeggiata')+'</div>'
+              +'<div style="font-size:11px;color:#9ab0cc">'+(p.distanza_km||0)+' km · '+(p.durata_minuti||0)+' min</div></div>'
+              +'<div style="font-size:11px;font-weight:700;color:#1a7a4a">+'+Math.round((p.distanza_km||0)*10)+'pt</div>'
+              +'</div>';
+          }).join('')+'</div></div>'
+      : '');
+
+  if(!window.L){
+    var link = document.createElement('link');
+    link.rel='stylesheet';
+    link.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+    var script = document.createElement('script');
+    script.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.onload = function(){ inizializzaMappa(); };
+    document.head.appendChild(script);
+  } else {
+    setTimeout(inizializzaMappa, 100);
+  }
+}
+
+function inizializzaMappa(){
+  var mapDiv = document.getElementById('fam-map');
+  if(!mapDiv || !window.L) return;
+  if(_leafletMap){ _leafletMap.remove(); _leafletMap=null; }
+  mapDiv.innerHTML = '';
+  mapDiv.style.display = 'block';
+  _leafletMap = L.map('fam-map').setView([41.9, 12.5], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© OpenStreetMap'
+  }).addTo(_leafletMap);
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(function(pos){
+      _leafletMap.setView([pos.coords.latitude, pos.coords.longitude], 15);
+    }, function(){}, {timeout:5000});
+  }
+}
+
+function togglePercorso(){
+  if(!_gpsAttivo) avviaPercorsoGPS();
+  else fermaPercorsoGPS();
+}
+
+function avviaPercorsoGPS(){
+  if(!navigator.geolocation){ toast('GPS non disponibile su questo dispositivo'); return; }
+  _gpsAttivo=true; _gpsPunti=[]; _gpsKm=0; _gpsStartTime=Date.now();
+  var btn=document.getElementById('fam-gps-btn'), stato=document.getElementById('fam-gps-stato');
+  if(btn){ btn.textContent='⏹ Ferma percorso'; btn.style.background='linear-gradient(135deg,#C0534A,#9b3a33)'; }
+  if(stato) stato.textContent='🟢 GPS attivo';
+  _gpsTimerInterval = setInterval(function(){
+    var mins=Math.floor((Date.now()-_gpsStartTime)/60000);
+    var secs=Math.floor(((Date.now()-_gpsStartTime)%60000)/1000);
+    var el=document.getElementById('fam-gps-durata');
+    if(el) el.textContent=mins+':'+(secs<10?'0':'')+secs;
+  },1000);
+  _gpsWatchId = navigator.geolocation.watchPosition(function(pos){
+    var p=[pos.coords.latitude, pos.coords.longitude];
+    if(_gpsPunti.length>0){
+      var prev=_gpsPunti[_gpsPunti.length-1];
+      var dist=calcolaDistanzaKm(prev[0],prev[1],p[0],p[1]);
+      if(dist<0.005) return;
+      _gpsKm+=dist;
+      var el=document.getElementById('fam-gps-km');
+      if(el) el.textContent=_gpsKm.toFixed(2);
+    }
+    _gpsPunti.push(p);
+    if(_leafletMap&&window.L){
+      if(_leafletPolyline) _leafletPolyline.remove();
+      _leafletPolyline=L.polyline(_gpsPunti,{color:'#0D47A1',weight:4}).addTo(_leafletMap);
+      if(_leafletMarker) _leafletMarker.remove();
+      _leafletMarker=L.circleMarker(p,{radius:8,color:'#C9A961',fillColor:'#C9A961',fillOpacity:1}).addTo(_leafletMap);
+      _leafletMap.panTo(p);
+    }
+  }, function(err){ toast('Errore GPS: '+err.message); },
+  {enableHighAccuracy:true, maximumAge:3000, timeout:10000});
+}
+
+async function fermaPercorsoGPS(){
+  _gpsAttivo=false;
+  if(_gpsWatchId){ navigator.geolocation.clearWatch(_gpsWatchId); _gpsWatchId=null; }
+  if(_gpsTimerInterval){ clearInterval(_gpsTimerInterval); _gpsTimerInterval=null; }
+  var btn=document.getElementById('fam-gps-btn'), stato=document.getElementById('fam-gps-stato');
+  if(btn){ btn.textContent='▶ Inizia percorso'; btn.style.background='linear-gradient(135deg,#1a7a4a,#0d5c35)'; }
+  if(stato) stato.textContent='Percorso completato';
+  var durataMins=Math.round((Date.now()-_gpsStartTime)/60000);
+  var km=Math.round(_gpsKm*100)/100;
+  if(km<0.05){ toast('Percorso troppo breve — non salvato'); return; }
+  if(_famigliaDati&&_famigliaCaneSelezionato){
+    var puntiPercorso=Math.round(km*10);
+    await _supabase.from('famiglia_percorsi').insert({
+      famiglia_id:_famigliaDati.id,
+      cane_id:_famigliaCaneSelezionato.id,
+      user_id:_currentUser.id,
+      nome:'Passeggiata '+new Date().toLocaleDateString('it-IT'),
+      distanza_km:km,
+      durata_minuti:durataMins,
+      punti:puntiPercorso
+    });
+    var nick=(_famigliaMembers.find(function(m){return m.user_id===_currentUser.id;})||{}).nickname||'Tu';
+    _famigliaLog.unshift({tipo:'uscita',created_at:new Date().toISOString(),
+      user_id:_currentUser.id,nickname_autore:nick,
+      famiglia_id:_famigliaDati.id,dati:{km:km}});
+    _famigliaPercorsi.unshift({nome:'Passeggiata '+new Date().toLocaleDateString('it-IT'),
+      distanza_km:km,durata_minuti:durataMins,created_at:new Date().toISOString()});
+    _salvFam();
+    toast('🎉 Percorso salvato! +'+puntiPercorso+'pt · '+km+' km');
+  }
+}
+
+function calcolaDistanzaKm(lat1,lon1,lat2,lon2){
+  var R=6371, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
 function renderMembriFamiglia(container){
@@ -9933,7 +10166,7 @@ async function caricaCompitisFamiglia(){
     .select('*').eq('famiglia_id',_famigliaDati.id)
     .eq('completato',false)
     .order('created_at',{ascending:false});
-  _famigliaCompiti = res.data||[];
+  _famigliaCompiti = (res.data||[]).map(function(c){ return Object.assign({punti:20},c); });
 }
 
 async function caricaMembrisFamiglia(){
