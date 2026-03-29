@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.21';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.22';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -19,12 +19,13 @@
 // Registra Service Worker solo su Vercel (non nella preview Claude)
 if('serviceWorker' in navigator && window.location.hostname !== 'www.claudeusercontent.com'){
   navigator.serviceWorker.register('/sw.js').then(function(reg){
+    // Forza controllo aggiornamenti ad ogni apertura (non solo ogni 24h)
+    reg.update();
     reg.addEventListener('updatefound', function(){
       var newSW = reg.installing;
       newSW.addEventListener('statechange', function(){
         if(newSW.state==='installed' && navigator.serviceWorker.controller){
           newSW.postMessage({type:'SKIP_WAITING'});
-          // NON fare reload qui — aspetta controllerchange
         }
       });
     });

@@ -1,5 +1,5 @@
 // ── CAMBIA QUESTO NUMERO AD OGNI DEPLOY ──
-const VERSION = '11.21';
+const VERSION = '11.22';
 const CACHE = 'miocane-' + VERSION;
 
 self.addEventListener('message', function(e){
@@ -9,10 +9,11 @@ self.addEventListener('message', function(e){
 self.addEventListener('install', function(e) {
   console.log('[SW] Install v' + VERSION);
   e.waitUntil(
+    // index.html NON viene pre-cachato — sempre da rete
     caches.open(CACHE).then(function(c) {
-      return c.addAll(['/index.html', '/manifest.json']);
+      return c.addAll(['/manifest.json']);
     }).then(function() {
-      return self.skipWaiting(); // Attiva subito senza aspettare
+      return self.skipWaiting();
     })
   );
 });
@@ -23,13 +24,13 @@ self.addEventListener('activate', function(e) {
     caches.keys().then(function(keys) {
       return Promise.all(
         keys.filter(function(k) { return k !== CACHE; })
-            .map(function(k) { 
+            .map(function(k) {
               console.log('[SW] Elimino cache vecchia:', k);
-              return caches.delete(k); 
+              return caches.delete(k);
             })
       );
     }).then(function() {
-      return self.clients.claim(); // Prende controllo di tutte le tab aperte
+      return self.clients.claim();
     })
   );
 });
@@ -54,7 +55,6 @@ self.addEventListener('fetch', function(e) {
   if (e.request.method !== 'GET') return;
   if (!e.request.url.startsWith('http')) return;
 
-  // Survey: mai intercettare, sempre alla rete
   var reqUrl = e.request.url;
   if (reqUrl.includes('/survey') ||
       reqUrl.includes('/survey.html') ||
@@ -62,12 +62,9 @@ self.addEventListener('fetch', function(e) {
       reqUrl.includes('/vetrina') ||
       reqUrl.includes('/annuncio')) return;
 
-  // Per index.html e deep link (?code= / ?import=): sempre network-first
   var url = e.request.url;
   var isDeepLink = url.includes('?code=') || url.includes('?import=');
 
-  // Notifica le finestre PWA già aperte quando arriva un deep link
-  // (utile quando la PWA è in background e si naviga allo stesso URL)
   if (isDeepLink) {
     try {
       var parsed = new URL(url);
@@ -81,20 +78,23 @@ self.addEventListener('fetch', function(e) {
     } catch(ex) {}
   }
 
+  // index.html e root: SEMPRE dalla rete, mai dalla cache
+  // {cache:'no-store'} bypassa anche la HTTP cache del browser
   if (url.includes('index.html') || url.endsWith('/') || isDeepLink ||
       (url.includes('mio-cane-enci') && url.includes('?'))) {
     e.respondWith(
-      fetch(e.request).then(function(res) {
-        var clone = res.clone();
-        caches.open(CACHE).then(function(c) { c.put(e.request, clone); });
-        return res;
-      }).catch(function() {
+      fetch(new Request(e.request.url, {
+        method: 'GET',
+        headers: e.request.headers,
+        cache: 'no-store'
+      })).catch(function() {
+        // Offline: prova dalla cache come ultima risorsa
         return caches.match('/index.html');
       })
     );
     return;
   }
-  
+
   // Per tutto il resto: cache-first
   e.respondWith(
     caches.match(e.request).then(function(cached) {
