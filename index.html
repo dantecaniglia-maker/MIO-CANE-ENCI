@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.23';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.24';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4253,7 +4253,7 @@ async function registraEmail(){
 }
 
 async function logout(){
-  try { await _supabase.auth.signOut({scope:'global'}); } catch(e){}
+  try { _supabase.auth.signOut({scope:'global'}); } catch(e){}
 
   // Cancella TUTTO
   try { localStorage.clear(); } catch(e){}
@@ -9196,13 +9196,13 @@ function applicaModalita(mod){
     }
     g('home-famiglia').style.display = 'block';
     if(g('bottom-nav')) g('bottom-nav').style.display = 'none';
-    var _fab = g('chat-fab'); if(_fab) _fab.style.zIndex = '99990';
+    var _fab = g('chat-fab'); if(_fab){ _fab.style.zIndex='99990'; _fab.style.bottom='20px'; }
     caricaFamiglia();
   } else {
     var hf2 = g('home-famiglia');
     if(hf2) hf2.style.display = 'none';
     if(g('bottom-nav')) g('bottom-nav').style.display = '';
-    var _fab2 = g('chat-fab'); if(_fab2) _fab2.style.zIndex = '9998';
+    var _fab2 = g('chat-fab'); if(_fab2){ _fab2.style.zIndex='9998'; _fab2.style.bottom='72px'; }
   }
 }
 
@@ -9417,15 +9417,10 @@ function renderHealthDashboard(container){
   var circ = 201;
   var avatarColors = ['#EEF3FB','#FFF8E7','#F0FFF4','#FFF0F0'];
 
-  function mkRing(ico,val,max,color,top,right,bottom,left,tipo){
+  function mkRing(ico,val,max,color,tipo){
     var dash = Math.round(circ*Math.min(1,val/max));
-    var pos = 'position:absolute;';
-    if(top!=='auto') pos+='top:'+top+';';
-    if(right!=='auto') pos+='right:'+right+';';
-    if(bottom!=='auto') pos+='bottom:'+bottom+';';
-    if(left!=='auto') pos+='left:'+left+';';
-    return '<svg width="90" height="90" viewBox="0 0 90 90" onclick="aggiungiLogFamiglia(\''+tipo+'\')" '
-      +'style="'+pos+'cursor:pointer">'
+    return '<svg width="72" height="72" viewBox="0 0 90 90" onclick="aggiungiLogFamiglia(\''+tipo+'\')" '
+      +'style="cursor:pointer;flex-shrink:0">'
       +'<circle cx="45" cy="45" r="32" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="8"/>'
       +'<circle cx="45" cy="45" r="32" fill="none" stroke="'+color+'" stroke-width="8" stroke-linecap="round" '
       +'stroke-dasharray="'+dash+' '+circ+'" '
@@ -9466,11 +9461,11 @@ function renderHealthDashboard(container){
       +'</div>';
   }).join('')
   +'</div>'
-  // Cluster ring destra
-  +'<div style="position:relative;width:130px;height:130px;flex-shrink:0">'
-  +mkRing('🍖',pastiOggi,3,'#C9A961','0','0','auto','auto','pasto')
-  +mkRing('🦮',usciteOggi,3,'rgba(255,255,255,.85)','auto','auto','0','0','uscita')
-  +mkRing('💊',farmaciOggi,1,'#90CAF9','auto','20px','0','auto','farmaco')
+  // Rings destra — colonna verticale allineata alle stats sinistra
+  +'<div style="display:flex;flex-direction:column;justify-content:space-between;align-self:stretch;flex-shrink:0;gap:4px">'
+  +mkRing('🍖',pastiOggi,3,'#C9A961','pasto')
+  +mkRing('🦮',usciteOggi,3,'rgba(255,255,255,.85)','uscita')
+  +mkRing('💊',farmaciOggi,1,'#90CAF9','farmaco')
   +'</div>'
   +'</div></div>'
 
@@ -9850,7 +9845,7 @@ async function salvaLogFamiglia(tipo, btn){
   var me = _famigliaMembers.find(function(m){ return m.user_id===_currentUser.id; });
   var nickname = (me&&me.nickname) || (_currentUser.email||'').split('@')[0];
   try {
-    await _supabase.from('famiglia_log').insert({
+    var _logRes = await _supabase.from('famiglia_log').insert({
       famiglia_id: _famigliaDati.id,
       cane_id: _famigliaCaneSelezionato.id,
       user_id: _currentUser.id,
@@ -9860,6 +9855,7 @@ async function salvaLogFamiglia(tipo, btn){
       foto_url: fotoUrl,
       dati: Object.keys(dati).length ? dati : null
     });
+    if(_logRes.error) throw _logRes.error;
     btn.closest('[style*=fixed]').remove();
     // Aggiorna in memoria subito per refresh istantaneo dei ring
     _famigliaLog.unshift({
@@ -11917,8 +11913,8 @@ function openChat(){
     renderChatMessages();
   }
   updateChatLimitBar();
-  g('modal-chat').style.zIndex = '99985';
-  show('modal-chat');
+  var _mc = g('modal-chat');
+  if(_mc){ _mc.style.zIndex = '999999'; _mc.classList.remove('hidden'); _mc.style.display='flex'; }
   setTimeout(function(){ var inp=g('chat-input'); if(inp) inp.focus(); },300);
 }
 
