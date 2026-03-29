@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.19';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.20';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9211,15 +9211,21 @@ async function caricaFamiglia(){
       console.log('[Famiglia] check admin:', resFamAdmin);
       if(resFamAdmin.data && resFamAdmin.data.length > 0){
         _famigliaDati = resFamAdmin.data[0];
-        // Ricrea il record membro admin mancante
-        await _supabase.from('famiglia_membri').insert({
-          famiglia_id: _famigliaDati.id,
-          user_id: _currentUser.id,
-          ruolo: 'admin',
-          nickname: 'Admin',
-          emoji: '👑'
-        });
-        console.log('[Famiglia] membro admin ricreato!');
+        // Controlla se esiste già il record membro prima di inserire
+        var checkMembro = await _supabase.from('famiglia_membri')
+          .select('id').eq('famiglia_id', _famigliaDati.id)
+          .eq('user_id', _currentUser.id).limit(1);
+        if(!checkMembro.data || checkMembro.data.length === 0){
+          await _supabase.from('famiglia_membri').insert({
+            famiglia_id: _famigliaDati.id,
+            user_id: _currentUser.id,
+            ruolo: 'admin',
+            nickname: (_currentUser.email||'').split('@')[0]||'Admin',
+            emoji: '👑'
+          });
+          console.log('[Famiglia] membro admin ricreato!');
+        }
+        var famId = _famigliaDati.id;
         await caricaCanisFamiglia();
         await caricaLogFamiglia();
         await caricaCompitisFamiglia();
@@ -9399,12 +9405,12 @@ function renderHealthDashboard(container){
     if(bottom!=='auto') pos+='bottom:'+bottom+';';
     if(left!=='auto') pos+='left:'+left+';';
     return '<svg width="90" height="90" viewBox="0 0 90 90" onclick="aggiungiLogFamiglia(\''+tipo+'\')" '
-      +'style="'+pos+'transform:rotate(-90deg);cursor:pointer">'
-      +'<circle cx="45" cy="45" r="32" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="9"/>'
-      +'<circle cx="45" cy="45" r="32" fill="none" stroke="'+color+'" stroke-width="9" stroke-linecap="round" '
-      +'stroke-dasharray="'+dash+' '+circ+'" style="animation:bpRingFill 800ms ease-out"/>'
-      +'<text x="45" y="45" dominant-baseline="central" text-anchor="middle" font-size="20" '
-      +'transform="rotate(90,45,45)">'+ico+'</text>'
+      +'style="'+pos+'cursor:pointer">'
+      +'<circle cx="45" cy="45" r="32" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="8"/>'
+      +'<circle cx="45" cy="45" r="32" fill="none" stroke="'+color+'" stroke-width="8" stroke-linecap="round" '
+      +'stroke-dasharray="'+dash+' '+circ+'" '
+      +'style="transform:rotate(-90deg);transform-origin:45px 45px;transition:stroke-dasharray .8s ease"/>'
+      +'<text x="45" y="50" text-anchor="middle" font-size="20">'+ico+'</text>'
       +'</svg>';
   }
 
@@ -9422,29 +9428,29 @@ function renderHealthDashboard(container){
   +'</div>'
 
   // ── BLOCCO 1: Hero Stats + Cluster Ring ──
-  +'<div style="background:linear-gradient(135deg,#0D47A1,#0A3580);border-radius:20px;padding:20px;margin-bottom:16px;color:#fff">'
+  +'<div style="display:flex;flex-direction:column;background:linear-gradient(135deg,#0D47A1,#0A3580);border-radius:20px;padding:20px;margin-bottom:16px;color:#fff">'
   +'<div style="font-size:11px;font-weight:800;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px">⭕ Attività di oggi</div>'
   +'<div style="display:flex;align-items:center;gap:16px">'
   // Lista stats sinistra
-  +'<div style="flex:1;display:flex;flex-direction:column;gap:10px">'
+  +'<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px">'
   +[{ico:'🍖',val:pastiOggi,max:3,label:'pasti',tipo:'pasto'},
     {ico:'🦮',val:usciteOggi,max:3,label:'uscite',tipo:'uscita'},
     {ico:'💊',val:farmaciOggi,max:1,label:'farmaci',tipo:'farmaco'},
     {ico:'📸',val:fotoOggi,max:1,label:'foto',tipo:'foto'}
   ].map(function(s){
-    return '<div onclick="aggiungiLogFamiglia(\''+s.tipo+'\')" style="display:flex;align-items:baseline;gap:6px;cursor:pointer">'
-      +'<span style="font-size:16px">'+s.ico+'</span>'
-      +'<span style="font-size:28px;font-weight:700;color:#fff;line-height:1">'+s.val+'</span>'
-      +'<span style="font-size:16px;color:rgba(255,255,255,.5)">/'+s.max+'</span>'
-      +'<span style="font-size:10px;color:rgba(255,255,255,.5);margin-left:2px">'+s.label+'</span>'
+    return '<div onclick="aggiungiLogFamiglia(\''+s.tipo+'\')" style="display:flex;align-items:baseline;gap:8px;cursor:pointer">'
+      +'<span style="font-size:20px">'+s.ico+'</span>'
+      +'<span style="font-size:32px;font-weight:800;color:#fff;line-height:1">'+s.val+'</span>'
+      +'<span style="font-size:14px;color:rgba(255,255,255,.5)">/'+s.max+'</span>'
+      +'<span style="font-size:12px;color:rgba(255,255,255,.6)">'+s.label+'</span>'
       +'</div>';
   }).join('')
   +'</div>'
   // Cluster ring destra
   +'<div style="position:relative;width:130px;height:130px;flex-shrink:0">'
   +mkRing('🍖',pastiOggi,3,'#C9A961','0','0','auto','auto','pasto')
-  +mkRing('🦮',usciteOggi,3,'rgba(255,255,255,.7)','auto','auto','0','0','uscita')
-  +mkRing('💊',farmaciOggi,1,'#90CAF9','auto','0','0','auto','farmaco')
+  +mkRing('🦮',usciteOggi,3,'rgba(255,255,255,.85)','auto','auto','0','0','uscita')
+  +mkRing('💊',farmaciOggi,1,'#90CAF9','auto','20px','0','auto','farmaco')
   +'</div>'
   +'</div></div>'
 
@@ -9508,24 +9514,47 @@ function renderHealthDashboard(container){
     :'')
 
   // ── BLOCCO 6a: Compiti ──
-  +'<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
-  +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
-    +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em">✅ Compiti</div>'
-    +'<button onclick="aggiungiCompitoFamiglia()" style="font-size:11px;color:#C9A961;background:none;border:none;cursor:pointer;font-weight:700">Aggiungi +</button>'
-  +'</div>'
-  +(_famigliaCompiti.length===0
-    ?'<div style="font-size:12px;color:#9ab0cc;text-align:center;padding:8px 0">Nessun compito 🎉</div>'
-    :'<div style="display:flex;flex-direction:column;gap:8px">'
-      +_famigliaCompiti.slice(0,3).map(function(c){
-        var _m2 = c.assegnato_a?_famigliaMembers.find(function(m){return m.user_id===c.assegnato_a;}):null;
-        return '<div style="display:flex;align-items:center;gap:10px">'
-          +'<button onclick="completaCompito(\''+c.id+'\')" style="width:22px;height:22px;border-radius:50%;border:2px solid #C9A961;background:#fff;cursor:pointer;flex-shrink:0"></button>'
-          +'<div style="flex:1;font-size:13px;color:#1a1a3a">'+(c.titolo||c.testo||'')+'</div>'
-          +(_m2?'<div style="font-size:16px">'+_m2.emoji+'</div>':'')
-          +'</div>';
-      }).join('')
-      +'</div>')
-  +'</div>'
+  +(function(){
+    var _compSuggeriti = [
+      {ico:'🍖',testo:'Pasto mattino',tipo:'pasto'},
+      {ico:'🍖',testo:'Pasto sera',tipo:'pasto'},
+      {ico:'🦮',testo:'Passeggiata mattina',tipo:'uscita'},
+      {ico:'🦮',testo:'Passeggiata sera',tipo:'uscita'},
+      {ico:'💊',testo:'Farmaco quotidiano',tipo:'farmaco'},
+      {ico:'⚖️',testo:'Pesatura settimanale',tipo:'peso'}
+    ];
+    var _compHtml = '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+        +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em">✅ Compiti</div>'
+        +'<button onclick="apriAggiungiCompito()" style="font-size:11px;color:#C9A961;background:none;border:none;cursor:pointer;font-weight:700">Aggiungi +</button>'
+      +'</div>';
+    if(_famigliaCompiti.length>0){
+      _compHtml += '<div style="display:flex;flex-direction:column;gap:8px">'
+        +_famigliaCompiti.slice(0,3).map(function(c){
+          var _m2 = c.assegnato_a?_famigliaMembers.find(function(m){return m.user_id===c.assegnato_a;}):null;
+          return '<div style="display:flex;align-items:center;gap:10px">'
+            +'<button onclick="completaCompito(\''+c.id+'\')" style="width:22px;height:22px;border-radius:50%;border:2px solid #C9A961;background:#fff;cursor:pointer;flex-shrink:0"></button>'
+            +'<div style="flex:1;font-size:13px;color:#1a1a3a">'+(c.titolo||c.testo||'')+'</div>'
+            +(_m2?'<div style="font-size:16px">'+_m2.emoji+'</div>':'')
+            +'</div>';
+        }).join('')
+        +'</div>';
+    } else {
+      _compHtml += '<div style="font-size:11px;color:#9ab0cc;margin-bottom:10px">Nessun compito attivo — prova questi suggeriti:</div>'
+        +'<div style="display:flex;flex-direction:column;gap:6px">'
+        +_compSuggeriti.map(function(cs){
+          return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #F4F7FE">'
+            +'<span style="font-size:18px">'+cs.ico+'</span>'
+            +'<span style="flex:1;font-size:13px;color:#4A6080">'+cs.testo+'</span>'
+            +'<button onclick="aggiungiCompitoSuggerito(\''+cs.testo+'\',\''+cs.tipo+'\')" '
+            +'style="font-size:11px;color:#1565C0;background:#EEF3FB;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:600">+ Aggiungi</button>'
+            +'</div>';
+        }).join('')
+        +'</div>';
+    }
+    _compHtml += '</div>';
+    return _compHtml;
+  })()
 
   // ── BLOCCO 6b: Quick actions ──
   +'<div style="background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
@@ -9659,9 +9688,20 @@ function condividiCodiceFamiglia(){
 }
 
 async function completaCompito(id){
+  var compito = _famigliaCompiti.find(function(c){return c.id===id;});
   await _supabase.from('famiglia_compiti').update({completato:true}).eq('id',id);
   _famigliaCompiti = _famigliaCompiti.filter(function(c){return c.id!==id;});
-  switchFamTab('compiti');
+  // Registra automaticamente il log corrispondente per aggiornare i ring
+  if(compito && compito.tipo){
+    aggiungiLogFamiglia(compito.tipo);
+  } else {
+    if(_famTabAttiva==='home'){
+      var _tc = g('fam-tab-content');
+      if(_tc) renderHealthDashboard(_tc);
+    } else {
+      switchFamTab('compiti');
+    }
+  }
   toast('✅ Compito completato!');
 }
 
@@ -9677,6 +9717,23 @@ function apriAggiungiCompito(){
     caricaCompitisFamiglia().then(function(){ switchFamTab('compiti'); });
     toast('✅ Compito aggiunto!');
   });
+}
+
+async function aggiungiCompitoSuggerito(testo, tipo){
+  if(!_famigliaDati) return;
+  await _supabase.from('famiglia_compiti').insert({
+    famiglia_id: _famigliaDati.id,
+    cane_id: _famigliaCaneSelezionato&&_famigliaCaneSelezionato.id||null,
+    creato_da: _currentUser.id,
+    testo: testo,
+    tipo: tipo,
+    completato: false,
+    assegnato_a: null
+  });
+  await caricaCompitisFamiglia();
+  var _tc = g('fam-tab-content');
+  if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
+  toast('✅ Compito aggiunto!');
 }
 
 function apriImpostazioniFamiglia(){
@@ -9783,8 +9840,28 @@ async function salvaLogFamiglia(tipo, btn){
       dati: Object.keys(dati).length ? dati : null
     });
     btn.closest('[style*=fixed]').remove();
-    await caricaLogFamiglia();
-    renderHomeFamiglia();
+    // Aggiorna in memoria subito per refresh istantaneo dei ring
+    _famigliaLog.unshift({
+      famiglia_id: _famigliaDati.id,
+      cane_id: _famigliaCaneSelezionato.id,
+      user_id: _currentUser.id,
+      nickname_autore: nickname,
+      tipo: tipo,
+      testo: testo||null,
+      foto_url: fotoUrl,
+      created_at: new Date().toISOString()
+    });
+    if(_famTabAttiva==='home'){
+      var _tc = g('fam-tab-content');
+      if(_tc) renderHealthDashboard(_tc);
+    }
+    // Poi sincronizza da Supabase in background
+    caricaLogFamiglia().then(function(){
+      if(_famTabAttiva==='home'){
+        var _tc2 = g('fam-tab-content');
+        if(_tc2) renderHealthDashboard(_tc2);
+      }
+    });
     toast('✅ '+tipoLogLabel(tipo)+' registrata!');
   } catch(e){
     btn.disabled=false; btn.textContent='✓ Salva';
