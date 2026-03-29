@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.27';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.28';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9189,12 +9189,19 @@ function applicaModalita(mod){
         // Hero cane
         +'<div id="fam-cane-hero" style="padding:20px"></div>'
         // Tab bar
-        +'<div style="display:flex;background:#fff;border-bottom:1.5px solid #DDEAFF;position:sticky;top:0;z-index:10">'
-          +'<button onclick="switchFamTab(\'home\')" id="ftab-home" class="ftab" style="flex:1;padding:12px;border:none;background:transparent;font-size:11px;font-weight:700;color:#1565C0;cursor:pointer;border-bottom:2px solid #1565C0">🏠 Home</button>'
-          +'<button onclick="switchFamTab(\'diario\')" id="ftab-diario" class="ftab" style="flex:1;padding:12px;border:none;background:transparent;font-size:11px;font-weight:700;color:#9ab0cc;cursor:pointer">📖 Diario</button>'
-          +'<button onclick="switchFamTab(\'compiti\')" id="ftab-compiti" class="ftab" style="flex:1;padding:12px;border:none;background:transparent;font-size:11px;font-weight:700;color:#9ab0cc;cursor:pointer">✅ Compiti</button>'
-          +'<button onclick="switchFamTab(\'percorsi\')" id="ftab-percorsi" class="ftab" style="flex:1;padding:12px;border:none;background:transparent;font-size:11px;font-weight:700;color:#9ab0cc;cursor:pointer">🗺️</button>'
-          +'<button onclick="switchFamTab(\'famiglia\')" id="ftab-famiglia" class="ftab" style="flex:1;padding:12px;border:none;background:transparent;font-size:11px;font-weight:700;color:#9ab0cc;cursor:pointer">👨‍👩‍👧</button>'
+        +'<div style="background:#fff;border-bottom:1px solid #EEF3FB;position:sticky;top:0;z-index:10;padding:8px 12px 0">'
+          +'<div style="display:flex;gap:4px;background:#F4F7FE;border-radius:16px;padding:4px">'
+          +[{id:'home',ico:'🏠',label:'Home'},{id:'diario',ico:'📖',label:'Diario'},{id:'compiti',ico:'✅',label:'Compiti'},{id:'percorsi',ico:'🗺️',label:'GPS'},{id:'famiglia',ico:'👨‍👩‍👧',label:'Branco'}]
+          .map(function(t){
+            var att=t.id==='home';
+            return '<button onclick="switchFamTab(\''+t.id+'\')" id="ftab-'+t.id+'" class="ftab" '
+              +'style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 4px;border:none;border-radius:12px;cursor:pointer;'
+              +'background:'+(att?'#fff':'transparent')+';box-shadow:'+(att?'0 2px 8px rgba(13,71,161,.12)':'none')+';transition:all .2s">'
+              +'<span style="font-size:18px;line-height:1">'+t.ico+'</span>'
+              +'<span style="font-size:9px;font-weight:800;color:'+(att?'#0D47A1':'#9ab0cc')+';letter-spacing:.01em">'+t.label+'</span>'
+              +'</button>';
+          }).join('')
+          +'</div>'
         +'</div>'
         // Contenuto tab
         +'<div id="fam-tab-content" style="padding:16px"></div>';
@@ -9206,15 +9213,21 @@ function applicaModalita(mod){
     if(!g('fam-bottom-nav')){
       var fbn = document.createElement('nav');
       fbn.id = 'fam-bottom-nav';
-      fbn.style.cssText = 'position:fixed;bottom:0;left:0;width:100%;height:60px;'
-        +'background:#fff;border-top:1.5px solid #DDEAFF;z-index:99982;'
-        +'display:flex;align-items:stretch;box-shadow:0 -4px 18px rgba(21,101,192,.12)';
-      fbn.innerHTML =
-        '<button onclick="switchFamTab(\'home\')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:transparent;font-size:20px;cursor:pointer;gap:2px;color:#1565C0"><span>🏠</span><span style="font-size:9px;font-weight:700">Home</span></button>'
-        +'<button onclick="switchFamTab(\'diario\')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:transparent;font-size:20px;cursor:pointer;gap:2px;color:#9ab0cc"><span>📖</span><span style="font-size:9px;font-weight:700">Diario</span></button>'
-        +'<button onclick="switchFamTab(\'compiti\')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:transparent;font-size:20px;cursor:pointer;gap:2px;color:#9ab0cc"><span>✅</span><span style="font-size:9px;font-weight:700">Compiti</span></button>'
-        +'<button onclick="switchFamTab(\'percorsi\')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:transparent;font-size:20px;cursor:pointer;gap:2px;color:#9ab0cc"><span>🗺️</span><span style="font-size:9px;font-weight:700">Percorsi</span></button>'
-        +'<button onclick="switchFamTab(\'famiglia\')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:transparent;font-size:20px;cursor:pointer;gap:2px;color:#9ab0cc"><span>👨‍👩‍👧</span><span style="font-size:9px;font-weight:700">Branco</span></button>';
+      fbn.style.cssText = 'position:fixed;bottom:0;left:0;width:100%;'
+        +'background:#fff;border-top:1px solid #EEF3FB;z-index:99982;'
+        +'display:flex;align-items:stretch;padding:6px 8px;gap:4px;'
+        +'box-shadow:0 -4px 20px rgba(13,71,161,.1)';
+      fbn.innerHTML = [{tab:'home',ico:'🏠',label:'Home'},{tab:'diario',ico:'📖',label:'Diario'},{tab:'compiti',ico:'✅',label:'Compiti'},{tab:'percorsi',ico:'🗺️',label:'GPS'},{tab:'famiglia',ico:'👨‍👩‍👧',label:'Branco'}]
+        .map(function(t,i){
+          var att=i===0;
+          return '<button onclick="switchFamTab(\''+t.tab+'\')" '
+            +'style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;'
+            +'border:none;cursor:pointer;border-radius:12px;padding:6px 2px;gap:1px;'
+            +'background:'+(att?'#EEF3FB':'transparent')+';transition:all .2s">'
+            +'<span style="font-size:20px;line-height:1.2">'+t.ico+'</span>'
+            +'<span style="font-size:9px;font-weight:800;color:'+(att?'#0D47A1':'#9ab0cc')+'">'+t.label+'</span>'
+            +'</button>';
+        }).join('');
       document.body.appendChild(fbn);
     } else {
       g('fam-bottom-nav').style.display = 'flex';
@@ -9583,28 +9596,31 @@ function renderHealthDashboard(container){
   +'</div>'
   +'</div></div>'
 
-  // ── MISSIONI card ──
-  +'<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
-  +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
-    +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em">🎯 Missioni di oggi</div>'
-    +'<div style="font-size:10px;color:#9ab0cc">'+_missioniOggi.filter(function(m){return m.completata;}).length+'/'+_missioniOggi.length+' completate</div>'
-  +'</div>'
-  +'<div style="display:flex;flex-direction:column;gap:10px">'
-  +_missioniOggi.map(function(m){
-    var pct = Math.min(100,Math.round(m.fatto/m.target*100));
-    return '<div onclick="aggiungiLogFamiglia(\''+m.tipo+'\')" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;background:'+(m.completata?'#F0FFF4':'#F4F7FE')+';border:1.5px solid '+(m.completata?'#A8D8B8':'#DDEAFF')+'">'
-      +'<div style="font-size:24px;flex-shrink:0">'+m.ico+'</div>'
+  // ── COMPITI widget compatto ──
+  +(function(){
+    var tot = _famigliaCompiti.length;
+    var oggi2 = new Date();
+    var oggiStr = oggi2.getFullYear()+'-'+String(oggi2.getMonth()+1).padStart(2,'0')+'-'+String(oggi2.getDate()).padStart(2,'0');
+    var fatti = _famigliaLog.filter(function(l){
+      return dataLocale(l.created_at)===oggiStr && ['pasto','uscita'].indexOf(l.tipo)>=0;
+    }).length;
+    var obiettivo = 4;
+    var pct = Math.min(100,Math.round(fatti/obiettivo*100));
+    return '<div onclick="switchFamTab(\'compiti\')" style="'
+      +'background:linear-gradient(135deg,#0D47A1,#082d6b);'
+      +'border-radius:16px;padding:14px 16px;margin-bottom:14px;'
+      +'cursor:pointer;display:flex;align-items:center;gap:14px">'
+      +'<div style="font-size:32px">✅</div>'
       +'<div style="flex:1;min-width:0">'
-        +'<div style="font-size:13px;font-weight:600;color:'+(m.completata?'#1a7a4a':'#1a1a3a')+'">'+m.testo+'</div>'
-        +'<div style="margin-top:6px;height:4px;background:'+(m.completata?'rgba(26,122,74,.2)':'#DDEAFF')+';border-radius:2px;overflow:hidden">'
-          +'<div style="height:100%;width:'+pct+'%;background:'+(m.completata?'#1a7a4a':'#1565C0')+';border-radius:2px;transition:width .5s"></div>'
+        +'<div style="font-size:12px;font-weight:800;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Compiti di oggi</div>'
+        +'<div style="height:6px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden">'
+          +'<div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#C9A961,#E8C96A);border-radius:3px;transition:width .5s"></div>'
         +'</div>'
-        +'<div style="font-size:10px;color:#9ab0cc;margin-top:3px">'+m.fatto+'/'+m.target+(m.completata?' ✓ +'+m.premio+'pt':'')+'</div>'
+        +'<div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px">'+fatti+'/'+obiettivo+' completati'+(tot>0?' · '+tot+' compiti speciali':'')+'</div>'
       +'</div>'
-      +(m.completata?'<div style="font-size:20px">✅</div>':'<div style="font-size:11px;font-weight:700;color:#1565C0;background:#EEF3FB;border-radius:8px;padding:4px 8px;flex-shrink:0">+'+m.premio+'pt</div>')
+      +'<div style="font-size:20px;color:rgba(255,255,255,.4)">›</div>'
       +'</div>';
-  }).join('')
-  +'</div></div>'
+  })()
 
   // ── BLOCCO 4: Grafico settimana ──
   +'<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
@@ -9732,14 +9748,19 @@ function switchFamTab(tab){
   _famTabAttiva = tab;
   document.querySelectorAll('.ftab').forEach(function(b){
     var id = b.id.replace('ftab-','');
-    var att = id === tab;
-    b.style.color = att?'#1565C0':'#9ab0cc';
-    b.style.borderBottom = att?'2px solid #1565C0':'2px solid transparent';
+    var att = id===tab;
+    b.style.background = att?'#fff':'transparent';
+    b.style.boxShadow = att?'0 2px 8px rgba(13,71,161,.12)':'none';
+    var spans = b.querySelectorAll('span');
+    if(spans[1]) spans[1].style.color = att?'#0D47A1':'#9ab0cc';
   });
   if(g('fam-bottom-nav')){
+    var tabs2=['home','diario','compiti','percorsi','famiglia'];
     g('fam-bottom-nav').querySelectorAll('button').forEach(function(b,i){
-      var tabs=['home','diario','compiti','percorsi','famiglia'];
-      b.style.color = tabs[i]===tab?'#1565C0':'#9ab0cc';
+      var att = tabs2[i]===tab;
+      b.style.background = att?'#EEF3FB':'transparent';
+      var spans = b.querySelectorAll('span');
+      if(spans[1]) spans[1].style.color = att?'#0D47A1':'#9ab0cc';
     });
   }
   var content = g('fam-tab-content');
@@ -9780,56 +9801,78 @@ function renderDiarioFamiglia(container){
 }
 
 function renderCompitiFamiglia(container){
-  var isAdmin = _famigliaDati && _currentUser &&
-    _famigliaDati.admin_uid === _currentUser.id;
-  var mieiCompiti = _famigliaCompiti.filter(function(c){
-    return !c.assegnato_a || c.assegnato_a === _currentUser.id;
+  var _compitiFissi = [
+    {id:'cf1',ico:'🍖',testo:'Pasto mattino',tipo:'pasto',orario:'Mattina',punti:15},
+    {id:'cf2',ico:'🍖',testo:'Pasto sera',tipo:'pasto',orario:'Sera',punti:15},
+    {id:'cf3',ico:'🦮',testo:'Passeggiata mattina',tipo:'uscita',orario:'Mattina',punti:20},
+    {id:'cf4',ico:'🦮',testo:'Passeggiata sera',tipo:'uscita',orario:'Sera',punti:20}
+  ];
+  var _oggiStr = (function(){
+    var n=new Date();
+    return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+  })();
+  var _logOggi = _famigliaLog.filter(function(l){
+    if(!l.created_at) return false;
+    var d=new Date(l.created_at);
+    var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    return ds===_oggiStr;
   });
-  var altriCompiti = _famigliaCompiti.filter(function(c){
-    return c.assegnato_a && c.assegnato_a !== _currentUser.id;
-  });
+  var _pastiOggi = _logOggi.filter(function(l){return l.tipo==='pasto';}).length;
+  var _usciteOggi = _logOggi.filter(function(l){return l.tipo==='uscita';}).length;
+  _compitiFissi[0].completato = _pastiOggi>=1;
+  _compitiFissi[1].completato = _pastiOggi>=2;
+  _compitiFissi[2].completato = _usciteOggi>=1;
+  _compitiFissi[3].completato = _usciteOggi>=2;
+
+  var isAdmin2 = _famigliaDati && _currentUser && _famigliaDati.admin_uid===_currentUser.id;
 
   container.innerHTML =
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
-    +'<div style="font-weight:700;color:#0D47A1;font-size:16px">✅ Compiti</div>'
-    +(isAdmin?'<button onclick="apriCreaCompitoAdmin()" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Assegna</button>':'')
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1">✅ Compiti</div>'
+    +(isAdmin2?'<button onclick="apriCreaCompitoAdmin()" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(201,169,97,.3)">+ Assegna</button>':'')
     +'</div>'
 
-    +(mieiCompiti.length>0
-      ? '<div style="font-size:10px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🎯 I miei compiti</div>'
-        +'<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">'
-        +mieiCompiti.map(function(c){
-          var punti = c.punti||20;
-          return '<div style="background:#fff;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(13,71,161,.06);border-left:3px solid #C9A961">'
-            +'<button onclick="completaCompito(\''+c.id+'\')" style="width:26px;height:26px;border-radius:50%;border:2px solid #C9A961;background:#FFF8E7;cursor:pointer;flex-shrink:0;font-size:14px">○</button>'
-            +'<div style="flex:1">'
-              +'<div style="font-weight:600;font-size:13px;color:#1a1a3a">'+(c.testo||c.titolo||'')+'</div>'
-              +(c.data_scadenza?'<div style="font-size:10px;color:#9ab0cc">📅 '+c.data_scadenza+'</div>':'')
-            +'</div>'
-            +'<div style="background:#FFF8E7;border:1px solid #C9A961;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#A88A41">+'+punti+'pt</div>'
-            +'</div>';
-        }).join('')+'</div>'
-      : '<div style="background:#F4F7FE;border-radius:12px;padding:20px;text-align:center;margin-bottom:16px">'
-        +'<div style="font-size:32px;margin-bottom:8px">✅</div>'
-        +'<div style="font-size:13px;color:#6B8BB0">Nessun compito assegnato a te</div>'
-        +'</div>')
+    +'<div style="font-size:10px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">📅 Routine quotidiana</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">'
+    +_compitiFissi.map(function(c){
+      return '<div onclick="'+(c.completato?'':'aggiungiLogFamiglia(\''+c.tipo+'\')')+'" '
+        +'style="background:'+(c.completato?'linear-gradient(135deg,#F0FFF4,#E8F5E9)':'#fff')+';'
+        +'border:1.5px solid '+(c.completato?'#A8D8B8':'#DDEAFF')+';'
+        +'border-radius:14px;padding:14px;cursor:'+(c.completato?'default':'pointer')+';position:relative;overflow:hidden">'
+        +(c.completato?'<div style="position:absolute;top:6px;right:8px;font-size:16px">✅</div>':'')
+        +'<div style="font-size:28px;margin-bottom:6px">'+c.ico+'</div>'
+        +'<div style="font-size:12px;font-weight:700;color:'+(c.completato?'#1a7a4a':'#1a1a3a')+'">'+c.testo+'</div>'
+        +'<div style="font-size:10px;color:#9ab0cc;margin-top:2px">'+c.orario+'</div>'
+        +'<div style="margin-top:8px;display:inline-block;background:'+(c.completato?'rgba(26,122,74,.1)':'#FFF8E7')+';'
+        +'border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:'+(c.completato?'#1a7a4a':'#A88A41')+'">'
+        +(c.completato?'Fatto!':'+'+c.punti+'pt')+'</div>'
+        +'</div>';
+    }).join('')
+    +'</div>'
 
-    +(isAdmin && altriCompiti.length>0
-      ? '<div style="font-size:10px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">👨‍👩‍👧 Compiti del branco</div>'
+    +(_famigliaCompiti.length>0
+      ? '<div style="font-size:10px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">⭐ Compiti speciali</div>'
         +'<div style="display:flex;flex-direction:column;gap:8px">'
-        +altriCompiti.map(function(c){
-          var _m = _famigliaMembers.find(function(m){return m.user_id===c.assegnato_a;});
+        +_famigliaCompiti.map(function(c){
+          var _m = c.assegnato_a ? _famigliaMembers.find(function(m){return m.user_id===c.assegnato_a;}) : null;
+          var isMio = !c.assegnato_a || c.assegnato_a===_currentUser.id;
           var punti = c.punti||20;
-          return '<div style="background:#F4F7FE;border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px;opacity:.85">'
-            +'<div style="font-size:22px">'+(_m?_m.emoji:'🐾')+'</div>'
-            +'<div style="flex:1">'
-              +'<div style="font-size:12px;font-weight:600;color:#4A6080">'+(c.testo||c.titolo||'')+'</div>'
-              +'<div style="font-size:10px;color:#9ab0cc">'+(_m?_m.nickname:'Membro')+'</div>'
+          return '<div style="background:#fff;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(13,71,161,.06);border-left:3px solid '+(isMio?'#C9A961':'#DDEAFF')+'">'
+            +(isMio
+              ?'<button onclick="completaCompito(\''+c.id+'\')" style="width:26px;height:26px;border-radius:50%;border:2px solid #C9A961;background:#FFF8E7;cursor:pointer;flex-shrink:0;font-size:16px">○</button>'
+              :'<div style="width:26px;height:26px;border-radius:50%;background:#F4F7FE;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+(_m?_m.emoji:'🐾')+'</div>')
+            +'<div style="flex:1;min-width:0">'
+              +'<div style="font-weight:600;font-size:13px;color:#1a1a3a">'+(c.testo||'')+'</div>'
+              +(_m?'<div style="font-size:10px;color:#9ab0cc">👤 '+_m.nickname+'</div>':'')
             +'</div>'
-            +'<div style="font-size:11px;font-weight:700;color:#9ab0cc">+'+punti+'pt</div>'
+            +'<div style="background:#FFF8E7;border:1px solid #C9A961;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#A88A41;flex-shrink:0">+'+punti+'pt</div>'
             +'</div>';
         }).join('')+'</div>'
-      : '');
+      : '<div style="background:#F4F7FE;border-radius:12px;padding:20px;text-align:center">'
+        +'<div style="font-size:28px;margin-bottom:8px">⭐</div>'
+        +'<div style="font-size:13px;color:#6B8BB0">Nessun compito speciale</div>'
+        +(isAdmin2?'<div style="font-size:11px;color:#C9A961;margin-top:6px;font-weight:600">Usa "+ Assegna" per crearne uno</div>':'')
+        +'</div>');
 }
 
 function apriCreaCompitoAdmin(){
