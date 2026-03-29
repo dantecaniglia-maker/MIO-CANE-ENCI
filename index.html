@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.24';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.25';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9096,6 +9096,7 @@ var _famigliaLog = [];
 var _famigliaCompiti = [];
 var _famigliaCaneSelezionato = null;
 var _famTabAttiva = 'home';
+var _missioniOggi = [];
 var _FAMIGLIA_KEY = 'breedped_famiglia_v1';
 
 function _salvFam(){
@@ -9351,6 +9352,25 @@ function renderHomeFamiglia(){
   switchFamTab('home');
 }
 
+function generaMissioniOggi(logOggi, compiti){
+  var giorno = new Date().getDay();
+  var pool = [
+    {id:'m1', ico:'🍖', testo:'Completa 2 pasti oggi', tipo:'pasto', target:2, premio:30},
+    {id:'m2', ico:'🦮', testo:'Fai 2 passeggiate oggi', tipo:'uscita', target:2, premio:30},
+    {id:'m3', ico:'📸', testo:'Scatta una foto a '+(_famigliaCaneSelezionato&&_famigliaCaneSelezionato.nome||'Rex'), tipo:'foto', target:1, premio:20},
+    {id:'m4', ico:'💊', testo:'Dai il farmaco oggi', tipo:'farmaco', target:1, premio:20},
+    {id:'m5', ico:'📖', testo:'Scrivi una nota nel diario', tipo:'nota', target:1, premio:15},
+    {id:'m6', ico:'🏥', testo:'Registra il peso di oggi', tipo:'peso', target:1, premio:25},
+  ];
+  var idx = giorno % pool.length;
+  var missioni = [pool[idx], pool[(idx+1)%pool.length], pool[(idx+2)%pool.length]];
+  return missioni.map(function(m){
+    var fatto = logOggi.filter(function(l){return l.tipo===m.tipo;}).length;
+    var completata = fatto >= m.target;
+    return Object.assign({}, m, {fatto:fatto, completata:completata});
+  });
+}
+
 function renderHealthDashboard(container){
   var cane = _famigliaCaneSelezionato;
   if(!cane){ container.innerHTML=''; return; }
@@ -9413,6 +9433,15 @@ function renderHealthDashboard(container){
   if(maxCnt===0) maxCnt=1;
   var totLog = settimana.reduce(function(a,s){return a+s.count;},0);
 
+  // Dog Score + Missioni
+  var dogScore = totLog * 10;
+  _missioniOggi = generaMissioniOggi(logOggi, _famigliaCompiti);
+  _missioniOggi.forEach(function(m){ if(m.completata) dogScore += m.premio; });
+  var brancoBadge = dogScore>=500?{ico:'👑',label:'Branco Alfa',color:'#C9A961'}
+    :dogScore>=300?{ico:'🌟',label:'Branco Attivo',color:'#1565C0'}
+    :dogScore>=100?{ico:'🐾',label:'Branco in forma',color:'#1a7a4a'}
+    :{ico:'💤',label:'Branco silenzioso',color:'#9ab0cc'};
+
   // Ring circumference r=32
   var circ = 201;
   var avatarColors = ['#EEF3FB','#FFF8E7','#F0FFF4','#FFF0F0'];
@@ -9440,6 +9469,31 @@ function renderHealthDashboard(container){
   +(streak>0
     ?'<div style="background:#FFF8E7;border:1.5px solid #C9A961;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:#A88A41;white-space:nowrap;flex-shrink:0">🔥 '+streak+' giorni</div>'
     :'<div style="background:#FFF8E7;border:1.5px solid #C9A961;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:#A88A41;white-space:nowrap;flex-shrink:0">Inizia oggi!</div>')
+  +'</div>'
+
+  // ── DOG SCORE card ──
+  +'<div style="background:linear-gradient(135deg,#1a1a3a,#0D47A1);border-radius:16px;padding:16px;margin-bottom:12px;color:#fff">'
+  +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+    +'<div>'
+      +'<div style="font-size:10px;font-weight:800;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em">🏆 Dog Score settimanale</div>'
+      +'<div style="font-size:36px;font-weight:800;color:#C9A961;line-height:1.1;margin-top:2px">'+dogScore+'<span style="font-size:14px;color:rgba(255,255,255,.5)"> pt</span></div>'
+    +'</div>'
+    +'<div style="text-align:center;background:rgba(255,255,255,.1);border-radius:12px;padding:10px 14px">'
+      +'<div style="font-size:24px">'+brancoBadge.ico+'</div>'
+      +'<div style="font-size:10px;font-weight:700;color:'+brancoBadge.color+';margin-top:2px">'+brancoBadge.label+'</div>'
+    +'</div>'
+  +'</div>'
+  +(function(){
+    var nextTarget = dogScore>=500?1000:dogScore>=300?500:dogScore>=100?300:100;
+    var pct = Math.min(100, Math.round(dogScore/nextTarget*100));
+    return '<div style="margin-bottom:4px;display:flex;justify-content:space-between">'
+      +'<span style="font-size:10px;color:rgba(255,255,255,.5)">Prossimo livello</span>'
+      +'<span style="font-size:10px;color:rgba(255,255,255,.5)">'+dogScore+'/'+nextTarget+' pt</span>'
+      +'</div>'
+      +'<div style="height:6px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden">'
+      +'<div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#C9A961,#E8C96A);border-radius:3px;transition:width .5s"></div>'
+      +'</div>';
+  })()
   +'</div>'
 
   // ── BLOCCO 1: Hero Stats + Cluster Ring ──
@@ -9483,6 +9537,29 @@ function renderHealthDashboard(container){
       +'<div style="position:absolute;bottom:0;width:100%;height:'+puntiBarra+'%;background:linear-gradient(to top,#C9A961,#E8C96A);border-radius:6px;transition:height .5s"></div>'
     +'</div>'
   +'</div>'
+  +'</div></div>'
+
+  // ── MISSIONI card ──
+  +'<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
+  +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+    +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em">🎯 Missioni di oggi</div>'
+    +'<div style="font-size:10px;color:#9ab0cc">'+_missioniOggi.filter(function(m){return m.completata;}).length+'/'+_missioniOggi.length+' completate</div>'
+  +'</div>'
+  +'<div style="display:flex;flex-direction:column;gap:10px">'
+  +_missioniOggi.map(function(m){
+    var pct = Math.min(100,Math.round(m.fatto/m.target*100));
+    return '<div onclick="aggiungiLogFamiglia(\''+m.tipo+'\')" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;background:'+(m.completata?'#F0FFF4':'#F4F7FE')+';border:1.5px solid '+(m.completata?'#A8D8B8':'#DDEAFF')+'">'
+      +'<div style="font-size:24px;flex-shrink:0">'+m.ico+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:13px;font-weight:600;color:'+(m.completata?'#1a7a4a':'#1a1a3a')+'">'+m.testo+'</div>'
+        +'<div style="margin-top:6px;height:4px;background:'+(m.completata?'rgba(26,122,74,.2)':'#DDEAFF')+';border-radius:2px;overflow:hidden">'
+          +'<div style="height:100%;width:'+pct+'%;background:'+(m.completata?'#1a7a4a':'#1565C0')+';border-radius:2px;transition:width .5s"></div>'
+        +'</div>'
+        +'<div style="font-size:10px;color:#9ab0cc;margin-top:3px">'+m.fatto+'/'+m.target+(m.completata?' ✓ +'+m.premio+'pt':'')+'</div>'
+      +'</div>'
+      +(m.completata?'<div style="font-size:20px">✅</div>':'<div style="font-size:11px;font-weight:700;color:#1565C0;background:#EEF3FB;border-radius:8px;padding:4px 8px;flex-shrink:0">+'+m.premio+'pt</div>')
+      +'</div>';
+  }).join('')
   +'</div></div>'
 
   // ── BLOCCO 4: Grafico settimana ──
