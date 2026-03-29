@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.17';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.18';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9329,120 +9329,217 @@ function renderHealthDashboard(container){
   var cane = _famigliaCaneSelezionato;
   if(!cane){ container.innerHTML=''; return; }
 
-  // Stats oggi (ora locale)
+  // Keyframe ring — aggiunto una sola volta
+  if(!document.getElementById('bp-ring-style')){
+    var _st = document.createElement('style');
+    _st.id = 'bp-ring-style';
+    _st.textContent = '@keyframes bpRingFill{from{stroke-dasharray:0 201}to{stroke-dasharray:inherit}}';
+    document.head.appendChild(_st);
+  }
+
+  // Data oggi (ora locale)
   var now = new Date();
   var oggi = now.getFullYear()+'-'
     +String(now.getMonth()+1).padStart(2,'0')+'-'
     +String(now.getDate()).padStart(2,'0');
-  var logOggi = _famigliaLog.filter(function(l){
-    if(!l.created_at) return false;
-    var d = new Date(l.created_at);
-    var ds = d.getFullYear()+'-'
-      +String(d.getMonth()+1).padStart(2,'0')+'-'
-      +String(d.getDate()).padStart(2,'0');
-    return ds === oggi;
-  });
+
+  function dataLocale(ts){
+    if(!ts) return '';
+    var d = new Date(ts);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+
+  var logOggi = _famigliaLog.filter(function(l){ return dataLocale(l.created_at)===oggi; });
   var pastiOggi   = logOggi.filter(function(l){return l.tipo==='pasto';}).length;
   var usciteOggi  = logOggi.filter(function(l){return l.tipo==='uscita';}).length;
   var farmaciOggi = logOggi.filter(function(l){return l.tipo==='farmaco';}).length;
   var fotoOggi    = logOggi.filter(function(l){return l.tipo==='foto';}).length;
-  var circ = 2*Math.PI*20;
+
+  // Streak giorni consecutivi
+  var streak = 0;
+  for(var _si=0;_si<365;_si++){
+    var _sd = new Date(); _sd.setDate(_sd.getDate()-_si);
+    var _sds = _sd.getFullYear()+'-'+String(_sd.getMonth()+1).padStart(2,'0')+'-'+String(_sd.getDate()).padStart(2,'0');
+    if(_famigliaLog.some(function(l){return dataLocale(l.created_at)===_sds;})) streak++;
+    else if(_si>0) break;
+  }
+  if(logOggi.length===0) streak=0;
+
+  // Saluto dinamico
+  var _h = now.getHours();
+  var saluto = _h>=5&&_h<12?'Buongiorno! ☀️':_h>=12&&_h<18?'Buon pomeriggio! 🌤️':_h>=18&&_h<22?'Buona sera! 🌙':'Ciao! 🐾';
+
+  // Punti oggi
+  var punti = logOggi.length*10;
+  var puntiBarra = Math.min(100,punti);
+  var mancano = 100-punti;
 
   // Grafico settimana
   var settimana = [];
-  for(var i=6;i>=0;i--){
-    var dd = new Date(); dd.setDate(dd.getDate()-i);
-    var ds2 = dd.toISOString().substring(0,10);
-    var gg = ['Do','Lu','Ma','Me','Gi','Ve','Sa'][dd.getDay()];
-    var cnt = _famigliaLog.filter(function(l){
-      return l.created_at && l.created_at.substring(0,10)===ds2;
-    }).length;
-    settimana.push({giorno:gg, count:cnt, oggi:i===0});
+  for(var _i=6;_i>=0;_i--){
+    var _dd = new Date(); _dd.setDate(_dd.getDate()-_i);
+    var _ds = _dd.getFullYear()+'-'+String(_dd.getMonth()+1).padStart(2,'0')+'-'+String(_dd.getDate()).padStart(2,'0');
+    var _gg = ['Do','Lu','Ma','Me','Gi','Ve','Sa'][_dd.getDay()];
+    var _cnt = _famigliaLog.filter(function(l){return dataLocale(l.created_at)===_ds;}).length;
+    settimana.push({giorno:_gg,count:_cnt,oggi:_i===0});
   }
-  var maxCnt = Math.max.apply(null, settimana.map(function(s){return s.count;}));
+  var maxCnt = Math.max.apply(null,settimana.map(function(s){return s.count;}));
   if(maxCnt===0) maxCnt=1;
+  var totLog = settimana.reduce(function(a,s){return a+s.count;},0);
+
+  // Ring circumference r=32
+  var circ = 201;
+  var avatarColors = ['#EEF3FB','#FFF8E7','#F0FFF4','#FFF0F0'];
+
+  function mkRing(ico,val,max,color,top,right,bottom,left,tipo){
+    var dash = Math.round(circ*Math.min(1,val/max));
+    return '<svg width="90" height="90" viewBox="0 0 90 90" onclick="aggiungiLogFamiglia(\''+tipo+'\')" '
+      +'style="position:absolute;top:'+top+';right:'+right+';bottom:'+bottom+';left:'+left+';transform:rotate(-90deg);cursor:pointer">'
+      +'<circle cx="45" cy="45" r="32" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="9"/>'
+      +'<circle cx="45" cy="45" r="32" fill="none" stroke="'+color+'" stroke-width="9" stroke-linecap="round" '
+      +'stroke-dasharray="'+dash+' '+circ+'" style="animation:bpRingFill 800ms ease-out"/>'
+      +'<text x="45" y="45" dominant-baseline="central" text-anchor="middle" font-size="20" '
+      +'transform="rotate(90,45,45)">'+ico+'</text>'
+      +'</svg>';
+  }
 
   container.innerHTML =
-  // Ring attività
-  '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
-  +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px">⭕ Attività di oggi</div>'
-  +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'
-  +[{ico:'🍖',label:'Pasti',val:pastiOggi,max:3,color:'#E65100',tipo:'pasto'},
-    {ico:'🦮',label:'Uscite',val:usciteOggi,max:3,color:'#1a7a4a',tipo:'uscita'},
-    {ico:'💊',label:'Farmaci',val:farmaciOggi,max:1,color:'#1565C0',tipo:'farmaco'},
-    {ico:'📸',label:'Foto',val:fotoOggi,max:1,color:'#C9A961',tipo:'foto'}
-  ].map(function(item){
-    var pct = Math.min(100, Math.round(item.val/item.max*100));
-    var dash = Math.round(circ*pct/100);
-    return '<div onclick="aggiungiLogFamiglia(\''+item.tipo+'\')" style="text-align:center;cursor:pointer">'
-      +'<div style="position:relative;width:52px;height:52px;margin:0 auto 6px">'
-      +'<svg width="52" height="52" style="transform:rotate(-90deg)">'
-      +'<circle cx="26" cy="26" r="20" fill="none" stroke="#EEF3FB" stroke-width="5"/>'
-      +'<circle cx="26" cy="26" r="20" fill="none" stroke="'+item.color+'" stroke-width="5" stroke-linecap="round" stroke-dasharray="'+dash+' '+circ+'"/></svg>'
-      +'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px">'+item.ico+'</div>'
-      +'</div>'
-      +'<div style="font-size:13px;font-weight:700;color:#1a1a3a">'+item.val+'</div>'
-      +'<div style="font-size:9px;color:#9ab0cc;font-weight:600">'+item.label+'</div>'
+
+  // ── BLOCCO 2: Saluto + Streak ──
+  '<div style="background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 12px rgba(13,71,161,.08);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px">'
+  +'<div style="flex:1;min-width:0">'
+    +'<div style="font-size:16px;font-weight:700;color:#1a1a3a">'+saluto+'</div>'
+    +'<div style="font-size:12px;color:#6B8BB0;margin-top:2px">Come sta andando oggi per <strong>'+cane.nome+'</strong></div>'
+  +'</div>'
+  +(streak>0
+    ?'<div style="background:#FFF8E7;border:1.5px solid #C9A961;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:#A88A41;white-space:nowrap;flex-shrink:0">🔥 '+streak+' giorni</div>'
+    :'<div style="background:#FFF8E7;border:1.5px solid #C9A961;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:#A88A41;white-space:nowrap;flex-shrink:0">Inizia oggi!</div>')
+  +'</div>'
+
+  // ── BLOCCO 1: Hero Stats + Cluster Ring ──
+  +'<div style="background:linear-gradient(135deg,#0D47A1,#0A3580);border-radius:20px;padding:20px;margin-bottom:16px;color:#fff">'
+  +'<div style="font-size:11px;font-weight:800;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px">⭕ Attività di oggi</div>'
+  +'<div style="display:flex;align-items:center;gap:16px">'
+  // Lista stats sinistra
+  +'<div style="flex:1;display:flex;flex-direction:column;gap:10px">'
+  +[{ico:'🍖',val:pastiOggi,max:3,label:'pasti',tipo:'pasto'},
+    {ico:'🦮',val:usciteOggi,max:3,label:'uscite',tipo:'uscita'},
+    {ico:'💊',val:farmaciOggi,max:1,label:'farmaci',tipo:'farmaco'},
+    {ico:'📸',val:fotoOggi,max:1,label:'foto',tipo:'foto'}
+  ].map(function(s){
+    return '<div onclick="aggiungiLogFamiglia(\''+s.tipo+'\')" style="display:flex;align-items:baseline;gap:6px;cursor:pointer">'
+      +'<span style="font-size:16px">'+s.ico+'</span>'
+      +'<span style="font-size:28px;font-weight:700;color:#fff;line-height:1">'+s.val+'</span>'
+      +'<span style="font-size:16px;color:rgba(255,255,255,.5)">/'+s.max+'</span>'
+      +'<span style="font-size:10px;color:rgba(255,255,255,.5);margin-left:2px">'+s.label+'</span>'
       +'</div>';
   }).join('')
+  +'</div>'
+  // Cluster ring destra
+  +'<div style="position:relative;width:120px;height:120px;flex-shrink:0">'
+  +mkRing('🍖',pastiOggi,3,'#C9A961','0','0','auto','auto','pasto')
+  +mkRing('🦮',usciteOggi,3,'rgba(255,255,255,.7)','auto','auto','0','10px','uscita')
+  +mkRing('💊',farmaciOggi,1,'#90CAF9','auto','10px','0','auto','farmaco')
+  +'</div>'
   +'</div></div>'
 
-  // Grafico settimana
+  // ── BLOCCO 3: Punti giornalieri ──
+  +'<div style="background:linear-gradient(135deg,#FFF8E7,#FFFDF5);border:1.5px solid #F0D98A;border-radius:16px;padding:16px;margin-bottom:14px">'
+  +'<div style="display:flex;align-items:center;justify-content:space-between">'
+  +'<div>'
+    +'<div style="font-size:11px;font-weight:800;color:#A88A41;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">⭐ Punti oggi</div>'
+    +'<div style="font-size:32px;font-weight:700;color:#A88A41;line-height:1">'+punti+'<span style="font-size:14px;font-weight:600">pt</span></div>'
+    +'<div style="font-size:11px;color:#B8A060;margin-top:4px">'+(mancano>0?'Mancano '+mancano+'pt':'🎉 Obiettivo!')+'</div>'
+  +'</div>'
+  +'<div style="display:flex;flex-direction:column;align-items:center;gap:4px">'
+    +'<div style="font-size:9px;color:#A88A41;font-weight:700">100pt</div>'
+    +'<div style="width:10px;height:56px;background:#EEF3FB;border-radius:6px;position:relative;overflow:hidden">'
+      +'<div style="position:absolute;bottom:0;width:100%;height:'+puntiBarra+'%;background:linear-gradient(to top,#C9A961,#E8C96A);border-radius:6px;transition:height .5s"></div>'
+    +'</div>'
+  +'</div>'
+  +'</div></div>'
+
+  // ── BLOCCO 4: Grafico settimana ──
   +'<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
-  +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px">📊 Questa settimana</div>'
-  +'<div style="display:flex;align-items:flex-end;gap:6px;height:60px">'
+  +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
+    +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em">📊 Questa settimana</div>'
+    +'<div style="font-size:10px;color:#9ab0cc">(tot. '+totLog+' log)</div>'
+  +'</div>'
+  +'<div style="display:flex;align-items:flex-end;gap:6px;height:80px">'
   +settimana.map(function(s){
-    var h = Math.max(4, Math.round(s.count/maxCnt*52));
+    var _hh = Math.max(4,Math.round(s.count/maxCnt*70));
     return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">'
-      +'<div style="width:100%;border-radius:4px 4px 0 0;background:'+(s.oggi?'#C9A961':'#DDEAFF')+';height:'+h+'px;transition:height .3s"></div>'
-      +'<div style="font-size:9px;font-weight:700;color:'+(s.oggi?'#A88A41':'#9ab0cc')+'">'+s.giorno+'</div>'
+      +(s.count>0?'<div style="font-size:8px;color:#6B8BB0">'+s.count+'</div>':'<div style="font-size:8px;color:transparent">0</div>')
+      +'<div style="width:100%;border-radius:4px 4px 0 0;background:'+(s.oggi?'linear-gradient(to top,#C9A961,#E8A931)':'linear-gradient(to top,#DDEAFF,#B8CFEE)')+';height:'+_hh+'px;transition:height .3s"></div>'
+      +'<div style="font-size:9px;font-weight:'+(s.oggi?'700':'600')+';color:'+(s.oggi?'#A88A41':'#9ab0cc')+'">'+s.giorno+'</div>'
       +'</div>';
   }).join('')
   +'</div></div>'
 
-  // Feed famiglia
-  +(_famigliaMembers.length > 1
-    ? '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
-      +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">👨‍👩‍👧 Famiglia — chi ha fatto cosa</div>'
-      +'<div style="display:flex;flex-direction:column;gap:8px">'
-      +_famigliaLog.slice(0,3).map(function(log){
-        var me = _famigliaMembers.find(function(m){return m.user_id===log.user_id;});
-        var emoji = (me&&me.emoji)||'🐾';
-        return '<div style="display:flex;align-items:center;gap:10px">'
-          +'<div style="width:32px;height:32px;border-radius:50%;background:#EEF3FB;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+emoji+'</div>'
-          +'<div style="flex:1;font-size:12px;color:#4A6080"><strong>'+(log.nickname_autore||'Tu')+'</strong> · '+tipoLogLabel(log.tipo)+'</div>'
-          +'<div style="font-size:10px;color:#9ab0cc">'+tempoFa(log.created_at)+'</div>'
-          +'</div>';
-      }).join('')
-      +'</div></div>'
-    : '')
+  // ── BLOCCO 5: Feed famiglia ──
+  +(_famigliaMembers.length>=1
+    ?'<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
+      +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">👨‍👩‍👧 Attività recenti</div>'
+      +(_famigliaLog.length===0
+        ?'<div style="background:#F4F7FE;border-radius:12px;padding:24px;text-align:center">'
+          +'<div style="font-size:48px;margin-bottom:8px">🐾</div>'
+          +'<div style="font-size:13px;font-weight:600;color:#4A6080;margin-bottom:4px">Nessuna attività ancora</div>'
+          +'<div style="font-size:12px;color:#9ab0cc">Registra la prima attività di oggi!</div>'
+          +'</div>'
+        :'<div style="display:flex;flex-direction:column;gap:8px">'
+          +_famigliaLog.slice(0,5).map(function(log){
+            var _me = _famigliaMembers.find(function(m){return m.user_id===log.user_id;});
+            var _emoji = (_me&&_me.emoji)||'🐾';
+            var _uid = log.user_id||'';
+            var _bg = avatarColors[(_uid.charCodeAt(0)||0)%4];
+            return '<div style="display:flex;align-items:center;gap:10px">'
+              +'<div style="width:36px;height:36px;border-radius:50%;background:'+_bg+';display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">'+_emoji+'</div>'
+              +'<div style="flex:1;font-size:12px;color:#4A6080"><strong>'+(log.nickname_autore||(_me&&_me.nickname)||'Tu')+'</strong> · '+tipoLogLabel(log.tipo)+'</div>'
+              +'<div style="font-size:10px;color:#9ab0cc">'+tempoFa(log.created_at)+'</div>'
+              +'</div>';
+          }).join('')
+          +'</div>')
+      +'</div>'
+    :'')
 
-  // Compiti in evidenza
-  +(_famigliaCompiti.length > 0
-    ? '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
-      +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em">✅ Compiti oggi</div>'
-      +'<button onclick="switchFamTab(\'compiti\')" style="font-size:11px;color:#1565C0;background:none;border:none;cursor:pointer;font-weight:600">Vedi tutti →</button></div>'
-      +'<div style="display:flex;flex-direction:column;gap:8px">'
-      +_famigliaCompiti.slice(0,2).map(function(c){
+  // ── BLOCCO 6a: Compiti ──
+  +'<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
+  +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+    +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em">✅ Compiti</div>'
+    +'<button onclick="aggiungiCompitoFamiglia()" style="font-size:11px;color:#C9A961;background:none;border:none;cursor:pointer;font-weight:700">Aggiungi +</button>'
+  +'</div>'
+  +(_famigliaCompiti.length===0
+    ?'<div style="font-size:12px;color:#9ab0cc;text-align:center;padding:8px 0">Nessun compito 🎉</div>'
+    :'<div style="display:flex;flex-direction:column;gap:8px">'
+      +_famigliaCompiti.slice(0,3).map(function(c){
+        var _m2 = c.assegnato_a?_famigliaMembers.find(function(m){return m.user_id===c.assegnato_a;}):null;
         return '<div style="display:flex;align-items:center;gap:10px">'
           +'<button onclick="completaCompito(\''+c.id+'\')" style="width:22px;height:22px;border-radius:50%;border:2px solid #C9A961;background:#fff;cursor:pointer;flex-shrink:0"></button>'
-          +'<div style="font-size:13px;color:#1a1a3a">'+c.testo+'</div>'
+          +'<div style="flex:1;font-size:13px;color:#1a1a3a">'+(c.titolo||c.testo||'')+'</div>'
+          +(_m2?'<div style="font-size:16px">'+_m2.emoji+'</div>':'')
           +'</div>';
       }).join('')
-      +'</div></div>'
-    : '')
+      +'</div>')
+  +'</div>'
 
-  // Quick actions
+  // ── BLOCCO 6b: Quick actions ──
   +'<div style="background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
   +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">➕ Registra adesso</div>'
   +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'
-  +[['🍖','Pasto','pasto'],['🦮','Uscita','uscita'],['💊','Farmaco','farmaco'],['⚖️','Peso','peso'],
-    ['💉','Vaccino','vaccino'],['🏥','Visita','visita'],['📝','Nota','nota'],['📸','Foto','foto']]
-  .map(function(a){
-    return '<button onclick="aggiungiLogFamiglia(\''+a[2]+'\')" style="background:#F4F7FE;border:1.5px solid #DDEAFF;border-radius:10px;padding:10px 4px;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px">'
-      +'<span style="font-size:22px">'+a[0]+'</span>'
-      +'<span style="font-size:9px;font-weight:700;color:#6B8BB0">'+a[1]+'</span>'
+  +[['🍖','Pasto','pasto','#FFF3E0','#FFB74D'],
+    ['🦮','Uscita','uscita','#FFF3E0','#FFB74D'],
+    ['💊','Farmaco','farmaco','#E3F2FD','#42A5F5'],
+    ['💉','Vaccino','vaccino','#E3F2FD','#42A5F5'],
+    ['🏥','Visita','visita','#E3F2FD','#42A5F5'],
+    ['⚖️','Peso','peso','#F3E5F5','#AB47BC'],
+    ['📝','Nota','nota','#E8F5E9','#66BB6A'],
+    ['📸','Foto','foto','#E8F5E9','#66BB6A']
+  ].map(function(a){
+    return '<button ontouchstart="" onclick="aggiungiLogFamiglia(\''+a[2]+'\')" '
+      +'style="background:'+a[3]+';border:1.5px solid '+a[4]+';border-radius:12px;padding:12px 4px;cursor:pointer;'
+      +'text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px">'
+      +'<span style="font-size:24px">'+a[0]+'</span>'
+      +'<span style="font-size:10px;font-weight:700;color:#4A6080">'+a[1]+'</span>'
       +'</button>';
   }).join('')
   +'</div></div>';
