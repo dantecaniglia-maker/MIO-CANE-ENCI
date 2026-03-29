@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.22';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.23';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9096,6 +9096,37 @@ var _famigliaLog = [];
 var _famigliaCompiti = [];
 var _famigliaCaneSelezionato = null;
 var _famTabAttiva = 'home';
+var _FAMIGLIA_KEY = 'breedped_famiglia_v1';
+
+function _salvFam(){
+  if(!_famigliaDati || !_currentUser) return;
+  try {
+    localStorage.setItem(_FAMIGLIA_KEY, JSON.stringify({
+      uid: _currentUser.id,
+      famigliaDati: _famigliaDati,
+      famigliaCani: _famigliaCani,
+      famigliaLog: _famigliaLog.slice(0,50),
+      famigliaCompiti: _famigliaCompiti,
+      famigliaMembers: _famigliaMembers
+    }));
+  } catch(e){}
+}
+
+function _caricaFamLocale(){
+  try {
+    var raw = localStorage.getItem(_FAMIGLIA_KEY);
+    if(!raw) return false;
+    var d = JSON.parse(raw);
+    if(!d || !d.famigliaDati) return false;
+    if(_currentUser && d.uid && d.uid !== _currentUser.id) return false;
+    _famigliaDati = d.famigliaDati;
+    _famigliaCani = d.famigliaCani||[];
+    _famigliaLog  = d.famigliaLog||[];
+    _famigliaCompiti = d.famigliaCompiti||[];
+    _famigliaMembers = d.famigliaMembers||[];
+    return true;
+  } catch(e){ return false; }
+}
 
 function getModalita(){
   return localStorage.getItem(_modalitaKey) || null;
@@ -9180,73 +9211,79 @@ function applicaModalita(mod){
 ════════════════════════════════════════ */
 
 async function caricaFamiglia(){
-  if(!_currentUser){ console.warn('[Famiglia] nessun utente loggato'); return; }
-  console.log('[Famiglia] carico per user:', _currentUser.id);
+  if(!_currentUser) return;
 
-  // Timeout di sicurezza: 30s
-  var timedOut = false;
-  var timeoutId = setTimeout(function(){
-    timedOut = true;
-    console.warn('[Famiglia] timeout — mostro wizard');
-    mostraWizardFamiglia();
-  }, 30000);
+  // PASSO 1 — localStorage: istantaneo, 0ms
+  if(_caricaFamLocale()){
+    console.log('[Famiglia] dati locali OK, mostro UI');
+    renderHomeFamiglia();
+    switchFamTab('home');
+    // Aggiorna da Supabase in background senza bloccare
+    _syncFamigliaBackground(false);
+    return;
+  }
 
+  // PASSO 2 — Prima volta: mostra loading e aspetta Supabase
+  console.log('[Famiglia] nessun dato locale, query Supabase...');
+  var hf = g('home-famiglia');
+  if(hf){
+    var content = hf.querySelector('[id^="fam-tab"]')||hf;
+    // Mostra uno spinner leggero mentre carica
+    var heroEl = g('fam-cane-hero');
+    if(heroEl) heroEl.innerHTML = '<div style="text-align:center;padding:60px 20px">'
+      +'<div style="font-size:40px;margin-bottom:12px">🐾</div>'
+      +'<div style="color:#6B8BB0;font-size:14px">Caricamento famiglia...</div>'
+      +'</div>';
+  }
+  await _syncFamigliaBackground(true);
+}
+
+async function _syncFamigliaBackground(mostraWizardSeVuoto){
   try {
-    // Entrambe le query in parallelo per velocità
-    var _results = await Promise.all([
-      _supabase.from('famiglia_membri').select('famiglia_id').eq('user_id', _currentUser.id).limit(1),
-      _supabase.from('famiglie').select('*').eq('admin_uid', _currentUser.id).limit(1)
+    var _r = await Promise.all([
+      _supabase.from('famiglia_membri').select('famiglia_id').eq('user_id',_currentUser.id).limit(1),
+      _supabase.from('famiglie').select('*').eq('admin_uid',_currentUser.id).limit(1)
     ]);
-    var resMembro = _results[0];
-    var resFamAdmin = _results[1];
-    console.log('[Famiglia] membri:', resMembro, 'admin:', resFamAdmin);
-    if(timedOut) return;
-
-    var famId = null;
+    var resMembro = _r[0], resFamAdmin = _r[1];
+    console.log('[Famiglia] sync:', resMembro.data, resFamAdmin.data);
 
     if(resMembro.data && resMembro.data.length > 0){
-      // Percorso normale: utente è membro
-      famId = resMembro.data[0].famiglia_id;
-      var resFam = await _supabase.from('famiglie').select('*').eq('id', famId).single();
-      if(timedOut) return;
-      if(resFam.error || !resFam.data){
-        console.error('[Famiglia] errore famiglie:', resFam.error);
-        clearTimeout(timeoutId); mostraWizardFamiglia(); return;
-      }
-      _famigliaDati = resFam.data;
+      var famId = resMembro.data[0].famiglia_id;
+      var rf = await _supabase.from('famiglie').select('*').eq('id',famId).single();
+      if(rf.data) _famigliaDati = rf.data;
     } else if(resFamAdmin.data && resFamAdmin.data.length > 0){
-      // Percorso admin: ha creato una famiglia ma manca il record membro
       _famigliaDati = resFamAdmin.data[0];
-      famId = _famigliaDati.id;
-      var checkMembro = await _supabase.from('famiglia_membri')
-        .select('id').eq('famiglia_id', famId).eq('user_id', _currentUser.id).limit(1);
-      if(!checkMembro.data || checkMembro.data.length === 0){
+      var famId = _famigliaDati.id;
+      var chk = await _supabase.from('famiglia_membri').select('id')
+        .eq('famiglia_id',famId).eq('user_id',_currentUser.id).limit(1);
+      if(!chk.data||chk.data.length===0){
         await _supabase.from('famiglia_membri').insert({
-          famiglia_id: famId,
-          user_id: _currentUser.id,
-          ruolo: 'admin',
-          nickname: (_currentUser.email||'').split('@')[0]||'Admin',
-          emoji: '👑'
+          famiglia_id:famId, user_id:_currentUser.id,
+          ruolo:'admin', nickname:(_currentUser.email||'').split('@')[0]||'Admin', emoji:'👑'
         });
-        console.log('[Famiglia] membro admin ricreato!');
       }
     } else {
-      // Nessuna famiglia trovata
-      clearTimeout(timeoutId); mostraWizardFamiglia(); return;
+      if(mostraWizardSeVuoto && !_famigliaDati) mostraWizardFamiglia();
+      return;
     }
 
-    console.log('[Famiglia] famiglia OK:', _famigliaDati.nome_famiglia);
-    clearTimeout(timeoutId);
-    await caricaCanisFamiglia();
-    await caricaLogFamiglia();
-    await caricaCompitisFamiglia();
-    await caricaMembrisFamiglia();
+    // Carica tutto in parallelo
+    var _d = await Promise.all([
+      _supabase.from('famiglia_cani').select('*').eq('famiglia_id',_famigliaDati.id),
+      _supabase.from('famiglia_log').select('*').eq('famiglia_id',_famigliaDati.id).order('created_at',{ascending:false}).limit(50),
+      _supabase.from('famiglia_compiti').select('*').eq('famiglia_id',_famigliaDati.id).eq('completato',false),
+      _supabase.from('famiglia_membri').select('*').eq('famiglia_id',_famigliaDati.id)
+    ]);
+    if(_d[0].data) _famigliaCani = _d[0].data;
+    if(_d[1].data) _famigliaLog  = _d[1].data;
+    if(_d[2].data) _famigliaCompiti = _d[2].data;
+    if(_d[3].data) _famigliaMembers = _d[3].data;
+    _salvFam();
     renderHomeFamiglia();
+    switchFamTab('home');
   } catch(e){
-    if(timedOut) return;
-    clearTimeout(timeoutId);
-    console.error('[Famiglia] eccezione:', e);
-    mostraWizardFamiglia();
+    console.error('[Famiglia] sync error:', e);
+    if(mostraWizardSeVuoto && !_famigliaDati) mostraWizardFamiglia();
   }
 }
 
@@ -9674,6 +9711,7 @@ async function completaCompito(id){
   var compito = _famigliaCompiti.find(function(c){return c.id===id;});
   await _supabase.from('famiglia_compiti').update({completato:true}).eq('id',id);
   _famigliaCompiti = _famigliaCompiti.filter(function(c){return c.id!==id;});
+  _salvFam();
   // Registra automaticamente il log corrispondente per aggiornare i ring
   if(compito && compito.tipo){
     aggiungiLogFamiglia(compito.tipo);
@@ -9826,7 +9864,7 @@ async function salvaLogFamiglia(tipo, btn){
     // Aggiorna in memoria subito per refresh istantaneo dei ring
     _famigliaLog.unshift({
       famiglia_id: _famigliaDati.id,
-      cane_id: _famigliaCaneSelezionato.id,
+      cane_id: _famigliaCaneSelezionato&&_famigliaCaneSelezionato.id||null,
       user_id: _currentUser.id,
       nickname_autore: nickname,
       tipo: tipo,
@@ -9834,6 +9872,7 @@ async function salvaLogFamiglia(tipo, btn){
       foto_url: fotoUrl,
       created_at: new Date().toISOString()
     });
+    _salvFam();
     if(_famTabAttiva==='home'){
       var _tc = g('fam-tab-content');
       if(_tc) renderHealthDashboard(_tc);
@@ -9888,51 +9927,52 @@ function mostraWizardFamiglia(){
 
 async function creaFamiglia(){
   if(!_currentUser){ toast('Devi essere loggato'); return; }
-  // Cerca l'input per nome — supporta entrambi gli id possibili
-  var nomeFam = g('fam-nome-input') ? g('fam-nome-input').value.trim() : null;
+  var nomeFam = g('fam-nome-input') ? g('fam-nome-input').value.trim() : '';
   if(!nomeFam){
-    var inputs = document.querySelectorAll('#wizard-famiglia input[type="text"]');
-    if(inputs.length) nomeFam = inputs[0].value.trim();
+    var _inputs = document.querySelectorAll('#wizard-famiglia input[type="text"]');
+    if(_inputs.length) nomeFam = _inputs[0].value.trim();
   }
   if(!nomeFam){ toast('Inserisci il nome della famiglia'); return; }
-  console.log('[Famiglia] crea famiglia:', nomeFam, 'user:', _currentUser.id);
+
   var codice = 'FAM-'+Math.random().toString(36).substr(2,4).toUpperCase();
+
+  // ── OTTIMISTICO: crea subito in locale, mostra UI istantaneamente ──
+  _famigliaDati = {
+    id: 'local-'+Date.now(), nome_famiglia: nomeFam,
+    admin_uid: _currentUser.id, codice_invito: codice, _pendingSync: true
+  };
+  _famigliaCani = []; _famigliaLog = []; _famigliaCompiti = [];
+  _famigliaMembers = [{user_id:_currentUser.id, ruolo:'admin',
+    nickname:(_currentUser.email||'').split('@')[0]||'Admin', emoji:'👑'}];
+  _salvFam();
+
+  var wiz = g('wizard-famiglia');
+  if(wiz) wiz.remove();
+  toast('🎉 Famiglia "'+nomeFam+'" creata!');
+  renderHomeFamiglia();
+  switchFamTab('home');
+
+  // ── SYNC Supabase in background ──
   try {
     var ins = await _supabase.from('famiglie').insert({
-      nome_famiglia: nomeFam,
-      admin_uid: _currentUser.id,
+      nome_famiglia: nomeFam, admin_uid: _currentUser.id,
       codice_invito: codice,
       codice_scadenza: new Date(Date.now()+30*24*60*60*1000).toISOString()
     });
-    console.log('[Famiglia] insert result:', ins.error||'ok');
     if(ins.error) throw ins.error;
-    var sel = await _supabase.from('famiglie')
-      .select('*')
-      .eq('codice_invito', codice)
-      .single();
-    console.log('[Famiglia] select result:', sel.error||sel.data);
-    if(sel.error) throw sel.error;
-    _famigliaDati = sel.data;
-    var res2 = await _supabase.from('famiglia_membri').insert({
-      famiglia_id: _famigliaDati.id,
-      user_id: _currentUser.id,
-      ruolo: 'admin',
-      nickname: nomeFam.split(' ')[0]||'Admin',
-      emoji: '👑'
+    var sel = await _supabase.from('famiglie').select('*').eq('codice_invito',codice).single();
+    if(sel.data){
+      _famigliaDati = sel.data;
+      delete _famigliaDati._pendingSync;
+    }
+    await _supabase.from('famiglia_membri').insert({
+      famiglia_id: _famigliaDati.id, user_id: _currentUser.id,
+      ruolo: 'admin', nickname:(_currentUser.email||'').split('@')[0]||'Admin', emoji:'👑'
     });
-    console.log('[Famiglia] membro admin aggiunto:', res2.error||'ok');
-    var wiz = g('wizard-famiglia');
-    if(wiz) wiz.remove();
-    toast('🎉 Famiglia "'+nomeFam+'" creata! Codice: '+codice);
-    await caricaCanisFamiglia();
-    await caricaMembrisFamiglia();
-    renderHomeFamiglia();
-    switchFamTab('home');
+    _salvFam();
+    console.log('[Famiglia] sync OK:', _famigliaDati.id);
   } catch(e){
-    console.error('[Famiglia] errore crea:', e);
-    toast('❌ Errore: '+(e.message||JSON.stringify(e)));
-    var btnCrea = g('btn-crea-famiglia');
-    if(btnCrea){ btnCrea.disabled=false; btnCrea.textContent='Crea famiglia'; }
+    console.error('[Famiglia] sync Supabase (non critico, riproverà):', e);
   }
 }
 
