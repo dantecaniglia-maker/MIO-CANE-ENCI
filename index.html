@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.20';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.21';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9163,10 +9163,14 @@ function applicaModalita(mod){
       document.body.appendChild(hf);
     }
     g('home-famiglia').style.display = 'block';
+    if(g('bottom-nav')) g('bottom-nav').style.display = 'none';
+    var _fab = g('chat-fab'); if(_fab) _fab.style.zIndex = '99990';
     caricaFamiglia();
   } else {
     var hf2 = g('home-famiglia');
     if(hf2) hf2.style.display = 'none';
+    if(g('bottom-nav')) g('bottom-nav').style.display = '';
+    var _fab2 = g('chat-fab'); if(_fab2) _fab2.style.zIndex = '9998';
   }
 }
 
@@ -9178,82 +9182,60 @@ async function caricaFamiglia(){
   if(!_currentUser){ console.warn('[Famiglia] nessun utente loggato'); return; }
   console.log('[Famiglia] carico per user:', _currentUser.id);
 
-  // Timeout di sicurezza: se Supabase non risponde in 15s mostra il wizard
+  // Timeout di sicurezza: 30s
   var timedOut = false;
   var timeoutId = setTimeout(function(){
     timedOut = true;
     console.warn('[Famiglia] timeout — mostro wizard');
     mostraWizardFamiglia();
-  }, 15000);
+  }, 30000);
 
   try {
-    // Step 1: cerca il membro
-    var resMembro = await _supabase
-      .from('famiglia_membri')
-      .select('famiglia_id')
-      .eq('user_id', _currentUser.id)
-      .limit(1);
-    console.log('[Famiglia] membri res:', resMembro);
+    // Entrambe le query in parallelo per velocità
+    var _results = await Promise.all([
+      _supabase.from('famiglia_membri').select('famiglia_id').eq('user_id', _currentUser.id).limit(1),
+      _supabase.from('famiglie').select('*').eq('admin_uid', _currentUser.id).limit(1)
+    ]);
+    var resMembro = _results[0];
+    var resFamAdmin = _results[1];
+    console.log('[Famiglia] membri:', resMembro, 'admin:', resFamAdmin);
     if(timedOut) return;
 
-    if(resMembro.error){
-      console.error('[Famiglia] errore famiglia_membri:', resMembro.error);
-      clearTimeout(timeoutId);
-      mostraWizardFamiglia(); return;
-    }
-    if(!resMembro.data || resMembro.data.length === 0){
-      console.log('[Famiglia] nessun membro trovato — controllo se admin di una famiglia');
-      // Fallback: l'utente potrebbe essere admin ma senza record membro (es. insert parziale)
-      var resFamAdmin = await _supabase.from('famiglie')
-        .select('*')
-        .eq('admin_uid', _currentUser.id)
-        .limit(1);
-      console.log('[Famiglia] check admin:', resFamAdmin);
-      if(resFamAdmin.data && resFamAdmin.data.length > 0){
-        _famigliaDati = resFamAdmin.data[0];
-        // Controlla se esiste già il record membro prima di inserire
-        var checkMembro = await _supabase.from('famiglia_membri')
-          .select('id').eq('famiglia_id', _famigliaDati.id)
-          .eq('user_id', _currentUser.id).limit(1);
-        if(!checkMembro.data || checkMembro.data.length === 0){
-          await _supabase.from('famiglia_membri').insert({
-            famiglia_id: _famigliaDati.id,
-            user_id: _currentUser.id,
-            ruolo: 'admin',
-            nickname: (_currentUser.email||'').split('@')[0]||'Admin',
-            emoji: '👑'
-          });
-          console.log('[Famiglia] membro admin ricreato!');
-        }
-        var famId = _famigliaDati.id;
-        await caricaCanisFamiglia();
-        await caricaLogFamiglia();
-        await caricaCompitisFamiglia();
-        await caricaMembrisFamiglia();
-        clearTimeout(timeoutId);
-        renderHomeFamiglia();
-        switchFamTab('home');
-        return;
+    var famId = null;
+
+    if(resMembro.data && resMembro.data.length > 0){
+      // Percorso normale: utente è membro
+      famId = resMembro.data[0].famiglia_id;
+      var resFam = await _supabase.from('famiglie').select('*').eq('id', famId).single();
+      if(timedOut) return;
+      if(resFam.error || !resFam.data){
+        console.error('[Famiglia] errore famiglie:', resFam.error);
+        clearTimeout(timeoutId); mostraWizardFamiglia(); return;
       }
-      clearTimeout(timeoutId);
-      mostraWizardFamiglia(); return;
+      _famigliaDati = resFam.data;
+    } else if(resFamAdmin.data && resFamAdmin.data.length > 0){
+      // Percorso admin: ha creato una famiglia ma manca il record membro
+      _famigliaDati = resFamAdmin.data[0];
+      famId = _famigliaDati.id;
+      var checkMembro = await _supabase.from('famiglia_membri')
+        .select('id').eq('famiglia_id', famId).eq('user_id', _currentUser.id).limit(1);
+      if(!checkMembro.data || checkMembro.data.length === 0){
+        await _supabase.from('famiglia_membri').insert({
+          famiglia_id: famId,
+          user_id: _currentUser.id,
+          ruolo: 'admin',
+          nickname: (_currentUser.email||'').split('@')[0]||'Admin',
+          emoji: '👑'
+        });
+        console.log('[Famiglia] membro admin ricreato!');
+      }
+    } else {
+      // Nessuna famiglia trovata
+      clearTimeout(timeoutId); mostraWizardFamiglia(); return;
     }
 
-    // Step 2: carica dati famiglia
-    var famId = resMembro.data[0].famiglia_id;
-    var resFam = await _supabase.from('famiglie').select('*').eq('id', famId).single();
-    console.log('[Famiglia] famiglie res:', resFam);
-    if(timedOut) return;
-
-    if(resFam.error || !resFam.data){
-      console.error('[Famiglia] errore famiglie:', resFam.error);
-      clearTimeout(timeoutId);
-      mostraWizardFamiglia(); return;
-    }
-
-    clearTimeout(timeoutId);
-    _famigliaDati = resFam.data;
     console.log('[Famiglia] famiglia OK:', _famigliaDati.nome_famiglia);
+    clearTimeout(timeoutId);
     await caricaCanisFamiglia();
     await caricaLogFamiglia();
     await caricaCompitisFamiglia();
@@ -11811,7 +11793,7 @@ function mostraCuccioliPanel(btn){
 <div id="chat-fab-badge" style="position:fixed;bottom:114px;right:14px;z-index:9999;background:#C0534A;color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:700;display:none"></div>
 
 <!-- ════ MODAL CHATBOT ════ -->
-<div id="modal-chat" class="overlay hidden">
+<div id="modal-chat" class="overlay hidden" style="z-index:99985">
   <div class="modal" style="max-width:480px;height:85vh;display:flex;flex-direction:column;padding:0;overflow:hidden">
     <div style="background:linear-gradient(135deg,#0D47A1,#1565C0);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
       <div style="display:flex;align-items:center;gap:10px">
@@ -11894,6 +11876,7 @@ function openChat(){
     renderChatMessages();
   }
   updateChatLimitBar();
+  g('modal-chat').style.zIndex = '99985';
   show('modal-chat');
   setTimeout(function(){ var inp=g('chat-input'); if(inp) inp.focus(); },300);
 }
