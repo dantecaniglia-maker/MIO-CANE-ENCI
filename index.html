@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.25';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.26';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9197,12 +9197,30 @@ function applicaModalita(mod){
     }
     g('home-famiglia').style.display = 'block';
     if(g('bottom-nav')) g('bottom-nav').style.display = 'none';
-    var _fab = g('chat-fab'); if(_fab){ _fab.style.zIndex='99990'; _fab.style.bottom='20px'; }
+    // Crea bottom nav famiglia se non esiste
+    if(!g('fam-bottom-nav')){
+      var fbn = document.createElement('nav');
+      fbn.id = 'fam-bottom-nav';
+      fbn.style.cssText = 'position:fixed;bottom:0;left:0;width:100%;height:60px;'
+        +'background:#fff;border-top:1.5px solid #DDEAFF;z-index:99982;'
+        +'display:flex;align-items:stretch;box-shadow:0 -4px 18px rgba(21,101,192,.12)';
+      fbn.innerHTML =
+        '<button onclick="switchFamTab(\'home\')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:transparent;font-size:20px;cursor:pointer;gap:2px;color:#1565C0"><span>🏠</span><span style="font-size:9px;font-weight:700">Home</span></button>'
+        +'<button onclick="switchFamTab(\'diario\')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:transparent;font-size:20px;cursor:pointer;gap:2px;color:#9ab0cc"><span>📖</span><span style="font-size:9px;font-weight:700">Diario</span></button>'
+        +'<button onclick="switchFamTab(\'compiti\')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:transparent;font-size:20px;cursor:pointer;gap:2px;color:#9ab0cc"><span>✅</span><span style="font-size:9px;font-weight:700">Compiti</span></button>'
+        +'<button onclick="switchFamTab(\'percorsi\')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:transparent;font-size:20px;cursor:pointer;gap:2px;color:#9ab0cc"><span>🗺️</span><span style="font-size:9px;font-weight:700">Percorsi</span></button>'
+        +'<button onclick="switchFamTab(\'famiglia\')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:none;background:transparent;font-size:20px;cursor:pointer;gap:2px;color:#9ab0cc"><span>👨‍👩‍👧</span><span style="font-size:9px;font-weight:700">Branco</span></button>';
+      document.body.appendChild(fbn);
+    } else {
+      g('fam-bottom-nav').style.display = 'flex';
+    }
+    var _fab = g('chat-fab'); if(_fab){ _fab.style.zIndex='99990'; _fab.style.bottom='72px'; }
     caricaFamiglia();
   } else {
     var hf2 = g('home-famiglia');
     if(hf2) hf2.style.display = 'none';
     if(g('bottom-nav')) g('bottom-nav').style.display = '';
+    var fbn2 = g('fam-bottom-nav'); if(fbn2) fbn2.style.display = 'none';
     var _fab2 = g('chat-fab'); if(_fab2){ _fab2.style.zIndex='9998'; _fab2.style.bottom='72px'; }
   }
 }
@@ -9308,7 +9326,21 @@ function renderHomeFamiglia(){
   var cane = _famigliaCaneSelezionato || _famigliaCani[0];
   _famigliaCaneSelezionato = cane;
 
-  var statoMsg = 'Tutto ok oggi 🟢';
+  function dataLocaleHero(ts){
+    var d=new Date(ts);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  var oggiH = (function(){var n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');})();
+  var logH = _famigliaLog.filter(function(l){return dataLocaleHero(l.created_at)===oggiH;});
+  var pastiH = logH.filter(function(l){return l.tipo==='pasto';}).length;
+  var usciteH = logH.filter(function(l){return l.tipo==='uscita';}).length;
+  var score = 0;
+  if(pastiH>=1) score+=34;
+  if(pastiH>=2) score+=16;
+  if(usciteH>=1) score+=34;
+  if(usciteH>=2) score+=16;
+  var statoMsg = score>=80?'Ottimo oggi! 🟢':score>=40?'Nella media 🟡':'Attenzione 🔴';
+  var statoColor = score>=80?'#4CAF50':score>=40?'#FFA726':'#EF5350';
 
   // Selettore cani
   var selettore = '';
@@ -9343,7 +9375,7 @@ function renderHomeFamiglia(){
   +'<div style="font-family:\'Playfair Display\',serif;font-size:24px;font-weight:700;color:#fff">'+cane.nome+'</div>'
   +'<div style="font-size:12px;color:rgba(255,255,255,.65);margin-top:2px">'+(cane.razza||'Razza mista')+' · '+eta+' anni'+(cane.peso_attuale?' · '+cane.peso_attuale+'kg':'')+'</div>'
   +'<div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border-radius:20px;padding:4px 12px">'
-  +'<div style="width:8px;height:8px;border-radius:50%;background:#4CAF50"></div>'
+  +'<div style="width:8px;height:8px;border-radius:50%;background:'+statoColor+'"></div>'
   +'<span style="font-size:11px;font-weight:600;color:#fff">'+statoMsg+'</span>'
   +'</div>'
   +'<div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:6px;font-style:italic">'+ultimoTxt+'</div>'
@@ -9398,8 +9430,14 @@ function renderHealthDashboard(container){
   var logOggi = _famigliaLog.filter(function(l){ return dataLocale(l.created_at)===oggi; });
   var pastiOggi   = logOggi.filter(function(l){return l.tipo==='pasto';}).length;
   var usciteOggi  = logOggi.filter(function(l){return l.tipo==='uscita';}).length;
-  var farmaciOggi = logOggi.filter(function(l){return l.tipo==='farmaco';}).length;
   var fotoOggi    = logOggi.filter(function(l){return l.tipo==='foto';}).length;
+  var kmOggi = 0;
+  logOggi.filter(function(l){return l.tipo==='uscita';})
+    .forEach(function(l){
+      if(l.dati && (l.dati.km||l.dati.distanza_km))
+        kmOggi += parseFloat(l.dati.km||l.dati.distanza_km)||0;
+    });
+  kmOggi = Math.round(kmOggi*10)/10;
 
   // Streak giorni consecutivi
   var streak = 0;
@@ -9504,8 +9542,7 @@ function renderHealthDashboard(container){
   +'<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px">'
   +[{ico:'🍖',val:pastiOggi,max:3,label:'pasti',tipo:'pasto'},
     {ico:'🦮',val:usciteOggi,max:3,label:'uscite',tipo:'uscita'},
-    {ico:'💊',val:farmaciOggi,max:1,label:'farmaci',tipo:'farmaco'},
-    {ico:'📸',val:fotoOggi,max:1,label:'foto',tipo:'foto'}
+    {ico:'🏃',val:kmOggi,max:3,label:'km oggi',tipo:'uscita'}
   ].map(function(s){
     return '<div onclick="aggiungiLogFamiglia(\''+s.tipo+'\')" style="display:flex;align-items:baseline;gap:8px;cursor:pointer">'
       +'<span style="font-size:20px">'+s.ico+'</span>'
@@ -9519,7 +9556,7 @@ function renderHealthDashboard(container){
   +'<div style="display:flex;flex-direction:column;justify-content:space-between;align-self:stretch;flex-shrink:0;gap:4px">'
   +mkRing('🍖',pastiOggi,3,'#C9A961','pasto')
   +mkRing('🦮',usciteOggi,3,'rgba(255,255,255,.85)','uscita')
-  +mkRing('💊',farmaciOggi,1,'#90CAF9','farmaco')
+  +mkRing('🏃',kmOggi,3,'#90CAF9','uscita')
   +'</div>'
   +'</div></div>'
 
@@ -9692,6 +9729,12 @@ function switchFamTab(tab){
     b.style.color = att?'#1565C0':'#9ab0cc';
     b.style.borderBottom = att?'2px solid #1565C0':'2px solid transparent';
   });
+  if(g('fam-bottom-nav')){
+    g('fam-bottom-nav').querySelectorAll('button').forEach(function(b,i){
+      var tabs=['home','diario','compiti','percorsi','famiglia'];
+      b.style.color = tabs[i]===tab?'#1565C0':'#9ab0cc';
+    });
+  }
   var content = g('fam-tab-content');
   if(!content) return;
   if(tab==='home') renderHealthDashboard(content);
@@ -9779,18 +9822,47 @@ function condividiCodiceFamiglia(){
   window.open('https://wa.me/?text='+msg,'_blank');
 }
 
+function _tipoFromTesto(testo){
+  if(!testo) return null;
+  var t = testo.toLowerCase();
+  if(t.indexOf('pasto')>=0||t.indexOf('mangia')>=0||t.indexOf('cibo')>=0) return 'pasto';
+  if(t.indexOf('passeg')>=0||t.indexOf('uscita')>=0||t.indexOf('parco')>=0) return 'uscita';
+  if(t.indexOf('foto')>=0||t.indexOf('fotograf')>=0) return 'foto';
+  if(t.indexOf('peso')>=0||t.indexOf('pesatura')>=0) return 'peso';
+  if(t.indexOf('farmac')>=0||t.indexOf('medicinale')>=0) return 'farmaco';
+  return null;
+}
+
 async function completaCompito(id){
   var compito = _famigliaCompiti.find(function(c){return c.id===id;});
   await _supabase.from('famiglia_compiti').update({completato:true}).eq('id',id);
   _famigliaCompiti = _famigliaCompiti.filter(function(c){return c.id!==id;});
   _salvFam();
-  // Registra automaticamente il log corrispondente per aggiornare i ring
-  if(compito && compito.tipo){
-    aggiungiLogFamiglia(compito.tipo);
+  var tipoLog = _tipoFromTesto(compito&&(compito.testo||compito.titolo)||'');
+  if(tipoLog && _famigliaDati && _famigliaCaneSelezionato){
+    var me = _famigliaMembers.find(function(m){return m.user_id===_currentUser.id;});
+    var nick = (me&&me.nickname)||(_currentUser.email||'').split('@')[0];
+    _supabase.from('famiglia_log').insert({
+      famiglia_id: _famigliaDati.id,
+      cane_id: _famigliaCaneSelezionato.id,
+      user_id: _currentUser.id,
+      nickname_autore: nick,
+      tipo: tipoLog,
+      testo: 'Compito completato: '+(compito.testo||compito.titolo||'')
+    }).then(function(){
+      _famigliaLog.unshift({tipo:tipoLog, created_at:new Date().toISOString(),
+        user_id:_currentUser.id, nickname_autore:nick,
+        famiglia_id:_famigliaDati.id});
+      _salvFam();
+      if(_famTabAttiva==='home'){
+        var _tc = g('fam-tab-content');
+        if(_tc) renderHealthDashboard(_tc);
+      }
+    });
   } else {
     if(_famTabAttiva==='home'){
-      var _tc = g('fam-tab-content');
-      if(_tc) renderHealthDashboard(_tc);
+      var _tc2 = g('fam-tab-content');
+      if(_tc2) renderHealthDashboard(_tc2);
     } else {
       switchFamTab('compiti');
     }
@@ -9885,6 +9957,8 @@ function aggiungiLogFamiglia(tipo){
   var extraField = '';
   if(tipo==='peso'){
     extraField = '<div style="margin-bottom:12px"><label>Peso (kg)</label><input type="number" id="log-peso-val" placeholder="Es. 12.5" step="0.1"/></div>';
+  } else if(tipo==='uscita'){
+    extraField = '<div style="margin-bottom:12px"><label>Km percorsi (opzionale)</label><input type="number" id="log-km-val" placeholder="Es. 1.5" step="0.1"/></div>';
   }
   overlay.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:16px">+ '+label+'</div>'
@@ -9914,6 +9988,7 @@ async function salvaLogFamiglia(tipo, btn){
   var testo = (g('log-testo')&&g('log-testo').value.trim())||'';
   var dati = {};
   if(tipo==='peso'&&g('log-peso-val')) dati.peso = parseFloat(g('log-peso-val').value)||0;
+  if(tipo==='uscita'&&g('log-km-val')&&g('log-km-val').value) dati.km = parseFloat(g('log-km-val').value)||0;
   var fotoUrl = null;
   var fotoInput = g('log-foto-input');
   if(fotoInput&&fotoInput.files&&fotoInput.files[0]){
