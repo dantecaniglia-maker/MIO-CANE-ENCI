@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.29';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.30';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9938,6 +9938,11 @@ async function salvaCreaCompitoAdmin(btn){
 }
 
 function renderPercorsiFamiglia(container){
+  // Guard: se la UI GPS è già nel DOM, aggiorna solo lo storico senza distruggere la mappa
+  if(document.getElementById('fam-gps-ui')){
+    _aggiornaStoricoPercorsi(document.getElementById('fam-storico-percorsi'));
+    return;
+  }
   container.innerHTML =
     '<div id="fam-gps-ui">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
@@ -9959,19 +9964,9 @@ function renderPercorsiFamiglia(container){
     +'</div>'
     +'<button id="fam-gps-btn" onclick="togglePercorso()" style="width:100%;background:linear-gradient(135deg,#1a7a4a,#0d5c35);color:#fff;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(26,122,74,.3)">▶ Inizia percorso</button>'
     +'</div>'
-    +(_famigliaPercorsi&&_famigliaPercorsi.length>0
-      ? '<div style="margin-top:16px">'
-          +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">📋 Percorsi recenti</div>'
-          +'<div style="display:flex;flex-direction:column;gap:8px">'
-          +_famigliaPercorsi.slice(0,5).map(function(p){
-            return '<div style="background:#fff;border-radius:10px;padding:12px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(13,71,161,.06)">'
-              +'<div style="font-size:24px">🦮</div>'
-              +'<div style="flex:1"><div style="font-weight:600;font-size:13px">'+(p.nome||'Passeggiata')+'</div>'
-              +'<div style="font-size:11px;color:#9ab0cc">'+(p.distanza_km||0)+' km · '+(p.durata_minuti||0)+' min</div></div>'
-              +'<div style="font-size:11px;font-weight:700;color:#1a7a4a">+'+Math.round((p.distanza_km||0)*10)+'pt</div>'
-              +'</div>';
-          }).join('')+'</div></div>'
-      : '');
+    +'<div id="fam-storico-percorsi"></div>';
+
+  _aggiornaStoricoPercorsi(document.getElementById('fam-storico-percorsi'));
 
   if(!window.L){
     var link = document.createElement('link');
@@ -9985,6 +9980,22 @@ function renderPercorsiFamiglia(container){
   } else {
     setTimeout(inizializzaMappa, 100);
   }
+}
+
+function _aggiornaStoricoPercorsi(el){
+  if(!el) return;
+  if(!_famigliaPercorsi||!_famigliaPercorsi.length){ el.innerHTML=''; return; }
+  el.innerHTML = '<div style="margin-top:16px">'
+    +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">📋 Percorsi recenti</div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px">'
+    +_famigliaPercorsi.slice(0,5).map(function(p){
+      return '<div style="background:#fff;border-radius:10px;padding:12px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(13,71,161,.06)">'
+        +'<div style="font-size:24px">🦮</div>'
+        +'<div style="flex:1"><div style="font-weight:600;font-size:13px">'+(p.nome||'Passeggiata')+'</div>'
+        +'<div style="font-size:11px;color:#9ab0cc">'+(p.distanza_km||0)+' km · '+(p.durata_minuti||0)+' min</div></div>'
+        +'<div style="font-size:11px;font-weight:700;color:#1a7a4a">+'+Math.round((p.distanza_km||0)*10)+'pt</div>'
+        +'</div>';
+    }).join('')+'</div></div>';
 }
 
 function inizializzaMappa(){
@@ -10065,13 +10076,27 @@ async function fermaPercorsoGPS(){
       punti:puntiPercorso
     });
     var nick=(_famigliaMembers.find(function(m){return m.user_id===_currentUser.id;})||{}).nickname||'Tu';
-    _famigliaLog.unshift({tipo:'uscita',created_at:new Date().toISOString(),
+    var nowIso = new Date().toISOString();
+    var nomePercorso = 'Passeggiata '+new Date().toLocaleDateString('it-IT');
+    // Aggiorna stato locale prima (optimistic)
+    _famigliaLog.unshift({tipo:'uscita',created_at:nowIso,
       user_id:_currentUser.id,nickname_autore:nick,
       famiglia_id:_famigliaDati.id,dati:{km:km}});
-    _famigliaPercorsi.unshift({nome:'Passeggiata '+new Date().toLocaleDateString('it-IT'),
-      distanza_km:km,durata_minuti:durataMins,created_at:new Date().toISOString()});
+    _famigliaPercorsi.unshift({nome:nomePercorso,
+      distanza_km:km,durata_minuti:durataMins,created_at:nowIso});
     _salvFam();
     toast('🎉 Percorso salvato! +'+puntiPercorso+'pt · '+km+' km');
+    // Aggiorna storico visibile senza ricaricare la mappa
+    _aggiornaStoricoPercorsi(document.getElementById('fam-storico-percorsi'));
+    // Salva log uscita su Supabase (fire-and-forget)
+    _supabase.from('famiglia_log').insert({
+      famiglia_id:_famigliaDati.id,
+      cane_id:_famigliaCaneSelezionato.id,
+      user_id:_currentUser.id,
+      tipo:'uscita',
+      dati:{km:km},
+      nickname_autore:nick
+    }).then(function(r){ if(r.error) console.warn('[fam] log uscita:', r.error.message); });
   }
 }
 
