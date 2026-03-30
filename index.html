@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.35';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.36';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9101,6 +9101,7 @@ var _missioniOggi = [];
 var _famigliaPercorsi = [];
 var _dogScoreOggi = 0;
 var _dogScoreMese = 0;
+var _pollingInterval = null;
 var _gpsAttivo=false, _gpsWatchId=null, _gpsPunti=[];
 var _gpsKm=0, _gpsStartTime=null, _gpsTimerInterval=null;
 var _leafletMap=null, _leafletPolyline=null, _leafletMarker=null;
@@ -9236,12 +9237,27 @@ function applicaModalita(mod){
     }
     var _fab = g('chat-fab'); if(_fab){ _fab.style.zIndex='99990'; _fab.style.bottom='72px'; }
     caricaFamiglia();
+    // Polling ogni 30s per compiti e log
+    if(_pollingInterval) clearInterval(_pollingInterval);
+    _pollingInterval = setInterval(async function(){
+      if(!_famigliaDati || !_famigliaCaneSelezionato) return;
+      await caricaCompitisFamiglia();
+      await caricaLogFamiglia();
+      if(_famTabAttiva==='home'){
+        var _tc = g('fam-tab-content');
+        if(_tc) renderHealthDashboard(_tc);
+      } else if(_famTabAttiva==='compiti'){
+        var _tc2 = g('fam-tab-content');
+        if(_tc2) renderCompitiFamiglia(_tc2);
+      }
+    }, 30000);
   } else {
     var hf2 = g('home-famiglia');
     if(hf2) hf2.style.display = 'none';
     if(g('bottom-nav')) g('bottom-nav').classList.remove('fam-hidden');
     var fbn2 = g('fam-bottom-nav'); if(fbn2) fbn2.style.display = 'none';
     var _fab2 = g('chat-fab'); if(_fab2){ _fab2.style.zIndex='9998'; _fab2.style.bottom='72px'; }
+    if(_pollingInterval){ clearInterval(_pollingInterval); _pollingInterval=null; }
   }
 }
 
@@ -10379,6 +10395,16 @@ async function fermaPercorsoGPS(){
       var _tc = g('fam-tab-content');
       if(_tc) renderHealthDashboard(_tc);
     }
+    // Aggiorna classifica branco se siamo in tab famiglia
+    if(_famTabAttiva==='famiglia'){
+      var _tc4 = g('fam-tab-content');
+      if(_tc4) renderMembriFamiglia(_tc4);
+    }
+    // Aggiorna feed diario se siamo in tab diario
+    if(_famTabAttiva==='diario'){
+      var _tc5 = g('fam-tab-content');
+      if(_tc5) renderDiarioFamiglia(_tc5);
+    }
   }
 }
 
@@ -10720,11 +10746,19 @@ async function salvaLogFamiglia(tipo, btn){
       var _tc = g('fam-tab-content');
       if(_tc) renderHealthDashboard(_tc);
     }
+    if(_famTabAttiva==='compiti'){
+      var _tc3 = g('fam-tab-content');
+      if(_tc3) renderCompitiFamiglia(_tc3);
+    }
     // Poi sincronizza da Supabase in background
     caricaLogFamiglia().then(function(){
       if(_famTabAttiva==='home'){
         var _tc2 = g('fam-tab-content');
         if(_tc2) renderHealthDashboard(_tc2);
+      }
+      if(_famTabAttiva==='compiti'){
+        var _tc4 = g('fam-tab-content');
+        if(_tc4) renderCompitiFamiglia(_tc4);
       }
     });
     toast('✅ '+tipoLogLabel(tipo)+' registrata!');
