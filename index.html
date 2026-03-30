@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.31';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.32';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9874,16 +9874,46 @@ function renderCompitiFamiglia(container){
           var _m = c.assegnato_a ? _famigliaMembers.find(function(m){return m.user_id===c.assegnato_a;}) : null;
           var isMio = !c.assegnato_a || c.assegnato_a===_currentUser.id;
           var punti = c.punti||20;
-          return '<div style="background:#fff;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(13,71,161,.06);border-left:3px solid '+(isMio?'#C9A961':'#DDEAFF')+'">'
-            +(isMio
-              ?'<button onclick="completaCompito(\''+c.id+'\')" style="width:26px;height:26px;border-radius:50%;border:2px solid #C9A961;background:#FFF8E7;cursor:pointer;flex-shrink:0;font-size:16px">○</button>'
-              :'<div style="width:26px;height:26px;border-radius:50%;background:#F4F7FE;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+(_m?_m.emoji:'🐾')+'</div>')
-            +'<div style="flex:1;min-width:0">'
-              +'<div style="font-weight:600;font-size:13px;color:#1a1a3a">'+(c.testo||'')+'</div>'
-              +(_m?'<div style="font-size:10px;color:#9ab0cc">👤 '+_m.nickname+'</div>':'')
-              +(isAdmin2?'<button onclick="apriRidelegaSpeciale(\''+c.id+'\')" style="font-size:10px;color:#9ab0cc;background:none;border:none;cursor:pointer;padding:2px 4px;text-decoration:underline">modifica</button>':'')
+          // Calcola stato
+          var oggi3 = new Date(); oggi3.setHours(0,0,0,0);
+          var stato = 'attivo';
+          var badgeHtml = '';
+          if(c.completato){
+            stato = 'fatto';
+            badgeHtml = '<span style="background:#F0FFF4;color:#1a7a4a;border:1px solid #A8D8B8;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700">✅ Fatto</span>';
+          } else if(c.data_scadenza){
+            var dataS = new Date(c.data_scadenza); dataS.setHours(0,0,0,0);
+            var diffDays = Math.round((dataS-oggi3)/86400000);
+            if(diffDays>0){
+              stato='futuro';
+              badgeHtml='<span style="background:#EEF3FB;color:#1565C0;border:1px solid #DDEAFF;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700">📅 '+c.data_scadenza+'</span>';
+            } else if(diffDays===0){
+              stato='oggi';
+              badgeHtml='<span style="background:#FFF8E7;color:#A88A41;border:1px solid #C9A961;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700">🔔 Oggi!</span>';
+            } else {
+              stato='scaduto';
+              badgeHtml='<span style="background:#FFF0EE;color:#C0534A;border:1px solid #F5C4BE;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700">⚠️ Scaduto</span>';
+            }
+          }
+          var completabile = isMio && stato!=='futuro' && stato!=='fatto';
+          var borderColor = stato==='scaduto'?'#F5C4BE':stato==='oggi'?'#C9A961':stato==='fatto'?'#A8D8B8':'#DDEAFF';
+          var bgColor = stato==='fatto'?'#F9FFFB':stato==='scaduto'?'#FFFAF9':'#fff';
+          return '<div style="background:'+bgColor+';border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(13,71,161,.06);border-left:3px solid '+borderColor+';margin-bottom:8px">'
+            +'<div style="display:flex;align-items:center;gap:10px">'
+              +(completabile
+                ?'<button onclick="completaCompito(\''+c.id+'\')" style="width:26px;height:26px;border-radius:50%;border:2px solid #C9A961;background:#FFF8E7;cursor:pointer;flex-shrink:0">○</button>'
+                :'<div style="width:26px;height:26px;border-radius:50%;background:#F4F7FE;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+(_m?_m.emoji:'🐾')+'</div>')
+              +'<div style="flex:1;min-width:0">'
+                +'<div style="font-weight:600;font-size:13px;color:#1a1a3a">'+(c.testo||'')+'</div>'
+                +(_m?'<div style="font-size:10px;color:#9ab0cc">👤 '+_m.nickname+'</div>':'')
+                +((c._note||c.note)?'<div style="font-size:11px;color:#6B8BB0;margin-top:2px;font-style:italic">📝 '+(c._note||c.note)+'</div>':'')
+              +'</div>'
+              +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'
+                +'<div style="background:#FFF8E7;border:1px solid #C9A961;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#A88A41">+'+punti+'pt</div>'
+                +(isAdmin2?'<button onclick="apriRidelegaSpeciale(\''+c.id+'\')" style="font-size:10px;color:#9ab0cc;background:none;border:none;cursor:pointer;text-decoration:underline;padding:0">✏️ modifica</button>':'')
+              +'</div>'
             +'</div>'
-            +'<div style="background:#FFF8E7;border:1px solid #C9A961;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#A88A41;flex-shrink:0">+'+punti+'pt</div>'
+            +(badgeHtml?'<div style="margin-top:8px">'+badgeHtml+'</div>':'')
             +'</div>';
         }).join('')+'</div>'
       : '<div style="background:#F4F7FE;border-radius:12px;padding:20px;text-align:center">'
@@ -9895,41 +9925,64 @@ function renderCompitiFamiglia(container){
 
 function apriCreaCompitoAdmin(){
   if(!_famigliaDati) return;
-  var membriOptions = _famigliaMembers.map(function(m){
-    return '<option value="'+m.user_id+'">'+m.emoji+' '+m.nickname+'</option>';
-  }).join('');
+  var membriOptions = '<option value="">Chiunque del branco</option>'
+    +_famigliaMembers.map(function(m){
+      return '<option value="'+m.user_id+'">'+m.emoji+' '+m.nickname+'</option>';
+    }).join('');
+  var oggi = new Date().toISOString().substring(0,10);
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
-  overlay.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px">'
-    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:16px">✅ Assegna compito</div>'
-    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">COMPITO</label>'
-      +'<input type="text" id="compito-admin-testo" placeholder="Es. Porta Rex al parco" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px"/></div>'
-    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">ASSEGNA A</label>'
-      +'<select id="compito-admin-membro" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px">'
-        +'<option value="">Chiunque del branco</option>'+membriOptions+'</select></div>'
-    +'<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">PUNTI (+pt al Dog Score)</label>'
+  overlay.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:16px">✅ Nuovo compito</div>'
+    +'<div style="margin-bottom:12px">'
+      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">COMPITO *</label>'
+      +'<input type="text" id="ca-testo" placeholder="Es. Porta Rex dal veterinario" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px"/>'
+    +'</div>'
+    +'<div style="margin-bottom:12px">'
+      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">NOTE (opzionale)</label>'
+      +'<textarea id="ca-note" rows="2" placeholder="Es. Portare libretto sanitario..." style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:13px;resize:none"></textarea>'
+    +'</div>'
+    +'<div style="margin-bottom:12px">'
+      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">ASSEGNA A</label>'
+      +'<select id="ca-membro" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px">'+membriOptions+'</select>'
+    +'</div>'
+    +'<div style="margin-bottom:12px">'
+      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">DATA SCADENZA (opzionale)</label>'
+      +'<input type="date" id="ca-data" min="'+oggi+'" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px"/>'
+    +'</div>'
+    +'<div style="margin-bottom:16px">'
+      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">PUNTI</label>'
       +'<div style="display:flex;gap:8px">'
         +[10,20,30,50].map(function(p){
-          return '<button onclick="document.getElementById(\'compito-admin-punti\').value='+p+';document.querySelectorAll(\'.pt-btn\').forEach(function(b){b.style.background=\'#F4F7FE\';b.style.color=\'#6B8BB0\'});this.style.background=\'#C9A961\';this.style.color=\'#fff\'" '
-            +'class="pt-btn" style="flex:1;padding:8px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:#F4F7FE;color:#6B8BB0">+'+p+'pt</button>';
+          var att = p===20;
+          return '<button onclick="document.getElementById(\'ca-punti\').value='+p
+            +';document.querySelectorAll(\'.ca-pt\').forEach(function(b){b.style.background=\'#F4F7FE\';b.style.color=\'#6B8BB0\'});this.style.background=\'#C9A961\';this.style.color=\'#fff\'" '
+            +'class="ca-pt" style="flex:1;padding:8px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;'
+            +'background:'+(att?'#C9A961':'#F4F7FE')+';color:'+(att?'#fff':'#6B8BB0')+'">+'+p+'pt</button>';
         }).join('')
       +'</div>'
-      +'<input type="hidden" id="compito-admin-punti" value="20"/></div>'
+      +'<input type="hidden" id="ca-punti" value="20"/>'
+    +'</div>'
     +'<div style="display:flex;gap:10px">'
       +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="flex:1;background:#EEF3FB;color:#6B8BB0;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
-      +'<button onclick="salvaCreaCompitoAdmin(this)" style="flex:2;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Assegna</button>'
-    +'</div></div>';
+      +'<button onclick="salvaCreaCompitoAdmin(this)" style="flex:2;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Crea</button>'
+    +'</div>'
+  +'</div>';
   document.body.appendChild(overlay);
 }
 
 async function salvaCreaCompitoAdmin(btn){
-  var testo = (document.getElementById('compito-admin-testo')
-    &&document.getElementById('compito-admin-testo').value.trim())||'';
+  var testo = (document.getElementById('ca-testo')
+    &&document.getElementById('ca-testo').value.trim())||'';
   if(!testo){ toast('Scrivi il compito'); return; }
-  var assegnato = (document.getElementById('compito-admin-membro')
-    &&document.getElementById('compito-admin-membro').value)||null;
-  var punti = parseInt((document.getElementById('compito-admin-punti')
-    &&document.getElementById('compito-admin-punti').value))||20;
+  var note = (document.getElementById('ca-note')
+    &&document.getElementById('ca-note').value.trim())||null;
+  var assegnato = document.getElementById('ca-membro')
+    &&document.getElementById('ca-membro').value||null;
+  var data = document.getElementById('ca-data')
+    &&document.getElementById('ca-data').value||null;
+  var punti = parseInt(document.getElementById('ca-punti')
+    &&document.getElementById('ca-punti').value)||20;
   btn.disabled=true; btn.textContent='⏳';
   try {
     var _ins = await _supabase.from('famiglia_compiti').insert({
@@ -9938,20 +9991,22 @@ async function salvaCreaCompitoAdmin(btn){
       creato_da: _currentUser.id,
       testo: testo,
       assegnato_a: assegnato||null,
-      completato: false
+      completato: false,
+      data_scadenza: data||null
     });
     if(_ins.error) throw _ins.error;
     await caricaCompitisFamiglia();
     if(_famigliaCompiti.length>0 && _famigliaCompiti[0].testo===testo){
       _famigliaCompiti[0].punti = punti;
+      _famigliaCompiti[0]._note = note;
     }
     btn.closest('[style*=fixed]').remove();
     _salvFam();
     switchFamTab('compiti');
-    toast('✅ Compito assegnato!');
+    toast('✅ Compito creato!');
   } catch(e){
-    btn.disabled=false; btn.textContent='✓ Assegna';
-    toast('❌ Errore: '+e.message);
+    btn.disabled=false; btn.textContent='✓ Crea';
+    toast('❌ '+e.message);
   }
 }
 
@@ -9994,39 +10049,76 @@ function salvaDelegaFisso(compitoId, btn){
 
 function apriRidelegaSpeciale(compitoId){
   if(!_famigliaDati) return;
-  var _c = _famigliaCompiti.find(function(c){return c.id===compitoId;});
+  var c = _famigliaCompiti.find(function(x){return x.id===compitoId;});
+  if(!c) return;
   var membriOptions = '<option value="">Chiunque del branco</option>'
     +_famigliaMembers.map(function(m){
-      var sel = _c&&_c.assegnato_a===m.user_id?' selected':'';
-      return '<option value="'+m.user_id+'"'+sel+'>'+m.emoji+' '+m.nickname+'</option>';
+      return '<option value="'+m.user_id+'"'+(c.assegnato_a===m.user_id?' selected':'')+'>'
+        +m.emoji+' '+m.nickname+'</option>';
     }).join('');
   var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px';
-  overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:24px;width:100%;max-width:360px">'
-    +'<div style="font-family:\'Playfair Display\',serif;font-size:16px;font-weight:700;color:#0D47A1;margin-bottom:8px">👤 Ridelega compito</div>'
-    +'<div style="font-size:13px;color:#6B8BB0;margin-bottom:16px">'+(_c?_c.testo:'')+'</div>'
-    +'<select id="ridelega-membro" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px;margin-bottom:16px">'
-    +membriOptions+'</select>'
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:16px">✏️ Modifica compito</div>'
+    +'<div style="margin-bottom:12px">'
+      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">COMPITO</label>'
+      +'<input type="text" id="cm-testo" value="'+(c.testo||'')+'" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px"/>'
+    +'</div>'
+    +'<div style="margin-bottom:12px">'
+      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">NOTE</label>'
+      +'<textarea id="cm-note" rows="2" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:13px;resize:none">'+(c._note||c.note||'')+'</textarea>'
+    +'</div>'
+    +'<div style="margin-bottom:12px">'
+      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">ASSEGNATO A</label>'
+      +'<select id="cm-membro" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px">'+membriOptions+'</select>'
+    +'</div>'
+    +'<div style="margin-bottom:16px">'
+      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">DATA SCADENZA</label>'
+      +'<input type="date" id="cm-data" value="'+(c.data_scadenza||'')+'" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px"/>'
+    +'</div>'
     +'<div style="display:flex;gap:10px">'
-    +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="flex:1;background:#EEF3FB;color:#6B8BB0;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
-    +'<button onclick="salvaRidelegaSpeciale(\''+compitoId+'\',this)" style="flex:2;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Ridelega</button>'
-    +'</div></div>';
+      +'<button onclick="eliminaCompitoAdmin(\''+compitoId+'\',this)" style="flex:1;background:#FFF0EE;color:#C0534A;border:1.5px solid #F5C4BE;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">🗑 Elimina</button>'
+      +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="flex:1;background:#EEF3FB;color:#6B8BB0;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
+      +'<button onclick="salvaModificaCompito(\''+compitoId+'\',this)" style="flex:2;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva</button>'
+    +'</div>'
+  +'</div>';
   document.body.appendChild(overlay);
 }
 
-async function salvaRidelegaSpeciale(compitoId, btn){
-  var uid = document.getElementById('ridelega-membro')
-    &&document.getElementById('ridelega-membro').value||null;
+async function salvaModificaCompito(compitoId, btn){
+  var testo = document.getElementById('cm-testo')
+    &&document.getElementById('cm-testo').value.trim();
+  if(!testo){ toast('Il testo non può essere vuoto'); return; }
+  var uid = document.getElementById('cm-membro')
+    &&document.getElementById('cm-membro').value||null;
+  var data = document.getElementById('cm-data')
+    &&document.getElementById('cm-data').value||null;
+  var note = document.getElementById('cm-note')
+    &&document.getElementById('cm-note').value.trim()||null;
   btn.disabled=true; btn.textContent='⏳';
-  await _supabase.from('famiglia_compiti')
-    .update({assegnato_a: uid||null})
-    .eq('id', compitoId);
+  var _upd = await _supabase.from('famiglia_compiti').update({
+    testo: testo,
+    assegnato_a: uid||null,
+    data_scadenza: data||null
+  }).eq('id', compitoId);
+  if(_upd.error){ btn.disabled=false; btn.textContent='✓ Salva'; toast('❌ '+_upd.error.message); return; }
   var _c = _famigliaCompiti.find(function(c){return c.id===compitoId;});
-  if(_c) _c.assegnato_a = uid||null;
+  if(_c){ _c.testo=testo; _c.assegnato_a=uid||null; _c.data_scadenza=data||null; _c._note=note; }
   _salvFam();
   btn.closest('[style*=fixed]').remove();
   switchFamTab('compiti');
-  toast('✅ Compito ridelegato!');
+  toast('✅ Compito aggiornato!');
+}
+
+async function eliminaCompitoAdmin(compitoId, btn){
+  if(!confirm('Eliminare questo compito?')) return;
+  btn.disabled=true; btn.textContent='⏳';
+  await _supabase.from('famiglia_compiti').delete().eq('id',compitoId);
+  _famigliaCompiti = _famigliaCompiti.filter(function(c){return c.id!==compitoId;});
+  _salvFam();
+  btn.closest('[style*=fixed]').remove();
+  switchFamTab('compiti');
+  toast('🗑 Compito eliminato');
 }
 
 function renderPercorsiFamiglia(container){
@@ -10329,9 +10421,12 @@ async function caricaLogFamiglia(){
 }
 
 async function caricaCompitisFamiglia(){
+  var inizioMese = new Date();
+  inizioMese.setDate(1); inizioMese.setHours(0,0,0,0);
   var res = await _supabase.from('famiglia_compiti')
-    .select('*').eq('famiglia_id',_famigliaDati.id)
-    .eq('completato',false)
+    .select('*')
+    .eq('famiglia_id', _famigliaDati.id)
+    .or('completato.eq.false,created_at.gte.'+inizioMese.toISOString())
     .order('created_at',{ascending:false});
   _famigliaCompiti = (res.data||[]).map(function(c){ return Object.assign({punti:20},c); });
 }
