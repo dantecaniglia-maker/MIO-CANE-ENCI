@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.33';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.34';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9099,6 +9099,8 @@ var _famigliaCaneSelezionato = null;
 var _famTabAttiva = 'home';
 var _missioniOggi = [];
 var _famigliaPercorsi = [];
+var _dogScoreOggi = 0;
+var _dogScoreMese = 0;
 var _gpsAttivo=false, _gpsWatchId=null, _gpsPunti=[];
 var _gpsKm=0, _gpsStartTime=null, _gpsTimerInterval=null;
 var _leafletMap=null, _leafletPolyline=null, _leafletMarker=null;
@@ -9495,6 +9497,13 @@ function renderHealthDashboard(container){
   var dogScore = totLog * 10;
   _missioniOggi = generaMissioniOggi(logOggi, _famigliaCompiti);
   _missioniOggi.forEach(function(m){ if(m.completata) dogScore += m.premio; });
+  // Punti GPS percorsi del mese
+  var _kmMese = _famigliaPercorsi
+    ? _famigliaPercorsi.reduce(function(a,p){ return a+(p.distanza_km||0); },0)
+    : 0;
+  dogScore += Math.round(_kmMese * 5);
+  // Salva score giornaliero
+  _salvaDogScore(dogScore);
   var brancoBadge = dogScore>=500?{ico:'👑',label:'Branco Alfa',color:'#C9A961'}
     :dogScore>=300?{ico:'🌟',label:'Branco Attivo',color:'#1565C0'}
     :dogScore>=100?{ico:'🐾',label:'Branco in forma',color:'#1a7a4a'}
@@ -9770,6 +9779,30 @@ function switchFamTab(tab){
   else if(tab==='compiti') renderCompitiFamiglia(content);
   else if(tab==='percorsi') renderPercorsiFamiglia(content);
   else if(tab==='famiglia') renderMembriFamiglia(content);
+}
+
+function _salvaDogScore(score){
+  _dogScoreOggi = score;
+  if(!_famigliaDati) return;
+  var _KEY = 'bp_dogscore_'+(_famigliaDati.id||'x');
+  var oggi = new Date().toISOString().substring(0,10);
+  var mese = oggi.substring(0,7);
+  var stored = {};
+  try{ stored = JSON.parse(localStorage.getItem(_KEY)||'{}'); }catch(e){}
+  if(!stored[mese]) stored[mese] = 0;
+  if(score > (stored[oggi]||0)){
+    stored[mese] += (score - (stored[oggi]||0));
+    stored[oggi] = score;
+  }
+  _dogScoreMese = stored[mese]||0;
+  localStorage.setItem(_KEY, JSON.stringify(stored));
+  // Prova update su Supabase (fire-and-forget, ignora errori colonna mancante)
+  if(_supabase && _famigliaDati.id){
+    _supabase.from('famiglie').update({
+      punteggio_mese: _dogScoreMese,
+      nome_famiglia: _famigliaDati.nome_famiglia
+    }).eq('id', _famigliaDati.id).then(function(){});
+  }
 }
 
 function renderDiarioFamiglia(container){
@@ -10311,20 +10344,120 @@ function calcolaDistanzaKm(lat1,lon1,lat2,lon2){
 
 function renderMembriFamiglia(container){
   var codice = _famigliaDati ? _famigliaDati.codice_invito : '—';
-  container.innerHTML = '<div style="background:linear-gradient(135deg,#0D47A1,#1565C0);border-radius:14px;padding:16px;margin-bottom:16px;text-align:center">'
-    +'<div style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px">Codice invito famiglia</div>'
-    +'<div style="font-size:28px;font-weight:700;color:#C9A961;letter-spacing:.15em">'+codice+'</div>'
-    +'<button onclick="condividiCodiceFamiglia()" style="margin-top:10px;background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer">📱 Condividi su WhatsApp</button></div>'
-    +'<div style="font-weight:700;color:#0D47A1;margin-bottom:12px">Membri ('+_famigliaMembers.length+')</div>'
-    +'<div style="display:flex;flex-direction:column;gap:8px">'
-    +_famigliaMembers.map(function(m){
-      return '<div style="background:#fff;border-radius:10px;padding:12px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(13,71,161,.06)">'
-        +'<div style="width:40px;height:40px;border-radius:50%;background:#EEF3FB;display:flex;align-items:center;justify-content:center;font-size:22px">'+m.emoji+'</div>'
-        +'<div style="flex:1"><div style="font-weight:700;font-size:13px">'+m.nickname+'</div>'
-        +'<div style="font-size:11px;color:#6B8BB0">'+m.ruolo+'</div></div>'
-        +(m.user_id===(_currentUser&&_currentUser.id)?'<span style="font-size:11px;color:#1a7a4a;font-weight:700">Tu</span>':'')
+
+  // Calcola punti per membro dai log del mese
+  var inizioMese = new Date();
+  inizioMese.setDate(1); inizioMese.setHours(0,0,0,0);
+  var inizioMeseIso = inizioMese.toISOString();
+  var puntiFamiglia = {};
+  _famigliaMembers.forEach(function(m){ puntiFamiglia[m.user_id] = 0; });
+  _famigliaLog.forEach(function(l){
+    if(l.created_at >= inizioMeseIso && l.user_id && puntiFamiglia[l.user_id]!==undefined){
+      var pts = l.tipo==='uscita' ? 20 : l.tipo==='pasto' ? 15 : 10;
+      if(l.dati && l.dati.km) pts += Math.round(l.dati.km * 10);
+      puntiFamiglia[l.user_id] += pts;
+    }
+  });
+
+  var membriOrdinati = _famigliaMembers.slice().sort(function(a,b){
+    return (puntiFamiglia[b.user_id]||0) - (puntiFamiglia[a.user_id]||0);
+  });
+  var medaglie = ['🥇','🥈','🥉'];
+
+  container.innerHTML =
+    // Dog Score mensile branco
+    '<div style="background:linear-gradient(135deg,#1a1a3a,#0D47A1);border-radius:16px;padding:16px;margin-bottom:16px;color:#fff;text-align:center">'
+      +'<div style="font-size:10px;font-weight:800;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">'
+      +'🏆 Dog Score del branco — '+new Date().toLocaleString('it-IT',{month:'long',year:'numeric'})+'</div>'
+      +'<div style="font-size:48px;font-weight:900;color:#C9A961;line-height:1">'
+      +_dogScoreMese+'<span style="font-size:16px;color:rgba(255,255,255,.4)"> pt</span></div>'
+      +'<div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:4px">Score oggi: '+_dogScoreOggi+' pt</div>'
+    +'</div>'
+    // Classifica interna
+    +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">🏅 Classifica del branco</div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">'
+    +membriOrdinati.map(function(m, i){
+      var pts = puntiFamiglia[m.user_id]||0;
+      var isMe = m.user_id===(_currentUser&&_currentUser.id);
+      var medal = medaglie[i]||'';
+      var maxPts = puntiFamiglia[membriOrdinati[0].user_id]||1;
+      var pct = Math.round(pts/maxPts*100);
+      return '<div style="background:'+(isMe?'#FFF8E7':'#fff')+';border-radius:12px;padding:14px;'
+        +'box-shadow:0 2px 8px rgba(13,71,161,.06);border:1.5px solid '+(isMe?'#C9A961':'#DDEAFF')+'">'
+        +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'
+          +'<div style="font-size:24px">'+medal+'</div>'
+          +'<div style="width:40px;height:40px;border-radius:50%;background:#EEF3FB;display:flex;align-items:center;justify-content:center;font-size:22px">'+m.emoji+'</div>'
+          +'<div style="flex:1">'
+            +'<div style="font-weight:700;font-size:14px;color:#1a1a3a">'+m.nickname
+            +(isMe?' <span style="font-size:10px;color:#A88A41">(Tu)</span>':'')+'</div>'
+            +'<div style="font-size:11px;color:#9ab0cc">'+m.ruolo+'</div>'
+          +'</div>'
+          +'<div style="font-size:20px;font-weight:800;color:'+(isMe?'#A88A41':'#1565C0')+'">'
+          +pts+'<span style="font-size:11px;font-weight:600;color:#9ab0cc"> pt</span></div>'
+        +'</div>'
+        +'<div style="height:4px;background:#EEF3FB;border-radius:2px;overflow:hidden">'
+        +'<div style="height:100%;width:'+pct+'%;background:'
+        +(isMe?'linear-gradient(90deg,#C9A961,#E8C96A)':'linear-gradient(90deg,#1565C0,#42A5F5)')
+        +';border-radius:2px;transition:width .5s"></div></div>'
         +'</div>';
-    }).join('')+'</div>';
+    }).join('')
+    +'</div>'
+    // Codice invito
+    +'<div style="background:linear-gradient(135deg,#0D47A1,#1565C0);border-radius:14px;padding:16px;margin-bottom:16px;text-align:center">'
+      +'<div style="color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px">Codice invito famiglia</div>'
+      +'<div style="font-size:28px;font-weight:700;color:#C9A961;letter-spacing:.15em">'+codice+'</div>'
+      +'<button onclick="condividiCodiceFamiglia()" style="margin-top:10px;background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer">📱 Condividi su WhatsApp</button>'
+    +'</div>'
+    // Classifica nazionale teaser
+    +'<div onclick="apriClassificaNazionale()" style="background:#FFF8E7;border:1.5px solid #C9A961;border-radius:14px;padding:14px;text-align:center;cursor:pointer">'
+      +'<div style="font-size:20px;margin-bottom:4px">🇮🇹</div>'
+      +'<div style="font-weight:700;color:#A88A41;font-size:13px">Classifica Nazionale</div>'
+      +'<div style="font-size:11px;color:#B8A060;margin-top:2px">Compete con le famiglie di tutta Italia!</div>'
+      +'<div style="font-size:10px;color:#C9A961;font-weight:700;margin-top:6px">Vai alla classifica →</div>'
+    +'</div>';
+}
+
+async function apriClassificaNazionale(){
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.innerHTML='<div style="background:#F4F7FE;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1">🇮🇹 Classifica Nazionale</div>'
+      +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ab0cc">✕</button>'
+    +'</div>'
+    +'<div id="_class-naz-content" style="text-align:center;color:#9ab0cc;font-size:13px;padding:20px">⏳ Caricamento...</div>'
+    +'</div>';
+  document.body.appendChild(overlay);
+  var content = document.getElementById('_class-naz-content');
+  try {
+    var res = await _supabase.from('famiglie')
+      .select('nome_famiglia, punteggio_mese')
+      .order('punteggio_mese', {ascending:false})
+      .limit(20);
+    var famiglie = (res.data||[]).filter(function(f){ return f.punteggio_mese && f.punteggio_mese > 0; });
+    var medaglie2 = ['🥇','🥈','🥉'];
+    var meseLabel = new Date().toLocaleString('it-IT',{month:'long',year:'numeric'});
+    content.innerHTML =
+      '<div style="font-size:11px;color:#9ab0cc;text-align:center;margin-bottom:16px">Top famiglie — '+meseLabel+'</div>'
+      +(famiglie.length===0
+        ?'<div style="text-align:center;padding:30px;color:#9ab0cc"><div style="font-size:32px;margin-bottom:8px">🐾</div>Sii il primo! Nessuna famiglia ha ancora punti questo mese.</div>'
+        :'<div style="display:flex;flex-direction:column;gap:8px">'
+          +famiglie.map(function(f,i){
+            var isMia = _famigliaDati && f.nome_famiglia===_famigliaDati.nome_famiglia;
+            return '<div style="background:'+(isMia?'#FFF8E7':'#fff')+';border-radius:12px;padding:14px;'
+              +'display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(13,71,161,.06);'
+              +'border:1.5px solid '+(isMia?'#C9A961':'#DDEAFF')+'">'
+              +'<div style="font-size:22px;flex-shrink:0">'+(medaglie2[i]||'#'+(i+1))+'</div>'
+              +'<div style="flex:1;font-weight:600;font-size:13px;color:#1a1a3a">'+f.nome_famiglia+(isMia?' 👈':'')+'</div>'
+              +'<div style="font-size:16px;font-weight:800;color:'+(isMia?'#A88A41':'#1565C0')+'">'
+              +(f.punteggio_mese||0)+'<span style="font-size:10px;color:#9ab0cc"> pt</span></div>'
+              +'</div>';
+          }).join('')+'</div>')
+      +'<div style="margin-top:16px;background:#EEF3FB;border-radius:12px;padding:12px;text-align:center;font-size:11px;color:#6B8BB0">'
+      +'🏆 A fine mese le top 3 famiglie ricevono un premio speciale!</div>';
+  } catch(e){
+    content.innerHTML='<div style="text-align:center;padding:20px;color:#C0534A">Classifica non disponibile: '+e.message+'</div>';
+  }
 }
 
 function condividiCodiceFamiglia(){
