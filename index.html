@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.28';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.29';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9905,29 +9905,36 @@ function apriCreaCompitoAdmin(){
 }
 
 async function salvaCreaCompitoAdmin(btn){
-  var testo = (document.getElementById('compito-admin-testo')&&document.getElementById('compito-admin-testo').value.trim())||'';
+  var testo = (document.getElementById('compito-admin-testo')
+    &&document.getElementById('compito-admin-testo').value.trim())||'';
   if(!testo){ toast('Scrivi il compito'); return; }
-  var assegnato = document.getElementById('compito-admin-membro')&&document.getElementById('compito-admin-membro').value||null;
-  var punti = parseInt(document.getElementById('compito-admin-punti')&&document.getElementById('compito-admin-punti').value)||20;
+  var assegnato = (document.getElementById('compito-admin-membro')
+    &&document.getElementById('compito-admin-membro').value)||null;
+  var punti = parseInt((document.getElementById('compito-admin-punti')
+    &&document.getElementById('compito-admin-punti').value))||20;
   btn.disabled=true; btn.textContent='⏳';
-  var _res = await _supabase.from('famiglia_compiti').insert({
-    famiglia_id: _famigliaDati.id,
-    cane_id: _famigliaCaneSelezionato&&_famigliaCaneSelezionato.id||null,
-    creato_da: _currentUser.id,
-    testo: testo,
-    assegnato_a: assegnato||null,
-    completato: false
-  }).select().single();
-  btn.closest('[style*=fixed]').remove();
-  var newC = Object.assign({punti:punti}, _res.data||{
-    id:'local-'+Date.now(), famiglia_id:_famigliaDati.id,
-    testo:testo, assegnato_a:assegnato||null,
-    completato:false, created_at:new Date().toISOString()
-  });
-  _famigliaCompiti.unshift(newC);
-  _salvFam();
-  switchFamTab('compiti');
-  toast('✅ Compito assegnato!');
+  try {
+    var _ins = await _supabase.from('famiglia_compiti').insert({
+      famiglia_id: _famigliaDati.id,
+      cane_id: _famigliaCaneSelezionato&&_famigliaCaneSelezionato.id||null,
+      creato_da: _currentUser.id,
+      testo: testo,
+      assegnato_a: assegnato||null,
+      completato: false
+    });
+    if(_ins.error) throw _ins.error;
+    await caricaCompitisFamiglia();
+    if(_famigliaCompiti.length>0 && _famigliaCompiti[0].testo===testo){
+      _famigliaCompiti[0].punti = punti;
+    }
+    btn.closest('[style*=fixed]').remove();
+    _salvFam();
+    switchFamTab('compiti');
+    toast('✅ Compito assegnato!');
+  } catch(e){
+    btn.disabled=false; btn.textContent='✓ Assegna';
+    toast('❌ Errore: '+e.message);
+  }
 }
 
 function renderPercorsiFamiglia(container){
@@ -10111,39 +10118,40 @@ function _tipoFromTesto(testo){
 
 async function completaCompito(id){
   var compito = _famigliaCompiti.find(function(c){return c.id===id;});
-  await _supabase.from('famiglia_compiti').update({completato:true}).eq('id',id);
+  if(!compito){ toast('Compito non trovato'); return; }
+
+  // Aggiorna UI subito (ottimistico)
   _famigliaCompiti = _famigliaCompiti.filter(function(c){return c.id!==id;});
   _salvFam();
-  var tipoLog = _tipoFromTesto(compito&&(compito.testo||compito.titolo)||'');
+  switchFamTab('compiti');
+  toast('✅ Compito completato!');
+
+  // Sync Supabase solo se id reale (non local-)
+  if(String(id).indexOf('local-')<0){
+    _supabase.from('famiglia_compiti')
+      .update({completato:true}).eq('id',id)
+      .then(function(){});
+  }
+
+  // Registra log automatico
+  var tipoLog = _tipoFromTesto(compito.testo||compito.titolo||'');
   if(tipoLog && _famigliaDati && _famigliaCaneSelezionato){
     var me = _famigliaMembers.find(function(m){return m.user_id===_currentUser.id;});
     var nick = (me&&me.nickname)||(_currentUser.email||'').split('@')[0];
-    _supabase.from('famiglia_log').insert({
-      famiglia_id: _famigliaDati.id,
-      cane_id: _famigliaCaneSelezionato.id,
+    var logEntry = {
+      tipo: tipoLog,
+      created_at: new Date().toISOString(),
       user_id: _currentUser.id,
       nickname_autore: nick,
-      tipo: tipoLog,
-      testo: 'Compito completato: '+(compito.testo||compito.titolo||'')
-    }).then(function(){
-      _famigliaLog.unshift({tipo:tipoLog, created_at:new Date().toISOString(),
-        user_id:_currentUser.id, nickname_autore:nick,
-        famiglia_id:_famigliaDati.id});
-      _salvFam();
-      if(_famTabAttiva==='home'){
-        var _tc = g('fam-tab-content');
-        if(_tc) renderHealthDashboard(_tc);
-      }
-    });
-  } else {
-    if(_famTabAttiva==='home'){
-      var _tc2 = g('fam-tab-content');
-      if(_tc2) renderHealthDashboard(_tc2);
-    } else {
-      switchFamTab('compiti');
-    }
+      famiglia_id: _famigliaDati.id,
+      testo: 'Compito: '+(compito.testo||'')
+    };
+    _famigliaLog.unshift(logEntry);
+    _salvFam();
+    _supabase.from('famiglia_log').insert(Object.assign({
+      cane_id: _famigliaCaneSelezionato.id
+    }, logEntry)).then(function(){});
   }
-  toast('✅ Compito completato!');
 }
 
 function apriAggiungiCompito(){
@@ -10162,18 +10170,17 @@ function apriAggiungiCompito(){
 
 async function aggiungiCompitoSuggerito(testo, tipo){
   if(!_famigliaDati) return;
-  await _supabase.from('famiglia_compiti').insert({
+  var _ins = await _supabase.from('famiglia_compiti').insert({
     famiglia_id: _famigliaDati.id,
     cane_id: _famigliaCaneSelezionato&&_famigliaCaneSelezionato.id||null,
     creato_da: _currentUser.id,
     testo: testo,
-    tipo: tipo,
     completato: false,
     assegnato_a: null
   });
+  if(_ins.error){ toast('❌ Errore: '+_ins.error.message); return; }
   await caricaCompitisFamiglia();
-  var _tc = g('fam-tab-content');
-  if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
+  switchFamTab('compiti');
   toast('✅ Compito aggiunto!');
 }
 
