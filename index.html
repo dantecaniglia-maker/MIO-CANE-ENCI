@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.37';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.38';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9102,6 +9102,7 @@ var _famigliaPercorsi = [];
 var _dogScoreOggi = 0;
 var _dogScoreMese = 0;
 var _pollingInterval = null;
+var _famigliaLogTutti = [];
 var _gpsAttivo=false, _gpsWatchId=null, _gpsPunti=[];
 var _gpsKm=0, _gpsStartTime=null, _gpsTimerInterval=null;
 var _leafletMap=null, _leafletPolyline=null, _leafletMarker=null;
@@ -9338,13 +9339,15 @@ async function _syncFamigliaBackground(mostraWizardSeVuoto){
       })(),
       _supabase.from('famiglia_compiti').select('*').eq('famiglia_id',_famigliaDati.id).eq('completato',false),
       _supabase.from('famiglia_membri').select('*').eq('famiglia_id',_famigliaDati.id),
-      _supabase.from('famiglia_percorsi').select('*').eq('famiglia_id',_famigliaDati.id).order('created_at',{ascending:false}).limit(20)
+      _supabase.from('famiglia_percorsi').select('*').eq('famiglia_id',_famigliaDati.id).order('created_at',{ascending:false}).limit(20),
+      _supabase.from('famiglia_log').select('*').eq('famiglia_id',_famigliaDati.id).order('created_at',{ascending:false}).limit(200)
     ]);
-    if(_d[0].data) _famigliaCani = _d[0].data;
+    if(_d[0].data) _famigliaCani = _d[0].data.filter(function(c){ return !c.archiviato; });
     if(_d[1].data) _famigliaLog  = _d[1].data;
     if(_d[2].data) _famigliaCompiti = _d[2].data.map(function(c){ return Object.assign({punti:20},c); });
     if(_d[3].data) _famigliaMembers = _d[3].data;
     if(_d[4].data) _famigliaPercorsi = _d[4].data;
+    if(_d[5].data) _famigliaLogTutti = _d[5].data;
     _salvFam();
     renderHomeFamiglia();
     switchFamTab('home');
@@ -9403,7 +9406,9 @@ function renderHomeFamiglia(){
         return '<button onclick="selezionaCaneFamiglia(\''+c.id+'\')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:2px solid '
           +(att?'#C9A961':'#DDEAFF')+';background:'+(att?'#FFF8E7':'#fff')
           +';font-size:12px;font-weight:700;color:'+(att?'#A88A41':'#6B8BB0')
-          +';cursor:pointer">'+c.nome+'</button>';
+          +';cursor:pointer;display:flex;align-items:center;gap:6px">'
+          +(c.foto?'<img src="'+c.foto+'" style="width:20px;height:20px;border-radius:50%;object-fit:cover"/>':'')
+          +c.nome+'</button>';
       }).join('')+'</div>';
   }
 
@@ -9523,8 +9528,13 @@ function renderHealthDashboard(container){
   if(maxCnt===0) maxCnt=1;
   var totLog = settimana.reduce(function(a,s){return a+s.count;},0);
 
-  // Dog Score + Missioni
-  var dogScore = totLog * 10;
+  // Dog Score usa i log di TUTTI i cani della famiglia
+  var _logTuttiSettimana = _famigliaLogTutti.filter(function(l){
+    if(!l.created_at) return false;
+    var _7gg = new Date(); _7gg.setDate(_7gg.getDate()-6); _7gg.setHours(0,0,0,0);
+    return new Date(l.created_at) >= _7gg;
+  });
+  var dogScore = _logTuttiSettimana.length * 10;
   _missioniOggi = generaMissioniOggi(logOggi, _famigliaCompiti);
   _missioniOggi.forEach(function(m){ if(m.completata) dogScore += m.premio; });
   // Punti GPS percorsi del mese
@@ -10470,7 +10480,7 @@ function renderMembriFamiglia(container){
   var inizioMeseIso = inizioMese.toISOString();
   var puntiFamiglia = {};
   _famigliaMembers.forEach(function(m){ puntiFamiglia[m.user_id] = 0; });
-  _famigliaLog.forEach(function(l){
+  _famigliaLogTutti.forEach(function(l){
     if(l.created_at >= inizioMeseIso && l.user_id && puntiFamiglia[l.user_id]!==undefined){
       var pts = l.tipo==='uscita' ? 20 : l.tipo==='pasto' ? 15 : 10;
       if(l.dati && l.dati.km) pts += Math.round(l.dati.km * 10);
@@ -10926,25 +10936,100 @@ async function accettaInvitoFamiglia(){
 }
 
 function apriAggiungiCaneFamiglia(){
+  var _isAdmin = _famigliaDati && _currentUser && _famigliaDati.admin_uid===_currentUser.id;
+  if(!_isAdmin && _famigliaCani.length > 0) return;
+
+  var caniHtml = '';
+  if(_famigliaCani.length > 0){
+    caniHtml = '<div style="margin-bottom:20px">'
+      +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">🐾 Cani della famiglia</div>'
+      +'<div style="display:flex;flex-direction:column;gap:8px">'
+      +_famigliaCani.map(function(c){
+        return '<div style="display:flex;align-items:center;gap:10px;background:#F4F7FE;border-radius:10px;padding:10px">'
+          +'<div style="width:40px;height:40px;border-radius:50%;overflow:hidden;background:#DDEAFF;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px">'
+          +(c.foto?'<img src="'+c.foto+'" style="width:100%;height:100%;object-fit:cover"/>':'🐾')+'</div>'
+          +'<div style="flex:1">'
+            +'<div style="font-weight:700;font-size:13px">'+c.nome+'</div>'
+            +'<div style="font-size:11px;color:#9ab0cc">'+(c.razza||'Razza mista')+'</div>'
+          +'</div>'
+          +(_isAdmin
+            ?'<div style="display:flex;gap:6px">'
+              +'<button onclick="archiviaCaneFamiglia(\''+c.id+'\',\''+c.nome+'\')" '
+              +'style="background:#FFF8E7;border:1px solid #C9A961;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:#A88A41;cursor:pointer">🗂️ Archivia</button>'
+              +'<button onclick="eliminaCaneFamiglia(\''+c.id+'\',\''+c.nome+'\')" '
+              +'style="background:#FFF0EE;border:1px solid #F5C4BE;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:#C0534A;cursor:pointer">🗑</button>'
+            +'</div>'
+            :'')
+          +'</div>';
+      }).join('')
+      +'</div></div>';
+  }
+
+  var formHtml = _isAdmin
+    ? '<div style="border-top:1.5px solid #EEF3FB;padding-top:16px">'
+      +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">➕ Aggiungi nuovo cane</div>'
+      +'<div style="margin-bottom:12px"><label>Nome *</label><input id="nc-nome" placeholder="Es. Rex, Luna..."/></div>'
+      +'<div style="margin-bottom:12px"><label>Razza</label><input id="nc-razza" placeholder="Es. Meticcio, Labrador..."/></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+      +'<div><label>Sesso</label><select id="nc-sesso"><option value="M">♂ Maschio</option><option value="F">♀ Femmina</option></select></div>'
+      +'<div><label>Taglia</label><select id="nc-taglia"><option value="piccola">Piccola</option><option value="media" selected>Media</option><option value="grande">Grande</option></select></div></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+      +'<div><label>Data nascita</label><input type="date" id="nc-nascita"/></div>'
+      +'<div><label>Peso (kg)</label><input type="number" id="nc-peso" placeholder="Es. 12" step="0.1"/></div></div>'
+      +'<div style="margin-bottom:12px"><label>Microchip</label><input id="nc-chip" placeholder="Numero microchip"/></div>'
+      +'<div style="margin-bottom:16px"><label>Foto</label><input type="file" id="nc-foto" accept="image/*" style="width:auto"/></div>'
+      +'<div style="display:flex;gap:10px">'
+      +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="flex:1;background:#EEF3FB;color:#6B8BB0;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
+      +'<button onclick="salvaCaneFamiglia(this)" style="flex:2;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">🐾 Aggiungi</button>'
+      +'</div></div>'
+    : '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="width:100%;background:#EEF3FB;color:#6B8BB0;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer;margin-top:8px">Chiudi</button>';
+
   var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
-  overlay.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">'
-    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:20px">🐾 Aggiungi il tuo cane</div>'
-    +'<div style="margin-bottom:12px"><label>Nome *</label><input id="nc-nome" placeholder="Es. Rex, Luna, Buddy..."/></div>'
-    +'<div style="margin-bottom:12px"><label>Razza</label><input id="nc-razza" placeholder="Es. Meticcio, Labrador..."/></div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
-    +'<div><label>Sesso</label><select id="nc-sesso"><option value="M">♂ Maschio</option><option value="F">♀ Femmina</option></select></div>'
-    +'<div><label>Taglia</label><select id="nc-taglia"><option value="piccola">Piccola</option><option value="media">Media</option><option value="grande">Grande</option></select></div></div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
-    +'<div><label>Data nascita</label><input type="date" id="nc-nascita"/></div>'
-    +'<div><label>Peso attuale (kg)</label><input type="number" id="nc-peso" placeholder="Es. 12" step="0.1"/></div></div>'
-    +'<div style="margin-bottom:16px"><label>Microchip</label><input id="nc-chip" placeholder="Numero microchip"/></div>'
-    +'<div style="margin-bottom:20px"><label>Foto</label><input type="file" id="nc-foto" accept="image/*" style="width:auto"/></div>'
-    +'<div style="display:flex;gap:10px">'
-    +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="flex:1;background:#EEF3FB;color:#6B8BB0;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
-    +'<button onclick="salvaCaneFamiglia(this)" style="flex:2;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">🐾 Aggiungi cane</button>'
-    +'</div></div>';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:16px">🐾 Gestione cani</div>'
+    +caniHtml+formHtml+'</div>';
   document.body.appendChild(overlay);
+}
+
+async function archiviaCaneFamiglia(caneId, nomeC){
+  if(!confirm('Archiviare '+nomeC+'? Il cane non apparirà più nei ring ma i suoi dati resteranno nel diario in memoria.')) return;
+  var _upd = await _supabase.from('famiglia_cani').update({archiviato:true}).eq('id',caneId);
+  if(_upd.error){ toast('❌ '+_upd.error.message); return; }
+  _famigliaCani = _famigliaCani.filter(function(c){ return c.id!==caneId; });
+  if(_famigliaCaneSelezionato && _famigliaCaneSelezionato.id===caneId){
+    _famigliaCaneSelezionato = _famigliaCani[0]||null;
+  }
+  _salvFam();
+  document.querySelectorAll('[style*="fixed"]').forEach(function(o){
+    if(o.querySelector('#nc-nome')||o.innerHTML.indexOf('Archivia')>=0) o.remove();
+  });
+  await caricaLogFamiglia();
+  renderHomeFamiglia();
+  toast('🌈 '+nomeC+' archiviato con affetto');
+}
+
+async function eliminaCaneFamiglia(caneId, nomeC){
+  if(!confirm('Eliminare '+nomeC+'? Questa azione è irreversibile e rimuove tutti i dati associati.')) return;
+  if(!confirm('Sei sicuro? Tutti i log e i percorsi di '+nomeC+' verranno eliminati.')) return;
+  await _supabase.from('famiglia_log').delete().eq('cane_id',caneId);
+  await _supabase.from('famiglia_percorsi').delete().eq('cane_id',caneId);
+  var _del = await _supabase.from('famiglia_cani').delete().eq('id',caneId);
+  if(_del.error){ toast('❌ '+_del.error.message); return; }
+  _famigliaCani = _famigliaCani.filter(function(c){ return c.id!==caneId; });
+  if(_famigliaCaneSelezionato && _famigliaCaneSelezionato.id===caneId){
+    _famigliaCaneSelezionato = _famigliaCani[0]||null;
+  }
+  _famigliaLog = _famigliaLog.filter(function(l){ return l.cane_id!==caneId; });
+  _famigliaLogTutti = _famigliaLogTutti.filter(function(l){ return l.cane_id!==caneId; });
+  _famigliaPercorsi = _famigliaPercorsi.filter(function(p){ return p.cane_id!==caneId; });
+  _salvFam();
+  document.querySelectorAll('[style*="fixed"]').forEach(function(o){
+    if(o.querySelector('#nc-nome')||o.innerHTML.indexOf('Elimina')>=0) o.remove();
+  });
+  if(_famigliaCaneSelezionato) await caricaLogFamiglia();
+  renderHomeFamiglia();
+  toast('🗑 '+nomeC+' eliminato');
 }
 
 async function salvaCaneFamiglia(btn){
