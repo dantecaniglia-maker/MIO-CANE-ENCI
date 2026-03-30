@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.36';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.37';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9243,6 +9243,11 @@ function applicaModalita(mod){
       if(!_famigliaDati || !_famigliaCaneSelezionato) return;
       await caricaCompitisFamiglia();
       await caricaLogFamiglia();
+      // Aggiorna percorsi per ring km
+      var _resP = await _supabase.from('famiglia_percorsi')
+        .select('*').eq('famiglia_id',_famigliaDati.id)
+        .order('created_at',{ascending:false}).limit(20);
+      if(_resP.data) _famigliaPercorsi = _resP.data;
       if(_famTabAttiva==='home'){
         var _tc = g('fam-tab-content');
         if(_tc) renderHealthDashboard(_tc);
@@ -9325,7 +9330,12 @@ async function _syncFamigliaBackground(mostraWizardSeVuoto){
     // Carica tutto in parallelo
     var _d = await Promise.all([
       _supabase.from('famiglia_cani').select('*').eq('famiglia_id',_famigliaDati.id),
-      _supabase.from('famiglia_log').select('*').eq('famiglia_id',_famigliaDati.id).order('created_at',{ascending:false}).limit(50),
+      (function(){
+        var _cid = _famigliaCani&&_famigliaCani[0]&&_famigliaCani[0].id;
+        var q = _supabase.from('famiglia_log').select('*').eq('famiglia_id',_famigliaDati.id);
+        if(_cid) q = q.eq('cane_id',_cid);
+        return q.order('created_at',{ascending:false}).limit(50);
+      })(),
       _supabase.from('famiglia_compiti').select('*').eq('famiglia_id',_famigliaDati.id).eq('completato',false),
       _supabase.from('famiglia_membri').select('*').eq('famiglia_id',_famigliaDati.id),
       _supabase.from('famiglia_percorsi').select('*').eq('famiglia_id',_famigliaDati.id).order('created_at',{ascending:false}).limit(20)
@@ -9351,12 +9361,14 @@ function renderHomeFamiglia(){
   if(nomeFam && _famigliaDati)
     nomeFam.textContent = _famigliaDati.nome_famiglia||'La mia famiglia';
 
+  var _isAdminHero = _famigliaDati && _currentUser && _famigliaDati.admin_uid===_currentUser.id;
+
   if(_famigliaCani.length === 0){
     hero.innerHTML = '<div style="text-align:center;padding:40px">'
       +'<div style="font-size:60px;margin-bottom:16px">🐾</div>'
       +'<div style="font-weight:700;color:#0D47A1;font-size:18px;margin-bottom:8px">Aggiungi il tuo cane!</div>'
       +'<div style="color:#6B8BB0;font-size:13px;margin-bottom:20px">Registra il tuo cane di famiglia per iniziare</div>'
-      +( (_famigliaDati && _currentUser && _famigliaDati.admin_uid===_currentUser.id)
+      +(_isAdminHero
         ?'<button onclick="apriAggiungiCaneFamiglia()" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:12px;padding:14px 28px;font-size:15px;font-weight:700;cursor:pointer">+ Aggiungi cane</button>'
         :'<div style="font-size:13px;color:#9ab0cc">Chiedi all\'admin di aggiungere il cane</div>')
       +'</div>';
@@ -9365,7 +9377,6 @@ function renderHomeFamiglia(){
 
   var cane = _famigliaCaneSelezionato || _famigliaCani[0];
   _famigliaCaneSelezionato = cane;
-  var _isAdminHero = _famigliaDati && _currentUser && _famigliaDati.admin_uid===_currentUser.id;
 
   function dataLocaleHero(ts){
     var d=new Date(ts);
@@ -9940,7 +9951,7 @@ function renderCompitiFamiglia(container){
         +'border-radius:14px;padding:14px;cursor:default;position:relative;overflow:hidden">'
         +(c.completato
           ?'<div style="position:absolute;top:6px;right:8px;font-size:18px">✅</div>'
-          :'<div onclick="aggiungiLogFamiglia(\''+c.tipo+'\')" style="cursor:pointer">')
+          :'<div onclick="completaCompitoFisso(\''+c.tipo+'\','+c.punti+')" style="cursor:pointer">')
         +'<div style="font-size:28px;margin-bottom:4px">'+c.ico+'</div>'
         +'<div style="font-size:12px;font-weight:700;color:'+(c.completato?'#1a7a4a':'#1a1a3a')+'">'+c.testo+'</div>'
         +'<div style="font-size:10px;color:#9ab0cc;margin-top:1px">'+c.orario+'</div>'
@@ -10016,6 +10027,42 @@ function renderCompitiFamiglia(container){
         +'<div style="font-size:13px;color:#6B8BB0">Nessun compito speciale</div>'
         +(isAdmin2?'<div style="font-size:11px;color:#C9A961;margin-top:6px;font-weight:600">Usa "+ Assegna" per crearne uno</div>':'')
         +'</div>');
+}
+
+async function completaCompitoFisso(tipo, punti){
+  if(!_famigliaDati || !_famigliaCaneSelezionato){
+    toast('Nessun cane selezionato'); return;
+  }
+  var me = _famigliaMembers.find(function(m){ return m.user_id===_currentUser.id; });
+  var nick = (me&&me.nickname)||(_currentUser.email||'').split('@')[0];
+  var logEntry = {
+    famiglia_id: _famigliaDati.id,
+    cane_id: _famigliaCaneSelezionato.id,
+    user_id: _currentUser.id,
+    nickname_autore: nick,
+    tipo: tipo,
+    testo: null,
+    created_at: new Date().toISOString()
+  };
+  _famigliaLog.unshift(logEntry);
+  _salvFam();
+  if(_famTabAttiva==='home'){
+    var _tc = g('fam-tab-content');
+    if(_tc) renderHealthDashboard(_tc);
+  }
+  if(_famTabAttiva==='compiti'){
+    var _tc2 = g('fam-tab-content');
+    if(_tc2) renderCompitiFamiglia(_tc2);
+  }
+  toast('✅ +'+punti+'pt — ottimo!');
+  _supabase.from('famiglia_log').insert({
+    famiglia_id: _famigliaDati.id,
+    cane_id: _famigliaCaneSelezionato.id,
+    user_id: _currentUser.id,
+    nickname_autore: nick,
+    tipo: tipo,
+    testo: null
+  }).then(function(){});
 }
 
 function apriCreaCompitoAdmin(){
