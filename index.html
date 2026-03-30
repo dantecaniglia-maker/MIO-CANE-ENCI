@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.41';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.42';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9556,7 +9556,7 @@ function renderHealthDashboard(container){
   _inizioMesePt.setDate(1); _inizioMesePt.setHours(0,0,0,0);
   var _inizioMeseIso = _inizioMesePt.toISOString();
   var _meiPunti = 0;
-  _famigliaLog.forEach(function(l){
+  _famigliaLogTutti.forEach(function(l){
     if(l.user_id===_currentUser.id && l.created_at>=_inizioMeseIso){
       var pts = l.tipo==='uscita'?20:l.tipo==='pasto'?15:10;
       if(l.dati&&l.dati.km) pts += Math.round(l.dati.km*10);
@@ -10581,7 +10581,7 @@ function renderMembriFamiglia(container){
           +'<div style="font-size:24px">'+medal+'</div>'
           +'<div style="width:40px;height:40px;border-radius:50%;background:#EEF3FB;display:flex;align-items:center;justify-content:center;font-size:22px">'+m.emoji+'</div>'
           +'<div style="flex:1">'
-            +'<div style="font-weight:700;font-size:14px;color:#1a1a3a">'+m.nickname
+            +'<div style="font-weight:700;font-size:14px;color:#1a1a3a">'+(m.nickname||m.ruolo||'Membro')
             +(isMe?' <span style="font-size:10px;color:#A88A41">(Tu)</span>':'')+'</div>'
             +'<div style="font-size:11px;color:#9ab0cc">'+m.ruolo+'</div>'
           +'</div>'
@@ -10602,7 +10602,7 @@ function renderMembriFamiglia(container){
       +'<button onclick="condividiCodiceFamiglia()" style="margin-top:10px;background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer">📱 Condividi su WhatsApp</button>'
     +'</div>'
     // Classifica nazionale teaser
-    +'<div onclick="apriClassificaNazionale()" style="background:#FFF8E7;border:1.5px solid #C9A961;border-radius:14px;padding:14px;text-align:center;cursor:pointer">'
+    +'<div onclick="if(_famigliaDati){apriClassificaNazionale();}else{toast(\'Famiglia non caricata\');}" style="background:#FFF8E7;border:1.5px solid #C9A961;border-radius:14px;padding:14px;text-align:center;cursor:pointer">'
       +'<div style="font-size:20px;margin-bottom:4px">🇮🇹</div>'
       +'<div style="font-weight:700;color:#A88A41;font-size:13px">Classifica Nazionale</div>'
       +'<div style="font-size:11px;color:#B8A060;margin-top:2px">Compete con le famiglie di tutta Italia!</div>'
@@ -10627,7 +10627,10 @@ async function apriClassificaNazionale(){
       .select('nome_famiglia, punteggio_mese')
       .order('punteggio_mese', {ascending:false})
       .limit(20);
-    var famiglie = (res.data||[]).filter(function(f){ return f.punteggio_mese && f.punteggio_mese > 0; });
+    var famiglie = (res.data||[])
+      .map(function(f){ return {nome_famiglia:f.nome_famiglia, punteggio_mese:f.punteggio_mese||0}; })
+      .filter(function(f){ return f.punteggio_mese > 0; })
+      .sort(function(a,b){ return b.punteggio_mese - a.punteggio_mese; });
     var medaglie2 = ['🥇','🥈','🥉'];
     var meseLabel = new Date().toLocaleString('it-IT',{month:'long',year:'numeric'});
     content.innerHTML =
