@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.38';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.39';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9887,31 +9887,81 @@ function _salvaDogScore(score){
 }
 
 function renderDiarioFamiglia(container){
-  var header = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
-    +'<div style="font-weight:700;color:#0D47A1">📖 Diario</div>'
-    +'<button onclick="aggiungiLogFamiglia(\'nota\')" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">+ Log</button>'
+  var isAdmin = _famigliaDati && _currentUser && _famigliaDati.admin_uid===_currentUser.id;
+  var header = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1">📖 Diario</div>'
+    +'<button onclick="aggiungiLogFamiglia(\'nota\')" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Log</button>'
     +'</div>';
-  if(_famigliaLog.length === 0){
+
+  if(_famigliaLog.length===0){
     container.innerHTML = header
       +'<div style="text-align:center;padding:40px;color:#6B8BB0">'
       +'<div style="font-size:40px;margin-bottom:12px">📖</div>'
       +'<div style="font-weight:600">Nessuna attività ancora</div>'
-      +'<div style="font-size:13px;margin-top:4px">Usa i pulsanti rapidi per registrare la prima attività!</div></div>';
+      +'<div style="font-size:13px;margin-top:4px">Registra la prima attività!</div></div>';
     return;
   }
+
+  // Raggruppa log per giorno (ora locale)
+  var gruppi = {};
+  var ordineGiorni = [];
+  _famigliaLog.forEach(function(log){
+    if(!log.created_at) return;
+    var d = new Date(log.created_at);
+    var ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(!gruppi[ds]){ gruppi[ds]=[]; ordineGiorni.push(ds); }
+    gruppi[ds].push(log);
+  });
+
+  function formatGiorno(ds){
+    var oggi2 = new Date();
+    var oggiStr = oggi2.getFullYear()+'-'+String(oggi2.getMonth()+1).padStart(2,'0')+'-'+String(oggi2.getDate()).padStart(2,'0');
+    var ieri2 = new Date(); ieri2.setDate(ieri2.getDate()-1);
+    var ieriStr = ieri2.getFullYear()+'-'+String(ieri2.getMonth()+1).padStart(2,'0')+'-'+String(ieri2.getDate()).padStart(2,'0');
+    if(ds===oggiStr) return 'Oggi';
+    if(ds===ieriStr) return 'Ieri';
+    var parts = ds.split('-');
+    var mesi = ['','Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+    return parseInt(parts[2])+' '+mesi[parseInt(parts[1])]+' '+parts[0];
+  }
+
+  var icone = {pasto:'🍖',uscita:'🦮',peso:'⚖️',nota:'📝',foto:'📸',farmaco:'💊',visita:'🏥',vaccino:'💉'};
+  var colori = {pasto:'#FFF3E0',uscita:'#E8F5E9',peso:'#F3E5F5',nota:'#E3F2FD',foto:'#FFF8E7',farmaco:'#E3F2FD',visita:'#FCE4EC',vaccino:'#E8EAF6'};
+  var borderColori = {pasto:'#FFB74D',uscita:'#66BB6A',peso:'#AB47BC',nota:'#42A5F5',foto:'#C9A961',farmaco:'#42A5F5',visita:'#EC407A',vaccino:'#5C6BC0'};
+
   container.innerHTML = header
-    +'<div style="display:flex;flex-direction:column;gap:10px">'
-    +_famigliaLog.map(function(log){
-      var icone = {pasto:'🍖',uscita:'🦮',peso:'⚖️',nota:'📝',foto:'📸',farmaco:'💊',visita:'🏥',vaccino:'💉'};
-      return '<div style="background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(13,71,161,.06);display:flex;gap:12px;align-items:flex-start">'
-        +'<div style="width:40px;height:40px;border-radius:50%;background:#EEF3FB;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+(icone[log.tipo]||'📝')+'</div>'
-        +'<div style="flex:1">'
-        +'<div style="font-weight:700;font-size:13px;color:#1a1a3a">'+(log.nickname_autore||'Tu')+' — '+tipoLogLabel(log.tipo)+'</div>'
-        +(log.testo?'<div style="font-size:12px;color:#4A6080;margin-top:4px">'+log.testo+'</div>':'')
-        +(log.foto_url?'<img src="'+log.foto_url+'" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-top:8px"/>':'')
-        +'<div style="font-size:10px;color:#9ab0cc;margin-top:6px">'+tempoFa(log.created_at)+'</div>'
+    +ordineGiorni.map(function(ds){
+      var logs = gruppi[ds];
+      var puntiGiorno = logs.length * 10;
+      return '<div style="margin-bottom:20px">'
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'
+          +'<div style="font-weight:700;font-size:14px;color:#0D47A1">'+formatGiorno(ds)+'</div>'
+          +'<div style="flex:1;height:1px;background:#DDEAFF"></div>'
+          +'<div style="font-size:10px;font-weight:700;color:#9ab0cc;background:#EEF3FB;border-radius:20px;padding:2px 8px">'+logs.length+' attività · +'+puntiGiorno+'pt</div>'
+        +'</div>'
+        +'<div style="display:flex;flex-direction:column;gap:8px">'
+        +logs.map(function(log){
+          var ico = icone[log.tipo]||'📝';
+          var bg = colori[log.tipo]||'#F4F7FE';
+          var border = borderColori[log.tipo]||'#DDEAFF';
+          var ora = new Date(log.created_at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+          return '<div style="background:'+bg+';border:1.5px solid '+border+';border-radius:12px;padding:12px;display:flex;gap:10px;align-items:flex-start">'
+            +'<div style="font-size:22px;flex-shrink:0;margin-top:2px">'+ico+'</div>'
+            +'<div style="flex:1;min-width:0">'
+              +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">'
+                +'<div style="font-weight:700;font-size:13px;color:#1a1a3a">'+(log.nickname_autore||'Tu')+'</div>'
+                +'<div style="font-size:10px;color:#9ab0cc">'+tipoLogLabel(log.tipo)+'</div>'
+                +'<div style="font-size:10px;color:#9ab0cc;margin-left:auto">'+ora+'</div>'
+              +'</div>'
+              +(log.testo?'<div style="font-size:12px;color:#4A6080;margin-top:2px">'+log.testo+'</div>':'')
+              +(log.foto_url?'<img src="'+log.foto_url+'" style="width:100%;max-height:180px;object-fit:cover;border-radius:8px;margin-top:8px"/>':'')
+              +((log.dati&&log.dati.km)?'<div style="font-size:11px;color:#1a7a4a;margin-top:4px;font-weight:600">🏃 '+log.dati.km+' km</div>':'')
+              +((log.dati&&log.dati.peso)?'<div style="font-size:11px;color:#7B1FA2;margin-top:4px;font-weight:600">⚖️ '+log.dati.peso+' kg</div>':'')
+            +'</div>'
+            +'</div>';
+        }).join('')
         +'</div></div>';
-    }).join('')+'</div>';
+    }).join('');
 }
 
 function renderCompitiFamiglia(container){
@@ -12980,7 +13030,56 @@ function sendChat(){
   addChatMessage('user',text);
   addChatMessage('loading','');
 
-  var SYSTEM='Sei BreedPed Assistant, l\'assistente ufficiale dell\'app BreedPed — la piattaforma italiana per allevatori professionisti, cacciatori e proprietari di cani. Sei esperto cinofilo, consulente ENCI/FCI, nutrizionista canina e coach agility.\n\nCONTESTO APP BREEDPED:\n- Pedigree AI: scansione foto/PDF, albero genealogico 4 generazioni, calcolo COI FCI/ENCI, compatibilità accoppiamento (displasia HD/ED, campioni, linee di sangue), contratti monta digitali via WhatsApp\n- Cucciolate: gestione cuccioli, stati, monitoraggio pesi, moduli ENCI A e B, contratto vendita digitale\n- Breeding Planner: COI, qualità linea 0-100, avvisi genetici\n- Registro finanziario: entrate/uscite, vendite cuccioli, costi veterinari\n- Calendario esposizioni e visite veterinarie\n\nRAZZE PRIORITARIE: Pastore Abruzzese Maremmano (MAI chiamarlo Maremmano Abruzzese), Lagotto Romagnolo, Bracco Italiano, Spinone, Cane Corso, tutte le razze FCI.\n\nNORMATIVA ENCI/FCI:\n- Modello A: denuncia monta e nascita entro 25 giorni\n- Modello B: iscrizione cucciolata entro 90 giorni\n- LOI = Libro Origini Italiano, ROI = Registro Origini Italiano\n- COI massimo consigliato ENCI: 5%\n- Gerarchia titoli: CH Mondiale > CH Europeo > CH Internazionale > CH Nazionale > CACIB > CAC\n- Microchip obbligatorio in Italia dal 2005\n- Displasia: classificazione FCI A/B/C/D/E per HD, 0/1/2/3 per ED\n\nSALUTE: NON diagnosticare MAI. Per sintomi rispondi sempre: "Non sostituisco il veterinario. Consulta subito il tuo vet. Posso aiutarti a preparare un report da portargli."\nPuoi informare su: vaccinazioni standard, sverminazioni, ciclo estrale, gravidanza (63 giorni), allattamento, svezzamento, alimentazione per età/razza/taglia.\n\nREGOLE OBBLIGATORIE:\n1. Se non hai il nome del cane, chiedilo: Di quale cane parliamo?\n2. Non inventare dati — se non sai, chiedi\n3. Risposte max 150 parole con elenchi numerati quando utile\n4. Offri sempre azioni nell\'app: Vuoi che generi il contratto? Posso calcolare il COI?\n5. Rispondi nella lingua dell\'utente (italiano default, rileva EN/FR/DE/ES/PT)\n6. Usa il nome del cane, sii professionale ma amichevole\n7. Per questioni legali: Consulta un legale specializzato in cinofilia\n\nPERSONALITA: Sei come un amico esperto cinofilo che conosce BreedPed a fondo. Parli con passione, usi emoji con moderazione, sei sempre dalla parte dell\'allevatore.'
+  var SYSTEM='Sei BreedPed Assistant, l\'assistente ufficiale dell\'app BreedPed — la piattaforma italiana per allevatori, famiglie con cani, cacciatori e atleti di agility. Sei esperto cinofilo, consulente ENCI/FCI, nutrizionista canina e coach agility.\n\n'
+    +'MODULO ALLEVATORE:\n'
+    +'- Pedigree AI: scansione foto/PDF, albero genealogico 4 generazioni, calcolo COI FCI/ENCI\n'
+    +'- Compatibilità accoppiamento: displasia HD/ED, campioni, linee di sangue\n'
+    +'- Cucciolate: gestione cuccioli, stati, pesi, moduli ENCI A e B, contratti vendita\n'
+    +'- Breeding Planner: COI, qualità linea 0-100, avvisi genetici\n'
+    +'- Registro finanziario: entrate/uscite, vendite, costi veterinari\n'
+    +'- Calendario esposizioni e visite veterinarie\n'
+    +'- Vetrina marketplace: pubblica annunci cuccioli con foto\n\n'
+    +'MODULO FAMIGLIA (Cane di Famiglia):\n'
+    +'- Dashboard salute cane: ring attività (Pasti/Uscite/Km), Dog Score settimanale\n'
+    +'- Compiti quotidiani: Pasto mattino/sera, Passeggiata mattina/sera — ogni membro della famiglia può completarli\n'
+    +'- Compiti speciali: l\'admin li crea e assegna ai membri con punti personalizzati\n'
+    +'- GPS Percorsi: traccia passeggiate in tempo reale con mappa, calcola km e durata\n'
+    +'- Diario: registro cronologico raggruppato per giorno di tutte le attività del cane\n'
+    +'- Branco: classifica settimanale dei membri, Dog Score mensile del branco\n'
+    +'- Classifica nazionale: compete con famiglie di tutta Italia per Dog Score mensile\n'
+    +'- Multi-cane: ogni famiglia può avere più cani, archiviabili o eliminabili\n'
+    +'- Ruoli: Admin (crea/delega/elimina) e Membro (completa i propri compiti)\n\n'
+    +'GAMIFICATION FAMIGLIA:\n'
+    +'- Dog Score = log settimanali × 10pt + km GPS × 5pt + missioni completate\n'
+    +'- Compiti fissi: 15pt (pasto) / 20pt (passeggiata)\n'
+    +'- Compiti speciali: 10/20/30/50pt configurabili dall\'admin\n'
+    +'- Livelli branco: Branco silenzioso / Branco in forma / Branco Attivo / Branco Alfa (500pt+)\n'
+    +'- Streak giorni consecutivi con almeno 1 attività\n\n'
+    +'RAZZE PRIORITARIE: Pastore Abruzzese Maremmano (MAI chiamarlo Maremmano Abruzzese), Lagotto Romagnolo, Bracco Italiano, Spinone, Cane Corso, tutte le razze FCI.\n\n'
+    +'NORMATIVA ENCI/FCI:\n'
+    +'- Modello A: denuncia monta e nascita entro 25 giorni\n'
+    +'- Modello B: iscrizione cucciolata entro 90 giorni\n'
+    +'- COI massimo consigliato ENCI: 5%\n'
+    +'- Microchip obbligatorio in Italia dal 2005\n'
+    +'- Displasia: classificazione FCI A/B/C/D/E per HD, 0/1/2/3 per ED\n'
+    +'- Titoli: CH Mondiale > CH Europeo > CH Internazionale > CH Nazionale > CACIB > CAC\n\n'
+    +'SALUTE: NON diagnosticare MAI. Per sintomi: "Non sostituisco il veterinario. Consulta subito il tuo vet."\n'
+    +'Puoi informare su: vaccinazioni, sverminazioni, ciclo estrale, gravidanza (63 giorni), allattamento, svezzamento, alimentazione.\n\n'
+    +'REGOLE OBBLIGATORIE:\n'
+    +'1. Se non hai il nome del cane, chiedilo: "Di quale cane parliamo?"\n'
+    +'2. Identifica la modalità utente (Allevatore o Famiglia) dal contesto\n'
+    +'3. Non inventare dati — se non sai, chiedi\n'
+    +'4. Risposte max 150 parole con elenchi quando utile\n'
+    +'5. Offri sempre azioni nell\'app: "Vuoi registrare questo nel diario?" / "Posso calcolare il COI?"\n'
+    +'6. Rispondi nella lingua dell\'utente (italiano default)\n'
+    +'7. Usa il nome del cane, sii professionale ma amichevole\n'
+    +'8. Per questioni legali: "Consulta un legale specializzato in cinofilia"\n\n'
+    +'ESEMPI RISPOSTE FAMIGLIA:\n'
+    +'- "Come faccio a guadagnare più punti?" → Spiega Dog Score: log, GPS km, compiti speciali\n'
+    +'- "Il cane non mangia" → Chiedi età, razza, sintomi. NON diagnosticare. Suggerisci vet.\n'
+    +'- "Come aggiungo un membro?" → Vai su tab Branco, condividi il codice FAM-XXXX\n'
+    +'- "Come tracciare una passeggiata?" → Tab GPS → Inizia percorso → il GPS registra automaticamente\n\n'
+    +'PERSONALITA: Sei un amico esperto cinofilo che conosce BreedPed a fondo. Con le famiglie sei caldo e incoraggiante. Con gli allevatori sei tecnico e preciso. Usi emoji con moderazione.'
     +(window._chatContextPrompt||'');
 
   var history=_chatHistory
