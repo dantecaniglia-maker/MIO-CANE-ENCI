@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.32';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.33';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10065,27 +10065,27 @@ function apriRidelegaSpeciale(compitoId){
       +'<input type="text" id="cm-testo" value="'+(c.testo||'')+'" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px"/>'
     +'</div>'
     +'<div style="margin-bottom:12px">'
-      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">NOTE</label>'
-      +'<textarea id="cm-note" rows="2" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:13px;resize:none">'+(c._note||c.note||'')+'</textarea>'
+      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">NOTE (opzionale)</label>'
+      +'<textarea id="cm-note" rows="2" placeholder="Es. Portare il libretto..." style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:13px;resize:none">'+(c._note||c.note||'')+'</textarea>'
     +'</div>'
     +'<div style="margin-bottom:12px">'
       +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">ASSEGNATO A</label>'
       +'<select id="cm-membro" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px">'+membriOptions+'</select>'
     +'</div>'
     +'<div style="margin-bottom:16px">'
-      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">DATA SCADENZA</label>'
+      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">DATA SCADENZA (opzionale)</label>'
       +'<input type="date" id="cm-data" value="'+(c.data_scadenza||'')+'" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px"/>'
     +'</div>'
-    +'<div style="display:flex;gap:10px">'
-      +'<button onclick="eliminaCompitoAdmin(\''+compitoId+'\',this)" style="flex:1;background:#FFF0EE;color:#C0534A;border:1.5px solid #F5C4BE;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">🗑 Elimina</button>'
+    +'<div style="display:flex;gap:8px">'
+      +'<button onclick="eliminaCompitoAdmin(\''+compitoId+'\',this)" style="flex:1;background:#FFF0EE;color:#C0534A;border:1.5px solid #F5C4BE;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">🗑</button>'
       +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="flex:1;background:#EEF3FB;color:#6B8BB0;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
-      +'<button onclick="salvaModificaCompito(\''+compitoId+'\',this)" style="flex:2;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva</button>'
+      +'<button onclick="salvaRidelegaSpeciale(\''+compitoId+'\',this)" style="flex:2;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva</button>'
     +'</div>'
   +'</div>';
   document.body.appendChild(overlay);
 }
 
-async function salvaModificaCompito(compitoId, btn){
+async function salvaRidelegaSpeciale(compitoId, btn){
   var testo = document.getElementById('cm-testo')
     &&document.getElementById('cm-testo').value.trim();
   if(!testo){ toast('Il testo non può essere vuoto'); return; }
@@ -10113,7 +10113,11 @@ async function salvaModificaCompito(compitoId, btn){
 async function eliminaCompitoAdmin(compitoId, btn){
   if(!confirm('Eliminare questo compito?')) return;
   btn.disabled=true; btn.textContent='⏳';
-  await _supabase.from('famiglia_compiti').delete().eq('id',compitoId);
+  var _del = await _supabase.from('famiglia_compiti').delete().eq('id', compitoId);
+  if(_del.error){
+    btn.disabled=false; btn.textContent='🗑';
+    toast('❌ '+_del.error.message); return;
+  }
   _famigliaCompiti = _famigliaCompiti.filter(function(c){return c.id!==compitoId;});
   _salvFam();
   btn.closest('[style*=fixed]').remove();
@@ -10122,8 +10126,12 @@ async function eliminaCompitoAdmin(compitoId, btn){
 }
 
 function renderPercorsiFamiglia(container){
-  // Guard: se la UI GPS è già nel DOM, aggiorna solo lo storico senza distruggere la mappa
-  if(document.getElementById('fam-gps-ui')){
+  // Guard: se la UI GPS è già nel DOM, riaggancia al container e aggiorna storico
+  if(container.querySelector('#fam-gps-ui') || document.getElementById('fam-gps-ui')){
+    var _ui = document.getElementById('fam-gps-ui');
+    if(_ui && _ui.parentNode !== container) container.appendChild(_ui);
+    var _st = document.getElementById('fam-storico-percorsi');
+    if(_st && _st.parentNode !== container) container.appendChild(_st);
     _aggiornaStoricoPercorsi(document.getElementById('fam-storico-percorsi'));
     return;
   }
@@ -10273,14 +10281,25 @@ async function fermaPercorsoGPS(){
     // Aggiorna storico visibile senza ricaricare la mappa
     _aggiornaStoricoPercorsi(document.getElementById('fam-storico-percorsi'));
     // Salva log uscita su Supabase (fire-and-forget)
-    _supabase.from('famiglia_log').insert({
-      famiglia_id:_famigliaDati.id,
-      cane_id:_famigliaCaneSelezionato.id,
-      user_id:_currentUser.id,
-      tipo:'uscita',
-      dati:{km:km},
-      nickname_autore:nick
-    }).then(function(r){ if(r.error) console.warn('[fam] log uscita:', r.error.message); });
+    var _logEntry = {
+      famiglia_id: _famigliaDati.id,
+      cane_id: _famigliaCaneSelezionato.id,
+      user_id: _currentUser.id,
+      tipo: 'uscita',
+      testo: 'Passeggiata GPS: '+km+' km in '+durataMins+' min',
+      dati: {km: km, durata_minuti: durataMins},
+      nickname_autore: nick,
+      created_at: nowIso
+    };
+    _supabase.from('famiglia_log').insert(_logEntry)
+      .then(function(r){
+        if(r.error) console.warn('[fam] log uscita:', r.error.message);
+      });
+    // Aggiorna ring Home se attiva
+    if(_famTabAttiva==='home'){
+      var _tc = g('fam-tab-content');
+      if(_tc) renderHealthDashboard(_tc);
+    }
   }
 }
 
