@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.39';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.40';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10961,26 +10961,63 @@ async function creaFamiglia(){
 }
 
 async function accettaInvitoFamiglia(){
-  var codice = (g('codice-invito-input')&&g('codice-invito-input').value.trim().toUpperCase())||'';
+  var codice = (g('codice-invito-input')
+    &&g('codice-invito-input').value.trim().toUpperCase())||'';
   if(!codice){ toast('Inserisci il codice'); return; }
+
+  // Step 1: verifica codice
+  var res = await _supabase.from('famiglie')
+    .select('*').eq('codice_invito',codice).single();
+  if(!res.data){ toast('❌ Codice non valido'); return; }
+  _famigliaDati = res.data;
+
+  // Step 2: chiedi nickname con overlay custom (no prompt nativo)
+  var defaultNick = (_currentUser.email||'').split('@')[0];
+  var emojis = ['👨','👩','👦','👧','👴','👵','🧑','🧒'];
+  var emoji = emojis[Math.floor(Math.random()*emojis.length)];
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px';
+  overlay.innerHTML='<div style="background:#fff;border-radius:20px;padding:28px;width:100%;max-width:360px;text-align:center">'
+    +'<div style="font-size:48px;margin-bottom:12px">'+emoji+'</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:6px">'
+    +'Benvenuto in '+_famigliaDati.nome_famiglia+'!</div>'
+    +'<div style="font-size:13px;color:#6B8BB0;margin-bottom:20px">Come vuoi chiamarti nel branco?</div>'
+    +'<input id="membro-nickname" type="text" value="'+defaultNick+'" '
+    +'style="width:100%;padding:12px;border:1.5px solid #DDEAFF;border-radius:10px;font-size:16px;text-align:center;margin-bottom:16px"/>'
+    +'<button onclick="confermaIngressoFamiglia(\''+codice+'\',\''+emoji+'\')" '
+    +'style="width:100%;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">'
+    +'🎉 Entra nel branco!</button>'
+    +'</div>';
+  document.body.appendChild(overlay);
+}
+
+async function confermaIngressoFamiglia(codice, emoji){
+  var nickname = (document.getElementById('membro-nickname')
+    &&document.getElementById('membro-nickname').value.trim())
+    ||(_currentUser.email||'').split('@')[0];
   try {
-    var res = await _supabase.from('famiglie').select('*').eq('codice_invito',codice).single();
-    if(!res.data){ toast('❌ Codice non valido'); return; }
-    _famigliaDati = res.data;
-    var nickname = prompt('Come vuoi chiamarti nella famiglia?')||(_currentUser.email||'').split('@')[0];
-    var emojis = ['👨','👩','👦','👧','👴','👵','🧑'];
-    var emoji = emojis[Math.floor(Math.random()*emojis.length)];
-    await _supabase.from('famiglia_membri').insert({
-      famiglia_id: _famigliaDati.id,
-      user_id: _currentUser.id,
-      ruolo: 'membro',
-      nickname: nickname,
-      emoji: emoji
+    // Controlla se già membro
+    var check = await _supabase.from('famiglia_membri')
+      .select('id').eq('famiglia_id',_famigliaDati.id)
+      .eq('user_id',_currentUser.id).limit(1);
+    if(!check.data||check.data.length===0){
+      var ins = await _supabase.from('famiglia_membri').insert({
+        famiglia_id: _famigliaDati.id,
+        user_id: _currentUser.id,
+        ruolo: 'membro',
+        nickname: nickname,
+        emoji: emoji
+      });
+      if(ins.error) throw ins.error;
+    }
+    // Rimuovi overlay nickname e wizard
+    document.querySelectorAll('[style*="inset:0"]').forEach(function(o){
+      if(o.querySelector('#membro-nickname')||o.id==='wizard-famiglia') o.remove();
     });
-    var wiz = g('wizard-famiglia');
-    if(wiz) wiz.remove();
-    toast('🎉 Benvenuto nella famiglia '+_famigliaDati.nome_famiglia+'!');
+    toast('🎉 Benvenuto '+nickname+'!');
     await caricaCanisFamiglia();
+    await caricaMembrisFamiglia();
     renderHomeFamiglia();
   } catch(e){ toast('❌ Errore: '+e.message); }
 }
