@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.40';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.41';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9249,13 +9249,19 @@ function applicaModalita(mod){
         .select('*').eq('famiglia_id',_famigliaDati.id)
         .order('created_at',{ascending:false}).limit(20);
       if(_resP.data) _famigliaPercorsi = _resP.data;
-      if(_famTabAttiva==='home'){
-        var _tc = g('fam-tab-content');
-        if(_tc) renderHealthDashboard(_tc);
-      } else if(_famTabAttiva==='compiti'){
-        var _tc2 = g('fam-tab-content');
-        if(_tc2) renderCompitiFamiglia(_tc2);
+      // Aggiorna sempre la home (ring) anche se non è la tab attiva
+      // così i dati sono freschi al ritorno
+      var _tc = g('fam-tab-content');
+      if(_tc){
+        if(_famTabAttiva==='home') renderHealthDashboard(_tc);
+        else if(_famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
+        else if(_famTabAttiva==='diario') renderDiarioFamiglia(_tc);
       }
+      // Aggiorna anche _famigliaLogTutti per Dog Score
+      var _rTutti = await _supabase.from('famiglia_log')
+        .select('*').eq('famiglia_id',_famigliaDati.id)
+        .order('created_at',{ascending:false}).limit(200);
+      if(_rTutti.data) _famigliaLogTutti = _rTutti.data;
     }, 30000);
   } else {
     var hf2 = g('home-famiglia');
@@ -10122,7 +10128,15 @@ async function completaCompitoFisso(tipo, punti){
     nickname_autore: nick,
     tipo: tipo,
     testo: null
-  }).then(function(){});
+  }).then(function(r){
+    if(r.error){ console.warn('[fam] log insert error:', r.error.message); return; }
+    // Ricarica log da Supabase per avere created_at server-side corretto
+    caricaLogFamiglia().then(function(){
+      var _tc = g('fam-tab-content');
+      if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
+      if(_tc && _famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
+    });
+  });
 }
 
 function apriCreaCompitoAdmin(){
