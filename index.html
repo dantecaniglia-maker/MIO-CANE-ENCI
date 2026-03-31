@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.45';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.46';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10116,6 +10116,7 @@ async function completaCompitoFisso(tipo, punti){
     created_at: new Date().toISOString()
   };
   _famigliaLog.unshift(logEntry);
+  _famigliaLogTutti.unshift(logEntry);
   _salvFam();
   if(_famTabAttiva==='home'){
     var _tc = g('fam-tab-content');
