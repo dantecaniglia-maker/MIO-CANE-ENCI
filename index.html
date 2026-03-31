@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.43';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.44';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9986,7 +9986,7 @@ function renderCompitiFamiglia(container){
     var n=new Date();
     return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
   })();
-  var _logOggi = _famigliaLog.filter(function(l){
+  var _logOggi = _famigliaLogTutti.filter(function(l){
     if(!l.created_at) return false;
     var d=new Date(l.created_at);
     var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
