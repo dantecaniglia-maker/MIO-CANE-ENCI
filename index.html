@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.42';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.43';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9262,6 +9262,7 @@ function applicaModalita(mod){
         .select('*').eq('famiglia_id',_famigliaDati.id)
         .order('created_at',{ascending:false}).limit(200);
       if(_rTutti.data) _famigliaLogTutti = _rTutti.data;
+      console.log('[Famiglia] polling logTutti:', _famigliaLogTutti.length);
     }, 30000);
   } else {
     var hf2 = g('home-famiglia');
@@ -9354,6 +9355,7 @@ async function _syncFamigliaBackground(mostraWizardSeVuoto){
     if(_d[3].data) _famigliaMembers = _d[3].data;
     if(_d[4].data) _famigliaPercorsi = _d[4].data;
     if(_d[5].data) _famigliaLogTutti = _d[5].data;
+    console.log('[Famiglia] logTutti caricati:', _famigliaLogTutti.length);
     _salvFam();
     renderHomeFamiglia();
     switchFamTab('home');
@@ -9490,7 +9492,10 @@ function renderHealthDashboard(container){
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   }
 
-  var logOggi = _famigliaLog.filter(function(l){ return dataLocale(l.created_at)===oggi; });
+  // Log di TUTTI i cani oggi per ring e obiettivi famiglia
+  var logOggi = _famigliaLogTutti.filter(function(l){ return dataLocale(l.created_at)===oggi; });
+  // Log solo del cane selezionato per streak e diario
+  var logOggiCane = _famigliaLog.filter(function(l){ return dataLocale(l.created_at)===oggi; });
   var pastiOggi   = logOggi.filter(function(l){return l.tipo==='pasto';}).length;
   var usciteOggi  = logOggi.filter(function(l){return l.tipo==='uscita';}).length;
   var fotoOggi    = logOggi.filter(function(l){return l.tipo==='foto';}).length;
@@ -9679,7 +9684,7 @@ function renderHealthDashboard(container){
     var tot = _famigliaCompiti.length;
     var oggi2 = new Date();
     var oggiStr = oggi2.getFullYear()+'-'+String(oggi2.getMonth()+1).padStart(2,'0')+'-'+String(oggi2.getDate()).padStart(2,'0');
-    var fatti = _famigliaLog.filter(function(l){
+    var fatti = _famigliaLogTutti.filter(function(l){
       return dataLocale(l.created_at)===oggiStr && ['pasto','uscita'].indexOf(l.tipo)>=0;
     }).length;
     var obiettivo = 4;
@@ -10766,6 +10771,13 @@ async function caricaLogFamiglia(){
     .eq('cane_id',caneId)
     .order('created_at',{ascending:false}).limit(50);
   _famigliaLog = res.data||[];
+  // Ricarica anche logTutti se non è già caricato
+  if(_famigliaLogTutti.length === 0 && _famigliaDati){
+    _supabase.from('famiglia_log')
+      .select('*').eq('famiglia_id',_famigliaDati.id)
+      .order('created_at',{ascending:false}).limit(200)
+      .then(function(r){ if(r.data) _famigliaLogTutti = r.data; });
+  }
 }
 
 async function caricaCompitisFamiglia(){
@@ -11058,6 +11070,8 @@ function apriAggiungiCaneFamiglia(){
           +'</div>'
           +(_isAdmin
             ?'<div style="display:flex;gap:6px">'
+              +'<button onclick="apriModificaCane(\''+c.id+'\')" '
+              +'style="background:#EEF3FB;border:1px solid #DDEAFF;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:#1565C0;cursor:pointer">✏️</button>'
               +'<button onclick="archiviaCaneFamiglia(\''+c.id+'\',\''+c.nome+'\')" '
               +'style="background:#FFF8E7;border:1px solid #C9A961;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:#A88A41;cursor:pointer">🗂️ Archivia</button>'
               +'<button onclick="eliminaCaneFamiglia(\''+c.id+'\',\''+c.nome+'\')" '
@@ -11094,6 +11108,75 @@ function apriAggiungiCaneFamiglia(){
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:16px">🐾 Gestione cani</div>'
     +caniHtml+formHtml+'</div>';
   document.body.appendChild(overlay);
+}
+
+function apriModificaCane(caneId){
+  var c = _famigliaCani.find(function(x){return x.id===caneId;});
+  if(!c) return;
+  // Chiudi overlay esistente
+  document.querySelectorAll('[style*="inset:0"]').forEach(function(o){
+    if(o.querySelector('#mc-nome')) o.remove();
+  });
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:16px">✏️ Modifica '+c.nome+'</div>'
+    +'<div style="margin-bottom:12px"><label>Nome</label><input id="mc-nome" value="'+(c.nome||'')+'"/></div>'
+    +'<div style="margin-bottom:12px"><label>Razza</label><input id="mc-razza" value="'+(c.razza||'')+'"/></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div><label>Sesso</label><select id="mc-sesso">'
+    +'<option value="M"'+(c.sesso==='M'?' selected':'')+'>♂ Maschio</option>'
+    +'<option value="F"'+(c.sesso==='F'?' selected':'')+'>♀ Femmina</option>'
+    +'</select></div>'
+    +'<div><label>Taglia</label><select id="mc-taglia">'
+    +'<option value="piccola"'+(c.taglia==='piccola'?' selected':'')+'>Piccola</option>'
+    +'<option value="media"'+(c.taglia==='media'?' selected':'')+'>Media</option>'
+    +'<option value="grande"'+(c.taglia==='grande'?' selected':'')+'>Grande</option>'
+    +'</select></div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div><label>Data nascita</label><input type="date" id="mc-nascita" value="'+(c.data_nascita||'')+'"/></div>'
+    +'<div><label>Peso (kg)</label><input type="number" id="mc-peso" value="'+(c.peso_attuale||'')+'" step="0.1"/></div></div>'
+    +'<div style="margin-bottom:12px"><label>Microchip</label><input id="mc-chip" value="'+(c.microchip||'')+'"/></div>'
+    +'<div style="margin-bottom:16px"><label>Nuova foto (opzionale)</label>'
+    +'<input type="file" id="mc-foto" accept="image/*" style="width:auto"/></div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="flex:1;background:#EEF3FB;color:#6B8BB0;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
+    +'<button onclick="salvaModificaCane(\''+caneId+'\',this)" style="flex:2;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+}
+
+async function salvaModificaCane(caneId, btn){
+  btn.disabled=true; btn.textContent='⏳';
+  var fotoUrl = null;
+  var fotoInput = document.getElementById('mc-foto');
+  if(fotoInput&&fotoInput.files&&fotoInput.files[0]){
+    try{ fotoUrl = await uploadFotoSupabase(
+      await fileToBase64(fotoInput.files[0]),
+      'cane_'+Date.now()+'.jpg'
+    ); }catch(e){}
+  }
+  var upd = {
+    nome: document.getElementById('mc-nome').value.trim(),
+    razza: document.getElementById('mc-razza').value.trim()||null,
+    sesso: document.getElementById('mc-sesso').value,
+    taglia: document.getElementById('mc-taglia').value,
+    data_nascita: document.getElementById('mc-nascita').value||null,
+    peso_attuale: parseFloat(document.getElementById('mc-peso').value)||null,
+    microchip: document.getElementById('mc-chip').value.trim()||null
+  };
+  if(fotoUrl) upd.foto = fotoUrl;
+  var res = await _supabase.from('famiglia_cani').update(upd).eq('id',caneId);
+  if(res.error){ btn.disabled=false; btn.textContent='✓ Salva'; toast('❌ '+res.error.message); return; }
+  // Aggiorna in memoria
+  var idx = _famigliaCani.findIndex(function(c){return c.id===caneId;});
+  if(idx>=0) _famigliaCani[idx] = Object.assign(_famigliaCani[idx], upd);
+  if(_famigliaCaneSelezionato&&_famigliaCaneSelezionato.id===caneId)
+    _famigliaCaneSelezionato = _famigliaCani[idx];
+  _salvFam();
+  btn.closest('[style*=fixed]').remove();
+  renderHomeFamiglia();
+  toast('✅ '+upd.nome+' aggiornato!');
 }
 
 async function archiviaCaneFamiglia(caneId, nomeC){
