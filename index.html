@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.49';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.50';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10077,6 +10077,11 @@ function renderCompitiFamiglia(container){
           +'<div style="font-size:10px;color:#9ab0cc">'+primo.orario+'</div>'
         +'</div>'
         +(tutti?'<div style="font-size:18px">✅</div>':'')
+        +(isAdmin2
+          ?'<button onclick="apriDelegaFisso(\''+key+'\')" '
+            +'style="font-size:10px;color:#9ab0cc;background:none;border:none;'
+            +'cursor:pointer;text-decoration:underline;padding:2px 4px">👤 delega</button>'
+          :'')
       +'</div>'
       +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
       +(gruppo.length>1
@@ -10171,6 +10176,23 @@ function renderCompitiFamiglia(container){
 async function completaCompitoFissoSingolo(caneId, tipo, orario, punti){
   var cane = _famigliaCani.find(function(c){return c.id===caneId;});
   if(!cane){ toast('Cane non trovato'); return; }
+  // Verifica se già completato per questo cane oggi
+  var _oggiCheck = new Date();
+  var _oggiStr = _oggiCheck.getFullYear()+'-'
+    +String(_oggiCheck.getMonth()+1).padStart(2,'0')+'-'
+    +String(_oggiCheck.getDate()).padStart(2,'0');
+  var _logsCaneTipo = _famigliaLogTutti.filter(function(l){
+    if(!l.created_at||l.cane_id!==caneId||l.tipo!==tipo) return false;
+    var d=new Date(l.created_at);
+    var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    return ds===_oggiStr;
+  });
+  var _maxConsentiti = (orario==='Mattina') ? 1 : 2;
+  if(orario==='Mezzogiorno') _maxConsentiti = 2;
+  if(_logsCaneTipo.length >= _maxConsentiti){
+    toast('✅ Già completato per '+cane.nome+'!');
+    return;
+  }
   var me = _famigliaMembers.find(function(m){return m.user_id===_currentUser.id;});
   var nick = (me&&me.nickname)||(_currentUser.email||'').split('@')[0];
   var entry = {
@@ -10202,17 +10224,33 @@ async function completaCompitoFissoTutti(key){
   var me = _famigliaMembers.find(function(m){return m.user_id===_currentUser.id;});
   var nick = (me&&me.nickname)||(_currentUser.email||'').split('@')[0];
   var totPunti = 0;
-  var inserts = _famigliaCani.map(function(c){
-    var punti = tipo==='pasto'?(orario==='Mezzogiorno'?8:15):20;
-    totPunti += punti;
-    var entry = {famiglia_id:_famigliaDati.id,cane_id:c.id,
-      user_id:_currentUser.id,nickname_autore:nick,tipo:tipo,testo:null,
-      created_at:new Date().toISOString()};
-    _famigliaLog.unshift(entry);
-    _famigliaLogTutti.unshift(entry);
-    return {famiglia_id:_famigliaDati.id,cane_id:c.id,
-      user_id:_currentUser.id,nickname_autore:nick,tipo:tipo,testo:null};
-  });
+  var _oggiT = new Date();
+  var _oggiS = _oggiT.getFullYear()+'-'
+    +String(_oggiT.getMonth()+1).padStart(2,'0')+'-'
+    +String(_oggiT.getDate()).padStart(2,'0');
+  var inserts = _famigliaCani
+    .filter(function(c){
+      var _cnt = _famigliaLogTutti.filter(function(l){
+        if(!l.created_at||l.cane_id!==c.id||l.tipo!==tipo) return false;
+        var d=new Date(l.created_at);
+        var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        return ds===_oggiS;
+      }).length;
+      var _maxC = orario==='Mattina'?1:2;
+      return _cnt < _maxC;
+    })
+    .map(function(c){
+      var punti = tipo==='pasto'?(orario==='Mezzogiorno'?8:15):20;
+      totPunti += punti;
+      var entry = {famiglia_id:_famigliaDati.id,cane_id:c.id,
+        user_id:_currentUser.id,nickname_autore:nick,tipo:tipo,testo:null,
+        created_at:new Date().toISOString()};
+      _famigliaLog.unshift(entry);
+      _famigliaLogTutti.unshift(entry);
+      return {famiglia_id:_famigliaDati.id,cane_id:c.id,
+        user_id:_currentUser.id,nickname_autore:nick,tipo:tipo,testo:null};
+    });
+  if(inserts.length===0){ toast('✅ Tutti i cani già completati!'); return; }
   _salvFam();
   var _tc = g('fam-tab-content');
   if(_tc && _famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
