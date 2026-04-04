@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.48';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.49';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9477,6 +9477,21 @@ function generaMissioniOggi(logOggi, compiti){
   });
 }
 
+function _calcolaObiettiviCani(){
+  if(!_famigliaCani || _famigliaCani.length===0)
+    return {pasti:2, uscite:2};
+  var oggi = Date.now();
+  var obPasti = 0, obUscite = 0;
+  _famigliaCani.forEach(function(c){
+    var etaGiorni = c.data_nascita
+      ? Math.floor((oggi-new Date(c.data_nascita))/86400000)
+      : 365;
+    obPasti += etaGiorni < 365 ? 3 : 2; // cucciolo < 1 anno = 3 pasti
+    obUscite += 2;
+  });
+  return {pasti:obPasti, uscite:obUscite};
+}
+
 function renderHealthDashboard(container){
   var cane = _famigliaCaneSelezionato;
   if(!cane){ container.innerHTML=''; return; }
@@ -9508,6 +9523,9 @@ function renderHealthDashboard(container){
   var pastiOggi   = logOggi.filter(function(l){return l.tipo==='pasto';}).length;
   var usciteOggi  = logOggi.filter(function(l){return l.tipo==='uscita';}).length;
   var fotoOggi    = logOggi.filter(function(l){return l.tipo==='foto';}).length;
+  var _obiettivi = _calcolaObiettiviCani();
+  var _maxPasti = _obiettivi.pasti;
+  var _maxUscite = _obiettivi.uscite;
   var kmOggi = 0;
   logOggi.filter(function(l){return l.tipo==='uscita';})
     .forEach(function(l){
@@ -9652,8 +9670,8 @@ function renderHealthDashboard(container){
   +'<div style="display:flex;align-items:center;gap:16px">'
   // Lista stats sinistra
   +'<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px">'
-  +[{ico:'🍖',val:pastiOggi,max:2,label:'pasti',tipo:'pasto'},
-    {ico:'🦮',val:usciteOggi,max:2,label:'uscite',tipo:'uscita'},
+  +[{ico:'🍖',val:pastiOggi,max:_maxPasti,label:'pasti',tipo:'pasto'},
+    {ico:'🦮',val:usciteOggi,max:_maxUscite,label:'uscite',tipo:'uscita'},
     {ico:'🏃',val:kmOggi,max:3,label:'km oggi',tipo:'uscita'}
   ].map(function(s){
     return '<div onclick="aggiungiLogFamiglia(\''+s.tipo+'\')" style="display:flex;align-items:baseline;gap:8px;cursor:pointer">'
@@ -9666,8 +9684,8 @@ function renderHealthDashboard(container){
   +'</div>'
   // Rings destra — colonna verticale allineata alle stats sinistra
   +'<div style="display:flex;flex-direction:column;justify-content:space-between;align-self:stretch;flex-shrink:0;gap:4px">'
-  +mkRing('🍖',pastiOggi,2,'#C9A961','pasto')
-  +mkRing('🦮',usciteOggi,2,'rgba(255,255,255,.85)','uscita')
+  +mkRing('🍖',pastiOggi,_maxPasti,'#C9A961','pasto')
+  +mkRing('🦮',usciteOggi,_maxUscite,'rgba(255,255,255,.85)','uscita')
   +mkRing('🏃',kmOggi,3,'#90CAF9','uscita')
   +'</div>'
   +'</div></div>'
@@ -9993,12 +10011,6 @@ function renderDiarioFamiglia(container){
 }
 
 function renderCompitiFamiglia(container){
-  var _compitiFissi = [
-    {id:'cf1',ico:'🍖',testo:'Pasto mattino',tipo:'pasto',orario:'Mattina',punti:15},
-    {id:'cf2',ico:'🍖',testo:'Pasto sera',tipo:'pasto',orario:'Sera',punti:15},
-    {id:'cf3',ico:'🦮',testo:'Passeggiata mattina',tipo:'uscita',orario:'Mattina',punti:20},
-    {id:'cf4',ico:'🦮',testo:'Passeggiata sera',tipo:'uscita',orario:'Sera',punti:20}
-  ];
   var _oggiStr = (function(){
     var n=new Date();
     return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
@@ -10009,19 +10021,85 @@ function renderCompitiFamiglia(container){
     var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     return ds===_oggiStr;
   });
-  var _pastiOggi = _logOggi.filter(function(l){return l.tipo==='pasto';}).length;
-  var _usciteOggi = _logOggi.filter(function(l){return l.tipo==='uscita';}).length;
-  _compitiFissi[0].completato = _pastiOggi>=1;
-  _compitiFissi[1].completato = _pastiOggi>=2;
-  _compitiFissi[2].completato = _usciteOggi>=1;
-  _compitiFissi[3].completato = _usciteOggi>=2;
 
   var isAdmin2 = _famigliaDati && _currentUser && _famigliaDati.admin_uid===_currentUser.id;
 
-  // Deleghe fissi: persistite in localStorage per familia
-  var _DELEGHE_KEY = 'bp_deleghe_fissi_'+(_famigliaDati&&_famigliaDati.id||'x');
-  var _delegheFisse = {};
-  try { _delegheFisse = JSON.parse(localStorage.getItem(_DELEGHE_KEY)||'{}'); } catch(e){}
+  // Genera compiti fissi multi-cane
+  var _compitiFissi = [];
+  _famigliaCani.forEach(function(c){
+    var etaGiorni = c.data_nascita
+      ? Math.floor((Date.now()-new Date(c.data_nascita))/86400000)
+      : 365;
+    var isCucciolo = etaGiorni < 365;
+    _compitiFissi.push({id:'cf_pm_'+c.id, ico:'🍖', testo:'Pasto mattino', tipo:'pasto', orario:'Mattina', punti:15, caneId:c.id, caneNome:c.nome});
+    if(isCucciolo) _compitiFissi.push({id:'cf_pp_'+c.id, ico:'🍖', testo:'Pasto pranzo', tipo:'pasto', orario:'Mezzogiorno', punti:8, caneId:c.id, caneNome:c.nome, isMezzogiorno:true});
+    _compitiFissi.push({id:'cf_ps_'+c.id, ico:'🍖', testo:'Pasto sera', tipo:'pasto', orario:'Sera', punti:15, caneId:c.id, caneNome:c.nome});
+    _compitiFissi.push({id:'cf_wm_'+c.id, ico:'🦮', testo:'Passeggiata mattina', tipo:'uscita', orario:'Mattina', punti:20, caneId:c.id, caneNome:c.nome});
+    _compitiFissi.push({id:'cf_ws_'+c.id, ico:'🦮', testo:'Passeggiata sera', tipo:'uscita', orario:'Sera', punti:20, caneId:c.id, caneNome:c.nome});
+  });
+
+  // Calcola completamento per ogni compito
+  _compitiFissi.forEach(function(cf){
+    var logsPerCane = _logOggi.filter(function(l){
+      return l.tipo===cf.tipo && l.cane_id===cf.caneId;
+    });
+    if(cf.tipo==='pasto'){
+      if(cf.orario==='Mattina') cf.completato = logsPerCane.length>=1;
+      else if(cf.orario==='Mezzogiorno') cf.completato = logsPerCane.length>=2;
+      else cf.completato = logsPerCane.length>=(cf.isMezzogiorno?3:2);
+    } else if(cf.tipo==='uscita'){
+      if(cf.orario==='Mattina') cf.completato = logsPerCane.length>=1;
+      else cf.completato = logsPerCane.length>=2;
+    }
+  });
+
+  // Raggruppa per tipo/orario
+  var _gruppiCompiti = {};
+  var _ordineGruppi = [];
+  _compitiFissi.forEach(function(cf){
+    var key = cf.tipo+'_'+cf.orario;
+    if(!_gruppiCompiti[key]){ _gruppiCompiti[key]=[]; _ordineGruppi.push(key); }
+    _gruppiCompiti[key].push(cf);
+  });
+
+  // Rendering card compiti fissi
+  var _cardFissiHtml = '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">';
+  _ordineGruppi.forEach(function(key){
+    var gruppo = _gruppiCompiti[key];
+    var tutti = gruppo.every(function(cf){return cf.completato;});
+    var primo = gruppo[0];
+    _cardFissiHtml += '<div style="background:'+(tutti?'linear-gradient(135deg,#F0FFF4,#E8F5E9)':'#fff')+';'
+      +'border:1.5px solid '+(tutti?'#A8D8B8':'#DDEAFF')+';border-radius:14px;padding:14px">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+        +'<span style="font-size:24px">'+primo.ico+'</span>'
+        +'<div style="flex:1">'
+          +'<div style="font-size:13px;font-weight:700;color:'+(tutti?'#1a7a4a':'#1a1a3a')+'">'+primo.testo+'</div>'
+          +'<div style="font-size:10px;color:#9ab0cc">'+primo.orario+'</div>'
+        +'</div>'
+        +(tutti?'<div style="font-size:18px">✅</div>':'')
+      +'</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
+      +(gruppo.length>1
+        ?'<button onclick="completaCompitoFissoTutti(\''+key+'\')" '
+          +'style="background:'+(tutti?'rgba(26,122,74,.1)':'linear-gradient(135deg,#0D47A1,#1565C0)')+';'
+          +'color:'+(tutti?'#1a7a4a':'#fff')+';border:none;border-radius:8px;'
+          +'padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">'
+          +(tutti?'✓ Tutti':'🐾 Tutti +'+gruppo.reduce(function(a,c){return a+c.punti;},0)+'pt')+'</button>'
+        :'')
+      +gruppo.map(function(cf){
+        return '<button onclick="completaCompitoFissoSingolo(\''+cf.caneId+'\',\''+cf.tipo+'\',\''+cf.orario+'\','+cf.punti+')" '
+          +'style="background:'+(cf.completato?'rgba(26,122,74,.1)':'#EEF3FB')+';'
+          +'border:1.5px solid '+(cf.completato?'#A8D8B8':'#DDEAFF')+';border-radius:8px;'
+          +'padding:6px 12px;font-size:11px;font-weight:700;'
+          +'color:'+(cf.completato?'#1a7a4a':'#1565C0')+';cursor:pointer">'
+          +(cf.completato?'✓ ':'')
+          +(gruppo.length>1?cf.caneNome:(cf.completato?'Fatto!':'+'+cf.punti+'pt'))
+          +'</button>';
+      }).join('')
+      +'</div>'
+      +'</div>';
+  });
+  _cardFissiHtml += '</div>';
 
   container.innerHTML =
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
@@ -10030,34 +10108,7 @@ function renderCompitiFamiglia(container){
     +'</div>'
 
     +'<div style="font-size:10px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">📅 Routine quotidiana</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">'
-    +_compitiFissi.map(function(c){
-      var _delUid = _delegheFisse[c.id]||null;
-      var _delMembro = _delUid ? _famigliaMembers.find(function(m){return m.user_id===_delUid;}) : null;
-      return '<div style="background:'+(c.completato?'linear-gradient(135deg,#F0FFF4,#E8F5E9)':'#fff')+';'
-        +'border:1.5px solid '+(c.completato?'#A8D8B8':'#DDEAFF')+';'
-        +'border-radius:14px;padding:14px;cursor:default;position:relative;overflow:hidden">'
-        +(c.completato
-          ?'<div style="position:absolute;top:6px;right:8px;font-size:18px">✅</div>'
-          :'<div onclick="completaCompitoFisso(\''+c.tipo+'\','+c.punti+')" style="cursor:pointer">')
-        +'<div style="font-size:28px;margin-bottom:4px">'+c.ico+'</div>'
-        +'<div style="font-size:12px;font-weight:700;color:'+(c.completato?'#1a7a4a':'#1a1a3a')+'">'+c.testo+'</div>'
-        +'<div style="font-size:10px;color:#9ab0cc;margin-top:1px">'+c.orario+'</div>'
-        +(c.completato?'':'</div>')
-        +'<div style="margin-top:6px;display:inline-block;background:'+(c.completato?'rgba(26,122,74,.1)':'#FFF8E7')+';'
-        +'border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:'+(c.completato?'#1a7a4a':'#A88A41')+'">'
-        +(c.completato?'Fatto!':'+'+c.punti+'pt')+'</div>'
-        +'<div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:6px">'
-          +(_delMembro
-            ?'<div style="font-size:11px;color:#6B8BB0;flex:1">'+_delMembro.emoji+' '+_delMembro.nickname+'</div>'
-            :'<div style="font-size:11px;color:#c0c8d8;flex:1;font-style:italic">Chiunque</div>')
-          +(isAdmin2
-            ?'<button onclick="apriDelegaFisso(\''+c.id+'\')" style="font-size:10px;color:#1565C0;background:#EEF3FB;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font-weight:700">👤 '+(c.completato?'Riassegna':'Assegna')+'</button>'
-            :'')
-        +'</div>'
-        +'</div>';
-    }).join('')
-    +'</div>'
+    +_cardFissiHtml
 
     +(_famigliaCompiti.length>0
       ? '<div style="font-size:10px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">⭐ Compiti speciali</div>'
@@ -10117,48 +10168,60 @@ function renderCompitiFamiglia(container){
         +'</div>');
 }
 
-async function completaCompitoFisso(tipo, punti){
-  if(!_famigliaDati || !_famigliaCaneSelezionato){
-    toast('Nessun cane selezionato'); return;
-  }
-  var me = _famigliaMembers.find(function(m){ return m.user_id===_currentUser.id; });
+async function completaCompitoFissoSingolo(caneId, tipo, orario, punti){
+  var cane = _famigliaCani.find(function(c){return c.id===caneId;});
+  if(!cane){ toast('Cane non trovato'); return; }
+  var me = _famigliaMembers.find(function(m){return m.user_id===_currentUser.id;});
   var nick = (me&&me.nickname)||(_currentUser.email||'').split('@')[0];
-  var logEntry = {
-    famiglia_id: _famigliaDati.id,
-    cane_id: _famigliaCaneSelezionato.id,
-    user_id: _currentUser.id,
-    nickname_autore: nick,
-    tipo: tipo,
-    testo: null,
-    created_at: new Date().toISOString()
+  var entry = {
+    famiglia_id:_famigliaDati.id, cane_id:caneId,
+    user_id:_currentUser.id, nickname_autore:nick,
+    tipo:tipo, testo:null, created_at:new Date().toISOString()
   };
-  _famigliaLog.unshift(logEntry);
-  _famigliaLogTutti.unshift(logEntry);
+  _famigliaLog.unshift(entry);
+  _famigliaLogTutti.unshift(entry);
   _salvFam();
-  if(_famTabAttiva==='home'){
-    var _tc = g('fam-tab-content');
-    if(_tc) renderHealthDashboard(_tc);
-  }
-  if(_famTabAttiva==='compiti'){
-    var _tc2 = g('fam-tab-content');
-    if(_tc2) renderCompitiFamiglia(_tc2);
-  }
-  toast('✅ +'+punti+'pt — ottimo!');
-  _supabase.from('famiglia_log').insert({
-    famiglia_id: _famigliaDati.id,
-    cane_id: _famigliaCaneSelezionato.id,
-    user_id: _currentUser.id,
-    nickname_autore: nick,
-    tipo: tipo,
-    testo: null
-  }).then(function(r){
-    if(r.error){ console.warn('[fam] log insert error:', r.error.message); return; }
-    // Ricarica log da Supabase per avere created_at server-side corretto
-    caricaLogFamiglia().then(function(){
-      var _tc = g('fam-tab-content');
-      if(!_tc) return;
-      if(_famTabAttiva==='home') renderHealthDashboard(_tc);
-      else if(_famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
+  var _tc = g('fam-tab-content');
+  if(_tc && _famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
+  if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
+  toast('✅ '+cane.nome+' — +'+punti+'pt!');
+  _supabase.from('famiglia_log').insert(
+    {famiglia_id:_famigliaDati.id,cane_id:caneId,user_id:_currentUser.id,
+     nickname_autore:nick,tipo:tipo,testo:null}
+  ).then(function(r){
+    if(!r.error) caricaLogFamiglia().then(function(){
+      if(_tc && _famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
+      if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
+    });
+  });
+}
+
+async function completaCompitoFissoTutti(key){
+  var parts = key.split('_');
+  var tipo = parts[0], orario = parts.slice(1).join('_');
+  var me = _famigliaMembers.find(function(m){return m.user_id===_currentUser.id;});
+  var nick = (me&&me.nickname)||(_currentUser.email||'').split('@')[0];
+  var totPunti = 0;
+  var inserts = _famigliaCani.map(function(c){
+    var punti = tipo==='pasto'?(orario==='Mezzogiorno'?8:15):20;
+    totPunti += punti;
+    var entry = {famiglia_id:_famigliaDati.id,cane_id:c.id,
+      user_id:_currentUser.id,nickname_autore:nick,tipo:tipo,testo:null,
+      created_at:new Date().toISOString()};
+    _famigliaLog.unshift(entry);
+    _famigliaLogTutti.unshift(entry);
+    return {famiglia_id:_famigliaDati.id,cane_id:c.id,
+      user_id:_currentUser.id,nickname_autore:nick,tipo:tipo,testo:null};
+  });
+  _salvFam();
+  var _tc = g('fam-tab-content');
+  if(_tc && _famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
+  if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
+  toast('✅ Tutti i cani — +'+totPunti+'pt!');
+  _supabase.from('famiglia_log').insert(inserts).then(function(r){
+    if(!r.error) caricaLogFamiglia().then(function(){
+      if(_tc && _famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
+      if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
     });
   });
 }
