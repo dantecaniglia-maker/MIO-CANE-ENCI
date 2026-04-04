@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.47';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.48';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -19,20 +19,29 @@
 // Registra Service Worker solo su Vercel (non nella preview Claude)
 if('serviceWorker' in navigator && window.location.hostname !== 'www.claudeusercontent.com'){
   navigator.serviceWorker.register('/sw.js').then(function(reg){
-    // Forza controllo aggiornamenti ad ogni apertura (non solo ogni 24h)
     reg.update();
     reg.addEventListener('updatefound', function(){
       var newSW = reg.installing;
       newSW.addEventListener('statechange', function(){
-        if(newSW.state==='installed' && navigator.serviceWorker.controller){
+        if(newSW.state==='installed'){
+          // Forza sempre l'aggiornamento — non aspettare
           newSW.postMessage({type:'SKIP_WAITING'});
         }
       });
     });
   }).catch(function(){});
-  var refreshing=false;
+  // Ricarica automatica quando il SW cambia
+  var _refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', function(){
-    if(!refreshing){ refreshing=true; window.location.reload(); }
+    if(!_refreshing){ _refreshing=true; window.location.reload(true); }
+  });
+  // Controlla versione ogni volta che la pagina torna in focus
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState==='visible'){
+      navigator.serviceWorker.getRegistration().then(function(reg){
+        if(reg) reg.update();
+      });
+    }
   });
 }
 </script>
