@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.51';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.52';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9137,6 +9137,8 @@ function _salvFam(){
       famigliaDati: _famigliaDati,
       famigliaCani: _famigliaCani,
       famigliaLog: _famigliaLog.slice(0,50),
+      famigliaLogTutti: _famigliaLogTutti.slice(0,200),
+      famigliaPercorsi: _famigliaPercorsi.slice(0,20),
       famigliaCompiti: _famigliaCompiti,
       famigliaMembers: _famigliaMembers
     }));
@@ -9155,6 +9157,8 @@ function _caricaFamLocale(){
     _famigliaLog  = d.famigliaLog||[];
     _famigliaCompiti = d.famigliaCompiti||[];
     _famigliaMembers = d.famigliaMembers||[];
+    _famigliaLogTutti = d.famigliaLogTutti||[];
+    _famigliaPercorsi = d.famigliaPercorsi||[];
     return true;
   } catch(e){ return false; }
 }
@@ -9375,6 +9379,16 @@ async function _syncFamigliaBackground(mostraWizardSeVuoto){
       _supabase.from('famiglia_log').select('*').eq('famiglia_id',_famigliaDati.id).order('created_at',{ascending:false}).limit(200)
     ]);
     if(_d[0].data) _famigliaCani = _d[0].data.filter(function(c){ return !c.archiviato; });
+    // Aggiorna _famigliaCaneSelezionato con oggetto fresco
+    if(_famigliaCaneSelezionato){
+      var _fresh = _famigliaCani.find(function(c){
+        return c.id === _famigliaCaneSelezionato.id;
+      });
+      if(_fresh) _famigliaCaneSelezionato = _fresh;
+      else _famigliaCaneSelezionato = _famigliaCani[0]||null;
+    } else {
+      _famigliaCaneSelezionato = _famigliaCani[0]||null;
+    }
     if(_d[1].data) _famigliaLog  = _d[1].data;
     if(_d[2].data) _famigliaCompiti = _d[2].data.map(function(c){ return Object.assign({punti:20},c); });
     if(_d[3].data) _famigliaMembers = _d[3].data;
