@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.50';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.51';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9217,7 +9217,11 @@ function applicaModalita(mod){
           +'</div>'
         +'</div>'
         // Contenuto tab
-        +'<div id="fam-tab-content" style="padding:16px"></div>';
+        +'<div id="fam-tab-content" style="padding:16px"></div>'
+        +'<div style="text-align:center;padding:20px 16px 8px;font-size:10px;color:#9ab0cc;border-top:1px solid #EEF3FB;margin-top:8px">'
+        +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · '
+        +'Breed<span style="color:#C9A961">Ped</span> v'+APP_VERSION
+        +'</div>';
       document.body.appendChild(hf);
     }
     g('home-famiglia').style.display = 'block';
@@ -10155,7 +10159,13 @@ function renderCompitiFamiglia(container){
                 +'<div style="font-weight:600;font-size:13px;color:#1a1a3a">'+(c.testo||'')+'</div>'
                 +(c.assegnato_a===(_currentUser&&_currentUser.id)
                   ?'<div style="font-size:10px;font-weight:700;color:#A88A41">📬 Assegnato a te!</div>'
-                  :(_m?'<div style="font-size:10px;color:#9ab0cc">👤 '+_m.nickname+'</div>':''))
+                  :(_m?'<div style="font-size:10px;color:#9ab0cc">👤 '+(_m.nickname||_m.ruolo||'Membro')+'</div>':''))
+                +(c.cane_id
+                  ?(function(){
+                    var _cv = _famigliaCani.find(function(x){return x.id===c.cane_id;});
+                    return _cv?'<div style="font-size:10px;color:#C9A961;font-weight:700">🐾 '+_cv.nome+'</div>':'';
+                  })()
+                  :'')
                 +((c._note||c.note)?'<div style="font-size:11px;color:#6B8BB0;margin-top:2px;font-style:italic">📝 '+(c._note||c.note)+'</div>':'')
               +'</div>'
               +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'
@@ -10288,6 +10298,15 @@ function apriCreaCompitoAdmin(){
       +'<select id="ca-membro" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px">'+membriOptions+'</select>'
     +'</div>'
     +'<div style="margin-bottom:12px">'
+      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">PER QUALE CANE</label>'
+      +'<select id="ca-cane" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px">'
+        +'<option value="">Tutti i cani</option>'
+        +_famigliaCani.map(function(c){
+          return '<option value="'+c.id+'">'+c.nome+'</option>';
+        }).join('')
+      +'</select>'
+    +'</div>'
+    +'<div style="margin-bottom:12px">'
       +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">DATA SCADENZA (opzionale)</label>'
       +'<input type="date" id="ca-data" min="'+oggi+'" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px"/>'
     +'</div>'
@@ -10322,13 +10341,15 @@ async function salvaCreaCompitoAdmin(btn){
     &&document.getElementById('ca-membro').value||null;
   var data = document.getElementById('ca-data')
     &&document.getElementById('ca-data').value||null;
+  var caneId = document.getElementById('ca-cane')
+    &&document.getElementById('ca-cane').value||null;
   var punti = parseInt(document.getElementById('ca-punti')
     &&document.getElementById('ca-punti').value)||20;
   btn.disabled=true; btn.textContent='⏳';
   try {
     var _ins = await _supabase.from('famiglia_compiti').insert({
       famiglia_id: _famigliaDati.id,
-      cane_id: _famigliaCaneSelezionato&&_famigliaCaneSelezionato.id||null,
+      cane_id: caneId||(_famigliaCaneSelezionato&&_famigliaCaneSelezionato.id)||null,
       creato_da: _currentUser.id,
       testo: testo,
       assegnato_a: assegnato||null,
