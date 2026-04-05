@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.57';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.58';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9638,6 +9638,71 @@ function _schedaSaluteAggiungi(caneId, tipo){
   aggiungiLogFamiglia(tipo);
 }
 
+function _syncLogToSchedaCane(famCane, tipo, dati, testo){
+  if(!famCane || ['vaccino','farmaco','visita'].indexOf(tipo) < 0) return;
+  // Trova il cane in cani[] per microchip (priorità) o nome
+  var c = null;
+  if(famCane.microchip){
+    c = cani.find(function(x){ return x.microchip && x.microchip.trim()===famCane.microchip.trim(); });
+  }
+  if(!c && famCane.nome){
+    c = cani.find(function(x){ return x.nome && x.nome.trim().toLowerCase()===famCane.nome.trim().toLowerCase(); });
+  }
+  if(!c) return;
+
+  var oggi = new Date().toISOString().substring(0,10);
+
+  if(tipo==='vaccino' && dati.vaccino){
+    if(!c.vaccinazioni) c.vaccinazioni=[];
+    // Evita duplicati (stesso vaccino inserito oggi)
+    var dup = c.vaccinazioni.find(function(v){ return v.tipo===dati.vaccino && v.data===oggi; });
+    if(!dup){
+      c.vaccinazioni.push({
+        id: Date.now(),
+        tipo: dati.vaccino,
+        data: oggi,
+        veterinario: dati.vet||'',
+        prossimaDose: dati.reminder||''
+      });
+    }
+  } else if(tipo==='farmaco' && dati.farmaco){
+    if(!c.trattamenti) c.trattamenti=[];
+    var dupF = c.trattamenti.find(function(t){ return t.prodottoTrattamento&&t.prodottoTrattamento.indexOf(dati.farmaco)===0 && t.dataTrattamento===oggi; });
+    if(!dupF){
+      c.trattamenti.push({
+        id: Date.now(),
+        tipoTrattamento: 'Farmaco',
+        prodottoTrattamento: dati.farmaco+(dati.dose?' — '+dati.dose:''),
+        dataTrattamento: oggi,
+        prossimaTrattamento: dati.reminder||''
+      });
+    }
+  } else if(tipo==='visita'){
+    if(!c.trattamenti) c.trattamenti=[];
+    var mot = dati.motivo||testo||'Visita veterinaria';
+    var dupV = c.trattamenti.find(function(t){ return t.tipoTrattamento==='Visita Vet' && t.dataTrattamento===oggi; });
+    if(!dupV){
+      c.trattamenti.push({
+        id: Date.now(),
+        tipoTrattamento: 'Visita Vet',
+        prodottoTrattamento: mot+(dati.vet?' — Dr. '+dati.vet:''),
+        dataTrattamento: oggi,
+        prossimaTrattamento: dati.reminder||''
+      });
+    }
+    if(dati.peso) c.peso_attuale = dati.peso;
+  }
+
+  salvaDB();
+
+  // Se la scheda cane di questo cane è aperta, aggiorna la UI
+  if(String(selectedId)===String(c.id)){
+    if(tipo==='vaccino') renderVac();
+    else if(tipo==='farmaco'||tipo==='visita') renderTrat();
+    renderReminderAlerts();
+  }
+}
+
 function generaMissioniOggi(logOggi, compiti){
   var giorno = new Date().getDay();
   var pool = [
@@ -11323,6 +11388,9 @@ async function salvaLogFamigliaAvanzato(tipo, btn){
     });
     _famigliaLogTutti.unshift(_famigliaLog[0]);
     _salvFam();
+
+    // Sync verso scheda cane (cani[] localStorage)
+    _syncLogToSchedaCane(_famigliaCaneSelezionato, tipo, dati, testo);
 
     var msg = {farmaco:'💊 Farmaco salvato',vaccino:'💉 Vaccino registrato',
       visita:'🏥 Visita salvata',nota:'📝 Nota salvata',foto:'📸 Foto salvata'}[tipo]||'✅ Salvato!';
