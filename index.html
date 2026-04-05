@@ -18,28 +18,40 @@
 <script>
 // Registra Service Worker solo su Vercel (non nella preview Claude)
 if('serviceWorker' in navigator && window.location.hostname !== 'www.claudeusercontent.com'){
+  function _attivaSwInAttesa(reg){
+    if(reg && reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+  }
   navigator.serviceWorker.register('/sw.js').then(function(reg){
     reg.update();
+    _attivaSwInAttesa(reg); // attiva subito se c'è già un SW in attesa
     reg.addEventListener('updatefound', function(){
       var newSW = reg.installing;
       newSW.addEventListener('statechange', function(){
-        if(newSW.state==='installed'){
-          // Forza sempre l'aggiornamento — non aspettare
-          newSW.postMessage({type:'SKIP_WAITING'});
-        }
+        if(newSW.state==='installed') newSW.postMessage({type:'SKIP_WAITING'});
       });
     });
   }).catch(function(){});
-  // Ricarica automatica quando il SW cambia
+  // Ricarica automatica quando il SW diventa controller
   var _refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', function(){
-    if(!_refreshing){ _refreshing=true; window.location.reload(true); }
+    if(!_refreshing){ _refreshing=true; window.location.reload(); }
   });
   // Controlla versione ogni volta che la pagina torna in focus
+  // Metodo affidabile: confronta VERSION in sw.js con APP_VERSION corrente
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState==='visible'){
+      fetch('/sw.js?_='+Date.now(), {cache:'no-store'})
+        .then(function(r){ return r.text(); })
+        .then(function(txt){
+          var m = txt.match(/const VERSION = '([^']+)'/);
+          if(m && m[1] !== APP_VERSION){
+            window.location.href = '/?_v='+m[1];
+          }
+        }).catch(function(){});
       navigator.serviceWorker.getRegistration().then(function(reg){
-        if(reg) reg.update();
+        if(!reg) return;
+        reg.update();
+        _attivaSwInAttesa(reg);
       });
     }
   });
@@ -10303,12 +10315,12 @@ function apriCreaCompitoAdmin(){
       +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">ASSEGNA A</label>'
       +'<select id="ca-membro" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px">'+membriOptions+'</select>'
     +'</div>'
-    +(caniOptions
-      ?('<div style="margin-bottom:12px">'
-          +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">PER QUALE CANE</label>'
-          +'<select id="ca-cane" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px">'+caniOptions+'</select>'
-        +'</div>')
-      :'')
+    +'<div style="margin-bottom:12px">'
+      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">PER QUALE CANE</label>'
+      +'<select id="ca-cane" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px">'
+      +(caniOptions||'<option value="">Tutti i cani</option>')
+      +'</select>'
+    +'</div>'
     +'<div style="margin-bottom:12px">'
       +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">DATA SCADENZA (opzionale)</label>'
       +'<input type="date" id="ca-data" min="'+oggi+'" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px"/>'
