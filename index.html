@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.53';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.54';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9850,14 +9850,11 @@ function renderHealthDashboard(container){
 
   // ── BLOCCO 6b: Quick actions ──
   +'<div style="background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 12px rgba(13,71,161,.08)">'
-  +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">➕ Registra adesso</div>'
-  +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'
-  +[['🍖','Pasto','pasto','#FFF3E0','#FFB74D'],
-    ['🦮','Uscita','uscita','#FFF3E0','#FFB74D'],
-    ['💊','Farmaco','farmaco','#E3F2FD','#42A5F5'],
+  +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">🏥 Salute & Memoria</div>'
+  +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'
+  +[['💊','Farmaco','farmaco','#E3F2FD','#42A5F5'],
     ['💉','Vaccino','vaccino','#E3F2FD','#42A5F5'],
     ['🏥','Visita','visita','#E3F2FD','#42A5F5'],
-    ['⚖️','Peso','peso','#F3E5F5','#AB47BC'],
     ['📝','Nota','nota','#E8F5E9','#66BB6A'],
     ['📸','Foto','foto','#E8F5E9','#66BB6A']
   ].map(function(a){
