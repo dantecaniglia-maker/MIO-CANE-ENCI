@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.56';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.57';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9515,13 +9515,15 @@ function apriSchedaSaluteCane(caneId){
     return d.toLocaleDateString('it-IT');
   }
 
-  function renderSezione(ico, titolo, items, renderItem){
+  function renderSezione(ico, titolo, tipo, items, renderItem){
     return '<div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;'
       +'box-shadow:0 2px 8px rgba(13,71,161,.06)">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
         +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#0D47A1">'
         +ico+' '+titolo+'</div>'
-        +'<div style="font-size:11px;color:#9ab0cc">'+items.length+' registrazioni</div>'
+        +'<button onclick="_schedaSaluteAggiungi(\''+caneId+'\',\''+tipo+'\')" '
+        +'style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;'
+        +'border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer">+ Aggiungi</button>'
       +'</div>'
       +(items.length===0
         ?'<div style="font-size:12px;color:#9ab0cc;text-align:center;padding:12px 0">Nessun record</div>'
@@ -9529,7 +9531,7 @@ function apriSchedaSaluteCane(caneId){
       +'</div>';
   }
 
-  var htmlVaccini = renderSezione('💉','Vaccini',vaccini,function(l){
+  var htmlVaccini = renderSezione('💉','Vaccini','vaccino',vaccini,function(l){
     var d = l.dati||{};
     var hasReminder = d.reminder && d.reminder > new Date().toISOString().substring(0,10);
     return '<div style="background:#EEF3FB;border-radius:10px;padding:10px 12px">'
@@ -9544,7 +9546,7 @@ function apriSchedaSaluteCane(caneId){
       +'</div>';
   });
 
-  var htmlFarmaci = renderSezione('💊','Farmaci',farmaci,function(l){
+  var htmlFarmaci = renderSezione('💊','Farmaci','farmaco',farmaci,function(l){
     var d = l.dati||{};
     var hasReminder = d.reminder && d.reminder > new Date().toISOString().substring(0,10);
     return '<div style="background:#FFF8E7;border-radius:10px;padding:10px 12px">'
@@ -9560,7 +9562,7 @@ function apriSchedaSaluteCane(caneId){
       +'</div>';
   });
 
-  var htmlVisite = renderSezione('🏥','Visite veterinarie',visite,function(l){
+  var htmlVisite = renderSezione('🏥','Visite veterinarie','visita',visite,function(l){
     var d = l.dati||{};
     var hasReminder = d.reminder && d.reminder > new Date().toISOString().substring(0,10);
     return '<div style="background:#FCE4EC;border-radius:10px;padding:10px 12px">'
@@ -9578,19 +9580,27 @@ function apriSchedaSaluteCane(caneId){
       +'</div>';
   });
 
-  var htmlFoto = foto.length===0?'':
+  var htmlFoto =
     '<div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;'
     +'box-shadow:0 2px 8px rgba(13,71,161,.06)">'
-    +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#0D47A1;margin-bottom:12px">📸 Galleria</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'
-    +foto.map(function(l){
-      return '<div style="aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer" '
-        +'onclick="window.open(\''+l.foto_url+'\',\'_blank\')">'
-        +'<img src="'+l.foto_url+'" style="width:100%;height:100%;object-fit:cover"/>'
-        +'</div>';
-    }).join('')+'</div></div>';
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#0D47A1">📸 Galleria</div>'
+      +'<button onclick="_schedaSaluteAggiungi(\''+caneId+'\',\'foto\')" '
+      +'style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;'
+      +'border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer">+ Aggiungi</button>'
+    +'</div>'
+    +(foto.length===0
+      ?'<div style="font-size:12px;color:#9ab0cc;text-align:center;padding:12px 0">Nessuna foto ancora</div>'
+      :'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'
+      +foto.map(function(l){
+        return '<div style="aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;position:relative" '
+          +'onclick="window.open(\''+l.foto_url+'\',\'_blank\')">'
+          +'<img src="'+l.foto_url+'" style="width:100%;height:100%;object-fit:cover"/>'
+          +'</div>';
+      }).join('')+'</div>')
+    +'</div>';
 
-  var htmlNote = renderSezione('📝','Note',note,function(l){
+  var htmlNote = renderSezione('📝','Note','nota',note,function(l){
     return '<div style="background:#F4F7FE;border-radius:10px;padding:10px 12px">'
       +'<div style="font-size:12px;color:#4A6080">'+l.testo+'</div>'
       +'<div style="font-size:10px;color:#9ab0cc;margin-top:4px">'+fmtData(l.created_at)+'</div>'
@@ -9620,6 +9630,12 @@ function apriSchedaSaluteCane(caneId){
     +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>'
     +'</div>';
   document.body.appendChild(overlay);
+}
+
+function _schedaSaluteAggiungi(caneId, tipo){
+  var cane = _famigliaCani.find(function(c){return c.id===caneId;});
+  if(cane) _famigliaCaneSelezionato = cane;
+  aggiungiLogFamiglia(tipo);
 }
 
 function generaMissioniOggi(logOggi, compiti){
