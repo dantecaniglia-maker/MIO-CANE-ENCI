@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.58';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.59';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -11356,6 +11356,8 @@ async function salvaLogFamigliaAvanzato(tipo, btn){
       dati: dati
     });
     localStorage.setItem('bp_reminders', JSON.stringify(reminders));
+    // Richiedi permesso notifiche subito, senza aspettare l'avvio
+    richiediPermessoNotifiche();
   }
 
   var me = _famigliaMembers.find(function(m){ return m.user_id===_currentUser.id; });
@@ -11417,14 +11419,46 @@ function _checkRemindersAmiglia(){
     var reminders = JSON.parse(localStorage.getItem('bp_reminders')||'[]');
     if(!reminders.length) return;
     var oggi = new Date().toISOString().substring(0,10);
-    var scaduti = reminders.filter(function(r){ return r.data <= oggi; });
-    var futuri = reminders.filter(function(r){ return r.data > oggi; });
-    localStorage.setItem('bp_reminders', JSON.stringify(futuri));
-    scaduti.forEach(function(r){
+    var oggiMs = new Date(oggi).getTime();
+    var avvisoPrereminderGiorni = 3; // avvisa anche se scade tra ≤3 giorni
+
+    var daRimuovere = [];
+    var daMantenere = [];
+
+    reminders.forEach(function(r){
+      var dataMs = new Date(r.data).getTime();
+      var giorniMancanti = Math.floor((dataMs - oggiMs) / 864e5);
       var ico = {farmaco:'💊',vaccino:'💉',visita:'🏥'}[r.tipo]||'🔔';
-      var msg = ico+' Reminder '+r.caneNome+': '+r.testo+' ('+r.data+')';
-      toast(msg, 5000);
+      var titoliPush = {
+        farmaco: '💊 Farmaco da somministrare',
+        vaccino: '💉 Richiamo vaccino',
+        visita:  '🏥 Visita veterinaria'
+      };
+
+      if(giorniMancanti < 0){
+        // Scaduto — notifica push + toast, poi rimuovi
+        var corpoScaduto = r.caneNome+': '+r.testo+'\nScaduto il '+r.data;
+        inviaNotifica(titoliPush[r.tipo]||'🔔 Reminder', corpoScaduto, '/logo.jpeg', 'reminder-'+r.tipo+'-'+r.caneId);
+        toast(ico+' SCADUTO '+r.caneNome+': '+r.testo+' ('+r.data+')', 6000);
+        daRimuovere.push(r);
+      } else if(giorniMancanti === 0){
+        // Oggi — notifica push + toast, poi rimuovi
+        var corpoOggi = r.caneNome+': '+r.testo+' — oggi!';
+        inviaNotifica(titoliPush[r.tipo]||'🔔 Reminder', corpoOggi, '/logo.jpeg', 'reminder-'+r.tipo+'-'+r.caneId);
+        toast(ico+' OGGI '+r.caneNome+': '+r.testo, 6000);
+        daRimuovere.push(r);
+      } else if(giorniMancanti <= avvisoPrereminderGiorni){
+        // In scadenza presto — notifica push, ma mantieni il reminder
+        var corpoProssimo = r.caneNome+': '+r.testo+' tra '+giorniMancanti+' giorno/i ('+r.data+')';
+        inviaNotifica(titoliPush[r.tipo]||'🔔 Reminder', corpoProssimo, '/logo.jpeg', 'reminder-pre-'+r.tipo+'-'+r.caneId);
+        toast(ico+' Tra '+giorniMancanti+'gg — '+r.caneNome+': '+r.testo, 5000);
+        daMantenere.push(r);
+      } else {
+        daMantenere.push(r);
+      }
     });
+
+    localStorage.setItem('bp_reminders', JSON.stringify(daMantenere));
   } catch(e){}
 }
 
@@ -11956,7 +11990,15 @@ function checkNotificheAlAvvio(){
   if(Notification.permission === 'granted'){
     checkEInviaNotifiche();
   }
+  // Controlla sempre i reminder famiglia (anche senza permesso SW — fallback su toast)
+  _checkRemindersAmiglia();
 }
+
+// Controlla reminder ogni ora mentre l'app è aperta
+setInterval(function(){
+  if(Notification.permission === 'granted') checkEInviaNotifiche();
+  _checkRemindersAmiglia();
+}, 60 * 60 * 1000);
 
 function testNotifica(){
   richiediPermessoNotifiche().then(function(granted){
