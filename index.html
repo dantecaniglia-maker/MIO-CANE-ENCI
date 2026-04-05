@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.60';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.61';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9625,6 +9625,8 @@ function apriSchedaSaluteCane(caneId){
   });
 
   var overlay = document.createElement('div');
+  overlay.id = 'scheda-salute-overlay';
+  overlay.dataset.caneId = caneId;
   overlay.style.cssText='position:fixed;inset:0;background:#F4F7FE;z-index:99999;overflow-y:auto';
   overlay.innerHTML=
     '<div style="background:linear-gradient(135deg,#0D47A1,#1565C0);padding:20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10">'
@@ -11415,6 +11417,21 @@ async function salvaLogFamigliaAvanzato(tipo, btn){
       visita:'🏥 Visita salvata',nota:'📝 Nota salvata',foto:'📸 Foto salvata'}[tipo]||'✅ Salvato!';
     if(reminderDate) msg += ' — reminder '+reminderDate;
     toast(msg);
+
+    // Se scheda salute è aperta, aggiornala con i nuovi dati
+    var schedaOverlay = g('scheda-salute-overlay');
+    if(schedaOverlay){
+      var _scid = schedaOverlay.dataset.caneId;
+      schedaOverlay.remove();
+      caricaLogFamiglia().then(function(){
+        apriSchedaSaluteCane(_scid);
+      });
+    }
+
+    // Nota → porta sempre al diario dove è visibile
+    if(tipo==='nota'){
+      switchFamTab('diario');
+    }
 
     var _tc = g('fam-tab-content');
     if(_tc && _famTabAttiva==='diario') renderDiarioFamiglia(_tc);
