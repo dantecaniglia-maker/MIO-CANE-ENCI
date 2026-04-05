@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.52';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.53';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -11033,6 +11033,11 @@ async function salvaLogFamiglia(tipo, btn){
   var me = _famigliaMembers.find(function(m){ return m.user_id===_currentUser.id; });
   var nickname = (me&&me.nickname) || (_currentUser.email||'').split('@')[0];
   try {
+    console.log('[LOG] Tentativo insert:', tipo, {
+      famiglia_id: _famigliaDati&&_famigliaDati.id,
+      cane_id: _famigliaCaneSelezionato&&_famigliaCaneSelezionato.id,
+      user_id: _currentUser&&_currentUser.id
+    });
     var _logRes = await _supabase.from('famiglia_log').insert({
       famiglia_id: _famigliaDati.id,
       cane_id: _famigliaCaneSelezionato.id,
@@ -11043,6 +11048,7 @@ async function salvaLogFamiglia(tipo, btn){
       foto_url: fotoUrl,
       dati: Object.keys(dati).length ? dati : null
     });
+    console.log('[LOG] Risultato insert:', _logRes.data, _logRes.error);
     if(_logRes.error) throw _logRes.error;
     btn.closest('[style*=fixed]').remove();
     // Aggiorna in memoria subito per refresh istantaneo dei ring
@@ -11078,6 +11084,11 @@ async function salvaLogFamiglia(tipo, btn){
     });
     toast('✅ '+tipoLogLabel(tipo)+' registrata!');
   } catch(e){
+    console.error('[LOG] Errore salva:', e, {
+      famigliaDati: _famigliaDati,
+      caneSelezionato: _famigliaCaneSelezionato,
+      currentUser: _currentUser&&_currentUser.id
+    });
     btn.disabled=false; btn.textContent='✓ Salva';
     toast('❌ Errore: '+e.message);
   }
