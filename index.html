@@ -10280,6 +10280,12 @@ function apriCreaCompitoAdmin(){
     +_famigliaMembers.map(function(m){
       return '<option value="'+m.user_id+'">'+m.emoji+' '+m.nickname+'</option>';
     }).join('');
+  var caniOptions = (_famigliaCani&&_famigliaCani.length>0)
+    ? ('<option value="">Tutti i cani</option>'
+        +_famigliaCani.map(function(c){
+          return '<option value="'+c.id+'">'+c.nome+'</option>';
+        }).join(''))
+    : null;
   var oggi = new Date().toISOString().substring(0,10);
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
@@ -10297,15 +10303,12 @@ function apriCreaCompitoAdmin(){
       +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">ASSEGNA A</label>'
       +'<select id="ca-membro" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px">'+membriOptions+'</select>'
     +'</div>'
-    +'<div style="margin-bottom:12px">'
-      +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">PER QUALE CANE</label>'
-      +'<select id="ca-cane" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px">'
-        +'<option value="">Tutti i cani</option>'
-        +_famigliaCani.map(function(c){
-          return '<option value="'+c.id+'">'+c.nome+'</option>';
-        }).join('')
-      +'</select>'
-    +'</div>'
+    +(caniOptions
+      ?('<div style="margin-bottom:12px">'
+          +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">PER QUALE CANE</label>'
+          +'<select id="ca-cane" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px">'+caniOptions+'</select>'
+        +'</div>')
+      :'')
     +'<div style="margin-bottom:12px">'
       +'<label style="font-size:12px;font-weight:700;color:#6B8BB0;display:block;margin-bottom:4px">DATA SCADENZA (opzionale)</label>'
       +'<input type="date" id="ca-data" min="'+oggi+'" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px"/>'
