@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.55';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.56';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9485,9 +9485,141 @@ function renderHomeFamiglia(){
   +'<span style="font-size:11px;font-weight:600;color:#fff">'+statoMsg+'</span>'
   +'</div>'
   +'<div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:6px;font-style:italic">'+ultimoTxt+'</div>'
+  +'<button onclick="apriSchedaSaluteCane(\''+cane.id+'\')" '
+  +'style="margin-top:10px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);'
+  +'border-radius:8px;padding:5px 12px;color:#fff;font-size:11px;font-weight:600;cursor:pointer">'
+  +'📋 Scheda Salute</button>'
   +'</div></div></div>';
 
   switchFamTab('home');
+}
+
+function apriSchedaSaluteCane(caneId){
+  var cane = _famigliaCani.find(function(c){return c.id===caneId;});
+  if(!cane) return;
+
+  var logCane = _famigliaLogTutti.filter(function(l){
+    return l.cane_id===caneId &&
+      ['vaccino','farmaco','visita','nota','foto'].indexOf(l.tipo)>=0;
+  }).sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
+
+  var vaccini  = logCane.filter(function(l){return l.tipo==='vaccino';});
+  var farmaci  = logCane.filter(function(l){return l.tipo==='farmaco';});
+  var visite   = logCane.filter(function(l){return l.tipo==='visita';});
+  var foto     = logCane.filter(function(l){return l.tipo==='foto';});
+  var note     = logCane.filter(function(l){return l.tipo==='nota';});
+
+  function fmtData(iso){
+    if(!iso) return '';
+    var d = new Date(iso);
+    return d.toLocaleDateString('it-IT');
+  }
+
+  function renderSezione(ico, titolo, items, renderItem){
+    return '<div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;'
+      +'box-shadow:0 2px 8px rgba(13,71,161,.06)">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#0D47A1">'
+        +ico+' '+titolo+'</div>'
+        +'<div style="font-size:11px;color:#9ab0cc">'+items.length+' registrazioni</div>'
+      +'</div>'
+      +(items.length===0
+        ?'<div style="font-size:12px;color:#9ab0cc;text-align:center;padding:12px 0">Nessun record</div>'
+        :'<div style="display:flex;flex-direction:column;gap:8px">'+items.map(renderItem).join('')+'</div>')
+      +'</div>';
+  }
+
+  var htmlVaccini = renderSezione('💉','Vaccini',vaccini,function(l){
+    var d = l.dati||{};
+    var hasReminder = d.reminder && d.reminder > new Date().toISOString().substring(0,10);
+    return '<div style="background:#EEF3FB;border-radius:10px;padding:10px 12px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between">'
+        +'<div style="font-weight:700;font-size:13px;color:#1a1a3a">'+(d.vaccino||l.testo||'Vaccino')+'</div>'
+        +'<div style="font-size:10px;color:#9ab0cc">'+fmtData(l.created_at)+'</div>'
+      +'</div>'
+      +(d.vet?'<div style="font-size:11px;color:#6B8BB0;margin-top:2px">👨‍⚕️ Dr. '+d.vet+'</div>':'')
+      +(d.reminder?'<div style="font-size:11px;font-weight:700;margin-top:4px;color:'
+        +(hasReminder?'#1a7a4a':'#C0534A')+'">🔔 Richiamo: '+d.reminder
+        +(hasReminder?' ✓':' ⚠️ Scaduto')+'</div>':'')
+      +'</div>';
+  });
+
+  var htmlFarmaci = renderSezione('💊','Farmaci',farmaci,function(l){
+    var d = l.dati||{};
+    var hasReminder = d.reminder && d.reminder > new Date().toISOString().substring(0,10);
+    return '<div style="background:#FFF8E7;border-radius:10px;padding:10px 12px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between">'
+        +'<div style="font-weight:700;font-size:13px;color:#1a1a3a">'+(d.farmaco||l.testo||'Farmaco')+'</div>'
+        +'<div style="font-size:10px;color:#9ab0cc">'+fmtData(l.created_at)+'</div>'
+      +'</div>'
+      +(d.dose?'<div style="font-size:11px;color:#6B8BB0;margin-top:2px">📏 '+d.dose+(d.giorni?' per '+d.giorni+'gg':'')+'</div>':'')
+      +(l.testo&&l.testo!==d.farmaco?'<div style="font-size:11px;color:#6B8BB0;margin-top:2px">'+l.testo+'</div>':'')
+      +(d.reminder?'<div style="font-size:11px;font-weight:700;margin-top:4px;color:'
+        +(hasReminder?'#1a7a4a':'#C0534A')+'">🔔 Prossima dose: '+d.reminder
+        +(hasReminder?'':' ⚠️ Scaduto')+'</div>':'')
+      +'</div>';
+  });
+
+  var htmlVisite = renderSezione('🏥','Visite veterinarie',visite,function(l){
+    var d = l.dati||{};
+    var hasReminder = d.reminder && d.reminder > new Date().toISOString().substring(0,10);
+    return '<div style="background:#FCE4EC;border-radius:10px;padding:10px 12px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between">'
+        +'<div style="font-weight:700;font-size:13px;color:#1a1a3a">'+(d.motivo||l.testo||'Visita')+'</div>'
+        +'<div style="font-size:10px;color:#9ab0cc">'+fmtData(l.created_at)+'</div>'
+      +'</div>'
+      +(d.vet?'<div style="font-size:11px;color:#6B8BB0;margin-top:2px">👨‍⚕️ Dr. '+d.vet+'</div>':'')
+      +(d.peso?'<div style="font-size:11px;color:#6B8BB0;margin-top:2px">⚖️ Peso: '+d.peso+' kg</div>':'')
+      +(l.testo&&l.testo!==d.motivo?'<div style="font-size:11px;color:#6B8BB0;margin-top:2px;font-style:italic">'+l.testo+'</div>':'')
+      +(d.reminder?'<div style="font-size:11px;font-weight:700;margin-top:4px;color:'
+        +(hasReminder?'#1a7a4a':'#C0534A')+'">🔔 Prossima visita: '+d.reminder
+        +(hasReminder?'':' ⚠️ Scaduto')+'</div>':'')
+      +(l.foto_url?'<img src="'+l.foto_url+'" style="width:100%;max-height:150px;object-fit:cover;border-radius:8px;margin-top:8px"/>':'')
+      +'</div>';
+  });
+
+  var htmlFoto = foto.length===0?'':
+    '<div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;'
+    +'box-shadow:0 2px 8px rgba(13,71,161,.06)">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#0D47A1;margin-bottom:12px">📸 Galleria</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'
+    +foto.map(function(l){
+      return '<div style="aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer" '
+        +'onclick="window.open(\''+l.foto_url+'\',\'_blank\')">'
+        +'<img src="'+l.foto_url+'" style="width:100%;height:100%;object-fit:cover"/>'
+        +'</div>';
+    }).join('')+'</div></div>';
+
+  var htmlNote = renderSezione('📝','Note',note,function(l){
+    return '<div style="background:#F4F7FE;border-radius:10px;padding:10px 12px">'
+      +'<div style="font-size:12px;color:#4A6080">'+l.testo+'</div>'
+      +'<div style="font-size:10px;color:#9ab0cc;margin-top:4px">'+fmtData(l.created_at)+'</div>'
+      +'</div>';
+  });
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:#F4F7FE;z-index:99999;overflow-y:auto';
+  overlay.innerHTML=
+    '<div style="background:linear-gradient(135deg,#0D47A1,#1565C0);padding:20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10">'
+    +'<button onclick="this.closest(\'[style*=fixed]\').remove()" '
+    +'style="background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:6px 12px;color:#fff;font-size:18px;cursor:pointer">←</button>'
+    +'<div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#fff">📋 Scheda Salute</div>'
+      +'<div style="font-size:12px;color:rgba(255,255,255,.65)">'+cane.nome+' · '+(cane.razza||'Razza mista')+'</div>'
+    +'</div>'
+    +'</div>'
+    +'<div style="margin:16px;background:#FFF8E1;border:1.5px solid #FFD180;border-radius:10px;padding:10px 14px;font-size:12px;color:#795548">'
+    +'📋 <strong>Registro personale</strong> — non sostituisce il libretto veterinario ufficiale.</div>'
+    +'<div style="padding:0 16px 32px">'
+    +htmlVaccini
+    +htmlFarmaci
+    +htmlVisite
+    +htmlFoto
+    +htmlNote
+    +'<div style="text-align:center;padding:16px;font-size:10px;color:#9ab0cc">'
+    +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>'
+    +'</div>';
+  document.body.appendChild(overlay);
 }
 
 function generaMissioniOggi(logOggi, compiti){
@@ -10032,6 +10164,9 @@ function renderDiarioFamiglia(container){
               +(log.foto_url?'<img src="'+log.foto_url+'" style="width:100%;max-height:180px;object-fit:cover;border-radius:8px;margin-top:8px"/>':'')
               +((log.dati&&log.dati.km)?'<div style="font-size:11px;color:#1a7a4a;margin-top:4px;font-weight:600">🏃 '+log.dati.km+' km</div>':'')
               +((log.dati&&log.dati.peso)?'<div style="font-size:11px;color:#7B1FA2;margin-top:4px;font-weight:600">⚖️ '+log.dati.peso+' kg</div>':'')
+              +((log.dati&&log.dati.vaccino)?'<div style="font-size:11px;font-weight:700;color:#5C6BC0;margin-top:4px">💉 '+log.dati.vaccino+(log.dati.vet?' — Dr.'+log.dati.vet:'')+(log.dati.reminder?' 🔔 Richiamo: '+log.dati.reminder:'')+'</div>':'')
+              +((log.dati&&log.dati.farmaco)?'<div style="font-size:11px;font-weight:700;color:#1565C0;margin-top:4px">💊 '+log.dati.farmaco+(log.dati.dose?' — '+log.dati.dose:'')+(log.dati.reminder?' 🔔 '+log.dati.reminder:'')+'</div>':'')
+              +((log.dati&&log.dati.motivo)?'<div style="font-size:11px;font-weight:700;color:#EC407A;margin-top:4px">🏥 '+log.dati.motivo+(log.dati.vet?' — Dr.'+log.dati.vet:'')+(log.dati.peso?' ⚖️ '+log.dati.peso+'kg':'')+'</div>':'')
             +'</div>'
             +'</div>';
         }).join('')
