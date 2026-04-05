@@ -1,5 +1,5 @@
 // ── CAMBIA QUESTO NUMERO AD OGNI DEPLOY ──
-const VERSION = '11.59';
+const VERSION = '11.60';
 const CACHE = 'miocane-' + VERSION;
 
 self.addEventListener('message', function(e){
@@ -80,8 +80,10 @@ self.addEventListener('fetch', function(e) {
 
   // index.html e root: SEMPRE dalla rete, mai dalla cache
   // {cache:'no-store'} bypassa anche la HTTP cache del browser
-  if (url.includes('index.html') || url.endsWith('/') || isDeepLink ||
-      (url.includes('mio-cane-enci') && url.includes('?'))) {
+  var urlPath = '';
+  try { urlPath = new URL(url).pathname; } catch(ex){}
+  var isRoot = urlPath === '/' || urlPath === '/index.html';
+  if (isRoot || url.includes('_v=') || url.includes('_t=') || isDeepLink) {
     e.respondWith(
       fetch(new Request(e.request.url, {
         method: 'GET',

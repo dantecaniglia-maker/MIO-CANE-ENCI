@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.59';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.60';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -21,6 +21,31 @@ if('serviceWorker' in navigator && window.location.hostname !== 'www.claudeuserc
   function _attivaSwInAttesa(reg){
     if(reg && reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
   }
+
+  // ── CHECK VERSIONE IMMEDIATO ALL'AVVIO ──
+  // Scatta subito (prima dell'auth), non aspetta visibilitychange.
+  // Se trova versione diversa: svuota cache SW e ricarica pulito.
+  function _checkVersioneAvvio(){
+    fetch('/sw.js?_='+Date.now(), {cache:'no-store'})
+      .then(function(r){ return r.text(); })
+      .then(function(txt){
+        var m = txt.match(/const VERSION = '([^']+)'/);
+        if(!m || m[1] === APP_VERSION) return; // stessa versione, nulla da fare
+        // Versione nuova — svuota cache come fa logout, poi ricarica
+        var clearAndReload = function(){
+          window.location.href = '/?_v='+m[1];
+        };
+        if(window.caches){
+          caches.keys().then(function(keys){
+            return Promise.all(keys.map(function(k){ return caches.delete(k); }));
+          }).then(clearAndReload).catch(clearAndReload);
+        } else {
+          clearAndReload();
+        }
+      }).catch(function(){});
+  }
+  _checkVersioneAvvio();
+
   navigator.serviceWorker.register('/sw.js').then(function(reg){
     reg.update();
     _attivaSwInAttesa(reg); // attiva subito se c'è già un SW in attesa
@@ -36,18 +61,10 @@ if('serviceWorker' in navigator && window.location.hostname !== 'www.claudeuserc
   navigator.serviceWorker.addEventListener('controllerchange', function(){
     if(!_refreshing){ _refreshing=true; window.location.reload(); }
   });
-  // Controlla versione ogni volta che la pagina torna in focus
-  // Metodo affidabile: confronta VERSION in sw.js con APP_VERSION corrente
+  // Controlla versione anche quando la pagina torna in focus (tab switch / resume)
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState==='visible'){
-      fetch('/sw.js?_='+Date.now(), {cache:'no-store'})
-        .then(function(r){ return r.text(); })
-        .then(function(txt){
-          var m = txt.match(/const VERSION = '([^']+)'/);
-          if(m && m[1] !== APP_VERSION){
-            window.location.href = '/?_v='+m[1];
-          }
-        }).catch(function(){});
+      _checkVersioneAvvio();
       navigator.serviceWorker.getRegistration().then(function(reg){
         if(!reg) return;
         reg.update();
