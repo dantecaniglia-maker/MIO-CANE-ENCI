@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.54';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.55';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9315,6 +9315,7 @@ async function caricaFamiglia(){
     console.log('[Famiglia] dati locali OK, mostro UI');
     renderHomeFamiglia();
     switchFamTab('home');
+    setTimeout(_checkRemindersAmiglia, 1500);
     // Aggiorna da Supabase in background senza bloccare
     _syncFamigliaBackground(false);
     return;
@@ -9398,6 +9399,7 @@ async function _syncFamigliaBackground(mostraWizardSeVuoto){
     _salvFam();
     renderHomeFamiglia();
     switchFamTab('home');
+    setTimeout(_checkRemindersAmiglia, 1500);
   } catch(e){
     console.error('[Famiglia] sync error:', e);
     if(mostraWizardSeVuoto && !_famigliaDati) mostraWizardFamiglia();
@@ -10982,37 +10984,229 @@ function aggiungiLogFamiglia(tipo){
   if(!_famigliaDati || !_famigliaCaneSelezionato){
     toast('Prima crea o unisciti a una famiglia!'); return;
   }
-  var label = {pasto:'Pasto',uscita:'Uscita',farmaco:'Farmaco',foto:'Foto',nota:'Nota',peso:'Peso',vaccino:'Vaccino',visita:'Visita veterinaria'}[tipo]||tipo;
+  var nomeC = _famigliaCaneSelezionato.nome||'il tuo cane';
   var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
-  var extraField = '';
-  if(tipo==='peso'){
-    extraField = '<div style="margin-bottom:12px"><label>Peso (kg)</label><input type="number" id="log-peso-val" placeholder="Es. 12.5" step="0.1"/></div>';
-  } else if(tipo==='uscita'){
-    extraField = '<div style="margin-bottom:12px"><label>Km percorsi (opzionale)</label><input type="number" id="log-km-val" placeholder="Es. 1.5" step="0.1"/></div>';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+
+  var titoli={farmaco:'💊 Farmaco',vaccino:'💉 Vaccino',visita:'🏥 Visita veterinaria',nota:'📝 Nota',foto:'📸 Foto'};
+  var titolo = titoli[tipo]||('+ '+tipo);
+
+  var campi = '';
+
+  if(tipo==='farmaco'){
+    campi = '<div style="margin-bottom:12px"><label>Nome farmaco *</label>'
+      +'<input id="log-farmaco-nome" placeholder="Es. Frontline, Milbemax..."/></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+      +'<div><label>Dosaggio</label><input id="log-farmaco-dose" placeholder="Es. 1 compressa"/></div>'
+      +'<div><label>Durata (giorni)</label><input type="number" id="log-farmaco-giorni" placeholder="Es. 30"/></div>'
+      +'</div>'
+      +'<div style="margin-bottom:12px"><label>Prossima somministrazione</label>'
+      +'<input type="date" id="log-farmaco-reminder"/></div>'
+      +'<div style="margin-bottom:12px"><label>Note</label>'
+      +'<textarea id="log-testo" rows="2" placeholder="Es. Da dare con il cibo..."></textarea></div>';
+
+  } else if(tipo==='vaccino'){
+    campi = '<div style="margin-bottom:12px"><label>Tipo vaccino *</label>'
+      +'<select id="log-vaccino-tipo">'
+      +'<option value="">Seleziona...</option>'
+      +'<option>Polivalente (DHPPL)</option>'
+      +'<option>Rabbia</option>'
+      +'<option>Leishmaniosi</option>'
+      +'<option>Leptospirosi</option>'
+      +'<option>Tosse dei canili</option>'
+      +'<option>Altro</option>'
+      +'</select></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+      +'<div><label>Veterinario</label><input id="log-vaccino-vet" placeholder="Dr. Rossi"/></div>'
+      +'<div><label>Lotto vaccino</label><input id="log-vaccino-lotto" placeholder="Opzionale"/></div>'
+      +'</div>'
+      +'<div style="margin-bottom:12px"><label>Data prossimo richiamo *</label>'
+      +'<input type="date" id="log-vaccino-reminder"/></div>'
+      +'<div style="margin-bottom:12px"><label>Note</label>'
+      +'<textarea id="log-testo" rows="2" placeholder="Es. Nessuna reazione..."></textarea></div>'
+      +'<input type="hidden" id="log-foto-input"/>';
+
+  } else if(tipo==='visita'){
+    var oggi2 = new Date().toISOString().substring(0,10);
+    campi = '<div style="margin-bottom:12px"><label>Motivo visita *</label>'
+      +'<input id="log-visita-motivo" placeholder="Es. Controllo annuale, zoppia..."/></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+      +'<div><label>Veterinario</label><input id="log-visita-vet" placeholder="Dr. Rossi"/></div>'
+      +'<div><label>Peso rilevato (kg)</label><input type="number" id="log-visita-peso" step="0.1" placeholder="Es. 13.2"/></div>'
+      +'</div>'
+      +'<div style="margin-bottom:12px"><label>Prossima visita (reminder)</label>'
+      +'<input type="date" id="log-visita-reminder" min="'+oggi2+'"/></div>'
+      +'<div style="margin-bottom:12px"><label>Diagnosi / Note</label>'
+      +'<textarea id="log-testo" rows="3" placeholder="Es. Tutto ok, richiamo tra 6 mesi..."></textarea></div>'
+      +'<div style="margin-bottom:12px"><label>Foto ricetta/referto (opzionale)</label>'
+      +'<input type="file" id="log-foto-input" accept="image/*" style="width:auto"/>'
+      +'<div id="log-foto-preview" style="margin-top:6px"></div></div>';
+
+  } else if(tipo==='nota'){
+    campi = '<div style="margin-bottom:12px"><label>Scrivi la tua nota</label>'
+      +'<textarea id="log-testo" rows="5" placeholder="Es. Oggi Rex era particolarmente felice al parco..."></textarea></div>'
+      +'<input type="hidden" id="log-foto-input"/>';
+
+  } else if(tipo==='foto'){
+    campi = '<div style="margin-bottom:12px"><label>Foto *</label>'
+      +'<input type="file" id="log-foto-input" accept="image/*" style="width:auto"/>'
+      +'<div id="log-foto-preview" style="margin-top:8px"></div></div>'
+      +'<div style="margin-bottom:12px"><label>Didascalia</label>'
+      +'<input id="log-testo" placeholder="Es. Prima passeggiata al mare!"/></div>';
   }
-  overlay.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">'
-    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:16px">+ '+label+'</div>'
-    +extraField
-    +'<div style="margin-bottom:12px"><label>Note (opzionale)</label>'
-    +'<textarea id="log-testo" rows="3" placeholder="Es. Ha mangiato tutto con appetito..."></textarea></div>'
-    +((['foto','visita'].indexOf(tipo)>=0)
-      ?'<div style="margin-bottom:16px"><label>Foto (opzionale)</label>'
-        +'<input type="file" id="log-foto-input" accept="image/*" style="width:auto"/>'
-        +'<div id="log-foto-preview" style="margin-top:8px"></div></div>'
-      :'<input type="hidden" id="log-foto-input"/>')
-    +'<div style="display:flex;gap:10px">'
+
+  overlay.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:4px">'+titolo+'</div>'
+    +'<div style="font-size:12px;color:#9ab0cc;margin-bottom:16px">'+nomeC+'</div>'
+    +campi
+    +'<div style="display:flex;gap:10px;margin-top:4px">'
     +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="flex:1;background:#EEF3FB;color:#6B8BB0;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
-    +'<button onclick="salvaLogFamiglia(\''+tipo+'\',this)" style="flex:2;background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva</button>'
+    +'<button onclick="salvaLogFamigliaAvanzato(\''+tipo+'\',this)" style="flex:2;background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva</button>'
     +'</div></div>'
-    +'<script>document.getElementById("log-foto-input").addEventListener("change",function(){'
+    +'<script>'
+    +'var fi=document.getElementById("log-foto-input");'
+    +'if(fi&&fi.type!=="hidden"){'
+    +'fi.addEventListener("change",function(){'
     +'var f=this.files[0];if(!f)return;'
     +'var r=new FileReader();'
     +'r.onload=function(e){'
     +'var p=document.getElementById("log-foto-preview");'
-    +'if(p)p.innerHTML=\'<img src="\'+e.target.result+\'" style="width:100%;border-radius:8px;max-height:150px;object-fit:cover"/>\';};'
-    +'r.readAsDataURL(f);});<\/script>';
+    +'if(p)p.innerHTML=\'<img src="\'+e.target.result+\'" style="width:100%;border-radius:8px;max-height:160px;object-fit:cover"/>\';};'
+    +'r.readAsDataURL(f);});}'
+    +'<\/script>';
   document.body.appendChild(overlay);
+}
+
+async function salvaLogFamigliaAvanzato(tipo, btn){
+  if(!_famigliaDati || !_famigliaCaneSelezionato) return;
+  btn.disabled=true; btn.textContent='⏳';
+
+  var testo = (g('log-testo')&&g('log-testo').value.trim())||'';
+  var dati = {};
+  var reminderDate = null;
+
+  if(tipo==='farmaco'){
+    var fnome = g('log-farmaco-nome')&&g('log-farmaco-nome').value.trim();
+    if(!fnome){ toast('Inserisci il nome del farmaco'); btn.disabled=false; btn.textContent='✓ Salva'; return; }
+    dati.farmaco = fnome;
+    if(g('log-farmaco-dose')&&g('log-farmaco-dose').value) dati.dose = g('log-farmaco-dose').value.trim();
+    if(g('log-farmaco-giorni')&&g('log-farmaco-giorni').value) dati.giorni = parseInt(g('log-farmaco-giorni').value);
+    if(g('log-farmaco-reminder')&&g('log-farmaco-reminder').value) reminderDate = g('log-farmaco-reminder').value;
+    if(!testo && fnome) testo = fnome+(dati.dose?' — '+dati.dose:'');
+
+  } else if(tipo==='vaccino'){
+    var vtipo = g('log-vaccino-tipo')&&g('log-vaccino-tipo').value;
+    if(!vtipo){ toast('Seleziona il tipo di vaccino'); btn.disabled=false; btn.textContent='✓ Salva'; return; }
+    dati.vaccino = vtipo;
+    if(g('log-vaccino-vet')&&g('log-vaccino-vet').value) dati.vet = g('log-vaccino-vet').value.trim();
+    if(g('log-vaccino-lotto')&&g('log-vaccino-lotto').value) dati.lotto = g('log-vaccino-lotto').value.trim();
+    if(g('log-vaccino-reminder')&&g('log-vaccino-reminder').value) reminderDate = g('log-vaccino-reminder').value;
+    else { toast('Inserisci la data del prossimo richiamo'); btn.disabled=false; btn.textContent='✓ Salva'; return; }
+    if(!testo) testo = vtipo+(dati.vet?' — Dr. '+dati.vet:'');
+
+  } else if(tipo==='visita'){
+    var vmotivo = g('log-visita-motivo')&&g('log-visita-motivo').value.trim();
+    if(!vmotivo){ toast('Inserisci il motivo della visita'); btn.disabled=false; btn.textContent='✓ Salva'; return; }
+    dati.motivo = vmotivo;
+    if(g('log-visita-vet')&&g('log-visita-vet').value) dati.vet = g('log-visita-vet').value.trim();
+    if(g('log-visita-peso')&&g('log-visita-peso').value) dati.peso = parseFloat(g('log-visita-peso').value);
+    if(g('log-visita-reminder')&&g('log-visita-reminder').value) reminderDate = g('log-visita-reminder').value;
+    if(!testo) testo = vmotivo+(dati.vet?' — Dr. '+dati.vet:'');
+
+  } else if(tipo==='nota'){
+    if(!testo){ toast('Scrivi una nota'); btn.disabled=false; btn.textContent='✓ Salva'; return; }
+
+  } else if(tipo==='foto'){
+    var fotoInput2 = g('log-foto-input');
+    if(!fotoInput2||!fotoInput2.files||!fotoInput2.files[0]){
+      toast('Seleziona una foto'); btn.disabled=false; btn.textContent='✓ Salva'; return;
+    }
+  }
+
+  var fotoUrl = null;
+  var fotoInput = g('log-foto-input');
+  if(fotoInput&&fotoInput.files&&fotoInput.files[0]){
+    try { fotoUrl = await uploadFotoSupabase(await fileToBase64(fotoInput.files[0]),'log_'+Date.now()+'.jpg'); } catch(e){}
+  }
+
+  if(reminderDate && _famigliaCaneSelezionato){
+    var reminders = JSON.parse(localStorage.getItem('bp_reminders')||'[]');
+    reminders.push({
+      tipo: tipo,
+      caneId: _famigliaCaneSelezionato.id,
+      caneNome: _famigliaCaneSelezionato.nome,
+      data: reminderDate,
+      testo: testo,
+      dati: dati
+    });
+    localStorage.setItem('bp_reminders', JSON.stringify(reminders));
+  }
+
+  var me = _famigliaMembers.find(function(m){ return m.user_id===_currentUser.id; });
+  var nickname = (me&&me.nickname)||(_currentUser.email||'').split('@')[0];
+
+  if(reminderDate) dati.reminder = reminderDate;
+
+  try {
+    var res = await _supabase.from('famiglia_log').insert({
+      famiglia_id: _famigliaDati.id,
+      cane_id: _famigliaCaneSelezionato.id,
+      user_id: _currentUser.id,
+      nickname_autore: nickname,
+      tipo: tipo,
+      testo: testo||null,
+      foto_url: fotoUrl,
+      dati: Object.keys(dati).length ? dati : null
+    });
+    if(res.error) throw res.error;
+
+    btn.closest('[style*=fixed]').remove();
+    _famigliaLog.unshift({
+      famiglia_id: _famigliaDati.id,
+      cane_id: _famigliaCaneSelezionato.id,
+      user_id: _currentUser.id,
+      nickname_autore: nickname,
+      tipo: tipo, testo: testo||null,
+      foto_url: fotoUrl, dati: dati,
+      created_at: new Date().toISOString()
+    });
+    _famigliaLogTutti.unshift(_famigliaLog[0]);
+    _salvFam();
+
+    var msg = {farmaco:'💊 Farmaco salvato',vaccino:'💉 Vaccino registrato',
+      visita:'🏥 Visita salvata',nota:'📝 Nota salvata',foto:'📸 Foto salvata'}[tipo]||'✅ Salvato!';
+    if(reminderDate) msg += ' — reminder '+reminderDate;
+    toast(msg);
+
+    var _tc = g('fam-tab-content');
+    if(_tc && _famTabAttiva==='diario') renderDiarioFamiglia(_tc);
+    else if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
+
+    caricaLogFamiglia().then(function(){
+      var _tc2 = g('fam-tab-content');
+      if(_tc2 && _famTabAttiva==='diario') renderDiarioFamiglia(_tc2);
+      else if(_tc2 && _famTabAttiva==='home') renderHealthDashboard(_tc2);
+    });
+  } catch(e){
+    btn.disabled=false; btn.textContent='✓ Salva';
+    toast('❌ Errore: '+e.message);
+  }
+}
+
+function _checkRemindersAmiglia(){
+  try {
+    var reminders = JSON.parse(localStorage.getItem('bp_reminders')||'[]');
+    if(!reminders.length) return;
+    var oggi = new Date().toISOString().substring(0,10);
+    var scaduti = reminders.filter(function(r){ return r.data <= oggi; });
+    var futuri = reminders.filter(function(r){ return r.data > oggi; });
+    localStorage.setItem('bp_reminders', JSON.stringify(futuri));
+    scaduti.forEach(function(r){
+      var ico = {farmaco:'💊',vaccino:'💉',visita:'🏥'}[r.tipo]||'🔔';
+      var msg = ico+' Reminder '+r.caneNome+': '+r.testo+' ('+r.data+')';
+      toast(msg, 5000);
+    });
+  } catch(e){}
 }
 
 async function salvaLogFamiglia(tipo, btn){
