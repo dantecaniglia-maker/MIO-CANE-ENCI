@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.62';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.63';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9756,6 +9756,76 @@ function _calcolaObiettiviCani(){
   return {pasti:obPasti, uscite:obUscite};
 }
 
+async function _generaVoceCane(cane, logOggi, pastiOggi, usciteOggi, kmOggi, streak){
+  var cacheKey = 'bp_voce_'+cane.id;
+  var cached = JSON.parse(localStorage.getItem(cacheKey)||'null');
+  if(cached && cached.ts && (Date.now()-cached.ts) < 30*60*1000){
+    return cached.msg;
+  }
+  if(!_aiKeys||!_aiKeys.gemini) return null;
+  var ora = new Date().getHours();
+  var fasciaOraria = ora<12 ? 'mattina' : ora<18 ? 'pomeriggio' : 'sera';
+  var etaAnni = cane.data_nascita
+    ? Math.floor((Date.now()-new Date(cane.data_nascita))/864e5/365.25)
+    : 2;
+  var razza = cane.razza || 'cane';
+  var prompt = 'Sei '+cane.nome+', un '+razza+' di '+etaAnni+' anni.'
+    +' Scrivi UN messaggio breve (max 2 frasi) in prima persona, in italiano,'
+    +' come se fossi il cane che parla al suo padrone. Tono: affettuoso, giocoso, autentico.'
+    +' Basa il messaggio su questi dati reali di oggi ('+ fasciaOraria +'):'
+    +' pasti: '+pastiOggi+', uscite: '+usciteOggi+', km: '+kmOggi
+    +', streak giorni consecutivi: '+streak+'.'
+    +' Se non ha mangiato ancora: ricordaglielo con dolcezza.'
+    +' Se non è uscito: invoglialo a uscire.'
+    +' Se ha fatto tutto: congratulati con lui.'
+    +' Se è sera e non ha fatto nulla: usa un tono un po\' deluso ma affettuoso.'
+    +' NON iniziare con il tuo nome. NON usare asterischi. Max 40 parole.';
+  try {
+    var resp = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+_aiKeys.gemini,
+      { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({contents:[{parts:[{text:prompt}]}],
+          generationConfig:{maxOutputTokens:80,temperature:0.9}}) }
+    );
+    var data = await resp.json();
+    var msg = data.candidates&&data.candidates[0]&&data.candidates[0].content
+      &&data.candidates[0].content.parts&&data.candidates[0].content.parts[0].text;
+    if(msg){
+      msg = msg.trim().replace(/\*\*/g,'').replace(/\*/g,'');
+      localStorage.setItem(cacheKey, JSON.stringify({msg:msg, ts:Date.now()}));
+      return msg;
+    }
+  } catch(e){}
+  return null;
+}
+
+function _getTamagotchiMsg(cane, pastiOggi, usciteOggi, logOggi, streak){
+  var ora = new Date().getHours();
+  var msgs = [];
+  if(pastiOggi===0 && ora>=9){
+    msgs.push({ico:'🍖',testo:cane.nome+' non ha ancora mangiato oggi!',colore:'#E65100',azione:'pasto'});
+  }
+  if(pastiOggi===1 && ora>=19){
+    msgs.push({ico:'🍽️',testo:'Manca il pasto serale di '+cane.nome,colore:'#F57C00',azione:'pasto'});
+  }
+  if(usciteOggi===0 && ora>=10){
+    msgs.push({ico:'🦮',testo:cane.nome+' aspetta la sua passeggiata!',colore:'#1565C0',azione:'uscita'});
+  }
+  if(usciteOggi===0 && ora>=17){
+    msgs.push({ico:'😢',testo:cane.nome+' non è ancora uscito oggi...',colore:'#C0534A',azione:'uscita'});
+  }
+  if(streak>=7){
+    msgs.push({ico:'🔥',testo:'Fantastico! '+streak+' giorni di fila con '+cane.nome,colore:'#C9A961',azione:null});
+  }
+  if(streak===0 && logOggi.length===0 && ora>=12){
+    msgs.push({ico:'💤',testo:cane.nome+' si sente un po\' trascurato oggi...',colore:'#9ab0cc',azione:null});
+  }
+  if(pastiOggi>=2 && usciteOggi>=2){
+    msgs.push({ico:'🌟',testo:'Oggi '+cane.nome+' è una star! Tutto completato!',colore:'#1a7a4a',azione:null});
+  }
+  return msgs;
+}
+
 function renderHealthDashboard(container){
   var cane = _famigliaCaneSelezionato;
   if(!cane){ container.innerHTML=''; return; }
@@ -9807,6 +9877,16 @@ function renderHealthDashboard(container){
     else if(_si>0) break;
   }
   if(logOggi.length===0) streak=0;
+
+  // Voce del cane — asincrona, si inserisce dopo il render
+  if(_aiKeys&&_aiKeys.gemini){
+    _generaVoceCane(cane, logOggi, pastiOggi, usciteOggi, kmOggi, streak)
+      .then(function(msg){
+        if(!msg) return;
+        var el = document.getElementById('fam-voce-cane');
+        if(el) el.innerHTML = '💬 <em style="color:#1565C0;font-size:13px">'+msg+'</em>';
+      });
+  }
 
   // Saluto dinamico
   var _h = now.getHours();
@@ -9891,6 +9971,22 @@ function renderHealthDashboard(container){
   +'<div style="flex:1;min-width:0">'
     +'<div style="font-size:16px;font-weight:700;color:#1a1a3a">'+saluto+'</div>'
     +'<div style="font-size:12px;color:#6B8BB0;margin-top:2px">Come sta andando oggi per <strong>'+cane.nome+'</strong></div>'
+    +'<div id="fam-voce-cane" style="margin-top:8px;min-height:18px;font-size:13px;color:#9ab0cc;font-style:italic">⏳ '+cane.nome+' sta pensando...</div>'
+    +(function(){
+      var _tMsgs = _getTamagotchiMsg(cane, pastiOggi, usciteOggi, logOggi, streak);
+      if(!_tMsgs.length) return '';
+      var m = _tMsgs[0];
+      return '<div style="margin-top:10px;background:'+(m.colore+'18')+';border:1.5px solid '+m.colore
+        +';border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:'
+        +(m.azione?'pointer':'default')+'" '
+        +(m.azione?'onclick="completaCompitoFisso(\''+m.azione+'\',20)"':'')+'>'
+        +'<span style="font-size:24px">'+m.ico+'</span>'
+        +'<div style="flex:1">'
+          +'<div style="font-size:13px;font-weight:700;color:'+m.colore+'">'+m.testo+'</div>'
+          +(m.azione?'<div style="font-size:10px;color:'+m.colore+';margin-top:2px">Tocca per registrare →</div>':'')
+        +'</div>'
+        +'</div>';
+    })()
     +'<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">'
     +'<div style="background:#EEF3FB;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;color:#1565C0">⭐ '+_meiPunti+'pt questo mese</div>'
     +(_mieiCompitiPendenti>0
