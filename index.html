@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.73';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.74';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -11313,16 +11313,23 @@ async function _caricaServizi(tipo, lat, lng){
   var raggio = 50000;
 
   try {
-    var overpassQ = '[out:json][timeout:25];('
-      +'node'+q+'(around:'+raggio+','+lat+','+lng+');'
-      +'way'+q+'(around:'+raggio+','+lat+','+lng+');'
-      +');out center 25;';
+    var overpassQ = '[out:json][timeout:25];(node'+q+'(around:'+raggio+','+lat+','+lng+');way'+q+'(around:'+raggio+','+lat+','+lng+'););out center 25;';
+
     var resp = await fetch(
       'https://overpass-api.de/api/interpreter',
-      {method:'POST', body:'data='+encodeURIComponent(overpassQ)}
+      {method:'POST',
+       headers:{'Content-Type':'application/x-www-form-urlencoded'},
+       body:'data='+encodeURIComponent(overpassQ)}
     );
-    var data = await resp.json();
-    var places = (data.elements||[]).filter(function(e){ return e.tags&&e.tags.name; });
+    if(!resp.ok) throw new Error('Overpass HTTP '+resp.status);
+    var text = await resp.text();
+    var data;
+    try { data = JSON.parse(text); }
+    catch(e){ throw new Error('Risposta non valida dal server'); }
+
+    var places = (data.elements||[]).filter(function(e){
+      return e.tags && e.tags.name;
+    });
 
     if(!places.length){
       lista.innerHTML = '<div style="text-align:center;padding:30px;color:#9ab0cc">'
@@ -11343,7 +11350,9 @@ async function _caricaServizi(tipo, lat, lng){
       +places.slice(0,20).map(function(p){
         var tel = p.tags['contact:phone']||p.tags.phone||null;
         var sito = p.tags.website||p.tags['contact:website']||null;
-        var addr = (p.tags['addr:street']||'')+(p.tags['addr:housenumber']?' '+p.tags['addr:housenumber']:'')+(p.tags['addr:city']?', '+p.tags['addr:city']:'');
+        var addr = (p.tags['addr:street']||'')
+          +(p.tags['addr:housenumber']?' '+p.tags['addr:housenumber']:'')
+          +(p.tags['addr:city']?', '+p.tags['addr:city']:'');
         var mapsUrl = 'https://www.google.com/maps/dir/?api=1&destination='+p._lat+','+p._lon;
         return '<div style="background:#fff;border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(13,71,161,.06)">'
           +'<div style="display:flex;align-items:flex-start;gap:10px">'
@@ -11364,9 +11373,10 @@ async function _caricaServizi(tipo, lat, lng){
       }).join('')
       +'</div>'
       +'<div style="text-align:center;font-size:11px;color:#9ab0cc;margin-top:16px">'
-      +'Dati OpenStreetMap · '+Math.min(places.length,20)+'/'+places.length+' trovati</div>';
+      +'OpenStreetMap · '+Math.min(places.length,20)+'/'+places.length+' trovati</div>';
+
   } catch(e){
-    lista.innerHTML = '<div style="text-align:center;padding:30px;color:#C0534A">❌ Errore: '+e.message+'</div>';
+    lista.innerHTML = '<div style="text-align:center;padding:30px;color:#C0534A">❌ '+e.message+'</div>';
   }
 }
 
