@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.68';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.69';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9237,7 +9237,7 @@ function applicaModalita(mod){
         // Tab bar
         +'<div style="background:#fff;border-bottom:1px solid #EEF3FB;position:sticky;top:0;z-index:10;padding:8px 12px 0">'
           +'<div style="display:flex;gap:4px;background:#F4F7FE;border-radius:16px;padding:4px">'
-          +[{id:'home',ico:'🏠',label:'Home'},{id:'diario',ico:'📖',label:'Diario'},{id:'compiti',ico:'✅',label:'Compiti'},{id:'percorsi',ico:'🗺️',label:'GPS'},{id:'famiglia',ico:'👨‍👩‍👧',label:'Branco'}]
+          +[{id:'home',ico:'🏠',label:'Home'},{id:'diario',ico:'📖',label:'Diario'},{id:'compiti',ico:'✅',label:'Compiti'},{id:'percorsi',ico:'🗺️',label:'GPS'},{id:'servizi',ico:'📍',label:'Servizi'},{id:'famiglia',ico:'👨‍👩‍👧',label:'Branco'}]
           .map(function(t){
             var att=t.id==='home';
             return '<button onclick="switchFamTab(\''+t.id+'\')" id="ftab-'+t.id+'" class="ftab" '
@@ -9267,7 +9267,7 @@ function applicaModalita(mod){
         +'background:#fff;border-top:1px solid #EEF3FB;z-index:99982;'
         +'display:flex;align-items:stretch;padding:6px 8px;gap:4px;'
         +'box-shadow:0 -4px 20px rgba(13,71,161,.1)';
-      fbn.innerHTML = [{tab:'home',ico:'🏠',label:'Home'},{tab:'diario',ico:'📖',label:'Diario'},{tab:'compiti',ico:'✅',label:'Compiti'},{tab:'percorsi',ico:'🗺️',label:'GPS'},{tab:'famiglia',ico:'👨‍👩‍👧',label:'Branco'}]
+      fbn.innerHTML = [{tab:'home',ico:'🏠',label:'Home'},{tab:'diario',ico:'📖',label:'Diario'},{tab:'compiti',ico:'✅',label:'Compiti'},{tab:'percorsi',ico:'🗺️',label:'GPS'},{tab:'servizi',ico:'📍',label:'Servizi'},{tab:'famiglia',ico:'👨‍👩‍👧',label:'Branco'}]
         .map(function(t,i){
           var att=i===0;
           return '<button onclick="switchFamTab(\''+t.tab+'\')" '
@@ -10238,6 +10238,7 @@ function switchFamTab(tab){
   else if(tab==='diario') renderDiarioFamiglia(content);
   else if(tab==='compiti') renderCompitiFamiglia(content);
   else if(tab==='percorsi') renderPercorsiFamiglia(content);
+  else if(tab==='servizi') renderServiziFamiglia(content);
   else if(tab==='famiglia') renderMembriFamiglia(content);
 
   // Badge compiti pendenti sulla tab
@@ -11224,6 +11225,118 @@ function renderMembriFamiglia(container){
       +'<div style="font-size:11px;color:#B8A060;margin-top:2px">Compete con le famiglie di tutta Italia!</div>'
       +'<div style="font-size:10px;color:#C9A961;font-weight:700;margin-top:6px">Vai alla classifica →</div>'
     +'</div>';
+}
+
+function renderServiziFamiglia(container){
+  container.innerHTML =
+    '<div style="margin-bottom:16px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:4px">📍 Servizi vicini</div>'
+    +'<div style="font-size:12px;color:#9ab0cc">Trova vet, toelettatori e dog park vicino a te</div>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px">'
+    +[['🏥','Veterinari','veterinary_care'],
+      ['✂️','Toelettatori','pet_store'],
+      ['🌳','Dog Park','park'],
+      ['🏨','Pensioni','lodging'],
+      ['🛒','Pet Shop','pet_store']
+    ].map(function(c,i){
+      return '<button onclick="cercaServiziVicini(\''+c[2]+'\',\''+c[0]+' '+c[1]+'\')" '
+        +'style="flex-shrink:0;background:'+(i===0?'#0D47A1':'#EEF3FB')+';color:'+(i===0?'#fff':'#6B8BB0')+';'
+        +'border:none;border-radius:20px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">'
+        +c[0]+' '+c[1]+'</button>';
+    }).join('')
+    +'</div>'
+    +'<div id="fam-servizi-list">'
+    +'<div style="text-align:center;padding:40px;color:#9ab0cc">'
+    +'<div style="font-size:40px;margin-bottom:12px">📍</div>'
+    +'<div style="font-weight:600;margin-bottom:8px">Trova servizi vicino a te</div>'
+    +'<div style="font-size:13px">Seleziona una categoria sopra</div>'
+    +'</div>'
+    +'</div>';
+}
+
+async function cercaServiziVicini(tipo, etichetta){
+  var lista = document.getElementById('fam-servizi-list');
+  if(!lista) return;
+  lista.innerHTML = '<div style="text-align:center;padding:30px;color:#9ab0cc">⏳ Localizzazione in corso...</div>';
+
+  document.querySelectorAll('#fam-tab-content button').forEach(function(b){
+    if(b.textContent.trim()===etichetta.trim()){
+      b.style.background='#0D47A1'; b.style.color='#fff';
+    } else if(b.style.borderRadius==='20px'){
+      b.style.background='#EEF3FB'; b.style.color='#6B8BB0';
+    }
+  });
+
+  navigator.geolocation.getCurrentPosition(
+    async function(pos){
+      var lat = pos.coords.latitude;
+      var lng = pos.coords.longitude;
+      var raggio = 5000;
+      try {
+        var overpassQ = '[out:json][timeout:10];'
+          +'node["amenity"="'+_tipoOverpass(tipo)+'"](around:'+raggio+','+lat+','+lng+');'
+          +'out body 15;';
+        var resp = await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(overpassQ));
+        var data = await resp.json();
+        var places = (data.elements||[]).filter(function(e){ return e.tags&&e.tags.name; });
+
+        if(!places.length){
+          lista.innerHTML = '<div style="text-align:center;padding:30px;color:#9ab0cc">Nessun risultato trovato entro 5km</div>';
+          return;
+        }
+
+        lista.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px">'
+          +places.slice(0,12).map(function(p){
+            var dist = _distanzaKm(lat, lng, p.lat, p.lon);
+            var tel = p.tags['contact:phone']||p.tags.phone||null;
+            var sito = p.tags.website||p.tags['contact:website']||null;
+            return '<div style="background:#fff;border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(13,71,161,.06)">'
+              +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">'
+                +'<div style="flex:1">'
+                  +'<div style="font-weight:700;font-size:14px;color:#1a1a3a">'+p.tags.name+'</div>'
+                  +(p.tags['addr:street']?'<div style="font-size:12px;color:#9ab0cc;margin-top:2px">'+p.tags['addr:street']+(p.tags['addr:housenumber']?' '+p.tags['addr:housenumber']:'')+'</div>':'')
+                  +'<div style="font-size:11px;color:#1565C0;font-weight:700;margin-top:4px">📍 '+dist.toFixed(1)+' km</div>'
+                +'</div>'
+                +'<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'
+                  +(tel?'<a href="tel:'+tel+'" style="background:#E8F5E9;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:#1a7a4a;text-decoration:none;cursor:pointer">📞 Chiama</a>':'')
+                  +(sito?'<a href="'+sito+'" target="_blank" style="background:#EEF3FB;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:#1565C0;text-decoration:none">🌐 Sito</a>':'')
+                +'</div>'
+              +'</div>'
+              +'</div>';
+          }).join('')
+          +'</div>'
+          +'<div style="text-align:center;font-size:11px;color:#9ab0cc;margin-top:16px;padding-bottom:8px">'
+          +'Dati OpenStreetMap · '+places.length+' trovati</div>';
+      } catch(e){
+        lista.innerHTML = '<div style="text-align:center;padding:30px;color:#C0534A">Errore ricerca: '+e.message+'</div>';
+      }
+    },
+    function(){
+      lista.innerHTML = '<div style="text-align:center;padding:30px;color:#C0534A">⚠️ Posizione non disponibile<br><small>Abilita la geolocalizzazione</small></div>';
+    },
+    {timeout:8000}
+  );
+}
+
+function _tipoOverpass(tipo){
+  var map = {
+    veterinary_care: 'veterinary',
+    pet_store: 'pet',
+    park: 'park',
+    lodging: 'hotel'
+  };
+  return map[tipo]||tipo;
+}
+
+function _distanzaKm(lat1,lon1,lat2,lon2){
+  var R=6371;
+  var dLat=(lat2-lat1)*Math.PI/180;
+  var dLon=(lon2-lon1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)
+    +Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)
+    *Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
 async function apriClassificaNazionale(){
