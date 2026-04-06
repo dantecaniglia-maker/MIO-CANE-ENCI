@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.71';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.72';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -11247,7 +11247,7 @@ function renderServiziFamiglia(container){
       {ico:'🏨', label:'Pensioni',     key:'pension'},
       {ico:'🛒', label:'Pet Shop',     key:'petshop'}
     ].map(function(c,i){
-      return '<button onclick="cercaServiziVicini(\''+c.key+'\',\''+c.ico+' '+c.label+'\')" '
+      return '<button onclick="cercaServiziVicini(\''+c.key+'\')" '
         +'style="flex-shrink:0;background:'+(i===0?'#0D47A1':'#EEF3FB')+';color:'+(i===0?'#fff':'#6B8BB0')+';'
         +'border:none;border-radius:20px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">'
         +c.ico+' '+c.label+'</button>';
@@ -11261,7 +11261,8 @@ function renderServiziFamiglia(container){
     +'</div></div>';
 }
 
-async function cercaServiziVicini(tipo, etichetta){
+async function cercaServiziVicini(tipo){
+  var etichetta = tipo;
   var lista = document.getElementById('fam-servizi-list');
   if(!lista) return;
   lista.innerHTML = '<div style="text-align:center;padding:30px;color:#9ab0cc">⏳ Ricerca in corso...</div>';
@@ -11353,7 +11354,7 @@ async function cercaServiziVicini(tipo, etichetta){
       lista.innerHTML = '<div style="text-align:center;padding:30px;color:#C0534A">'
         +'⚠️ Posizione non disponibile<br>'
         +'<small>'+err.message+'</small><br><br>'
-        +'<button onclick="cercaServiziVicini(\''+tipo+'\',\''+etichetta+'\')" '
+        +'<button onclick="cercaServiziVicini(\''+tipo+'\')" '
         +'style="background:#0D47A1;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">'
         +'🔄 Riprova</button></div>';
     },
