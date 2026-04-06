@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.65';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.66';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9251,6 +9251,10 @@ function applicaModalita(mod){
         +'</div>'
         // Contenuto tab
         +'<div id="fam-tab-content" style="padding:16px"></div>'
+        +'<div style="text-align:center;padding:12px 16px 20px;font-size:10px;color:#9ab0cc">'
+        +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong>'
+        +' · Breed<span style="color:#C9A961">Ped</span> v'+APP_VERSION
+        +'</div>'
         +'<div style="text-align:center;padding:20px 16px 8px;font-size:10px;color:#9ab0cc;border-top:1px solid #EEF3FB;margin-top:8px">'
         +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · '
         +'Breed<span style="color:#C9A961">Ped</span> v'+APP_VERSION
@@ -11846,6 +11850,9 @@ function mostraWizardFamiglia(){
   overlay.style.cssText = 'position:fixed;inset:0;background:#F4F7FE;z-index:99991;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center';
   overlay.innerHTML =
     '<img src="logo.jpeg" style="width:80px;height:80px;border-radius:20px;object-fit:cover;margin-bottom:20px;box-shadow:0 8px 32px rgba(201,169,97,.4)" onerror="this.style.display=\'none\'"/>'
+    +'<img src="logo.jpeg" style="width:72px;height:72px;border-radius:16px;object-fit:cover;margin-bottom:16px;box-shadow:0 8px 32px rgba(201,169,97,.4)" onerror="this.style.display=\'none\'"/>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:28px;font-weight:700;color:#0D47A1;margin-bottom:4px">Breed<span style="color:#C9A961">Ped</span></div>'
+    +'<div style="font-size:11px;color:#C9A961;font-weight:700;letter-spacing:.1em;margin-bottom:16px">Il pedigree intelligente 🐾</div>'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:24px;font-weight:700;color:#0D47A1;margin-bottom:8px">Benvenuto in Famiglia!</div>'
     +'<div style="color:#6B8BB0;font-size:14px;margin-bottom:24px;max-width:320px;line-height:1.6">Crea la tua famiglia o entra in una esistente con un codice di invito</div>'
     // Sezione crea famiglia (con input inline, senza prompt)
@@ -11934,11 +11941,14 @@ async function accettaInvitoFamiglia(){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px';
   overlay.innerHTML='<div style="background:#fff;border-radius:20px;padding:28px;width:100%;max-width:360px;text-align:center">'
     +'<div style="font-size:48px;margin-bottom:12px">'+emoji+'</div>'
+    +'<img src="logo.jpeg" style="width:48px;height:48px;border-radius:10px;object-fit:cover;margin-bottom:8px;box-shadow:0 4px 16px rgba(201,169,97,.4)" onerror="this.style.display=\'none\'"/>'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:6px">'
     +'Benvenuto in '+_famigliaDati.nome_famiglia+'!</div>'
     +'<div style="font-size:13px;color:#6B8BB0;margin-bottom:20px">Come vuoi chiamarti nel branco?</div>'
     +'<input id="membro-nickname" type="text" value="'+defaultNick+'" '
     +'style="width:100%;padding:12px;border:1.5px solid #DDEAFF;border-radius:10px;font-size:16px;text-align:center;margin-bottom:16px"/>'
+    +'<div style="font-size:10px;color:#9ab0cc;margin-bottom:12px">'
+    +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong></div>'
     +'<button onclick="confermaIngressoFamiglia(\''+codice+'\',\''+emoji+'\')" '
     +'style="width:100%;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">'
     +'🎉 Entra nel branco!</button>'
