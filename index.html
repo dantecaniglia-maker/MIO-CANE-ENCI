@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.64';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.65';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9333,6 +9333,7 @@ async function caricaFamiglia(){
     renderHomeFamiglia();
     switchFamTab('home');
     setTimeout(_checkRemindersAmiglia, 1500);
+    setTimeout(_programmaNotificheFamiglia, 2000);
     // Aggiorna da Supabase in background senza bloccare
     _syncFamigliaBackground(false);
     return;
@@ -9417,6 +9418,7 @@ async function _syncFamigliaBackground(mostraWizardSeVuoto){
     renderHomeFamiglia();
     switchFamTab('home');
     setTimeout(_checkRemindersAmiglia, 1500);
+    setTimeout(_programmaNotificheFamiglia, 2000);
   } catch(e){
     console.error('[Famiglia] sync error:', e);
     if(mostraWizardSeVuoto && !_famigliaDati) mostraWizardFamiglia();
@@ -11699,6 +11701,56 @@ function _checkRemindersAmiglia(){
 
     localStorage.setItem('bp_reminders', JSON.stringify(daMantenere));
   } catch(e){}
+}
+
+function _programmaNotificheFamiglia(){
+  if(Notification.permission !== 'granted') return;
+  if(!_famigliaCaneSelezionato || !_famigliaDati) return;
+
+  var cane = _famigliaCaneSelezionato;
+
+  function minutiA(targetH, targetM){
+    var ms = (new Date().setHours(targetH,targetM,0,0)) - Date.now();
+    return ms > 0 ? ms : -1;
+  }
+
+  var slots = [
+    { h:8,  m:0,  check: function(){ return _famigliaLogTutti.filter(function(l){ var d=new Date(l.created_at); return d.toDateString()===new Date().toDateString()&&l.tipo==='pasto'; }).length===0; },
+      titolo: '🍖 '+cane.nome+' aspetta colazione!', corpo: 'Non ha ancora mangiato oggi. Dai un\'occhiata!' },
+    { h:12, m:30, check: function(){ return _famigliaLogTutti.filter(function(l){ var d=new Date(l.created_at); return d.toDateString()===new Date().toDateString()&&l.tipo==='uscita'; }).length===0; },
+      titolo: '🦮 Passeggiata con '+cane.nome+'?', corpo: 'Nessuna uscita stamattina — '+cane.nome+' ha voglia di correre!' },
+    { h:19, m:0,  check: function(){ return _famigliaLogTutti.filter(function(l){ var d=new Date(l.created_at); return d.toDateString()===new Date().toDateString()&&l.tipo==='pasto'; }).length < 2; },
+      titolo: '🍽️ Cena di '+cane.nome+'!', corpo: 'È ora del pasto serale. Non dimenticare!' },
+    { h:20, m:30, check: function(){ return _famigliaLogTutti.filter(function(l){ var d=new Date(l.created_at); return d.toDateString()===new Date().toDateString()&&l.tipo==='uscita'; }).length < 2; },
+      titolo: '🌙 Passeggiata serale di '+cane.nome, corpo: 'Un\'ultima uscita prima di dormire!' }
+  ];
+
+  slots.forEach(function(slot){
+    var ms = minutiA(slot.h, slot.m);
+    if(ms < 0) return;
+    setTimeout(function(){
+      if(slot.check()){
+        inviaNotifica(slot.titolo, slot.corpo, '/logo.jpeg', 'tama-'+slot.h);
+      }
+    }, ms);
+  });
+
+  // Reminder vaccini/farmaci del giorno
+  var oggi = new Date().toISOString().substring(0,10);
+  var reminders = JSON.parse(localStorage.getItem('bp_reminders')||'[]');
+  reminders.forEach(function(r){
+    if(r.data === oggi){
+      setTimeout(function(){
+        var ico = r.tipo==='vaccino'?'💉':r.tipo==='farmaco'?'💊':'🏥';
+        inviaNotifica(
+          ico+' Reminder '+r.caneNome,
+          r.testo,
+          '/logo.jpeg',
+          'reminder-fam-'+r.tipo
+        );
+      }, 5000);
+    }
+  });
 }
 
 async function salvaLogFamiglia(tipo, btn){
