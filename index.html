@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.66';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.67';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9243,7 +9243,7 @@ function applicaModalita(mod){
             return '<button onclick="switchFamTab(\''+t.id+'\')" id="ftab-'+t.id+'" class="ftab" '
               +'style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 4px;border:none;border-radius:12px;cursor:pointer;'
               +'background:'+(att?'#fff':'transparent')+';box-shadow:'+(att?'0 2px 8px rgba(13,71,161,.12)':'none')+';transition:all .2s">'
-              +'<span style="font-size:18px;line-height:1">'+t.ico+'</span>'
+              +'<span style="font-size:22px;line-height:1">'+t.ico+'</span>'
               +'<span style="font-size:9px;font-weight:800;color:'+(att?'#0D47A1':'#9ab0cc')+';letter-spacing:.01em">'+t.label+'</span>'
               +'</button>';
           }).join('')
@@ -9278,7 +9278,7 @@ function applicaModalita(mod){
             +'style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;'
             +'border:none;cursor:pointer;border-radius:12px;padding:6px 2px;gap:1px;'
             +'background:'+(att?'#EEF3FB':'transparent')+';transition:all .2s">'
-            +'<span style="font-size:20px;line-height:1.2">'+t.ico+'</span>'
+            +'<span style="font-size:24px;line-height:1.2">'+t.ico+'</span>'
             +'<span style="font-size:9px;font-weight:800;color:'+(att?'#0D47A1':'#9ab0cc')+'">'+t.label+'</span>'
             +'</button>';
         }).join('');
@@ -10195,10 +10195,10 @@ function renderHealthDashboard(container){
     ['📸','Foto','foto','#E8F5E9','#66BB6A']
   ].map(function(a){
     return '<button ontouchstart="" onclick="aggiungiLogFamiglia(\''+a[2]+'\')" '
-      +'style="background:'+a[3]+';border:1.5px solid '+a[4]+';border-radius:12px;padding:12px 4px;cursor:pointer;'
-      +'text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px">'
-      +'<span style="font-size:24px">'+a[0]+'</span>'
-      +'<span style="font-size:10px;font-weight:700;color:#4A6080">'+a[1]+'</span>'
+      +'style="background:'+a[3]+';border:1.5px solid '+a[4]+';border-radius:14px;padding:16px 4px;cursor:pointer;'
+      +'text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px">'
+      +'<span style="font-size:36px;line-height:1">'+a[0]+'</span>'
+      +'<span style="font-size:11px;font-weight:700;color:#4A6080">'+a[1]+'</span>'
       +'</button>';
   }).join('')
   +'</div></div>';
