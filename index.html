@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.63';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.64';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -11089,6 +11089,38 @@ function calcolaDistanzaKm(lat1,lon1,lat2,lon2){
 function renderMembriFamiglia(container){
   var codice = _famigliaDati ? _famigliaDati.codice_invito : '—';
 
+  // Obiettivo settimana: lunedì → domenica
+  var _lunedi = new Date();
+  _lunedi.setDate(_lunedi.getDate() - ((_lunedi.getDay()+6)%7));
+  _lunedi.setHours(0,0,0,0);
+  var _lunediIso = _lunedi.toISOString();
+  var _logSettimana = _famigliaLogTutti.filter(function(l){ return l.created_at >= _lunediIso; });
+  var _pastiSett = _logSettimana.filter(function(l){return l.tipo==='pasto';}).length;
+  var _usciteSett = _logSettimana.filter(function(l){return l.tipo==='uscita';}).length;
+  var _kmSett = 0;
+  _logSettimana.forEach(function(l){
+    if(l.dati&&(l.dati.km||l.dati.distanza_km))
+      _kmSett += parseFloat(l.dati.km||l.dati.distanza_km)||0;
+  });
+  _kmSett = Math.round(_kmSett*10)/10;
+  var _fotoSett = _logSettimana.filter(function(l){return l.tipo==='foto';}).length;
+  var _nCani = _famigliaCani.length || 1;
+  var _targetPasti = _nCani * 14;
+  var _targetUscite = _nCani * 14;
+  var _targetKm = _nCani * 10;
+  var _targetFoto = 3;
+  var _objScore = Math.min(100, Math.round(
+    (_pastiSett/_targetPasti*25) +
+    (_usciteSett/_targetUscite*35) +
+    (_kmSett/_targetKm*30) +
+    (_fotoSett/_targetFoto*10)
+  ));
+  var _objLabel = _objScore>=100?'🏆 Obiettivo raggiunto!'
+    :_objScore>=75?'💪 Quasi ci siamo!'
+    :_objScore>=50?'👍 Buon ritmo!'
+    :_objScore>=25?'🐾 Si riparte!'
+    :'😴 Iniziamo questa settimana!';
+
   // Calcola punti per membro dai log del mese
   var inizioMese = new Date();
   inizioMese.setDate(1); inizioMese.setHours(0,0,0,0);
@@ -11109,8 +11141,39 @@ function renderMembriFamiglia(container){
   var medaglie = ['🥇','🥈','🥉'];
 
   container.innerHTML =
+    // Obiettivo settimana
+    '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(13,71,161,.06)">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#0D47A1">🎯 Obiettivo settimana</div>'
+      +'<div style="font-size:10px;color:#9ab0cc">Lunedì → Domenica</div>'
+    +'</div>'
+    +'<div style="background:#EEF3FB;border-radius:20px;height:10px;margin-bottom:8px;overflow:hidden">'
+      +'<div style="background:linear-gradient(90deg,#0D47A1,#C9A961);height:100%;border-radius:20px;transition:width .8s ease;width:'+_objScore+'%"></div>'
+    +'</div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
+      +'<div style="font-size:11px;font-weight:700;color:#0D47A1">'+_objLabel+'</div>'
+      +'<div style="font-size:11px;color:#9ab0cc">'+_objScore+'%</div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'
+    +[
+      {ico:'🍖',val:_pastiSett,max:_targetPasti,label:'pasti'},
+      {ico:'🦮',val:_usciteSett,max:_targetUscite,label:'uscite'},
+      {ico:'🏃',val:_kmSett,max:_targetKm,label:'km'},
+      {ico:'📸',val:_fotoSett,max:_targetFoto,label:'foto'}
+    ].map(function(s){
+      var pct = Math.min(100,Math.round((s.val/s.max)*100));
+      var done = pct>=100;
+      return '<div style="background:'+(done?'#F0FFF4':'#F4F7FE')+';border-radius:10px;padding:8px;text-align:center;border:1.5px solid '+(done?'#A8D8B8':'#DDEAFF')+'">'
+        +'<div style="font-size:16px">'+s.ico+'</div>'
+        +'<div style="font-size:12px;font-weight:800;color:'+(done?'#1a7a4a':'#0D47A1')+'">'+s.val+'<span style="font-size:9px;color:#9ab0cc">/'+s.max+'</span></div>'
+        +'<div style="font-size:9px;color:#9ab0cc">'+s.label+'</div>'
+        +(done?'<div style="font-size:9px;color:#1a7a4a;font-weight:700">✓</div>':'')
+        +'</div>';
+    }).join('')
+    +'</div>'
+    +'</div>'
     // Dog Score mensile branco
-    '<div style="background:linear-gradient(135deg,#1a1a3a,#0D47A1);border-radius:16px;padding:16px;margin-bottom:16px;color:#fff;text-align:center">'
+    +'<div style="background:linear-gradient(135deg,#1a1a3a,#0D47A1);border-radius:16px;padding:16px;margin-bottom:16px;color:#fff;text-align:center">'
       +'<div style="font-size:10px;font-weight:800;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">'
       +'🏆 Dog Score del branco — '+new Date().toLocaleString('it-IT',{month:'long',year:'numeric'})+'</div>'
       +'<div style="font-size:48px;font-weight:900;color:#C9A961;line-height:1">'
