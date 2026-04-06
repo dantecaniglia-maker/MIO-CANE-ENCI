@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.70';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.71';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -11240,16 +11240,17 @@ function renderServiziFamiglia(container){
     +'<div style="font-size:12px;color:#9ab0cc">Trova vet, toelettatori e dog park vicino a te</div>'
     +'</div>'
     +'<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px">'
-    +[['🏥','Veterinari','veterinary_care'],
-      ['✂️','Toelettatori','pet_store'],
-      ['🌳','Dog Park','park'],
-      ['🏨','Pensioni','lodging'],
-      ['🛒','Pet Shop','pet_store']
+    +[
+      {ico:'🏥', label:'Veterinari',   key:'vet'},
+      {ico:'✂️', label:'Toelettatori', key:'groomer'},
+      {ico:'🌳', label:'Dog Park',     key:'dogpark'},
+      {ico:'🏨', label:'Pensioni',     key:'pension'},
+      {ico:'🛒', label:'Pet Shop',     key:'petshop'}
     ].map(function(c,i){
-      return '<button onclick="cercaServiziVicini(\''+c[2]+'\',\''+c[0]+' '+c[1]+'\')" '
+      return '<button onclick="cercaServiziVicini(\''+c.key+'\',\''+c.ico+' '+c.label+'\')" '
         +'style="flex-shrink:0;background:'+(i===0?'#0D47A1':'#EEF3FB')+';color:'+(i===0?'#fff':'#6B8BB0')+';'
         +'border:none;border-radius:20px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">'
-        +c[0]+' '+c[1]+'</button>';
+        +c.ico+' '+c.label+'</button>';
     }).join('')
     +'</div>'
     +'<div id="fam-servizi-list">'
@@ -11257,86 +11258,107 @@ function renderServiziFamiglia(container){
     +'<div style="font-size:40px;margin-bottom:12px">📍</div>'
     +'<div style="font-weight:600;margin-bottom:8px">Trova servizi vicino a te</div>'
     +'<div style="font-size:13px">Seleziona una categoria sopra</div>'
-    +'</div>'
-    +'</div>';
+    +'</div></div>';
 }
 
 async function cercaServiziVicini(tipo, etichetta){
   var lista = document.getElementById('fam-servizi-list');
   if(!lista) return;
-  lista.innerHTML = '<div style="text-align:center;padding:30px;color:#9ab0cc">⏳ Localizzazione in corso...</div>';
+  lista.innerHTML = '<div style="text-align:center;padding:30px;color:#9ab0cc">⏳ Ricerca in corso...</div>';
 
-  document.querySelectorAll('#fam-tab-content button').forEach(function(b){
-    if(b.textContent.trim()===etichetta.trim()){
-      b.style.background='#0D47A1'; b.style.color='#fff';
-    } else if(b.style.borderRadius==='20px'){
-      b.style.background='#EEF3FB'; b.style.color='#6B8BB0';
-    }
-  });
+  // Query Overpass corrette per ogni tipo
+  var queries = {
+    vet:      '["amenity"="veterinary"]',
+    groomer:  '["shop"="pet_grooming"]',
+    dogpark:  '["leisure"="dog_park"]',
+    pension:  '["amenity"="animal_boarding"]',
+    petshop:  '["shop"="pet"]'
+  };
+  var q = queries[tipo] || '["amenity"="veterinary"]';
 
   navigator.geolocation.getCurrentPosition(
     async function(pos){
       var lat = pos.coords.latitude;
       var lng = pos.coords.longitude;
-      var raggio = 50000;
+      var raggio = 50000; // 50km
+
       try {
+        // Query che cerca sia nodi che aree (way)
         var overpassQ = '[out:json][timeout:25];('
-          +'node'+_tipoOverpass(tipo)+'(around:'+raggio+','+lat+','+lng+');'
-          +'way'+_tipoOverpass(tipo)+'(around:'+raggio+','+lat+','+lng+');'
-          +');out center 20;';
-        var resp = await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(overpassQ));
+          +'node'+q+'(around:'+raggio+','+lat+','+lng+');'
+          +'way'+q+'(around:'+raggio+','+lat+','+lng+');'
+          +');out center 25;';
+
+        var resp = await fetch(
+          'https://overpass-api.de/api/interpreter',
+          { method:'POST', body:'data='+encodeURIComponent(overpassQ) }
+        );
         var data = await resp.json();
-        var places = (data.elements||[]).filter(function(e){ return e.tags&&e.tags.name; });
+        var places = (data.elements||[]).filter(function(e){
+          return e.tags && e.tags.name;
+        });
 
         if(!places.length){
-          lista.innerHTML = '<div style="text-align:center;padding:30px;color:#9ab0cc">Nessun risultato trovato entro 50km</div>';
+          lista.innerHTML = '<div style="text-align:center;padding:30px;color:#9ab0cc">'
+            +'<div style="font-size:32px;margin-bottom:8px">😔</div>'
+            +'Nessun risultato trovato entro 50km</div>';
           return;
         }
 
+        // Ordina per distanza
+        places = places.map(function(p){
+          var pLat = p.lat || (p.center&&p.center.lat) || lat;
+          var pLon = p.lon || (p.center&&p.center.lon) || lng;
+          p._dist = _distanzaKm(lat, lng, pLat, pLon);
+          p._lat = pLat; p._lon = pLon;
+          return p;
+        }).sort(function(a,b){ return a._dist-b._dist; });
+
         lista.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px">'
           +places.slice(0,20).map(function(p){
-            var pLat = p.lat||(p.center&&p.center.lat)||0;
-            var pLon = p.lon||(p.center&&p.center.lon)||0;
-            var dist = _distanzaKm(lat, lng, pLat, pLon);
-            var tel = p.tags['contact:phone']||p.tags.phone||null;
+            var tel = p.tags['contact:phone']||p.tags.phone||p.tags['phone']||null;
             var sito = p.tags.website||p.tags['contact:website']||null;
+            var addr = (p.tags['addr:street']||'')+(p.tags['addr:housenumber']?' '+p.tags['addr:housenumber']:'')+(p.tags['addr:city']?', '+p.tags['addr:city']:'');
+            var mapsUrl = 'https://www.google.com/maps/dir/?api=1&destination='+p._lat+','+p._lon;
+
             return '<div style="background:#fff;border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(13,71,161,.06)">'
-              +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">'
-                +'<div style="flex:1">'
+              +'<div style="display:flex;align-items:flex-start;gap:10px">'
+                +'<div style="flex:1;min-width:0">'
                   +'<div style="font-weight:700;font-size:14px;color:#1a1a3a">'+p.tags.name+'</div>'
-                  +(p.tags['addr:street']?'<div style="font-size:12px;color:#9ab0cc;margin-top:2px">'+p.tags['addr:street']+(p.tags['addr:housenumber']?' '+p.tags['addr:housenumber']:'')+'</div>':'')
-                  +'<div style="font-size:11px;color:#1565C0;font-weight:700;margin-top:4px">📍 '+dist.toFixed(1)+' km</div>'
+                  +(addr.trim()?'<div style="font-size:11px;color:#9ab0cc;margin-top:2px">'+addr.trim()+'</div>':'')
+                  +'<div style="display:flex;align-items:center;gap:8px;margin-top:6px">'
+                    +'<span style="font-size:11px;color:#1565C0;font-weight:700">📍 '+p._dist.toFixed(1)+' km</span>'
+                    +'<a href="'+mapsUrl+'" target="_blank" '
+                    +'style="font-size:11px;background:#E3F2FD;color:#1565C0;border-radius:6px;'
+                    +'padding:3px 8px;font-weight:700;text-decoration:none">🗺️ Naviga</a>'
+                  +'</div>'
                 +'</div>'
                 +'<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'
-                  +(tel?'<a href="tel:'+tel+'" style="background:#E8F5E9;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:#1a7a4a;text-decoration:none;cursor:pointer">📞 Chiama</a>':'')
-                  +(sito?'<a href="'+sito+'" target="_blank" style="background:#EEF3FB;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:#1565C0;text-decoration:none">🌐 Sito</a>':'')
+                  +(tel?'<a href="tel:'+tel+'" style="background:#E8F5E9;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:#1a7a4a;text-decoration:none">📞 Chiama</a>':'')
+                  +(sito?'<a href="'+sito+'" target="_blank" style="background:#EEF3FB;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:#1565C0;text-decoration:none">🌐 Sito</a>':'')
                 +'</div>'
               +'</div>'
               +'</div>';
           }).join('')
           +'</div>'
-          +'<div style="text-align:center;font-size:11px;color:#9ab0cc;margin-top:16px;padding-bottom:8px">'
-          +'Dati OpenStreetMap · '+places.length+' trovati</div>';
+          +'<div style="text-align:center;font-size:11px;color:#9ab0cc;margin-top:16px">'
+          +'Dati OpenStreetMap · '+Math.min(places.length,20)+'/'+places.length+' mostrati</div>';
+
       } catch(e){
-        lista.innerHTML = '<div style="text-align:center;padding:30px;color:#C0534A">Errore ricerca: '+e.message+'</div>';
+        lista.innerHTML = '<div style="text-align:center;padding:30px;color:#C0534A">'
+          +'❌ Errore ricerca<br><small>'+e.message+'</small></div>';
       }
     },
-    function(){
-      lista.innerHTML = '<div style="text-align:center;padding:30px;color:#C0534A">⚠️ Posizione non disponibile<br><small>Abilita la geolocalizzazione</small></div>';
+    function(err){
+      lista.innerHTML = '<div style="text-align:center;padding:30px;color:#C0534A">'
+        +'⚠️ Posizione non disponibile<br>'
+        +'<small>'+err.message+'</small><br><br>'
+        +'<button onclick="cercaServiziVicini(\''+tipo+'\',\''+etichetta+'\')" '
+        +'style="background:#0D47A1;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">'
+        +'🔄 Riprova</button></div>';
     },
-    {timeout:8000}
+    {enableHighAccuracy:true, timeout:15000, maximumAge:30000}
   );
-}
-
-function _tipoOverpass(tipo){
-  var map = {
-    veterinary_care: '["amenity"="veterinary"]',
-    pet_store: '["shop"="pet"]',
-    park: '["leisure"="dog_park"]',
-    lodging: '["amenity"="animal_boarding"]',
-    groomer: '["shop"="pet_grooming"]'
-  };
-  return map[tipo]||'["amenity"="veterinary"]';
 }
 
 function _distanzaKm(lat1,lon1,lat2,lon2){
