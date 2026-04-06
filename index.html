@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.61';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.62';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10840,6 +10840,12 @@ function togglePercorso(){
 function avviaPercorsoGPS(){
   if(!navigator.geolocation){ toast('GPS non disponibile su questo dispositivo'); return; }
   _gpsAttivo=true; _gpsPunti=[]; _gpsKm=0; _gpsStartTime=Date.now();
+  // WakeLock: impedisce allo schermo di spegnersi
+  if('wakeLock' in navigator){
+    navigator.wakeLock.request('screen').then(function(wl){
+      window._gpsWakeLock = wl;
+    }).catch(function(){});
+  }
   var btn=document.getElementById('fam-gps-btn'), stato=document.getElementById('fam-gps-stato');
   if(btn){ btn.textContent='⏹ Ferma percorso'; btn.style.background='linear-gradient(135deg,#C0534A,#9b3a33)'; }
   if(stato) stato.textContent='🟢 GPS attivo';
@@ -10873,6 +10879,11 @@ function avviaPercorsoGPS(){
 
 async function fermaPercorsoGPS(){
   _gpsAttivo=false;
+  // Rilascia WakeLock
+  if(window._gpsWakeLock){
+    window._gpsWakeLock.release().catch(function(){});
+    window._gpsWakeLock = null;
+  }
   if(_gpsWatchId){ navigator.geolocation.clearWatch(_gpsWatchId); _gpsWatchId=null; }
   if(_gpsTimerInterval){ clearInterval(_gpsTimerInterval); _gpsTimerInterval=null; }
   var btn=document.getElementById('fam-gps-btn'), stato=document.getElementById('fam-gps-stato');
@@ -10880,7 +10891,7 @@ async function fermaPercorsoGPS(){
   if(stato) stato.textContent='Percorso completato';
   var durataMins=Math.round((Date.now()-_gpsStartTime)/60000);
   var km=Math.round(_gpsKm*100)/100;
-  if(km<0.05){ toast('Percorso troppo breve — non salvato'); return; }
+  if(km<0.01){ toast('Nessun movimento rilevato'); return; }
   if(_famigliaDati&&_famigliaCaneSelezionato){
     var puntiPercorso=Math.round(km*10);
     await _supabase.from('famiglia_percorsi').insert({
@@ -10899,10 +10910,45 @@ async function fermaPercorsoGPS(){
     _famigliaLog.unshift({tipo:'uscita',created_at:nowIso,
       user_id:_currentUser.id,nickname_autore:nick,
       famiglia_id:_famigliaDati.id,dati:{km:km}});
+    _famigliaLogTutti.unshift({tipo:'uscita',created_at:nowIso,
+      cane_id:_famigliaCaneSelezionato.id,
+      user_id:_currentUser.id,nickname_autore:nick,
+      famiglia_id:_famigliaDati.id,dati:{km:km}});
     _famigliaPercorsi.unshift({nome:nomePercorso,
       distanza_km:km,durata_minuti:durataMins,created_at:nowIso});
     _salvFam();
-    toast('🎉 Percorso salvato! +'+puntiPercorso+'pt · '+km+' km');
+    var velMedia = durataMins>0 ? Math.round((km/durataMins)*60*10)/10 : 0;
+    var calorie = Math.round(km * 60);
+    var overlay = document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px';
+    overlay.innerHTML='<div style="background:#fff;border-radius:20px;padding:24px;width:100%;max-width:360px;text-align:center">'
+      +'<div style="font-size:48px;margin-bottom:8px">🎉</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#0D47A1;margin-bottom:4px">Percorso completato!</div>'
+      +'<div style="font-size:13px;color:#9ab0cc;margin-bottom:20px">'+new Date().toLocaleDateString('it-IT')+'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">'
+        +'<div style="background:#EEF3FB;border-radius:12px;padding:14px">'
+          +'<div style="font-size:28px;font-weight:800;color:#0D47A1">'+km+'</div>'
+          +'<div style="font-size:11px;color:#6B8BB0">km</div>'
+        +'</div>'
+        +'<div style="background:#EEF3FB;border-radius:12px;padding:14px">'
+          +'<div style="font-size:28px;font-weight:800;color:#0D47A1">'+durataMins+'</div>'
+          +'<div style="font-size:11px;color:#6B8BB0">minuti</div>'
+        +'</div>'
+        +'<div style="background:#EEF3FB;border-radius:12px;padding:14px">'
+          +'<div style="font-size:28px;font-weight:800;color:#0D47A1">'+velMedia+'</div>'
+          +'<div style="font-size:11px;color:#6B8BB0">km/h media</div>'
+        +'</div>'
+        +'<div style="background:#FFF8E7;border-radius:12px;padding:14px">'
+          +'<div style="font-size:28px;font-weight:800;color:#C9A961">+'+puntiPercorso+'</div>'
+          +'<div style="font-size:11px;color:#A88A41">punti</div>'
+        +'</div>'
+      +'</div>'
+      +'<div style="font-size:12px;color:#9ab0cc;margin-bottom:16px">🔥 ~'+calorie+' kcal bruciate</div>'
+      +'<button onclick="this.closest(\'[style*=fixed]\').remove()" '
+      +'style="width:100%;background:linear-gradient(135deg,#0D47A1,#1565C0);color:#fff;border:none;'
+      +'border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">Ottimo! 🐾</button>'
+      +'</div>';
+    document.body.appendChild(overlay);
     // Aggiorna storico visibile senza ricaricare la mappa
     _aggiornaStoricoPercorsi(document.getElementById('fam-storico-percorsi'));
     // Salva log uscita su Supabase (fire-and-forget)
