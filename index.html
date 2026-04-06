@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.69';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.70';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10197,7 +10197,13 @@ function renderHealthDashboard(container){
       +'<span style="font-size:11px;font-weight:700;color:#4A6080">'+a[1]+'</span>'
       +'</button>';
   }).join('')
-  +'</div></div>';
+  +'</div>'
+  +'<button ontouchstart="" onclick="apriRubricaEmergenze()" '
+  +'style="margin-top:10px;width:100%;background:#FFF3E0;border:1.5px solid #FF9800;border-radius:14px;padding:14px;cursor:pointer;'
+  +'display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:14px;color:#E65100">'
+  +'<span>🚨</span><span>Rubrica Emergenze</span>'
+  +'</button>'
+  +'</div>';
 }
 
 function tipoLogLabel(tipo){
@@ -11272,23 +11278,26 @@ async function cercaServiziVicini(tipo, etichetta){
     async function(pos){
       var lat = pos.coords.latitude;
       var lng = pos.coords.longitude;
-      var raggio = 5000;
+      var raggio = 50000;
       try {
-        var overpassQ = '[out:json][timeout:10];'
-          +'node["amenity"="'+_tipoOverpass(tipo)+'"](around:'+raggio+','+lat+','+lng+');'
-          +'out body 15;';
+        var overpassQ = '[out:json][timeout:25];('
+          +'node'+_tipoOverpass(tipo)+'(around:'+raggio+','+lat+','+lng+');'
+          +'way'+_tipoOverpass(tipo)+'(around:'+raggio+','+lat+','+lng+');'
+          +');out center 20;';
         var resp = await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(overpassQ));
         var data = await resp.json();
         var places = (data.elements||[]).filter(function(e){ return e.tags&&e.tags.name; });
 
         if(!places.length){
-          lista.innerHTML = '<div style="text-align:center;padding:30px;color:#9ab0cc">Nessun risultato trovato entro 5km</div>';
+          lista.innerHTML = '<div style="text-align:center;padding:30px;color:#9ab0cc">Nessun risultato trovato entro 50km</div>';
           return;
         }
 
         lista.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px">'
-          +places.slice(0,12).map(function(p){
-            var dist = _distanzaKm(lat, lng, p.lat, p.lon);
+          +places.slice(0,20).map(function(p){
+            var pLat = p.lat||(p.center&&p.center.lat)||0;
+            var pLon = p.lon||(p.center&&p.center.lon)||0;
+            var dist = _distanzaKm(lat, lng, pLat, pLon);
             var tel = p.tags['contact:phone']||p.tags.phone||null;
             var sito = p.tags.website||p.tags['contact:website']||null;
             return '<div style="background:#fff;border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(13,71,161,.06)">'
@@ -11321,12 +11330,13 @@ async function cercaServiziVicini(tipo, etichetta){
 
 function _tipoOverpass(tipo){
   var map = {
-    veterinary_care: 'veterinary',
-    pet_store: 'pet',
-    park: 'park',
-    lodging: 'hotel'
+    veterinary_care: '["amenity"="veterinary"]',
+    pet_store: '["shop"="pet"]',
+    park: '["leisure"="dog_park"]',
+    lodging: '["amenity"="animal_boarding"]',
+    groomer: '["shop"="pet_grooming"]'
   };
-  return map[tipo]||tipo;
+  return map[tipo]||'["amenity"="veterinary"]';
 }
 
 function _distanzaKm(lat1,lon1,lat2,lon2){
@@ -11337,6 +11347,122 @@ function _distanzaKm(lat1,lon1,lat2,lon2){
     +Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)
     *Math.sin(dLon/2)*Math.sin(dLon/2);
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function apriRubricaEmergenze(){
+  var overlay = document.createElement('div');
+  overlay.id = 'rubrica-emergenze-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.innerHTML = '<div style="background:#F4F7FE;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#E65100">🚨 Rubrica Emergenze</div>'
+      +'<button onclick="document.getElementById(\'rubrica-emergenze-overlay\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ab0cc">✕</button>'
+    +'</div>'
+    +'<div id="rubrica-emergenze-lista"></div>'
+    +'<button ontouchstart="" onclick="apriFormEmergenza(null)" style="margin-top:16px;width:100%;background:#FF9800;border:none;border-radius:14px;padding:14px;cursor:pointer;font-weight:800;font-size:15px;color:#fff">+ Aggiungi contatto</button>'
+    +'</div>';
+  document.body.appendChild(overlay);
+  _renderListaEmergenze();
+}
+
+function _renderListaEmergenze(){
+  var lista = document.getElementById('rubrica-emergenze-lista');
+  if(!lista) return;
+  var raw = localStorage.getItem('bp_emergenze') || '[]';
+  var contatti = [];
+  try { contatti = JSON.parse(raw); } catch(e){}
+  if(!contatti.length){
+    lista.innerHTML = '<div style="text-align:center;padding:30px;color:#9ab0cc;font-size:14px">Nessun contatto salvato.<br>Aggiungi veterinario, clinica, ecc.</div>';
+    return;
+  }
+  var icone = {veterinario:'🩺', clinica:'🏥', farmacia:'💊', pronto_soccorso:'🚑', altro:'📞'};
+  lista.innerHTML = contatti.map(function(c, i){
+    var ico = icone[c.tipo]||'📞';
+    return '<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(13,71,161,.06);display:flex;align-items:center;gap:12px">'
+      +'<div style="font-size:32px;flex-shrink:0">'+ico+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-weight:700;font-size:14px;color:#1a1a3a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.nome+'</div>'
+        +(c.note?'<div style="font-size:11px;color:#9ab0cc;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.note+'</div>':'')
+      +'</div>'
+      +'<div style="display:flex;gap:6px;flex-shrink:0">'
+        +(c.tel?'<a href="tel:'+c.tel+'" style="background:#E8F5E9;border:none;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;color:#1a7a4a;text-decoration:none;cursor:pointer">📞</a>':'')
+        +'<button onclick="apriFormEmergenza('+i+')" style="background:#EEF3FB;border:none;border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer;color:#1565C0">✏️</button>'
+        +'<button onclick="eliminaEmergenza('+i+')" style="background:#FFF3E0;border:none;border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer;color:#E65100">🗑</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function apriFormEmergenza(idx){
+  var raw = localStorage.getItem('bp_emergenze') || '[]';
+  var contatti = [];
+  try { contatti = JSON.parse(raw); } catch(e){}
+  var c = idx !== null ? (contatti[idx]||{}) : {};
+  var overlay = document.createElement('div');
+  overlay.id = 'form-emergenza-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999999;display:flex;align-items:center;justify-content:center';
+  var tipi = [
+    ['veterinario','🩺 Veterinario'],
+    ['clinica','🏥 Clinica veterinaria'],
+    ['farmacia','💊 Farmacia'],
+    ['pronto_soccorso','🚑 Pronto soccorso'],
+    ['altro','📞 Altro']
+  ];
+  overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:24px;width:90%;max-width:400px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:17px;font-weight:700;color:#E65100;margin-bottom:20px">'+(idx!==null?'✏️ Modifica':'➕ Nuovo')+' contatto</div>'
+    +'<div style="margin-bottom:12px">'
+      +'<label style="font-size:12px;font-weight:700;color:#4A6080;display:block;margin-bottom:4px">Tipo</label>'
+      +'<select id="fe-tipo" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #C9D8ED;font-size:14px;background:#F4F7FE">'
+      +tipi.map(function(t){ return '<option value="'+t[0]+'"'+(c.tipo===t[0]?' selected':'')+'>'+t[1]+'</option>'; }).join('')
+      +'</select>'
+    +'</div>'
+    +'<div style="margin-bottom:12px">'
+      +'<label style="font-size:12px;font-weight:700;color:#4A6080;display:block;margin-bottom:4px">Nome *</label>'
+      +'<input id="fe-nome" value="'+(c.nome||'')+'" placeholder="Es. Dr. Rossi" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #C9D8ED;font-size:14px;box-sizing:border-box">'
+    +'</div>'
+    +'<div style="margin-bottom:12px">'
+      +'<label style="font-size:12px;font-weight:700;color:#4A6080;display:block;margin-bottom:4px">Telefono</label>'
+      +'<input id="fe-tel" type="tel" value="'+(c.tel||'')+'" placeholder="+39 000 0000000" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #C9D8ED;font-size:14px;box-sizing:border-box">'
+    +'</div>'
+    +'<div style="margin-bottom:20px">'
+      +'<label style="font-size:12px;font-weight:700;color:#4A6080;display:block;margin-bottom:4px">Note</label>'
+      +'<input id="fe-note" value="'+(c.note||'')+'" placeholder="Indirizzo, orari, ecc." style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #C9D8ED;font-size:14px;box-sizing:border-box">'
+    +'</div>'
+    +'<div style="display:flex;gap:10px">'
+      +'<button onclick="document.getElementById(\'form-emergenza-overlay\').remove()" style="flex:1;background:#F4F7FE;border:none;border-radius:12px;padding:13px;font-weight:700;font-size:14px;color:#6B8BB0;cursor:pointer">Annulla</button>'
+      +'<button onclick="salvaEmergenza('+(idx!==null?idx:'null')+')" style="flex:2;background:#FF9800;border:none;border-radius:12px;padding:13px;font-weight:800;font-size:14px;color:#fff;cursor:pointer">Salva</button>'
+    +'</div>'
+    +'</div>';
+  document.body.appendChild(overlay);
+}
+
+function salvaEmergenza(idx){
+  var nome = (document.getElementById('fe-nome').value||'').trim();
+  if(!nome){ alert('Inserisci il nome'); return; }
+  var raw = localStorage.getItem('bp_emergenze') || '[]';
+  var contatti = [];
+  try { contatti = JSON.parse(raw); } catch(e){}
+  var c = {
+    tipo: document.getElementById('fe-tipo').value,
+    nome: nome,
+    tel: (document.getElementById('fe-tel').value||'').trim(),
+    note: (document.getElementById('fe-note').value||'').trim()
+  };
+  if(idx !== null && idx !== undefined){ contatti[idx] = c; }
+  else { contatti.push(c); }
+  localStorage.setItem('bp_emergenze', JSON.stringify(contatti));
+  document.getElementById('form-emergenza-overlay').remove();
+  _renderListaEmergenze();
+}
+
+function eliminaEmergenza(idx){
+  if(!confirm('Eliminare questo contatto?')) return;
+  var raw = localStorage.getItem('bp_emergenze') || '[]';
+  var contatti = [];
+  try { contatti = JSON.parse(raw); } catch(e){}
+  contatti.splice(idx, 1);
+  localStorage.setItem('bp_emergenze', JSON.stringify(contatti));
+  _renderListaEmergenze();
 }
 
 async function apriClassificaNazionale(){
