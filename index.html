@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.77';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.78';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9235,21 +9235,6 @@ function applicaModalita(mod){
         +'</div>'
         // Hero cane
         +'<div id="fam-cane-hero" style="padding:20px"></div>'
-        // Tab bar
-        +'<div style="background:#fff;border-bottom:1px solid #EEF3FB;position:sticky;top:0;z-index:10;padding:8px 12px 0">'
-          +'<div style="display:flex;gap:4px;background:#F4F7FE;border-radius:16px;padding:4px">'
-          +[{id:'home',ico:'🏠',label:'Home'},{id:'diario',ico:'📖',label:'Diario'},{id:'compiti',ico:'✅',label:'Compiti'},{id:'percorsi',ico:'🗺️',label:'GPS'},{id:'servizi',ico:'📍',label:'Servizi'},{id:'famiglia',ico:'👨‍👩‍👧',label:'Branco'}]
-          .map(function(t){
-            var att=t.id==='home';
-            return '<button onclick="switchFamTab(\''+t.id+'\')" id="ftab-'+t.id+'" class="ftab" '
-              +'style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 4px;border:none;border-radius:12px;cursor:pointer;'
-              +'background:'+(att?'#fff':'transparent')+';box-shadow:'+(att?'0 2px 8px rgba(13,71,161,.12)':'none')+';transition:all .2s">'
-              +'<span style="font-size:22px;line-height:1">'+t.ico+'</span>'
-              +'<span style="font-size:9px;font-weight:800;color:'+(att?'#0D47A1':'#9ab0cc')+';letter-spacing:.01em">'+t.label+'</span>'
-              +'</button>';
-          }).join('')
-          +'</div>'
-        +'</div>'
         // Contenuto tab
         +'<div id="fam-tab-content" style="padding:16px"></div>'
         +'<div style="text-align:center;padding:20px 16px 8px;font-size:10px;color:#9ab0cc;border-top:1px solid #EEF3FB;margin-top:8px">'
