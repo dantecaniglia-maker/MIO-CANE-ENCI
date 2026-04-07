@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.82';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.83';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9557,19 +9557,18 @@ function renderCacciaGPS(container){
         +'</button>';
     }).join('')
     +'</div>'
-    +(_cacciaWaypoints.length>0
-      ?'<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px;max-height:120px;overflow-y:auto">'
-        +'<div style="font-size:11px;font-weight:800;color:#558B2F;margin-bottom:6px">Waypoint salvati</div>'
-        +_cacciaWaypoints.slice().reverse().map(function(w){
-          var ico={capo:'🎯',ferma:'🐕',tartufo:'🍄',nota:'⚠️'}[w.tipo]||'📍';
-          return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px">'
-            +'<span>'+ico+'</span>'
-            +'<span style="font-weight:600">'+w.tipo.charAt(0).toUpperCase()+w.tipo.slice(1)+'</span>'
-            +'<span style="color:#9ab0cc;font-size:10px">'+new Date(w.ts).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})+'</span>'
-            +'</div>';
-        }).join('')
-        +'</div>'
-      :'')
+    +'<div id="caccia-wp-lista-container" style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px;max-height:120px;overflow-y:auto;display:'+(_cacciaWaypoints.length>0?'block':'none')+'">'
+    +'<div style="font-size:11px;font-weight:800;color:#558B2F;margin-bottom:6px">Waypoint salvati</div>'
+    +'<div id="caccia-wp-lista">'
+    +_cacciaWaypoints.slice().reverse().map(function(w){
+      var ico={capo:'🎯',ferma:'🐕',tartufo:'🍄',nota:'⚠️'}[w.tipo]||'📍';
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px">'
+        +'<span>'+ico+'</span>'
+        +'<span style="font-weight:600">'+w.tipo.charAt(0).toUpperCase()+w.tipo.slice(1)+'</span>'
+        +'<span style="color:#9ab0cc;font-size:10px">'+new Date(w.ts).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})+'</span>'
+        +'</div>';
+    }).join('')
+    +'</div></div>'
     +'<button onclick="fineUscitaCaccia()" '
     +'style="width:100%;background:linear-gradient(135deg,#C0534A,#8B1A1A);color:#fff;'
     +'border:none;border-radius:14px;padding:14px;font-size:14px;font-weight:700;cursor:pointer">🏁 Fine uscita</button>';
@@ -9610,7 +9609,11 @@ function _inizializzaMappaCaccia(){
 
 function _creaMappaL(){
   var el = document.getElementById('caccia-mappa');
-  if(!el || _cacciaLeafletMap) return;
+  if(!el) return;
+  if(_cacciaLeafletMap){
+    try { _cacciaLeafletMap.remove(); } catch(e){}
+    _cacciaLeafletMap = null;
+  }
   navigator.geolocation.getCurrentPosition(function(pos){
     var lat = pos.coords.latitude, lng = pos.coords.longitude;
     _cacciaLeafletMap = L.map('caccia-mappa').setView([lat,lng], 15);
@@ -9641,12 +9644,32 @@ function aggiungiWaypointCaccia(tipo){
         _cacciaMarkers.push(marker);
       }
       toast('📍 '+tipo.charAt(0).toUpperCase()+tipo.slice(1)+' segnato!');
-      var _tc = g('caccia-tab-content');
-      if(_tc) renderCacciaGPS(_tc);
+      _aggiornListaWaypoint();
     },
     function(){ toast('⚠️ Posizione non disponibile'); },
     {enableHighAccuracy:true, timeout:8000}
   );
+}
+
+function _aggiornListaWaypoint(){
+  var container = document.getElementById('caccia-wp-lista-container');
+  var lista = document.getElementById('caccia-wp-lista');
+  if(!container || !lista) return;
+  var cntEl = document.getElementById('caccia-wp-count');
+  if(cntEl) cntEl.textContent = _cacciaWaypoints.length+' waypoint';
+  if(_cacciaWaypoints.length===0){
+    container.style.display='none';
+    return;
+  }
+  container.style.display='block';
+  lista.innerHTML = _cacciaWaypoints.slice().reverse().map(function(w){
+    var ico={capo:'🎯',ferma:'🐕',tartufo:'🍄',nota:'⚠️'}[w.tipo]||'📍';
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px">'
+      +'<span>'+ico+'</span>'
+      +'<span style="font-weight:600">'+w.tipo.charAt(0).toUpperCase()+w.tipo.slice(1)+'</span>'
+      +'<span style="color:#9ab0cc;font-size:10px">'+new Date(w.ts).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})+'</span>'
+      +'</div>';
+  }).join('');
 }
 
 function _avviaTimerCaccia(){
@@ -9660,7 +9683,7 @@ function _avviaTimerCaccia(){
     var ore = Math.floor(mins/60);
     var mm = mins%60;
     el2.textContent = (ore>0?ore+'h ':'')+String(mm).padStart(2,'0')+'min';
-  }, 30000);
+  }, 60000);
 }
 
 function fineUscitaCaccia(){
