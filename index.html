@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.78';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.79';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10564,6 +10564,11 @@ async function completaCompitoFissoSingolo(caneId, tipo, orario, punti){
   _famigliaLog.unshift(entry);
   _famigliaLogTutti.unshift(entry);
   _salvFam();
+  // Aggiorna classifica dopo ogni compito
+  setTimeout(function(){
+    var _tc = g('fam-tab-content');
+    if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
+  }, 300);
   var _tc = g('fam-tab-content');
   if(_tc && _famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
   if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
@@ -10613,6 +10618,11 @@ async function completaCompitoFissoTutti(key){
     });
   if(inserts.length===0){ toast('✅ Tutti i cani già completati!'); return; }
   _salvFam();
+  // Aggiorna classifica dopo ogni compito
+  setTimeout(function(){
+    var _tc = g('fam-tab-content');
+    if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
+  }, 300);
   var _tc = g('fam-tab-content');
   if(_tc && _famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
   if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
@@ -11008,6 +11018,11 @@ async function fermaPercorsoGPS(){
     _famigliaPercorsi.unshift({nome:nomePercorso,
       distanza_km:km,durata_minuti:durataMins,created_at:nowIso});
     _salvFam();
+    // Aggiorna classifica dopo percorso GPS
+    setTimeout(function(){
+      var _tc = g('fam-tab-content');
+      if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
+    }, 500);
     var velMedia = durataMins>0 ? Math.round((km/durataMins)*60*10)/10 : 0;
     var calorie = Math.round(km * 60);
     var overlay = document.createElement('div');
@@ -12028,6 +12043,12 @@ async function salvaLogFamigliaAvanzato(tipo, btn){
       dati: Object.keys(dati).length ? dati : null
     });
     if(res.error) throw res.error;
+
+    // Aggiorna punteggio_mese su Supabase per classifica nazionale
+    setTimeout(function(){
+      var _tc = g('fam-tab-content');
+      if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
+    }, 500);
 
     btn.closest('[style*=fixed]').remove();
     _famigliaLog.unshift({
