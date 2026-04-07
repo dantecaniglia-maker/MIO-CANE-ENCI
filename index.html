@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.79';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.80';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9186,8 +9186,8 @@ function getModalita(){
 }
 
 function scegliModalita(mod){
-  if(mod === 'agility' || mod === 'caccia'){
-    toast('🚀 ' + (mod==='agility'?'Agility':'Caccia') + ' — Prossimamente!');
+  if(mod === 'agility'){
+    toast('🚀 Agility — Prossimamente!');
     return;
   }
   localStorage.setItem(_modalitaKey, mod);
@@ -9196,7 +9196,7 @@ function scegliModalita(mod){
     _supabase.from('profili').update({modalita: mod}).eq('id', _currentUser.id).then(function(){});
   }
   applicaModalita(mod);
-  toast('✅ Modalità ' + (mod==='allevatore'?'Allevatore':'Famiglia') + ' attivata!');
+  toast('✅ Modalità ' + (mod==='allevatore'?'Allevatore':mod==='famiglia'?'Famiglia':'Caccia & Tartufo') + ' attivata!');
 }
 
 function applicaModalita(mod){
@@ -9304,6 +9304,289 @@ function applicaModalita(mod){
     var _fab2 = g('chat-fab'); if(_fab2){ _fab2.style.zIndex='9998'; _fab2.style.bottom='72px'; }
     if(_pollingInterval){ clearInterval(_pollingInterval); _pollingInterval=null; }
   }
+
+  if(mod==='caccia'){
+    var _oldHc = g('home-caccia');
+    if(_oldHc) _oldHc.remove();
+    var hc = document.createElement('div');
+    hc.id = 'home-caccia';
+    hc.style.cssText = 'display:block;position:fixed;inset:0;background:#F1F8E9;z-index:9980;overflow-y:auto;padding-bottom:80px';
+    hc.innerHTML =
+      '<div style="background:linear-gradient(135deg,#2E7D32,#388E3C);padding:20px;display:flex;align-items:center;justify-content:space-between">'
+        +'<div style="display:flex;align-items:center;gap:10px">'
+          +'<img src="logo.jpeg" style="width:36px;height:36px;border-radius:8px;object-fit:cover" onerror="this.style.display=\'none\'"/>'
+          +'<div>'
+            +'<div style="font-family:\'Playfair Display\',serif;color:#fff;font-weight:700;font-size:16px">Breed<span style="color:#C9A961">Ped</span> Caccia</div>'
+            +'<div style="font-size:11px;color:rgba(255,255,255,.6)">Caccia & Tartufo</div>'
+          +'</div>'
+        +'</div>'
+        +'<div style="display:flex;gap:8px">'
+          +'<button onclick="scegliModalita(\'famiglia\')" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:6px 10px;color:#fff;font-size:11px;font-weight:600;cursor:pointer">🏠 Famiglia</button>'
+          +'<button onclick="scegliModalita(\'allevatore\')" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:6px 10px;color:#fff;font-size:11px;font-weight:600;cursor:pointer">🏆 Allevatore</button>'
+          +'<button onclick="logout()" style="background:rgba(255,0,0,.2);border:1px solid rgba(255,0,0,.3);border-radius:8px;padding:6px 10px;color:#fff;font-size:11px;font-weight:600;cursor:pointer">🚪 Esci</button>'
+        +'</div>'
+      +'</div>'
+      +'<div id="caccia-tab-content" style="padding:16px"></div>'
+      +'<div style="text-align:center;padding:12px 16px 20px;font-size:10px;color:#558B2F">'
+      +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong>'
+      +' · Breed<span style="color:#C9A961">Ped</span> v'+APP_VERSION
+      +'</div>';
+    document.body.appendChild(hc);
+
+    if(g('home-famiglia')) g('home-famiglia').style.display='none';
+    if(g('bottom-nav')) g('bottom-nav').classList.add('fam-hidden');
+    var fbn = g('fam-bottom-nav'); if(fbn) fbn.style.display='none';
+
+    if(!g('caccia-bottom-nav')){
+      var cbn = document.createElement('nav');
+      cbn.id = 'caccia-bottom-nav';
+      cbn.style.cssText = 'position:fixed;bottom:0;left:0;width:100%;'
+        +'background:#fff;border-top:1px solid #C8E6C9;z-index:99982;'
+        +'display:flex;align-items:stretch;padding:6px 8px;gap:4px;'
+        +'box-shadow:0 -4px 20px rgba(46,125,50,.1)';
+      cbn.innerHTML = [
+        {tab:'caccia-home',      ico:'🏠', label:'Home'},
+        {tab:'caccia-gps',       ico:'🗺️', label:'GPS'},
+        {tab:'caccia-diario',    ico:'📖', label:'Diario'},
+        {tab:'caccia-prove',     ico:'🏆', label:'Prove'},
+        {tab:'caccia-calendario',ico:'📅', label:'Calendario'}
+      ].map(function(t,i){
+        var att = i===0;
+        return '<button onclick="switchCacciaTab(\''+t.tab+'\')" id="ctab-'+t.tab+'" '
+          +'style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;'
+          +'border:none;cursor:pointer;border-radius:12px;padding:6px 2px;gap:1px;'
+          +'background:'+(att?'#E8F5E9':'transparent')+';transition:all .2s">'
+          +'<span style="font-size:22px;line-height:1.2">'+t.ico+'</span>'
+          +'<span style="font-size:9px;font-weight:800;color:'+(att?'#2E7D32':'#9ab0cc')+';letter-spacing:.01em">'+t.label+'</span>'
+          +'</button>';
+      }).join('');
+      document.body.appendChild(cbn);
+    } else {
+      g('caccia-bottom-nav').style.display='flex';
+    }
+
+    switchCacciaTab('caccia-home');
+
+  } else if(mod!=='famiglia'){
+    var _hc2 = g('home-caccia');
+    if(_hc2) _hc2.style.display='none';
+    var _cbn2 = g('caccia-bottom-nav');
+    if(_cbn2) _cbn2.style.display='none';
+  }
+}
+
+/* ════════════════════════════════════════
+   MODULO CACCIA & TARTUFO
+════════════════════════════════════════ */
+
+var _cacciaTabAttiva = 'caccia-home';
+
+function switchCacciaTab(tab){
+  _cacciaTabAttiva = tab;
+  ['caccia-home','caccia-gps','caccia-diario','caccia-prove','caccia-calendario']
+    .forEach(function(t){
+      var b = document.getElementById('ctab-'+t);
+      if(!b) return;
+      b.style.background = t===tab ? '#E8F5E9' : 'transparent';
+      b.querySelector('span:last-child').style.color = t===tab ? '#2E7D32' : '#9ab0cc';
+    });
+  var content = g('caccia-tab-content');
+  if(!content) return;
+  if(tab==='caccia-home')       renderCacciaHome(content);
+  else if(tab==='caccia-gps')   renderCacciaGPS(content);
+  else if(tab==='caccia-diario') renderCacciaDiario(content);
+  else if(tab==='caccia-prove')  renderCacciaProve(content);
+  else if(tab==='caccia-calendario') renderCacciaCalendario(content);
+}
+
+function renderCacciaHome(container){
+  var _uscite = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+  var _stagione = new Date().getFullYear();
+  var _usciteStagione = _uscite.filter(function(u){
+    return new Date(u.data).getFullYear() === _stagione;
+  });
+  var _kmTotali = _usciteStagione.reduce(function(a,u){ return a+(u.km||0); }, 0);
+  var _oreTotali = _usciteStagione.reduce(function(a,u){ return a+(u.ore||0); }, 0);
+
+  container.innerHTML =
+    '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;'
+    +'box-shadow:0 2px 8px rgba(46,125,50,.08)">'
+    +'<div style="font-size:18px;font-weight:700;color:#1a1a3a;margin-bottom:4px">🐕‍🦺 Stagione '+_stagione+'</div>'
+    +'<div style="font-size:12px;color:#6B8BB0">La tua stagione venatoria e di cerca</div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">'
+    +[
+      {ico:'🗓️', val:_usciteStagione.length, label:'Uscite'},
+      {ico:'🏃', val:Math.round(_kmTotali*10)/10+' km', label:'Percorsi'},
+      {ico:'⏱️', val:_oreTotali+'h', label:'In campo'}
+    ].map(function(s){
+      return '<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;'
+        +'box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9">'
+        +'<div style="font-size:24px;margin-bottom:4px">'+s.ico+'</div>'
+        +'<div style="font-size:20px;font-weight:800;color:#2E7D32">'+s.val+'</div>'
+        +'<div style="font-size:10px;color:#9ab0cc">'+s.label+'</div>'
+        +'</div>';
+    }).join('')
+    +'</div>'
+    +(_usciteStagione.length>0
+      ?'<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;'
+        +'box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9">'
+        +'<div style="font-size:11px;font-weight:800;color:#558B2F;text-transform:uppercase;'
+        +'letter-spacing:.1em;margin-bottom:10px">📖 Ultima uscita</div>'
+        +(function(){
+          var u = _usciteStagione[_usciteStagione.length-1];
+          return '<div style="font-weight:700;color:#1a1a3a">'+u.zona+'</div>'
+            +'<div style="font-size:12px;color:#9ab0cc;margin-top:2px">'
+            +new Date(u.data).toLocaleDateString('it-IT')+' · '+(u.km||0)+' km · '+(u.tipo||'Caccia')+'</div>';
+        })()
+        +'</div>'
+      :'')
+    +'<button onclick="switchCacciaTab(\'caccia-diario\')" '
+    +'style="width:100%;background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;'
+    +'border:none;border-radius:16px;padding:16px;font-size:15px;font-weight:700;cursor:pointer;'
+    +'display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px">'
+    +'<span style="font-size:22px">🐕‍🦺</span> Registra uscita'
+    +'</button>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +'<div onclick="switchCacciaTab(\'caccia-gps\')" '
+    +'style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;'
+    +'border:1.5px solid #C8E6C9;box-shadow:0 2px 8px rgba(46,125,50,.08)">'
+    +'<div style="font-size:28px;margin-bottom:6px">🗺️</div>'
+    +'<div style="font-size:12px;font-weight:700;color:#2E7D32">GPS Caccia</div>'
+    +'<div style="font-size:10px;color:#9ab0cc;margin-top:2px">Traccia il percorso</div>'
+    +'</div>'
+    +'<div onclick="switchCacciaTab(\'caccia-prove\')" '
+    +'style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;'
+    +'border:1.5px solid #C8E6C9;box-shadow:0 2px 8px rgba(46,125,50,.08)">'
+    +'<div style="font-size:28px;margin-bottom:6px">🏆</div>'
+    +'<div style="font-size:12px;font-weight:700;color:#2E7D32">Prove Lavoro</div>'
+    +'<div style="font-size:10px;color:#9ab0cc;margin-top:2px">FIDASC / ENCI</div>'
+    +'</div>'
+    +'</div>'
+    +'<div style="text-align:center;padding:20px 0 8px;font-size:10px;color:#9ab0cc">'
+    +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+}
+
+function renderCacciaGPS(container){
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:#558B2F">'
+    +'<div style="font-size:48px;margin-bottom:12px">🗺️</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;margin-bottom:8px">GPS Caccia</div>'
+    +'<div style="font-size:13px;color:#9ab0cc">Tracciamento percorso, waypoint e zone — in arrivo</div>'
+    +'</div>';
+}
+
+function renderCacciaDiario(container){
+  var _uscite = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+  container.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32">📖 Diario</div>'
+    +'<button onclick="apriNuovaUscitaCaccia()" '
+    +'style="background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;'
+    +'border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Uscita</button>'
+    +'</div>'
+    +(_uscite.length===0
+      ?'<div style="text-align:center;padding:40px;color:#9ab0cc">'
+        +'<div style="font-size:40px;margin-bottom:12px">📖</div>'
+        +'<div style="font-weight:600">Nessuna uscita registrata</div>'
+        +'<div style="font-size:13px;margin-top:4px">Registra la tua prima cacciata!</div>'
+        +'</div>'
+      :'<div style="display:flex;flex-direction:column;gap:10px">'
+        +_uscite.slice().reverse().map(function(u){
+          return '<div style="background:#fff;border-radius:14px;padding:14px;'
+            +'box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9">'
+            +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+              +'<div>'
+                +'<div style="font-weight:700;font-size:14px;color:#1a1a3a">'+u.zona+'</div>'
+                +'<div style="font-size:11px;color:#9ab0cc;margin-top:2px">'
+                +new Date(u.data).toLocaleDateString('it-IT')+' · '+(u.tipo||'Caccia')+'</div>'
+              +'</div>'
+              +'<div style="font-size:11px;font-weight:700;color:#2E7D32">'+(u.km||0)+' km</div>'
+            +'</div>'
+            +(u.note?'<div style="font-size:12px;color:#558B2F;margin-top:8px;font-style:italic">'+u.note+'</div>':'')
+            +'</div>';
+        }).join('')
+        +'</div>');
+}
+
+function renderCacciaProve(container){
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:#558B2F">'
+    +'<div style="font-size:48px;margin-bottom:12px">🏆</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;margin-bottom:8px">Prove di Lavoro</div>'
+    +'<div style="font-size:13px;color:#9ab0cc">Registro FIDASC/ENCI con scan AI — in arrivo</div>'
+    +'</div>';
+}
+
+function renderCacciaCalendario(container){
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:#558B2F">'
+    +'<div style="font-size:48px;margin-bottom:12px">📅</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;margin-bottom:8px">Calendario Venatorio</div>'
+    +'<div style="font-size:13px;color:#9ab0cc">Date apertura/chiusura per regione — in arrivo</div>'
+    +'</div>';
+}
+
+function apriNuovaUscitaCaccia(){
+  var oggi = new Date().toISOString().substring(0,10);
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:16px">🐕‍🦺 Nuova uscita</div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Tipo *</label>'
+    +'<select id="cu-tipo" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
+    +'<option value="Caccia">🎯 Caccia</option>'
+    +'<option value="Cerca tartufo">🍄 Cerca tartufo</option>'
+    +'<option value="Allenamento">🏃 Allenamento</option>'
+    +'<option value="Prova lavoro">🏆 Prova lavoro</option>'
+    +'</select></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Zona / Località *</label>'
+    +'<input id="cu-zona" placeholder="Es. Bosco di Velino, AQ" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Data</label><input type="date" id="cu-data" value="'+oggi+'" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px"/></div>'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Ore in campo</label><input type="number" id="cu-ore" placeholder="Es. 4" step="0.5" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px"/></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Km percorsi</label><input type="number" id="cu-km" placeholder="Es. 8" step="0.1" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px"/></div>'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Cane usato</label><input id="cu-cane" placeholder="Es. Birba" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px"/></div>'
+    +'</div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Meteo</label>'
+    +'<select id="cu-meteo" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
+    +'<option value="">— seleziona —</option>'
+    +'<option>☀️ Sole</option><option>⛅ Parzialmente nuvoloso</option>'
+    +'<option>🌧️ Pioggia</option><option>🌫️ Nebbia</option><option>❄️ Neve</option>'
+    +'</select></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Note / Risultato</label>'
+    +'<textarea id="cu-note" rows="3" placeholder="Es. Ottima cerca, 3 ferme..." style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"></textarea></div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button onclick="this.closest(\'[style*=fixed]\').remove()" '
+    +'style="flex:1;background:#F1F8E9;color:#558B2F;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
+    +'<button onclick="salvaUscitaCaccia(this)" '
+    +'style="flex:2;background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;'
+    +'border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva uscita</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+}
+
+function salvaUscitaCaccia(btn){
+  var zona = g('cu-zona')&&g('cu-zona').value.trim();
+  if(!zona){ toast('Inserisci la zona'); return; }
+  btn.disabled=true; btn.textContent='⏳';
+  var uscita = {
+    tipo: g('cu-tipo').value,
+    zona: zona,
+    data: g('cu-data').value,
+    ore: parseFloat(g('cu-ore').value)||0,
+    km: parseFloat(g('cu-km').value)||0,
+    cane: g('cu-cane').value.trim()||null,
+    meteo: g('cu-meteo').value||null,
+    note: g('cu-note').value.trim()||null,
+    id: Date.now()
+  };
+  var _uscite = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+  _uscite.push(uscita);
+  localStorage.setItem('bp_caccia_uscite', JSON.stringify(_uscite));
+  btn.closest('[style*=fixed]').remove();
+  toast('✅ Uscita salvata!');
+  var _tc = g('caccia-tab-content');
+  if(_tc) renderCacciaDiario(_tc);
 }
 
 /* ════════════════════════════════════════
@@ -14742,12 +15025,12 @@ function sendChat(){
         <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Agility</div>
         <div style="font-size:11px;color:#6B8BB0;line-height:1.4">Percorsi, timer, gare<br>e statistiche<br><span style="color:#C9A961;font-weight:700">Prossimamente</span></div>
       </div>
-      <div onclick="scegliModalita('caccia')" style="border:2px solid #DDEAFF;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:#fff"
-        onmouseover="this.style.borderColor='#C9A961';this.style.background='#FFFBF0'"
-        onmouseout="this.style.borderColor='#DDEAFF';this.style.background='#fff'">
-        <div style="font-size:36px;margin-bottom:10px">🎯</div>
-        <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Caccia</div>
-        <div style="font-size:11px;color:#6B8BB0;line-height:1.4">Prove FIDASC, GPS<br>statistiche lavoro<br><span style="color:#C9A961;font-weight:700">Prossimamente</span></div>
+      <div onclick="scegliModalita('caccia')" style="border:2px solid #C8E6C9;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:#F9FBE7"
+        onmouseover="this.style.borderColor='#2E7D32';this.style.background='#F1F8E9'"
+        onmouseout="this.style.borderColor='#C8E6C9';this.style.background='#F9FBE7'">
+        <div style="font-size:36px;margin-bottom:10px">🐕‍🦺</div>
+        <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Caccia & Tartufo</div>
+        <div style="font-size:11px;color:#6B8BB0;line-height:1.4">GPS, diario, prove<br>FIDASC, zone segrete</div>
       </div>
     </div>
     <div style="font-size:11px;color:#9ab0cc">Puoi aggiungere altre modalità in Impostazioni</div>
