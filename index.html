@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.80';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.81';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9380,6 +9380,12 @@ function applicaModalita(mod){
 ════════════════════════════════════════ */
 
 var _cacciaTabAttiva = 'caccia-home';
+var _cacciaUscitaAttiva = null;
+var _cacciaWaypoints = [];
+var _cacciaLeafletMap = null;
+var _cacciaMarkers = [];
+var _cacciaStartTime = null;
+var _cacciaTimerInterval = null;
 
 function switchCacciaTab(tab){
   _cacciaTabAttiva = tab;
@@ -9468,11 +9474,290 @@ function renderCacciaHome(container){
 }
 
 function renderCacciaGPS(container){
-  container.innerHTML = '<div style="text-align:center;padding:40px;color:#558B2F">'
-    +'<div style="font-size:48px;margin-bottom:12px">🗺️</div>'
-    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;margin-bottom:8px">GPS Caccia</div>'
-    +'<div style="font-size:13px;color:#9ab0cc">Tracciamento percorso, waypoint e zone — in arrivo</div>'
-    +'</div>';
+  var _uscitaInCorso = _cacciaUscitaAttiva !== null;
+
+  if(!_uscitaInCorso){
+    container.innerHTML =
+      '<div style="text-align:center;padding:32px 16px 16px">'
+      +'<div style="font-size:56px;margin-bottom:12px">🗺️</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#2E7D32;margin-bottom:8px">GPS Caccia & Tartufo</div>'
+      +'<div style="font-size:13px;color:#9ab0cc;margin-bottom:24px">Segna waypoint durante l\'uscita.<br>Il percorso viene salvato automaticamente.</div>'
+      +'</div>'
+      +'<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(46,125,50,.08)">'
+      +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Tipo uscita</label>'
+      +'<select id="gps-tipo" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
+      +'<option value="Caccia">🎯 Caccia</option>'
+      +'<option value="Cerca tartufo">🍄 Cerca tartufo</option>'
+      +'<option value="Allenamento">🏃 Allenamento</option>'
+      +'</select></div>'
+      +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Zona</label>'
+      +'<input id="gps-zona" placeholder="Es. Bosco di Velino, AQ" '
+      +'style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+      +'<div style="margin-bottom:0"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Cane</label>'
+      +'<input id="gps-cane" placeholder="Es. Birba" '
+      +'style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+      +'</div>'
+      +'<button onclick="avviaCacciaGPS()" '
+      +'style="width:100%;background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;'
+      +'border:none;border-radius:16px;padding:18px;font-size:16px;font-weight:700;cursor:pointer">'
+      +'🗺️ Inizia uscita GPS</button>'
+      +(function(){
+        var _uscite = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]')
+          .filter(function(u){ return u.waypoints && u.waypoints.length>0; });
+        if(!_uscite.length) return '';
+        return '<div style="margin-top:20px">'
+          +'<div style="font-size:11px;font-weight:800;color:#558B2F;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">📍 Uscite con mappa</div>'
+          +'<div style="display:flex;flex-direction:column;gap:8px">'
+          +_uscite.slice(-5).reverse().map(function(u){
+            return '<div onclick="apriMappaSalvata('+u.id+')" '
+              +'style="background:#fff;border-radius:12px;padding:12px;cursor:pointer;'
+              +'border:1.5px solid #C8E6C9;display:flex;align-items:center;gap:10px">'
+              +'<span style="font-size:20px">🗺️</span>'
+              +'<div style="flex:1">'
+                +'<div style="font-weight:700;font-size:13px">'+u.zona+'</div>'
+                +'<div style="font-size:11px;color:#9ab0cc">'+new Date(u.data).toLocaleDateString('it-IT')+' · '+u.waypoints.length+' waypoint</div>'
+              +'</div>'
+              +'<span style="color:#9ab0cc">›</span>'
+              +'</div>';
+          }).join('')
+          +'</div></div>';
+      })();
+    return;
+  }
+
+  // Schermata uscita in corso
+  container.innerHTML =
+    '<div style="background:linear-gradient(135deg,#2E7D32,#388E3C);border-radius:16px;padding:16px;margin-bottom:12px;color:#fff">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+      +'<div>'
+        +'<div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.1em">Uscita in corso</div>'
+        +'<div style="font-weight:700;font-size:15px">'+(_cacciaUscitaAttiva.tipo||'Caccia')+'</div>'
+        +'<div style="font-size:11px;opacity:.7">'+(_cacciaUscitaAttiva.zona||'')+'</div>'
+      +'</div>'
+      +'<div style="text-align:right">'
+        +'<div id="caccia-timer" style="font-size:28px;font-weight:900;color:#C9A961">00min</div>'
+        +'<div style="font-size:11px;opacity:.6">'+_cacciaWaypoints.length+' waypoint</div>'
+      +'</div>'
+    +'</div>'
+    +'</div>'
+    +'<div id="caccia-mappa" style="height:300px;border-radius:16px;overflow:hidden;margin-bottom:12px;border:1.5px solid #C8E6C9"></div>'
+    +'<div style="font-size:11px;font-weight:800;color:#558B2F;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;text-align:center">Segna waypoint</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +[
+      {ico:'🎯', label:'Capo',    tipo:'capo',    color:'#C0534A', bg:'#FCE4EC'},
+      {ico:'🐕', label:'Ferma',   tipo:'ferma',   color:'#E65100', bg:'#FFF3E0'},
+      {ico:'🍄', label:'Tartufo', tipo:'tartufo', color:'#5D4037', bg:'#EFEBE9'},
+      {ico:'⚠️', label:'Nota',    tipo:'nota',    color:'#1565C0', bg:'#E3F2FD'}
+    ].map(function(w){
+      return '<button onclick="aggiungiWaypointCaccia(\''+w.tipo+'\')" '
+        +'style="background:'+w.bg+';border:2px solid '+w.color+';border-radius:14px;'
+        +'padding:18px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px">'
+        +'<span style="font-size:32px">'+w.ico+'</span>'
+        +'<span style="font-size:12px;font-weight:700;color:'+w.color+'">'+w.label+'</span>'
+        +'</button>';
+    }).join('')
+    +'</div>'
+    +(_cacciaWaypoints.length>0
+      ?'<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px;max-height:120px;overflow-y:auto">'
+        +'<div style="font-size:11px;font-weight:800;color:#558B2F;margin-bottom:6px">Waypoint salvati</div>'
+        +_cacciaWaypoints.slice().reverse().map(function(w){
+          var ico={capo:'🎯',ferma:'🐕',tartufo:'🍄',nota:'⚠️'}[w.tipo]||'📍';
+          return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px">'
+            +'<span>'+ico+'</span>'
+            +'<span style="font-weight:600">'+w.tipo.charAt(0).toUpperCase()+w.tipo.slice(1)+'</span>'
+            +'<span style="color:#9ab0cc;font-size:10px">'+new Date(w.ts).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})+'</span>'
+            +'</div>';
+        }).join('')
+        +'</div>'
+      :'')
+    +'<button onclick="fineUscitaCaccia()" '
+    +'style="width:100%;background:linear-gradient(135deg,#C0534A,#8B1A1A);color:#fff;'
+    +'border:none;border-radius:14px;padding:14px;font-size:14px;font-weight:700;cursor:pointer">🏁 Fine uscita</button>';
+
+  _inizializzaMappaCaccia();
+  _avviaTimerCaccia();
+}
+
+function avviaCacciaGPS(){
+  var tipo = g('gps-tipo')&&g('gps-tipo').value||'Caccia';
+  var zona = g('gps-zona')&&g('gps-zona').value.trim()||'Zona non specificata';
+  var cane = g('gps-cane')&&g('gps-cane').value.trim()||null;
+  _cacciaUscitaAttiva = {
+    tipo: tipo, zona: zona, cane: cane,
+    id: Date.now(), data: new Date().toISOString().substring(0,10),
+    startTime: Date.now()
+  };
+  _cacciaWaypoints = [];
+  _cacciaStartTime = Date.now();
+  var _tc = g('caccia-tab-content');
+  if(_tc) renderCacciaGPS(_tc);
+}
+
+function _inizializzaMappaCaccia(){
+  if(!window.L){
+    var link = document.createElement('link');
+    link.rel='stylesheet';
+    link.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+    var script = document.createElement('script');
+    script.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.onload = function(){ _creaMappaL(); };
+    document.head.appendChild(script);
+  } else {
+    _creaMappaL();
+  }
+}
+
+function _creaMappaL(){
+  var el = document.getElementById('caccia-mappa');
+  if(!el || _cacciaLeafletMap) return;
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var lat = pos.coords.latitude, lng = pos.coords.longitude;
+    _cacciaLeafletMap = L.map('caccia-mappa').setView([lat,lng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {attribution:'OpenStreetMap'}).addTo(_cacciaLeafletMap);
+    L.circleMarker([lat,lng],{radius:8,fillColor:'#2E7D32',color:'#fff',weight:2,fillOpacity:1})
+      .addTo(_cacciaLeafletMap)
+      .bindPopup('Sei qui')
+      .openPopup();
+  }, function(){}, {enableHighAccuracy:true, timeout:10000});
+}
+
+function aggiungiWaypointCaccia(tipo){
+  navigator.geolocation.getCurrentPosition(
+    function(pos){
+      var lat = pos.coords.latitude, lng = pos.coords.longitude;
+      var wp = {tipo:tipo, lat:lat, lng:lng, ts:Date.now()};
+      _cacciaWaypoints.push(wp);
+      if(_cacciaLeafletMap){
+        var iconeMap = {capo:'🎯', ferma:'🐕', tartufo:'🍄', nota:'⚠️'};
+        var ico = L.divIcon({
+          html:'<div style="font-size:24px;line-height:1">'+iconeMap[tipo]+'</div>',
+          className:'', iconSize:[30,30], iconAnchor:[15,15]
+        });
+        var marker = L.marker([lat,lng],{icon:ico})
+          .addTo(_cacciaLeafletMap)
+          .bindPopup(tipo.charAt(0).toUpperCase()+tipo.slice(1)+' — '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));
+        _cacciaMarkers.push(marker);
+      }
+      toast('📍 '+tipo.charAt(0).toUpperCase()+tipo.slice(1)+' segnato!');
+      var _tc = g('caccia-tab-content');
+      if(_tc) renderCacciaGPS(_tc);
+    },
+    function(){ toast('⚠️ Posizione non disponibile'); },
+    {enableHighAccuracy:true, timeout:8000}
+  );
+}
+
+function _avviaTimerCaccia(){
+  if(_cacciaTimerInterval) clearInterval(_cacciaTimerInterval);
+  var el = document.getElementById('caccia-timer');
+  if(el) el.textContent = '00min';
+  _cacciaTimerInterval = setInterval(function(){
+    var el2 = document.getElementById('caccia-timer');
+    if(!el2){ clearInterval(_cacciaTimerInterval); return; }
+    var mins = Math.floor((Date.now()-_cacciaStartTime)/60000);
+    var ore = Math.floor(mins/60);
+    var mm = mins%60;
+    el2.textContent = (ore>0?ore+'h ':'')+String(mm).padStart(2,'0')+'min';
+  }, 30000);
+}
+
+function fineUscitaCaccia(){
+  clearInterval(_cacciaTimerInterval);
+  var durata = Math.round((Date.now()-_cacciaStartTime)/60000);
+  var uscita = Object.assign({}, _cacciaUscitaAttiva, {
+    waypoints: _cacciaWaypoints,
+    ore: Math.round(durata/60*10)/10,
+    durata_minuti: durata
+  });
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:4px">🏁 Fine uscita</div>'
+    +'<div style="font-size:12px;color:#9ab0cc;margin-bottom:16px">'+durata+' minuti · '+_cacciaWaypoints.length+' waypoint</div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Km percorsi (stima)</label>'
+    +'<input type="number" id="fine-km" placeholder="Es. 8" step="0.1" '
+    +'style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px"/></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Note finali</label>'
+    +'<textarea id="fine-note" rows="3" placeholder="Es. Ottima giornata..." '
+    +'style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;resize:none;font-size:14px;box-sizing:border-box"></textarea></div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button onclick="this.closest(\'[style*=fixed]\').remove()" '
+    +'style="flex:1;background:#F1F8E9;color:#558B2F;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
+    +'<button id="btn-salva-fine-uscita" onclick="salvaFineUscitaCaccia(this)" '
+    +'style="flex:2;background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva</button>'
+    +'</div></div>';
+  overlay.dataset.uscitaJson = JSON.stringify(uscita);
+  document.body.appendChild(overlay);
+}
+
+function salvaFineUscitaCaccia(btn){
+  var overlay = btn.closest('[style*="inset:0"]');
+  var uscita = JSON.parse(overlay.dataset.uscitaJson);
+  uscita.km = parseFloat(g('fine-km')&&g('fine-km').value)||0;
+  uscita.note = g('fine-note')&&g('fine-note').value.trim()||null;
+  var _uscite = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+  _uscite.push(uscita);
+  localStorage.setItem('bp_caccia_uscite', JSON.stringify(_uscite));
+  _cacciaUscitaAttiva = null;
+  _cacciaWaypoints = [];
+  if(_cacciaLeafletMap){ _cacciaLeafletMap.remove(); _cacciaLeafletMap=null; }
+  _cacciaMarkers = [];
+  overlay.remove();
+  toast('✅ Uscita salvata con '+uscita.waypoints.length+' waypoint!');
+  var _tc = g('caccia-tab-content');
+  if(_tc) renderCacciaGPS(_tc);
+}
+
+function apriMappaSalvata(uscitaId){
+  var _uscite = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+  var u = _uscite.find(function(x){ return x.id===uscitaId; });
+  if(!u || !u.waypoints || !u.waypoints.length){ toast('Nessun waypoint in questa uscita'); return; }
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:#F1F8E9;z-index:99999;overflow-y:auto';
+  overlay.innerHTML=
+    '<div style="background:linear-gradient(135deg,#2E7D32,#388E3C);padding:16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10">'
+    +'<button onclick="this.closest(\'[style*=fixed]\').remove()" '
+    +'style="background:rgba(255,255,255,.2);border:none;border-radius:8px;padding:6px 12px;color:#fff;font-size:18px;cursor:pointer">←</button>'
+    +'<div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:16px;font-weight:700;color:#fff">'+u.zona+'</div>'
+      +'<div style="font-size:11px;color:rgba(255,255,255,.7)">'+new Date(u.data).toLocaleDateString('it-IT')+' · '+u.waypoints.length+' waypoint</div>'
+    +'</div>'
+    +'</div>'
+    +'<div id="mappa-salvata" style="height:400px;border-bottom:2px solid #C8E6C9"></div>'
+    +'<div style="padding:16px">'
+    +'<div style="font-size:11px;font-weight:800;color:#558B2F;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Waypoint</div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px">'
+    +u.waypoints.map(function(w){
+      var ico={capo:'🎯',ferma:'🐕',tartufo:'🍄',nota:'⚠️'}[w.tipo]||'📍';
+      return '<div style="background:#fff;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">'
+        +'<span style="font-size:20px">'+ico+'</span>'
+        +'<div>'
+          +'<div style="font-weight:700;font-size:13px">'+w.tipo.charAt(0).toUpperCase()+w.tipo.slice(1)+'</div>'
+          +'<div style="font-size:10px;color:#9ab0cc">'+new Date(w.ts).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})+' · '+w.lat.toFixed(5)+', '+w.lng.toFixed(5)+'</div>'
+        +'</div>'
+        +'</div>';
+    }).join('')
+    +'</div></div>';
+  document.body.appendChild(overlay);
+  setTimeout(function(){
+    if(!window.L) return;
+    var primo = u.waypoints[0];
+    var m = L.map('mappa-salvata').setView([primo.lat,primo.lng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
+    var iconeMap = {capo:'🎯',ferma:'🐕',tartufo:'🍄',nota:'⚠️'};
+    u.waypoints.forEach(function(w){
+      var ico = L.divIcon({
+        html:'<div style="font-size:24px">'+(iconeMap[w.tipo]||'📍')+'</div>',
+        className:'', iconSize:[30,30], iconAnchor:[15,15]
+      });
+      L.marker([w.lat,w.lng],{icon:ico}).addTo(m)
+        .bindPopup(w.tipo+' — '+new Date(w.ts).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));
+    });
+    var bounds = L.latLngBounds(u.waypoints.map(function(w){ return [w.lat,w.lng]; }));
+    m.fitBounds(bounds, {padding:[30,30]});
+  }, 500);
 }
 
 function renderCacciaDiario(container){
