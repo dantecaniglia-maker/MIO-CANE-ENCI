@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.74';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.75';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -11182,6 +11182,80 @@ function renderMembriFamiglia(container){
     }).join('')
     +'</div>'
     +'</div>'
+    // ── SFIDE MENSILI ──
+    +(function(){
+      var oggi = new Date();
+      var inizioMese = new Date(oggi.getFullYear(), oggi.getMonth(), 1);
+      var inizioMeseIso = inizioMese.toISOString();
+      var logMese = _famigliaLogTutti.filter(function(l){ return l.created_at >= inizioMeseIso; });
+      var kmMese = _famigliaPercorsi.filter(function(p){ return p.created_at >= inizioMeseIso; })
+        .reduce(function(a,p){ return a+(p.distanza_km||0); }, 0);
+      var fotoMese = logMese.filter(function(l){ return l.tipo==='foto'; }).length;
+      var pastiMese = logMese.filter(function(l){ return l.tipo==='pasto'; }).length;
+      var usciteMese = logMese.filter(function(l){ return l.tipo==='uscita'; }).length;
+      var memberSet = {};
+      logMese.forEach(function(l){ if(l.user_id) memberSet[l.user_id]=true; });
+      var membriAttivi = Object.keys(memberSet).length;
+      var giorniMese = oggi.getDate();
+      var pastiConsecutivi = pastiMese >= giorniMese*2;
+
+      var sfide = [
+        { ico:'🏃', nome:'Trail Blazer',    desc:'Percorri 50km questo mese',       val:Math.round(kmMese*10)/10, target:50,  unit:'km',   pts:500 },
+        { ico:'🍖', nome:'Chef Stellato',   desc:'Nessun pasto saltato per 30gg',    val:pastiConsecutivi?30:Math.floor(pastiMese/2), target:30, unit:'gg', pts:300 },
+        { ico:'📸', nome:'Paparazzo',       desc:'Carica 20 foto nel diario',        val:fotoMese,  target:20, unit:'foto', pts:200 },
+        { ico:'👨‍👩‍👧', nome:'Branco Unito',  desc:'Tutti attivi ogni giorno per 7gg', val:Math.min(membriAttivi,_famigliaMembers.length)+'/'+ _famigliaMembers.length+' membri', target:null, unit:'', pts:400 },
+        { ico:'🌅', nome:'Mattiniero',      desc:'Passeggiata mattina 20 giorni',    val:Math.min(usciteMese,20), target:20, unit:'gg', pts:350 },
+        { ico:'⚖️', nome:'Peso Forma',      desc:'Registra il peso ogni settimana',  val:logMese.filter(function(l){return l.tipo==='visita'&&l.dati&&l.dati.peso;}).length, target:4, unit:'sett', pts:100 },
+        { ico:'🏆', nome:'Campione',        desc:'Raggiungi 1000pt in una settimana',val:_dogScoreOggi>=1000?1:0, target:1, unit:'', pts:250 },
+        { ico:'🌍', nome:'Esploratore',     desc:'Percorri 3 percorsi diversi',      val:Math.min(_famigliaPercorsi.filter(function(p){return p.created_at>=inizioMeseIso;}).length,3), target:3, unit:'perc', pts:200 },
+        { ico:'❤️', nome:'Famiglia Perfetta',desc:'4 compiti fissi per 15 giorni',   val:Math.min(Math.floor(pastiMese/2+usciteMese/2),15), target:15, unit:'gg', pts:450 },
+        { ico:'💊', nome:'Dottor Rex',      desc:'Registra 3 eventi salute',         val:logMese.filter(function(l){return ['farmaco','vaccino','visita'].indexOf(l.tipo)>=0;}).length, target:3, unit:'eventi', pts:150 }
+      ];
+
+      var html = '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(13,71,161,.06)">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+          +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#0D47A1">⚡ Sfide del mese</div>'
+          +'<div style="font-size:10px;color:#9ab0cc">'+new Date().toLocaleString('it-IT',{month:'long'})+'</div>'
+        +'</div>'
+        +'<div style="display:flex;flex-direction:column;gap:8px">';
+
+      sfide.forEach(function(s){
+        var completata = s.target !== null ? (typeof s.val === 'number' && s.val >= s.target) : false;
+        var pct = s.target ? Math.min(100, Math.round((typeof s.val==='number'?s.val:0)/s.target*100)) : 0;
+        html += '<div style="background:'+(completata?'#F0FFF4':'#F4F7FE')+';border-radius:12px;padding:12px;'
+          +'border:1.5px solid '+(completata?'#A8D8B8':'#DDEAFF')+'">'
+          +'<div style="display:flex;align-items:center;gap:10px">'
+            +'<span style="font-size:22px;flex-shrink:0">'+s.ico+'</span>'
+            +'<div style="flex:1;min-width:0">'
+              +'<div style="display:flex;align-items:center;justify-content:space-between">'
+                +'<div style="font-size:12px;font-weight:700;color:'+(completata?'#1a7a4a':'#1a1a3a')+'">'+s.nome+'</div>'
+                +'<div style="font-size:10px;font-weight:700;color:#C9A961;flex-shrink:0;margin-left:8px">+'+s.pts+'pt</div>'
+              +'</div>'
+              +'<div style="font-size:10px;color:#9ab0cc;margin-top:1px">'+s.desc+'</div>'
+              +(s.target
+                ?'<div style="background:'+(completata?'#A8D8B8':'#DDEAFF')+';border-radius:20px;height:4px;margin-top:6px;overflow:hidden">'
+                  +'<div style="background:'+(completata?'#1a7a4a':'#0D47A1')+';height:100%;border-radius:20px;width:'+pct+'%;transition:width .8s"></div>'
+                  +'</div>'
+                  +'<div style="font-size:10px;color:'+(completata?'#1a7a4a':'#6B8BB0')+';margin-top:3px;font-weight:600">'
+                  +(completata?'✅ Completata! ':typeof s.val==='number'?s.val+'/'+s.target+' '+s.unit:s.val+' '+s.unit)
+                  +'</div>'
+                :'<div style="font-size:10px;color:#6B8BB0;margin-top:4px">'+s.val+'</div>')
+            +'</div>'
+          +'</div>'
+          +'</div>';
+      });
+
+      var completate = sfide.filter(function(s){
+        return s.target && typeof s.val==='number' && s.val>=s.target;
+      }).length;
+
+      html += '</div>'
+        +'<div style="text-align:center;margin-top:12px;font-size:11px;color:#9ab0cc">'
+        +completate+'/'+sfide.length+' sfide completate questo mese</div>'
+        +'</div>';
+      return html;
+    })()
+
     // Dog Score mensile branco
     +'<div style="background:linear-gradient(135deg,#1a1a3a,#0D47A1);border-radius:16px;padding:16px;margin-bottom:16px;color:#fff;text-align:center">'
       +'<div style="font-size:10px;font-weight:800;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">'
