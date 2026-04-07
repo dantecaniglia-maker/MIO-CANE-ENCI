@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.81';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.82';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9666,19 +9666,39 @@ function _avviaTimerCaccia(){
 function fineUscitaCaccia(){
   clearInterval(_cacciaTimerInterval);
   var durata = Math.round((Date.now()-_cacciaStartTime)/60000);
+  // Calcola km dai waypoint con Haversine
+  var _kmCalcolati = 0;
+  if(_cacciaWaypoints.length>=2){
+    for(var _i=1;_i<_cacciaWaypoints.length;_i++){
+      _kmCalcolati += _distanzaKm(
+        _cacciaWaypoints[_i-1].lat, _cacciaWaypoints[_i-1].lng,
+        _cacciaWaypoints[_i].lat,   _cacciaWaypoints[_i].lng
+      );
+    }
+    _kmCalcolati = Math.round(_kmCalcolati*10)/10;
+  }
   var uscita = Object.assign({}, _cacciaUscitaAttiva, {
     waypoints: _cacciaWaypoints,
     ore: Math.round(durata/60*10)/10,
-    durata_minuti: durata
+    durata_minuti: durata,
+    km: _kmCalcolati
   });
   var overlay = document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
   overlay.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:4px">🏁 Fine uscita</div>'
     +'<div style="font-size:12px;color:#9ab0cc;margin-bottom:16px">'+durata+' minuti · '+_cacciaWaypoints.length+' waypoint</div>'
-    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Km percorsi (stima)</label>'
-    +'<input type="number" id="fine-km" placeholder="Es. 8" step="0.1" '
-    +'style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px"/></div>'
+    +'<div style="margin-bottom:12px">'
+    +'<label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Km percorsi</label>'
+    +'<div style="background:#F1F8E9;border:1.5px solid #C8E6C9;border-radius:8px;padding:10px;font-size:14px;font-weight:700;color:#2E7D32">'
+    +(_kmCalcolati>0
+      ? '🏃 '+_kmCalcolati+' km (calcolati dai waypoint)'
+      : '📍 Inserisci manualmente:')+'</div>'
+    +(_kmCalcolati===0
+      ?'<input type="number" id="fine-km" placeholder="Es. 8" step="0.1" '
+      +'style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;margin-top:6px;box-sizing:border-box"/>'
+      :'<input type="hidden" id="fine-km" value="'+_kmCalcolati+'"/>')
+    +'</div>'
     +'<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Note finali</label>'
     +'<textarea id="fine-note" rows="3" placeholder="Es. Ottima giornata..." '
     +'style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;resize:none;font-size:14px;box-sizing:border-box"></textarea></div>'
@@ -9693,21 +9713,31 @@ function fineUscitaCaccia(){
 }
 
 function salvaFineUscitaCaccia(btn){
-  var overlay = btn.closest('[style*="inset:0"]');
-  var uscita = JSON.parse(overlay.dataset.uscitaJson);
-  uscita.km = parseFloat(g('fine-km')&&g('fine-km').value)||0;
-  uscita.note = g('fine-note')&&g('fine-note').value.trim()||null;
-  var _uscite = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
-  _uscite.push(uscita);
-  localStorage.setItem('bp_caccia_uscite', JSON.stringify(_uscite));
-  _cacciaUscitaAttiva = null;
-  _cacciaWaypoints = [];
-  if(_cacciaLeafletMap){ _cacciaLeafletMap.remove(); _cacciaLeafletMap=null; }
-  _cacciaMarkers = [];
-  overlay.remove();
-  toast('✅ Uscita salvata con '+uscita.waypoints.length+' waypoint!');
-  var _tc = g('caccia-tab-content');
-  if(_tc) renderCacciaGPS(_tc);
+  try {
+    btn.disabled=true; btn.textContent='⏳';
+    var overlay = btn.closest('[style*="inset:0"]');
+    if(!overlay){ toast('❌ Errore overlay'); return; }
+    var uscita = JSON.parse(overlay.dataset.uscitaJson);
+    var kmInput = document.getElementById('fine-km');
+    uscita.km = parseFloat(kmInput&&kmInput.value)||uscita.km||0;
+    var noteInput = document.getElementById('fine-note');
+    uscita.note = (noteInput&&noteInput.value.trim())||null;
+    var _uscite = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+    _uscite.push(uscita);
+    localStorage.setItem('bp_caccia_uscite', JSON.stringify(_uscite));
+    _cacciaUscitaAttiva = null;
+    _cacciaWaypoints = [];
+    if(_cacciaLeafletMap){ _cacciaLeafletMap.remove(); _cacciaLeafletMap=null; }
+    _cacciaMarkers = [];
+    overlay.remove();
+    toast('✅ Uscita salvata! '+uscita.waypoints.length+' waypoint · '+uscita.km+'km');
+    var _tc = g('caccia-tab-content');
+    if(_tc) renderCacciaGPS(_tc);
+  } catch(e){
+    btn.disabled=false; btn.textContent='✓ Salva';
+    toast('❌ Errore: '+e.message);
+    console.error('[caccia] salva errore:', e);
+  }
 }
 
 function apriMappaSalvata(uscitaId){
