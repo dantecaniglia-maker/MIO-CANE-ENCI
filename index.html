@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.75';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.76';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -11219,22 +11219,34 @@ function renderMembriFamiglia(container){
         +'</div>'
         +'<div style="display:flex;flex-direction:column;gap:8px">';
 
-      sfide.forEach(function(s){
-        var completata = s.target !== null ? (typeof s.val === 'number' && s.val >= s.target) : false;
-        var pct = s.target ? Math.min(100, Math.round((typeof s.val==='number'?s.val:0)/s.target*100)) : 0;
-        html += '<div style="background:'+(completata?'#F0FFF4':'#F4F7FE')+';border-radius:12px;padding:12px;'
-          +'border:1.5px solid '+(completata?'#A8D8B8':'#DDEAFF')+'">'
+      window._sfideMese = sfide;
+      sfide.forEach(function(s, idx){
+        var completata = s.target !== null
+          ? (typeof s.val === 'number' && s.val >= s.target)
+          : false;
+        var pct = s.target
+          ? Math.min(100, Math.round((typeof s.val==='number'?s.val:0)/s.target*100))
+          : 0;
+        html += '<div onclick="apriDettaglioSfida('+idx+')" style="cursor:pointer;background:'
+          +(completata?'#F0FFF4':'#F4F7FE')+';border-radius:12px;padding:12px;'
+          +'border:1.5px solid '+(completata?'#A8D8B8':'#DDEAFF')+';'
+          +'transition:transform .15s" ontouchstart="" '
+          +'onmouseenter="this.style.transform=\'scale(1.01)\'" '
+          +'onmouseleave="this.style.transform=\'scale(1)\'">'
           +'<div style="display:flex;align-items:center;gap:10px">'
             +'<span style="font-size:22px;flex-shrink:0">'+s.ico+'</span>'
             +'<div style="flex:1;min-width:0">'
               +'<div style="display:flex;align-items:center;justify-content:space-between">'
                 +'<div style="font-size:12px;font-weight:700;color:'+(completata?'#1a7a4a':'#1a1a3a')+'">'+s.nome+'</div>'
-                +'<div style="font-size:10px;font-weight:700;color:#C9A961;flex-shrink:0;margin-left:8px">+'+s.pts+'pt</div>'
+                +'<div style="display:flex;align-items:center;gap:6px">'
+                  +'<div style="font-size:10px;font-weight:700;color:#C9A961">+'+s.pts+'pt</div>'
+                  +'<div style="font-size:10px;color:#9ab0cc">›</div>'
+                +'</div>'
               +'</div>'
               +'<div style="font-size:10px;color:#9ab0cc;margin-top:1px">'+s.desc+'</div>'
               +(s.target
                 ?'<div style="background:'+(completata?'#A8D8B8':'#DDEAFF')+';border-radius:20px;height:4px;margin-top:6px;overflow:hidden">'
-                  +'<div style="background:'+(completata?'#1a7a4a':'#0D47A1')+';height:100%;border-radius:20px;width:'+pct+'%;transition:width .8s"></div>'
+                  +'<div style="background:'+(completata?'#1a7a4a':'#0D47A1')+';height:100%;border-radius:20px;width:'+pct+'%"></div>'
                   +'</div>'
                   +'<div style="font-size:10px;color:'+(completata?'#1a7a4a':'#6B8BB0')+';margin-top:3px;font-weight:600">'
                   +(completata?'✅ Completata! ':typeof s.val==='number'?s.val+'/'+s.target+' '+s.unit:s.val+' '+s.unit)
@@ -11578,6 +11590,80 @@ function eliminaEmergenza(idx){
   contatti.splice(idx, 1);
   localStorage.setItem('bp_emergenze', JSON.stringify(contatti));
   _renderListaEmergenze();
+}
+
+function apriDettaglioSfida(idx){
+  var sfide = window._sfideMese;
+  if(!sfide || !sfide[idx]) return;
+  var s = sfide[idx];
+  var completata = s.target && typeof s.val==='number' && s.val>=s.target;
+  var pct = s.target ? Math.min(100, Math.round((typeof s.val==='number'?s.val:0)/s.target*100)) : 0;
+
+  var suggerimenti = {
+    'Trail Blazer': ['Usa il GPS nel tab GPS per ogni passeggiata','Ogni percorso salvato conta automaticamente','Con 2 passeggiate al giorno da 1km arrivi in 25 giorni'],
+    'Chef Stellato': ['Completa i compiti Pasto mattino e Pasto sera ogni giorno','Usa il pulsante "Tutti" per registrare per più cani insieme','Non saltare nemmeno un giorno per i 30 punti bonus'],
+    'Paparazzo': ['Vai su Salute & Memoria → 📸 Foto','Scatta una foto al cane ogni giorno','Anche le foto alle visite vet contano'],
+    'Branco Unito': ['Ogni membro deve completare almeno 1 compito al giorno','Condividi il codice invito con la famiglia','Assegna compiti specifici a ogni membro'],
+    'Mattiniero': ['Registra la passeggiata mattina prima delle 12:00','Il compito "Passeggiata mattina" conta','20 giorni su 30 sono sufficienti'],
+    'Peso Forma': ['Registra il peso in Salute & Memoria → Visita','Una volta a settimana è sufficiente','Tieni traccia del peso per monitorare la salute'],
+    'Campione': ['Accumula 1000pt in una singola settimana','Combina pasti + uscite + GPS km + foto','Una settimana intensa basta per sbloccarla'],
+    'Esploratore': ['Salva almeno 3 percorsi GPS diversi questo mese','Prova nuovi parchi e sentieri','Ogni percorso salvato conta, anche breve'],
+    'Famiglia Perfetta': ['Completa tutti e 4 i compiti fissi ogni giorno','Usa il pulsante "Tutti" per velocizzare','15 giorni su 30 sono il tuo obiettivo'],
+    'Dottor Rex': ['Registra farmaci, vaccini o visite in Salute & Memoria','3 eventi nel mese sono sufficienti','Anche i reminder contano come eventi']
+  };
+  var tips = suggerimenti[s.nome] || ['Continua così!'];
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">'
+    +'<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">'
+      +'<div style="font-size:40px">'+s.ico+'</div>'
+      +'<div style="flex:1">'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:'+(completata?'#1a7a4a':'#0D47A1')+'">'+s.nome+'</div>'
+        +'<div style="font-size:12px;color:#9ab0cc;margin-top:2px">'+s.desc+'</div>'
+      +'</div>'
+      +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#9ab0cc;padding:4px">✕</button>'
+    +'</div>'
+    +(completata
+      ?'<div style="background:#F0FFF4;border:1.5px solid #A8D8B8;border-radius:14px;padding:16px;margin-bottom:16px;text-align:center">'
+        +'<div style="font-size:32px;margin-bottom:4px">🏆</div>'
+        +'<div style="font-size:16px;font-weight:700;color:#1a7a4a">Sfida completata!</div>'
+        +'<div style="font-size:13px;color:#1a7a4a;margin-top:4px">Hai guadagnato +'+s.pts+'pt questo mese</div>'
+        +'</div>'
+      :'<div style="background:#EEF3FB;border-radius:14px;padding:16px;margin-bottom:16px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+          +'<div style="font-size:13px;font-weight:700;color:#0D47A1">Il tuo progresso</div>'
+          +'<div style="font-size:13px;font-weight:800;color:#C9A961">+'+s.pts+'pt</div>'
+        +'</div>'
+        +(s.target
+          ?'<div style="background:#DDEAFF;border-radius:20px;height:12px;overflow:hidden;margin-bottom:8px">'
+            +'<div style="background:linear-gradient(90deg,#0D47A1,#C9A961);height:100%;border-radius:20px;width:'+pct+'%;transition:width 1s"></div>'
+            +'</div>'
+            +'<div style="display:flex;justify-content:space-between;font-size:12px">'
+              +'<div style="font-weight:700;color:#0D47A1">'+(typeof s.val==='number'?s.val:s.val)+' '+s.unit+'</div>'
+              +'<div style="color:#9ab0cc">obiettivo: '+s.target+' '+s.unit+'</div>'
+            +'</div>'
+          :'<div style="font-size:13px;color:#6B8BB0">'+s.val+'</div>')
+        +'</div>')
+    +'<div style="background:#FFF8E7;border:1.5px solid #F0D98A;border-radius:14px;padding:14px;margin-bottom:16px">'
+      +'<div style="font-size:11px;font-weight:800;color:#A88A41;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">🎁 Premio</div>'
+      +'<div style="font-size:13px;color:#1a1a3a;font-weight:600">+'+s.pts+' punti classifica nazionale</div>'
+      +'<div style="font-size:11px;color:#9ab0cc;margin-top:4px">I punti vengono aggiunti automaticamente quando completi la sfida</div>'
+    +'</div>'
+    +'<div style="margin-bottom:16px">'
+      +'<div style="font-size:11px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">💡 Come completarla</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px">'
+      +tips.map(function(t){
+        return '<div style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#4A6080">'
+          +'<span style="color:#C9A961;font-weight:700;flex-shrink:0">→</span>'+t+'</div>';
+      }).join('')
+      +'</div>'
+    +'</div>'
+    +'<div style="text-align:center;font-size:10px;color:#9ab0cc;padding-top:8px;border-top:1px solid #EEF3FB">'
+    +'Le sfide si resettano automaticamente il 1° di ogni mese · Powered by <strong style="color:#C9A961">Dante Caniglia</strong>'
+    +'</div>'
+    +'</div>';
+  document.body.appendChild(overlay);
 }
 
 async function apriClassificaNazionale(){
