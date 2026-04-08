@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.89';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.90';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9400,9 +9400,15 @@ function switchCacciaTab(tab){
     });
   var content = g('caccia-tab-content');
   if(!content) return;
-  if(tab==='caccia-home')       renderCacciaHome(content);
+  if(tab==='caccia-home'){
+    if(!_currentUser){ setTimeout(function(){ renderCacciaHome(content); }, 800); }
+    else { renderCacciaHome(content); }
+  }
   else if(tab==='caccia-gps')   renderCacciaGPS(content);
-  else if(tab==='caccia-diario') renderCacciaDiario(content);
+  else if(tab==='caccia-diario'){
+    if(!_currentUser){ setTimeout(function(){ renderCacciaDiario(content); }, 800); }
+    else { renderCacciaDiario(content); }
+  }
   else if(tab==='caccia-prove')  renderCacciaProve(content);
   else if(tab==='caccia-calendario') renderCacciaCalendario(content);
 }
@@ -9446,6 +9452,10 @@ async function renderCacciaHome(container){
   // Carica stats da Supabase
   try {
     var _stagione = new Date().getFullYear();
+    if(!_currentUser){
+      setTimeout(function(){ renderCacciaHome(container); }, 800);
+      return;
+    }
     var res = await _supabase.from('caccia_uscite')
       .select('id,zona,data,tipo,km,ore,waypoints,durata_minuti')
       .eq('user_id', _currentUser.id)
@@ -9847,6 +9857,12 @@ async function salvaFineUscitaCaccia(btn){
     uscita.note = (noteInput&&noteInput.value.trim())||null;
 
     // Salva su Supabase
+    console.log('[caccia] salva uscita:', {
+      zona: uscita.zona,
+      waypoints: uscita.waypoints.length,
+      traccia: uscita.traccia ? uscita.traccia.length : 0,
+      km: uscita.km
+    });
     var res = await _supabase.from('caccia_uscite').insert({
       user_id: _currentUser.id,
       tipo: uscita.tipo||'Caccia',
@@ -10032,6 +10048,12 @@ async function renderCacciaDiario(container){
     +'</div>';
 
   try {
+    if(!_currentUser){
+      var l2 = document.getElementById('caccia-diario-list');
+      if(l2) l2.innerHTML = '<div style="text-align:center;padding:20px;color:#9ab0cc">⏳ Attendere autenticazione...</div>';
+      setTimeout(function(){ renderCacciaDiario(container); }, 1000);
+      return;
+    }
     var res = await _supabase.from('caccia_uscite')
       .select('*')
       .eq('user_id', _currentUser.id)
