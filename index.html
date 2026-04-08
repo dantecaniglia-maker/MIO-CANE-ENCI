@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.88';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.89';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9407,65 +9407,34 @@ function switchCacciaTab(tab){
   else if(tab==='caccia-calendario') renderCacciaCalendario(content);
 }
 
-function renderCacciaHome(container){
-  var _uscite = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
-  var _stagione = new Date().getFullYear();
-  var _usciteStagione = _uscite.filter(function(u){
-    return new Date(u.data).getFullYear() === _stagione;
-  });
-  var _kmTotali = _usciteStagione.reduce(function(a,u){ return a+(u.km||0); }, 0);
-  var _oreTotali = _usciteStagione.reduce(function(a,u){ return a+(u.ore||0); }, 0);
-
+async function renderCacciaHome(container){
   container.innerHTML =
     '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;'
     +'box-shadow:0 2px 8px rgba(46,125,50,.08)">'
-    +'<div style="font-size:18px;font-weight:700;color:#1a1a3a;margin-bottom:4px">🐕‍🦺 Stagione '+_stagione+'</div>'
+    +'<div style="font-size:18px;font-weight:700;color:#1a1a3a;margin-bottom:4px">🐕‍🦺 Stagione '+new Date().getFullYear()+'</div>'
     +'<div style="font-size:12px;color:#6B8BB0">La tua stagione venatoria e di cerca</div>'
     +'</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">'
-    +[
-      {ico:'🗓️', val:_usciteStagione.length, label:'Uscite'},
-      {ico:'🏃', val:Math.round(_kmTotali*10)/10+' km', label:'Percorsi'},
-      {ico:'⏱️', val:_oreTotali+'h', label:'In campo'}
-    ].map(function(s){
-      return '<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;'
-        +'box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9">'
-        +'<div style="font-size:24px;margin-bottom:4px">'+s.ico+'</div>'
-        +'<div style="font-size:20px;font-weight:800;color:#2E7D32">'+s.val+'</div>'
-        +'<div style="font-size:10px;color:#9ab0cc">'+s.label+'</div>'
-        +'</div>';
-    }).join('')
+    +'<div id="caccia-home-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">'
+    +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #C8E6C9"><div style="font-size:20px">⏳</div></div>'
+    +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #C8E6C9"><div style="font-size:20px">⏳</div></div>'
+    +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #C8E6C9"><div style="font-size:20px">⏳</div></div>'
     +'</div>'
-    +(_usciteStagione.length>0
-      ?'<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;'
-        +'box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9">'
-        +'<div style="font-size:11px;font-weight:800;color:#558B2F;text-transform:uppercase;'
-        +'letter-spacing:.1em;margin-bottom:10px">📖 Ultima uscita</div>'
-        +(function(){
-          var u = _usciteStagione[_usciteStagione.length-1];
-          return '<div style="font-weight:700;color:#1a1a3a">'+u.zona+'</div>'
-            +'<div style="font-size:12px;color:#9ab0cc;margin-top:2px">'
-            +new Date(u.data).toLocaleDateString('it-IT')+' · '+(u.km||0)+' km · '+(u.tipo||'Caccia')+'</div>';
-        })()
-        +'</div>'
-      :'')
-    +'<button onclick="switchCacciaTab(\'caccia-diario\')" '
+    +'<div id="caccia-home-ultima"></div>'
+    +'<button onclick="switchCacciaTab(\'caccia-gps\')" '
     +'style="width:100%;background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;'
     +'border:none;border-radius:16px;padding:16px;font-size:15px;font-weight:700;cursor:pointer;'
     +'display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px">'
-    +'<span style="font-size:22px">🐕‍🦺</span> Registra uscita'
+    +'<span style="font-size:22px">🗺️</span> Avvia GPS uscita'
     +'</button>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
-    +'<div onclick="switchCacciaTab(\'caccia-gps\')" '
-    +'style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;'
-    +'border:1.5px solid #C8E6C9;box-shadow:0 2px 8px rgba(46,125,50,.08)">'
-    +'<div style="font-size:28px;margin-bottom:6px">🗺️</div>'
-    +'<div style="font-size:12px;font-weight:700;color:#2E7D32">GPS Caccia</div>'
-    +'<div style="font-size:10px;color:#9ab0cc;margin-top:2px">Traccia il percorso</div>'
+    +'<div onclick="switchCacciaTab(\'caccia-diario\')" '
+    +'style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;border:1.5px solid #C8E6C9">'
+    +'<div style="font-size:28px;margin-bottom:6px">📖</div>'
+    +'<div style="font-size:12px;font-weight:700;color:#2E7D32">Diario</div>'
+    +'<div style="font-size:10px;color:#9ab0cc;margin-top:2px">Tutte le uscite</div>'
     +'</div>'
     +'<div onclick="switchCacciaTab(\'caccia-prove\')" '
-    +'style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;'
-    +'border:1.5px solid #C8E6C9;box-shadow:0 2px 8px rgba(46,125,50,.08)">'
+    +'style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;border:1.5px solid #C8E6C9">'
     +'<div style="font-size:28px;margin-bottom:6px">🏆</div>'
     +'<div style="font-size:12px;font-weight:700;color:#2E7D32">Prove Lavoro</div>'
     +'<div style="font-size:10px;color:#9ab0cc;margin-top:2px">FIDASC / ENCI</div>'
@@ -9473,6 +9442,62 @@ function renderCacciaHome(container){
     +'</div>'
     +'<div style="text-align:center;padding:20px 0 8px;font-size:10px;color:#9ab0cc">'
     +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+
+  // Carica stats da Supabase
+  try {
+    var _stagione = new Date().getFullYear();
+    var res = await _supabase.from('caccia_uscite')
+      .select('id,zona,data,tipo,km,ore,waypoints,durata_minuti')
+      .eq('user_id', _currentUser.id)
+      .gte('data', _stagione+'-01-01')
+      .order('data', {ascending:false});
+    var _uscite = res.data||[];
+
+    // Stats
+    var _kmTot = _uscite.reduce(function(a,u){return a+(u.km||0);},0);
+    var _oreTot = _uscite.reduce(function(a,u){return a+(u.ore||0);},0);
+    var statsEl = document.getElementById('caccia-home-stats');
+    if(statsEl) statsEl.innerHTML =
+      [
+        {ico:'🗓️', val:_uscite.length, label:'Uscite'},
+        {ico:'🏃', val:Math.round(_kmTot*10)/10+' km', label:'Percorsi'},
+        {ico:'⏱️', val:Math.round(_oreTot*10)/10+'h', label:'In campo'}
+      ].map(function(s){
+        return '<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;'
+          +'box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9">'
+          +'<div style="font-size:24px;margin-bottom:4px">'+s.ico+'</div>'
+          +'<div style="font-size:20px;font-weight:800;color:#2E7D32">'+s.val+'</div>'
+          +'<div style="font-size:10px;color:#9ab0cc">'+s.label+'</div>'
+          +'</div>';
+      }).join('');
+
+    // Ultima uscita cliccabile
+    var ultimaEl = document.getElementById('caccia-home-ultima');
+    if(ultimaEl && _uscite.length>0){
+      var u = _uscite[0];
+      ultimaEl.innerHTML =
+        '<div onclick="apriMappaSalvata(\''+u.id+'\')" '
+        +'style="cursor:pointer;background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;'
+        +'box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9">'
+        +'<div style="font-size:11px;font-weight:800;color:#558B2F;text-transform:uppercase;'
+        +'letter-spacing:.1em;margin-bottom:8px">📖 Ultima uscita</div>'
+        +'<div style="font-weight:700;color:#1a1a3a">'+u.zona+'</div>'
+        +'<div style="font-size:12px;color:#9ab0cc;margin-top:2px">'
+        +new Date(u.data).toLocaleDateString('it-IT')+' · '+(u.km||0)+' km · '+(u.tipo||'Caccia')+'</div>'
+        +'<div style="font-size:11px;color:#2E7D32;font-weight:700;margin-top:6px">🗺️ Vedi mappa →</div>'
+        +'</div>';
+    }
+
+    // Cache locale per offline
+    localStorage.setItem('bp_caccia_uscite', JSON.stringify(_uscite));
+
+  } catch(e){
+    console.warn('[caccia] home stats:', e.message);
+    // Fallback localStorage
+    var _loc = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+    var statsEl2 = document.getElementById('caccia-home-stats');
+    if(statsEl2) statsEl2.innerHTML = '<div style="grid-column:1/-1;text-align:center;font-size:12px;color:#9ab0cc">Dati in cache locale</div>';
+  }
 }
 
 function renderCacciaGPS(container){
@@ -9946,9 +9971,18 @@ async function apriMappaSalvata(uscitaId){
   function _disegna(){
     var el = document.getElementById('mappa-salvata');
     if(!el) return;
-    var centro = traccia.length ? [traccia[0].lat,traccia[0].lng]
-      : wps.length&&wps[0].lat ? [wps[0].lat,wps[0].lng] : null;
-    if(!centro) return;
+    // Trova primo punto valido tra traccia e waypoint
+    var centro = null;
+    if(traccia.length && traccia[0].lat) centro = [traccia[0].lat,traccia[0].lng];
+    else {
+      var wpValido = wps.find(function(w){ return w.lat&&w.lng; });
+      if(wpValido) centro = [wpValido.lat, wpValido.lng];
+    }
+    if(!centro){
+      var elErr = document.getElementById('mappa-salvata');
+      if(elErr) elErr.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#9ab0cc;flex-direction:column;gap:8px"><div style="font-size:32px">📍</div><div>Nessuna coordinata GPS disponibile</div></div>';
+      return;
+    }
 
     var m = L.map('mappa-salvata').setView(centro, 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
