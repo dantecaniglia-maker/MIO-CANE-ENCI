@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.86';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.87';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9866,16 +9866,17 @@ async function salvaFineUscitaCaccia(btn){
 }
 
 async function apriMappaSalvata(uscitaId){
-  // Cerca prima su Supabase, fallback localStorage
   var u = null;
-  try {
-    var res = await _supabase.from('caccia_uscite')
-      .select('*').eq('id', uscitaId).single();
-    if(res.data) u = res.data;
-  } catch(e){}
-  if(!u){
-    var _loc = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
-    u = _loc.find(function(x){ return String(x.id)===String(uscitaId); });
+  // Prima cerca in localStorage (id numerico)
+  var _loc = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+  u = _loc.find(function(x){ return String(x.id)===String(uscitaId); });
+  // Se non trovato prova Supabase (id UUID dal diario)
+  if(!u && _supabase && _currentUser){
+    try {
+      var res = await _supabase.from('caccia_uscite')
+        .select('*').eq('id', uscitaId).single();
+      if(res.data) u = res.data;
+    } catch(e){}
   }
   if(!u){ toast('Uscita non trovata'); return; }
 
@@ -10013,7 +10014,8 @@ async function renderCacciaDiario(container){
     lista.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px">'
       +_uscite.map(function(u){
         var wps = u.waypoints||[];
-        return '<div style="background:#fff;border-radius:14px;padding:14px;'
+        return '<div onclick="apriMappaSalvata(\''+u.id+'\')" '
+          +'style="cursor:pointer;background:#fff;border-radius:14px;padding:14px;'
           +'box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9">'
           +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
             +'<div>'
@@ -10034,6 +10036,9 @@ async function renderCacciaDiario(container){
               return '<span style="background:#F1F8E9;border-radius:6px;padding:2px 6px;font-size:10px;color:#558B2F">'
                 +(icM[w.tipo]||'📍')+' '+(w.testo||w.tipo)+'</span>';
             }).join('')+'</div>':'')
+          +(wps.length||(u.traccia&&u.traccia.length)
+            ?'<div style="font-size:11px;color:#2E7D32;font-weight:700;margin-top:8px">🗺️ Vedi mappa →</div>'
+            :'')
           +'</div>';
       }).join('')+'</div>';
   } catch(e){
