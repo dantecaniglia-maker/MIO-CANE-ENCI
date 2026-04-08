@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.84';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.85';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9776,7 +9776,7 @@ function _riavviaUscitaDopoCancella(){
   _avviaTimerCaccia();
 }
 
-function salvaFineUscitaCaccia(btn){
+async function salvaFineUscitaCaccia(btn){
   try {
     btn.disabled=true; btn.textContent='⏳';
     var overlay = btn.closest('[style*="fixed"]');
@@ -9786,18 +9786,38 @@ function salvaFineUscitaCaccia(btn){
     if(kmInput&&kmInput.value) uscita.km = parseFloat(kmInput.value)||uscita.km||0;
     var noteInput = document.getElementById('fine-note');
     uscita.note = (noteInput&&noteInput.value.trim())||null;
+
+    // Salva su Supabase
+    var res = await _supabase.from('caccia_uscite').insert({
+      user_id: _currentUser.id,
+      tipo: uscita.tipo||'Caccia',
+      zona: uscita.zona||'',
+      cane: uscita.cane||null,
+      data: uscita.data||new Date().toISOString().substring(0,10),
+      ore: uscita.ore||0,
+      durata_minuti: uscita.durata_minuti||0,
+      km: uscita.km||0,
+      meteo: uscita.meteo||null,
+      note: uscita.note||null,
+      waypoints: uscita.waypoints||[]
+    });
+    if(res.error) throw res.error;
+
+    // Cache localStorage
     var _uscite = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
     _uscite.push(uscita);
     localStorage.setItem('bp_caccia_uscite', JSON.stringify(_uscite));
+
     // Reset stato GPS
     _cacciaUscitaAttiva = null;
     _cacciaWaypoints = [];
     _cacciaStartTime = 0;
+    clearInterval(_cacciaTimerInterval);
     sessionStorage.removeItem('bp_caccia_attiva');
     if(_cacciaLeafletMap){ try{_cacciaLeafletMap.remove();}catch(e){} _cacciaLeafletMap=null; }
     _cacciaMarkers = [];
     overlay.remove();
-    toast('✅ Uscita salvata! '+uscita.waypoints.length+' waypoint · '+uscita.km+'km');
+    toast('✅ Uscita salvata! '+uscita.waypoints.length+' waypoint · '+uscita.km+' km');
     var _tc = g('caccia-tab-content');
     if(_tc) renderCacciaGPS(_tc);
   } catch(e){
@@ -9857,8 +9877,7 @@ function apriMappaSalvata(uscitaId){
   }, 500);
 }
 
-function renderCacciaDiario(container){
-  var _uscite = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+async function renderCacciaDiario(container){
   container.innerHTML =
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32">📖 Diario</div>'
@@ -9866,28 +9885,68 @@ function renderCacciaDiario(container){
     +'style="background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;'
     +'border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Uscita</button>'
     +'</div>'
-    +(_uscite.length===0
-      ?'<div style="text-align:center;padding:40px;color:#9ab0cc">'
+    +'<div id="caccia-diario-list">'
+    +'<div style="text-align:center;padding:20px;color:#9ab0cc">⏳ Caricamento...</div>'
+    +'</div>';
+
+  try {
+    var res = await _supabase.from('caccia_uscite')
+      .select('*')
+      .eq('user_id', _currentUser.id)
+      .order('data', {ascending:false})
+      .limit(50);
+
+    var _uscite = res.data||[];
+
+    // Merge con localStorage per uscite offline
+    var _local = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+    _local.forEach(function(u){
+      if(!_uscite.find(function(x){ return x.zona===u.zona&&x.data===u.data; }))
+        _uscite.push(u);
+    });
+
+    var lista = document.getElementById('caccia-diario-list');
+    if(!lista) return;
+
+    if(!_uscite.length){
+      lista.innerHTML = '<div style="text-align:center;padding:40px;color:#9ab0cc">'
         +'<div style="font-size:40px;margin-bottom:12px">📖</div>'
         +'<div style="font-weight:600">Nessuna uscita registrata</div>'
         +'<div style="font-size:13px;margin-top:4px">Registra la tua prima cacciata!</div>'
-        +'</div>'
-      :'<div style="display:flex;flex-direction:column;gap:10px">'
-        +_uscite.slice().reverse().map(function(u){
-          return '<div style="background:#fff;border-radius:14px;padding:14px;'
-            +'box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9">'
-            +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
-              +'<div>'
-                +'<div style="font-weight:700;font-size:14px;color:#1a1a3a">'+u.zona+'</div>'
-                +'<div style="font-size:11px;color:#9ab0cc;margin-top:2px">'
-                +new Date(u.data).toLocaleDateString('it-IT')+' · '+(u.tipo||'Caccia')+'</div>'
-              +'</div>'
-              +'<div style="font-size:11px;font-weight:700;color:#2E7D32">'+(u.km||0)+' km</div>'
+        +'</div>';
+      return;
+    }
+
+    lista.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px">'
+      +_uscite.map(function(u){
+        var wps = u.waypoints||[];
+        return '<div style="background:#fff;border-radius:14px;padding:14px;'
+          +'box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9">'
+          +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+            +'<div>'
+              +'<div style="font-weight:700;font-size:14px;color:#1a1a3a">'+u.zona+'</div>'
+              +'<div style="font-size:11px;color:#9ab0cc;margin-top:2px">'
+              +new Date(u.data).toLocaleDateString('it-IT')+' · '+(u.tipo||'Caccia')
+              +(u.cane?' · 🐕 '+u.cane:'')+'</div>'
             +'</div>'
-            +(u.note?'<div style="font-size:12px;color:#558B2F;margin-top:8px;font-style:italic">'+u.note+'</div>':'')
-            +'</div>';
-        }).join('')
-        +'</div>');
+            +'<div style="text-align:right">'
+              +'<div style="font-size:13px;font-weight:700;color:#2E7D32">'+(u.km||0)+' km</div>'
+              +(wps.length?'<div style="font-size:10px;color:#9ab0cc">'+wps.length+' waypoint</div>':'')
+            +'</div>'
+          +'</div>'
+          +(u.note?'<div style="font-size:12px;color:#558B2F;margin-top:8px;font-style:italic">'+u.note+'</div>':'')
+          +(wps.length?'<div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">'
+            +wps.map(function(w){
+              var icM={capo:'🎯',ferma:'🐕',tartufo:'🍄',nota:'⚠️'};
+              return '<span style="background:#F1F8E9;border-radius:6px;padding:2px 6px;font-size:10px;color:#558B2F">'
+                +(icM[w.tipo]||'📍')+' '+(w.testo||w.tipo)+'</span>';
+            }).join('')+'</div>':'')
+          +'</div>';
+      }).join('')+'</div>';
+  } catch(e){
+    var lista2 = document.getElementById('caccia-diario-list');
+    if(lista2) lista2.innerHTML = '<div style="text-align:center;padding:20px;color:#C0534A">Errore: '+e.message+'</div>';
+  }
 }
 
 function renderCacciaProve(container){
