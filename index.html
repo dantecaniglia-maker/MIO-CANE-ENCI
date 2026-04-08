@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.87';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.88';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9931,8 +9931,21 @@ async function apriMappaSalvata(uscitaId){
     +'</div></div>';
   document.body.appendChild(overlay);
 
-  setTimeout(function(){
-    if(!window.L) return;
+  function _mostraMappa(){
+    if(!window.L){
+      var lk = document.createElement('link');
+      lk.rel='stylesheet';
+      lk.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(lk);
+      var sc = document.createElement('script');
+      sc.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      sc.onload = function(){ _disegna(); };
+      document.head.appendChild(sc);
+    } else { _disegna(); }
+  }
+  function _disegna(){
+    var el = document.getElementById('mappa-salvata');
+    if(!el) return;
     var centro = traccia.length ? [traccia[0].lat,traccia[0].lng]
       : wps.length&&wps[0].lat ? [wps[0].lat,wps[0].lng] : null;
     if(!centro) return;
@@ -9968,7 +9981,8 @@ async function apriMappaSalvata(uscitaId){
     var allPts = traccia.map(function(p){ return [p.lat,p.lng]; })
       .concat(wps.filter(function(w){return w.lat;}).map(function(w){ return [w.lat,w.lng]; }));
     if(allPts.length>1) m.fitBounds(L.latLngBounds(allPts),{padding:[30,30]});
-  }, 500);
+  }
+  _mostraMappa();
 }
 
 async function renderCacciaDiario(container){
@@ -10036,9 +10050,7 @@ async function renderCacciaDiario(container){
               return '<span style="background:#F1F8E9;border-radius:6px;padding:2px 6px;font-size:10px;color:#558B2F">'
                 +(icM[w.tipo]||'📍')+' '+(w.testo||w.tipo)+'</span>';
             }).join('')+'</div>':'')
-          +(wps.length||(u.traccia&&u.traccia.length)
-            ?'<div style="font-size:11px;color:#2E7D32;font-weight:700;margin-top:8px">🗺️ Vedi mappa →</div>'
-            :'')
+          +'<div style="font-size:11px;color:#2E7D32;font-weight:700;margin-top:8px">🗺️ Apri mappa →</div>'
           +'</div>';
       }).join('')+'</div>';
   } catch(e){
