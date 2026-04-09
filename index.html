@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.98';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.99';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9517,18 +9517,33 @@ async function renderCacciaHome(container){
     +'<div style="text-align:center;padding:20px 0 8px;font-size:10px;color:#9ab0cc">'
     +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
 
-  // Carica stats da Supabase
-  try {
-    var _stagione = new Date().getFullYear();
-    if(!_currentUser){
-      setTimeout(function(){ renderCacciaHome(container); }, 800);
-      return;
+  // Mostra subito da localStorage
+  var _stagione = new Date().getFullYear();
+  var _usciteLoc = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+  if(_usciteLoc.length){
+    var _kmL=_usciteLoc.reduce(function(a,u){return a+(u.km||0);},0);
+    var _oreL=_usciteLoc.reduce(function(a,u){return a+(u.ore||0);},0);
+    var statsElL=document.getElementById('caccia-home-stats');
+    if(statsElL) statsElL.innerHTML=
+      [{ico:'🗓️',val:_usciteLoc.length,label:'Uscite'},
+       {ico:'🏃',val:Math.round(_kmL*10)/10+' km',label:'Percorsi'},
+       {ico:'⏱️',val:Math.round(_oreL*10)/10+'h',label:'In campo'}]
+      .map(function(s){return '<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9"><div style="font-size:24px;margin-bottom:4px">'+s.ico+'</div><div style="font-size:20px;font-weight:800;color:#2E7D32">'+s.val+'</div><div style="font-size:10px;color:#9ab0cc">'+s.label+'</div></div>';}).join('');
+    var ultimaElL=document.getElementById('caccia-home-ultima');
+    if(ultimaElL&&_usciteLoc.length>0){
+      var uL=_usciteLoc[0];
+      ultimaElL.innerHTML='<div onclick="apriMappaSalvata(\''+uL.id+'\')" style="cursor:pointer;background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9"><div style="font-size:11px;font-weight:800;color:#558B2F;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">📖 Ultima uscita</div><div style="font-weight:700;color:#1a1a3a">'+uL.zona+'</div><div style="font-size:12px;color:#9ab0cc;margin-top:2px">'+new Date(uL.data).toLocaleDateString('it-IT')+' · '+(uL.km||0)+' km · '+(uL.tipo||'Caccia')+'</div><div style="font-size:11px;color:#2E7D32;font-weight:700;margin-top:6px">🗺️ Vedi mappa →</div></div>';
     }
+  }
+  // Poi aggiorna da Supabase in background
+  try {
+    if(!_currentUser) return;
     var res = await _supabase.from('caccia_uscite')
       .select('id,zona,data,tipo,km,ore,waypoints,durata_minuti')
       .eq('user_id', _currentUser.id)
       .gte('data', _stagione+'-01-01')
       .order('data', {ascending:false});
+    if(res.error) return;
     var _uscite = res.data||[];
 
     // Stats
