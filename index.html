@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.90';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.91';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9345,11 +9345,11 @@ function applicaModalita(mod){
         +'display:flex;align-items:stretch;padding:6px 8px;gap:4px;'
         +'box-shadow:0 -4px 20px rgba(46,125,50,.1)';
       cbn.innerHTML = [
-        {tab:'caccia-home',      ico:'🏠', label:'Home'},
-        {tab:'caccia-gps',       ico:'🗺️', label:'GPS'},
-        {tab:'caccia-diario',    ico:'📖', label:'Diario'},
-        {tab:'caccia-prove',     ico:'🏆', label:'Prove'},
-        {tab:'caccia-calendario',ico:'📅', label:'Calendario'}
+        {tab:'caccia-home',  ico:'🏠', label:'Home'},
+        {tab:'caccia-cani',  ico:'🐕', label:'Cani'},
+        {tab:'caccia-gps',   ico:'🗺️', label:'GPS'},
+        {tab:'caccia-diario',ico:'📖', label:'Diario'},
+        {tab:'caccia-prove', ico:'🏆', label:'Prove'}
       ].map(function(t,i){
         var att = i===0;
         return '<button onclick="switchCacciaTab(\''+t.tab+'\')" id="ctab-'+t.tab+'" '
@@ -9391,7 +9391,7 @@ var _cacciaTracciaInterval = null;
 
 function switchCacciaTab(tab){
   _cacciaTabAttiva = tab;
-  ['caccia-home','caccia-gps','caccia-diario','caccia-prove','caccia-calendario']
+  ['caccia-home','caccia-cani','caccia-gps','caccia-diario','caccia-prove']
     .forEach(function(t){
       var b = document.getElementById('ctab-'+t);
       if(!b) return;
@@ -9404,6 +9404,7 @@ function switchCacciaTab(tab){
     if(!_currentUser){ setTimeout(function(){ renderCacciaHome(content); }, 800); }
     else { renderCacciaHome(content); }
   }
+  else if(tab==='caccia-cani')  renderCacciaCani(content);
   else if(tab==='caccia-gps')   renderCacciaGPS(content);
   else if(tab==='caccia-diario'){
     if(!_currentUser){ setTimeout(function(){ renderCacciaDiario(content); }, 800); }
@@ -10115,38 +10116,166 @@ async function renderCacciaDiario(container){
   }
 }
 
-async function renderCacciaProve(container){
+async function renderCacciaCani(container){
   container.innerHTML =
-    '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;'
-    +'box-shadow:0 2px 8px rgba(46,125,50,.08)">'
+    '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(46,125,50,.08)">'
     +'<div style="display:flex;align-items:center;justify-content:space-between">'
-    +'<div>'
-    +'<div style="font-size:18px;font-weight:700;color:#1a1a3a">🏆 Prove di Lavoro</div>'
-    +'<div style="font-size:12px;color:#6B8BB0">Registro ufficiale FIDASC / ENCI</div>'
-    +'</div>'
-    +'<button onclick="apriNuovaProva()" '
-    +'style="background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;'
-    +'border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer">+ Aggiungi</button>'
+    +'<div><div style="font-size:18px;font-weight:700;color:#1a1a3a">🐕 I miei cani da caccia</div>'
+    +'<div style="font-size:12px;color:#6B8BB0">Profili cani per gare e prove</div></div>'
+    +'<button onclick="apriNuovoCaneC()" style="background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer">+ Aggiungi</button>'
+    +'</div></div>'
+    +'<div id="caccia-cani-lista"><div style="text-align:center;padding:20px;color:#9ab0cc;font-size:13px">⏳ Caricamento...</div></div>'
+    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+
+  try {
+    if(!_currentUser){ setTimeout(function(){ renderCacciaCani(container); },800); return; }
+    var res = await _supabase.from('caccia_cani').select('*').eq('user_id',_currentUser.id).order('created_at',{ascending:false});
+    var _cani = res.data||[];
+    var listaEl = document.getElementById('caccia-cani-lista');
+    if(!listaEl) return;
+    if(!_cani.length){
+      listaEl.innerHTML =
+        '<div style="text-align:center;padding:40px 20px">'
+        +'<div style="font-size:56px;margin-bottom:12px">🐕</div>'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:8px">Nessun cane registrato</div>'
+        +'<div style="font-size:13px;color:#9ab0cc;margin-bottom:20px">Aggiungi il tuo primo cane da caccia o tartufo</div>'
+        +'<button onclick="apriNuovoCaneC()" style="background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer">+ Primo cane</button>'
+        +'</div>';
+      return;
+    }
+    var _catIco = {FERMA:'🎯',SEGUGIO:'🐾',RETRIEVER:'🦆',HPR:'🏔️',TARTUFO:'🍄'};
+    listaEl.innerHTML = _cani.map(function(c){
+      return '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(46,125,50,.06);border:1.5px solid #C8E6C9;display:flex;align-items:center;gap:14px">'
+        +'<div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#2E7D32,#C8E6C9);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0">'
+        +(_catIco[c.categoria]||'🐕')+'</div>'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-weight:700;color:#1a1a3a;font-size:15px">'+c.nome+'</div>'
+        +'<div style="font-size:12px;color:#558B2F;font-weight:600">'+(c.razza||'Razza non specificata')+'</div>'
+        +'<div style="font-size:11px;color:#9ab0cc;margin-top:2px">'
+        +(c.categoria||'—')+' · '+(c.sistema_gare||'ENCI')
+        +(c.numero_loi?' · LOI: '+c.numero_loi:'')
+        +'</div></div>'
+        +'<div style="display:flex;flex-direction:column;gap:6px">'
+        +'<button onclick="switchCacciaTab(\'caccia-prove\')" style="background:#F1F8E9;color:#2E7D32;border:1.5px solid #C8E6C9;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer">🏆 Prove</button>'
+        +'<button onclick="eliminaCaneC(\''+c.id+'\')" style="background:#FFF0EE;color:#C0534A;border:1.5px solid #F5C4BE;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer">🗑️</button>'
+        +'</div></div>';
+    }).join('');
+  } catch(e){
+    console.warn('[caccia-cani]',e.message);
+    document.getElementById('caccia-cani-lista').innerHTML='<div style="text-align:center;padding:20px;color:#9ab0cc;font-size:13px">Errore caricamento.</div>';
+  }
+}
+
+function apriNuovoCaneC(){
+  var ov=document.createElement('div');
+  ov.id='ov-nuovo-cane-c';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  ov.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:16px">🐕 Nuovo cane</div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Nome cane *</label>'
+    +'<input id="nc-nome" placeholder="Es. Birba" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Razza</label>'
+    +'<input id="nc-razza" placeholder="Es. Bracco Italiano" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Data nascita</label>'
+    +'<input type="date" id="nc-nascita" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px"/></div>'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Sesso</label>'
+    +'<select id="nc-sesso" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
+    +'<option value="M">♂ Maschio</option><option value="F">♀ Femmina</option>'
+    +'</select></div></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Categoria *</label>'
+    +'<select id="nc-categoria" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
+    +'<option value="FERMA">🎯 Ferma (pointer, setter, bracco...)</option>'
+    +'<option value="SEGUGIO">🐾 Segugio (lepre, cinghiale...)</option>'
+    +'<option value="RETRIEVER">🦆 Retriever / Spaniel</option>'
+    +'<option value="HPR">🏔️ HPR (Hunt Point Retrieve)</option>'
+    +'<option value="TARTUFO">🍄 Cerca Tartufo</option>'
+    +'</select></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Sistema gare</label>'
+    +'<select id="nc-sistema" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
+    +'<option value="ENCI">🇮🇹 ENCI (Italia)</option>'
+    +'<option value="JGHV">🇩🇪 JGHV (Germania)</option>'
+    +'<option value="FISC">🍄 FISC (Tartufo)</option>'
+    +'<option value="FCI">🌍 FCI (Internazionale)</option>'
+    +'</select></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Numero LOI</label>'
+    +'<input id="nc-loi" placeholder="Es. LOI24/12345" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Microchip</label>'
+    +'<input id="nc-chip" placeholder="15 cifre" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div></div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button onclick="document.getElementById(\'ov-nuovo-cane-c\').remove()" style="flex:1;background:#F1F8E9;color:#558B2F;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
+    +'<button onclick="salvaCaneC(this)" style="flex:2;background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva cane</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+}
+
+async function salvaCaneC(btn){
+  var nome=document.getElementById('nc-nome').value.trim();
+  if(!nome){ toast('Inserisci il nome del cane'); return; }
+  btn.disabled=true; btn.textContent='⏳';
+  var cane={
+    user_id:_currentUser?_currentUser.id:null,
+    nome:nome,
+    razza:document.getElementById('nc-razza').value.trim()||null,
+    data_nascita:document.getElementById('nc-nascita').value||null,
+    sesso:document.getElementById('nc-sesso').value,
+    categoria:document.getElementById('nc-categoria').value,
+    sistema_gare:document.getElementById('nc-sistema').value,
+    numero_loi:document.getElementById('nc-loi').value.trim()||null,
+    microchip:document.getElementById('nc-chip').value.trim()||null
+  };
+  try {
+    if(_currentUser) await _supabase.from('caccia_cani').insert(cane);
+  } catch(e){ console.warn('[caccia-cani] insert:',e.message); }
+  document.getElementById('ov-nuovo-cane-c').remove();
+  toast('✅ Cane aggiunto!');
+  var _tc=document.getElementById('caccia-tab-content');
+  if(_tc) renderCacciaCani(_tc);
+}
+
+async function eliminaCaneC(id){
+  if(!confirm('Eliminare questo cane? Anche le prove associate verranno scollegate.')) return;
+  try { if(_currentUser) await _supabase.from('caccia_cani').delete().eq('id',id); } catch(e){}
+  toast('🗑️ Cane eliminato');
+  var _tc=document.getElementById('caccia-tab-content');
+  if(_tc) renderCacciaCani(_tc);
+}
+
+async function renderCacciaProve(container){
+  // Carica cani per il selettore
+  var _caniList = [];
+  try {
+    if(_currentUser){
+      var rc = await _supabase.from('caccia_cani').select('id,nome,categoria,sistema_gare').eq('user_id',_currentUser.id);
+      _caniList = rc.data||[];
+    }
+  } catch(e){}
+
+  var _opzioniCani = _caniList.length
+    ? _caniList.map(function(c){ return '<option value="'+c.id+'" data-cat="'+c.categoria+'" data-sis="'+c.sistema_gare+'">'+c.nome+'</option>'; }).join('')
+    : '<option value="">— nessun cane registrato —</option>';
+
+  container.innerHTML =
+    '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(46,125,50,.08)">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between">'
+    +'<div><div style="font-size:18px;font-weight:700;color:#1a1a3a">🏆 Prove di Lavoro</div>'
+    +'<div style="font-size:12px;color:#6B8BB0">Registro ufficiale ENCI · JGHV · FISC</div></div>'
+    +'<button onclick="apriNuovaProva()" style="background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer">+ Aggiungi</button>'
     +'</div></div>'
     +'<div id="prove-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">'
     +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #C8E6C9"><div style="font-size:20px">⏳</div></div>'
     +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #C8E6C9"><div style="font-size:20px">⏳</div></div>'
     +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #C8E6C9"><div style="font-size:20px">⏳</div></div>'
     +'</div>'
+    +'<div id="scalata-tracker"></div>'
     +'<div id="prove-lista"><div style="text-align:center;padding:30px;color:#9ab0cc;font-size:13px">⏳ Caricamento prove...</div></div>'
-    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">'
-    +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
 
-  // Carica da Supabase
   try {
-    if(!_currentUser){ setTimeout(function(){ renderCacciaProve(container); }, 800); return; }
-    var res = await _supabase.from('caccia_prove')
-      .select('*')
-      .eq('user_id', _currentUser.id)
-      .order('data', {ascending:false});
+    if(!_currentUser){ setTimeout(function(){ renderCacciaProve(container); },800); return; }
+    var res = await _supabase.from('caccia_prove').select('*').eq('user_id',_currentUser.id).order('data',{ascending:false});
     var _prove = res.data||[];
-
-    // Fallback localStorage se Supabase vuoto
     if(!_prove.length){
       var _loc = JSON.parse(localStorage.getItem('bp_caccia_prove')||'[]');
       _prove = _loc;
@@ -10154,191 +10283,256 @@ async function renderCacciaProve(container){
       localStorage.setItem('bp_caccia_prove', JSON.stringify(_prove));
     }
 
-    // Stats
-    var _qualifiche = {ECC:0, MB:0, B:0, S:0, NC:0};
-    _prove.forEach(function(p){ if(_qualifiche[p.qualifica]!==undefined) _qualifiche[p.qualifica]++; });
-    var _best = _prove.find(function(p){ return p.qualifica==='ECC'; }) ? 'ECC'
-      : _prove.find(function(p){ return p.qualifica==='MB'; }) ? 'MB'
-      : _prove.find(function(p){ return p.qualifica==='B'; }) ? 'B'
-      : _prove.length ? ((_prove[0]&&_prove[0].qualifica)||'—') : '—';
-    var _bestLabel = {ECC:'Eccellente',MB:'Molto Buono',B:'Buono',S:'Sufficiente',NC:'Non Class.','-':'—'}[_best]||_best;
-    var _bestColor = {ECC:'#C9A961',MB:'#1565C0',B:'#2E7D32',S:'#E65100',NC:'#9ab0cc'}[_best]||'#9ab0cc';
-    var statsEl = document.getElementById('prove-stats');
-    if(statsEl) statsEl.innerHTML =
-      '<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9">'
-      +'<div style="font-size:24px;margin-bottom:4px">🏆</div>'
-      +'<div style="font-size:20px;font-weight:800;color:#2E7D32">'+_prove.length+'</div>'
-      +'<div style="font-size:10px;color:#9ab0cc">Prove totali</div></div>'
-      +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9">'
-      +'<div style="font-size:24px;margin-bottom:4px">⭐</div>'
-      +'<div style="font-size:16px;font-weight:800;color:'+_bestColor+'">'+_best+'</div>'
-      +'<div style="font-size:10px;color:#9ab0cc">'+_bestLabel+'</div></div>'
-      +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9">'
-      +'<div style="font-size:24px;margin-bottom:4px">🥇</div>'
-      +'<div style="font-size:20px;font-weight:800;color:#C9A961">'+(_qualifiche.ECC||0)+'</div>'
-      +'<div style="font-size:10px;color:#9ab0cc">Eccellenti</div></div>';
+    // === STATS ===
+    var _qMap={ECC:0,MB:0,B:0,S:0,NC:0};
+    _prove.forEach(function(p){ if(_qMap[p.qualifica]!==undefined) _qMap[p.qualifica]++; });
+    var _best=_prove.find(function(p){return p.qualifica==='ECC';})?'ECC':_prove.find(function(p){return p.qualifica==='MB';})?'MB':_prove.find(function(p){return p.qualifica==='B';})?'B':_prove.length?(_prove[0].qualifica||'—'):'—';
+    var _bestColor={ECC:'#C9A961',MB:'#1565C0',B:'#2E7D32',S:'#E65100',NC:'#9ab0cc'}[_best]||'#9ab0cc';
+    var _bestLabel={ECC:'Eccellente',MB:'Molto Buono',B:'Buono',S:'Sufficiente',NC:'Non Class.'}[_best]||_best;
+    var statsEl=document.getElementById('prove-stats');
+    if(statsEl) statsEl.innerHTML=
+      '<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9"><div style="font-size:22px;margin-bottom:4px">🏆</div><div style="font-size:20px;font-weight:800;color:#2E7D32">'+_prove.length+'</div><div style="font-size:10px;color:#9ab0cc">Prove totali</div></div>'
+      +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9"><div style="font-size:22px;margin-bottom:4px">⭐</div><div style="font-size:16px;font-weight:800;color:'+_bestColor+'">'+_best+'</div><div style="font-size:10px;color:#9ab0cc">'+_bestLabel+'</div></div>'
+      +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9"><div style="font-size:22px;margin-bottom:4px">🥇</div><div style="font-size:20px;font-weight:800;color:#C9A961">'+(_qMap.ECC||0)+'</div><div style="font-size:10px;color:#9ab0cc">Eccellenti</div></div>';
 
-    // Lista prove
-    var listaEl = document.getElementById('prove-lista');
+    // === SCALATA CAMPIONATO ===
+    _renderScalataTracker(_prove, _caniList);
+
+    // === LISTA PROVE ===
+    var listaEl=document.getElementById('prove-lista');
     if(!listaEl) return;
     if(!_prove.length){
-      listaEl.innerHTML =
-        '<div style="text-align:center;padding:40px 20px">'
-        +'<div style="font-size:48px;margin-bottom:12px">🏆</div>'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:8px">Nessuna prova registrata</div>'
-        +'<div style="font-size:13px;color:#9ab0cc;margin-bottom:20px">Aggiungi la tua prima prova di lavoro FIDASC/ENCI</div>'
-        +'<button onclick="apriNuovaProva()" '
-        +'style="background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;'
-        +'border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer">+ Prima prova</button>'
-        +'</div>';
+      listaEl.innerHTML='<div style="text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:12px">🏆</div><div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:8px">Nessuna prova registrata</div><div style="font-size:13px;color:#9ab0cc;margin-bottom:20px">Aggiungi la tua prima prova di lavoro</div><button onclick="apriNuovaProva()" style="background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer">+ Prima prova</button></div>';
       return;
     }
-
-    var _colQ = {ECC:'#C9A961',MB:'#1565C0',B:'#2E7D32',S:'#E65100',NC:'#9ab0cc'};
-    var _bgQ  = {ECC:'#FFFDE7',MB:'#E3F2FD',B:'#F1F8E9',S:'#FFF3E0',NC:'#F5F5F5'};
-    listaEl.innerHTML = _prove.map(function(p){
-      var qc = _colQ[p.qualifica]||'#9ab0cc';
-      var qb = _bgQ[p.qualifica]||'#F5F5F5';
-      return '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:10px;'
-        +'box-shadow:0 2px 8px rgba(46,125,50,.06);border:1.5px solid #C8E6C9">'
+    var _colQ={ECC:'#C9A961',MB:'#1565C0',B:'#2E7D32',S:'#E65100',NC:'#9ab0cc'};
+    var _bgQ={ECC:'#FFFDE7',MB:'#E3F2FD',B:'#F1F8E9',S:'#FFF3E0',NC:'#F5F5F5'};
+    listaEl.innerHTML=_prove.map(function(p){
+      var qc=_colQ[p.qualifica]||'#9ab0cc';
+      var qb=_bgQ[p.qualifica]||'#F5F5F5';
+      return '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(46,125,50,.06);border:1.5px solid #C8E6C9">'
         +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'
-        +'<div style="flex:1">'
-        +'<div style="font-weight:700;color:#1a1a3a;font-size:14px">'+(p.tipo_prova||'Prova')+'</div>'
-        +'<div style="font-size:11px;color:#558B2F;font-weight:700;margin-top:2px">'+(p.ente||'ENCI')+'</div>'
-        +'</div>'
+        +'<div style="flex:1"><div style="font-weight:700;color:#1a1a3a;font-size:14px">'+(p.tipo_prova||'Prova')+'</div>'
+        +'<div style="font-size:11px;color:#558B2F;font-weight:700;margin-top:2px">'+(p.ente||'ENCI')+(p.certificato?' · '+p.certificato:'')+'</div></div>'
         +'<div style="display:flex;align-items:center;gap:8px">'
-        +'<div style="background:'+qb+';color:'+qc+';font-weight:900;font-size:13px;'
-        +'border-radius:8px;padding:4px 10px;border:1.5px solid '+qc+'">'+(p.qualifica||'—')+'</div>'
-        +'<button onclick="eliminaProva(\''+p.id+'\')" '
-        +'style="background:#FFF0EE;color:#C0534A;border:1.5px solid #F5C4BE;border-radius:8px;'
-        +'padding:4px 8px;font-size:11px;cursor:pointer">🗑️</button>'
+        +'<div style="background:'+qb+';color:'+qc+';font-weight:900;font-size:13px;border-radius:8px;padding:4px 10px;border:1.5px solid '+qc+'">'+(p.qualifica||'—')+'</div>'
+        +'<button onclick="eliminaProva(\''+p.id+'\')" style="background:#FFF0EE;color:#C0534A;border:1.5px solid #F5C4BE;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer">🗑️</button>'
         +'</div></div>'
-        +'<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11px;color:#6B8BB0">'
-        +(p.cane ? '<span>🐕 '+p.cane+'</span>' : '')
-        +(p.zona ? '<span>📍 '+p.zona+'</span>' : '')
-        +(p.giudice ? '<span>👨‍⚖️ '+p.giudice+'</span>' : '')
-        +(p.punteggio ? '<span>🎯 Punti: '+p.punteggio+'</span>' : '')
+        +'<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:#6B8BB0">'
+        +(p.cane_nome?'<span>🐕 '+p.cane_nome+'</span>':'')
+        +(p.zona?'<span>📍 '+p.zona+'</span>':'')
+        +(p.giudice?'<span>👨‍⚖️ '+p.giudice+'</span>':'')
+        +(p.punteggio?'<span>🎯 '+p.punteggio+'</span>':'')
+        +(p.paese&&p.paese!=='IT'?'<span>🌍 '+p.paese+'</span>':'')
         +'<span>📅 '+new Date(p.data).toLocaleDateString('it-IT')+'</span>'
         +'</div>'
-        +(p.note ? '<div style="font-size:12px;color:#6B8BB0;margin-top:8px;padding-top:8px;border-top:1px solid #E8F5E9">'+p.note+'</div>' : '')
+        +(p.note?'<div style="font-size:12px;color:#6B8BB0;margin-top:8px;padding-top:8px;border-top:1px solid #E8F5E9">'+p.note+'</div>':'')
         +'</div>';
     }).join('');
   } catch(e){
-    console.warn('[prove]', e.message);
-    var listaEl2 = document.getElementById('prove-lista');
-    var _loc2 = JSON.parse(localStorage.getItem('bp_caccia_prove')||'[]');
-    if(listaEl2 && _loc2.length){
-      listaEl2.innerHTML = '<div style="font-size:11px;color:#9ab0cc;text-align:center;margin-bottom:8px">📦 Dati in cache locale</div>';
-    } else if(listaEl2){
-      listaEl2.innerHTML = '<div style="text-align:center;padding:30px;color:#9ab0cc;font-size:13px">Errore caricamento. Controlla la connessione.</div>';
-    }
+    console.warn('[prove]',e.message);
+    var listaEl2=document.getElementById('prove-lista');
+    if(listaEl2) listaEl2.innerHTML='<div style="text-align:center;padding:20px;color:#9ab0cc;font-size:13px">Errore caricamento.</div>';
   }
 }
 
+function _renderScalataTracker(_prove, _caniList){
+  var el=document.getElementById('scalata-tracker');
+  if(!el) return;
+  if(!_caniList.length){ el.innerHTML=''; return; }
+
+  var html='<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9">'
+    +'<div style="font-size:13px;font-weight:800;color:#2E7D32;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">📈 Scalata al Campionato</div>';
+
+  _caniList.forEach(function(cane){
+    var _pCane = _prove.filter(function(p){ return p.cane_id===cane.id; });
+    var sis = cane.sistema_gare||'ENCI';
+    var _tracker = '';
+
+    if(sis==='ENCI'){
+      var _cac = _pCane.filter(function(p){ return p.certificato==='CAC'; });
+      var _giudici = [...new Set(_cac.map(function(p){ return p.giudice; }).filter(Boolean))];
+      var _dateOk = _cac.length>=2 ? (new Date(_cac[_cac.length-1].data)-new Date(_cac[0].data))/(1000*60*60*24*30) >= 12 : false;
+      var _cacN = Math.min(_cac.length,3);
+      var _pct = Math.round((_cacN/3)*100);
+      _tracker = '<div style="margin-bottom:10px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+        +'<span style="font-size:13px;font-weight:700;color:#1a1a3a">'+cane.nome+' <span style="font-size:10px;color:#558B2F">ENCI</span></span>'
+        +'<span style="font-size:11px;color:#9ab0cc">Campione di Lavoro Italiano</span>'
+        +'</div>'
+        +'<div style="background:#E8F5E9;border-radius:8px;height:10px;margin-bottom:6px">'
+        +'<div style="background:linear-gradient(90deg,#2E7D32,#C9A961);height:10px;border-radius:8px;width:'+_pct+'%;transition:width .5s"></div>'
+        +'</div>'
+        +'<div style="font-size:11px;color:#558B2F">✅ CAC: '+_cacN+'/3'
+        +' · 👨‍⚖️ Giudici diversi: '+_giudici.length+'/2'
+        +' · ⏱️ 12 mesi: '+(_dateOk?'✅':'⏳')+'</div>'
+        +(_cacN>=3&&_giudici.length>=2&&_dateOk?'<div style="background:#F1F8E9;border:1.5px solid #2E7D32;border-radius:8px;padding:8px;margin-top:6px;font-size:12px;font-weight:700;color:#2E7D32;text-align:center">🎖️ Titolo raggiunto! Richiedi CLI a ENCI</div>':'')
+        +'</div>';
+    } else if(sis==='JGHV'){
+      var _vjp=_pCane.find(function(p){return p.tipo_prova==='VJP - Frühjahrssuche';});
+      var _hzp=_pCane.find(function(p){return p.tipo_prova==='HZP - Herbstzucht';});
+      var _vgp=_pCane.find(function(p){return p.tipo_prova==='VGP - Utility';});
+      var _vjpPts=_vjp?parseInt(_vjp.punteggio)||0:0;
+      var _hzpPts=_hzp?parseInt(_hzp.punteggio)||0:0;
+      var _vgpPts=_vgp?parseInt(_vgp.punteggio)||0:0;
+      _tracker='<div style="margin-bottom:10px">'
+        +'<div style="font-size:13px;font-weight:700;color:#1a1a3a;margin-bottom:6px">'+cane.nome+' <span style="font-size:10px;color:#558B2F">JGHV</span></div>'
+        +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'
+        +'<div style="background:'+(_vjp?'#F1F8E9':'#F5F5F5')+';border-radius:8px;padding:8px;text-align:center;border:1.5px solid '+(_vjp?'#C8E6C9':'#E0E0E0')+'">'
+        +'<div style="font-size:10px;font-weight:700;color:#558B2F">VJP</div>'
+        +'<div style="font-size:16px;font-weight:800;color:'+(_vjp?'#2E7D32':'#9ab0cc')+'">'+(_vjpPts||'—')+'</div>'
+        +'<div style="font-size:9px;color:#9ab0cc">max 72</div></div>'
+        +'<div style="background:'+(_hzp?'#F1F8E9':'#F5F5F5')+';border-radius:8px;padding:8px;text-align:center;border:1.5px solid '+(_hzp?'#C8E6C9':'#E0E0E0')+'">'
+        +'<div style="font-size:10px;font-weight:700;color:#558B2F">HZP</div>'
+        +'<div style="font-size:16px;font-weight:800;color:'+(_hzp?'#2E7D32':'#9ab0cc')+'">'+(_hzpPts||'—')+'</div>'
+        +'<div style="font-size:9px;color:#9ab0cc">max 200</div></div>'
+        +'<div style="background:'+(_vgp?'#FFFDE7':'#F5F5F5')+';border-radius:8px;padding:8px;text-align:center;border:1.5px solid '+(_vgp?'#C9A961':'#E0E0E0')+'">'
+        +'<div style="font-size:10px;font-weight:700;color:#C9A961">VGP</div>'
+        +'<div style="font-size:16px;font-weight:800;color:'+(_vgp?'#C9A961':'#9ab0cc')+'">'+(_vgpPts||'—')+'</div>'
+        +'<div style="font-size:9px;color:#9ab0cc">max 336</div></div>'
+        +'</div>'
+        +(_vgpPts>=180?'<div style="background:#FFFDE7;border:1.5px solid #C9A961;border-radius:8px;padding:8px;margin-top:6px;font-size:12px;font-weight:700;color:#C9A961;text-align:center">🎖️ Vollgebrauchshund raggiunto!</div>':'')
+        +'</div>';
+    } else if(sis==='FISC'){
+      var _ecc=_pCane.filter(function(p){return p.qualifica==='ECC';});
+      var _giudiciF=[...new Set(_ecc.map(function(p){return p.giudice;}).filter(Boolean))];
+      var _eccN=Math.min(_ecc.length,3);
+      var _pctF=Math.round((_eccN/3)*100);
+      _tracker='<div style="margin-bottom:10px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+        +'<span style="font-size:13px;font-weight:700;color:#1a1a3a">'+cane.nome+' <span style="font-size:10px;color:#558B2F">FISC</span></span>'
+        +'<span style="font-size:11px;color:#9ab0cc">Campione Italiano Tartufo</span></div>'
+        +'<div style="background:#E8F5E9;border-radius:8px;height:10px;margin-bottom:6px">'
+        +'<div style="background:linear-gradient(90deg,#558B2F,#C9A961);height:10px;border-radius:8px;width:'+_pctF+'%;transition:width .5s"></div>'
+        +'</div>'
+        +'<div style="font-size:11px;color:#558B2F">⭐ Eccellenti: '+_eccN+'/3 · 👨‍⚖️ Giudici: '+_giudiciF.length+'/2</div>'
+        +(_eccN>=3&&_giudiciF.length>=2?'<div style="background:#F1F8E9;border:1.5px solid #2E7D32;border-radius:8px;padding:8px;margin-top:6px;font-size:12px;font-weight:700;color:#2E7D32;text-align:center">🎖️ Titolo raggiunto! Richiedi CIL a FISC</div>':'')
+        +'</div>';
+    }
+    html += _tracker;
+  });
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
 function apriNuovaProva(){
-  var oggi = new Date().toISOString().substring(0,10);
-  var ov = document.createElement('div');
+  var oggi=new Date().toISOString().substring(0,10);
+  var ov=document.createElement('div');
   ov.id='ov-nuova-prova';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  var _caniOpts='';
+  try {
+    var _cl=JSON.parse(localStorage.getItem('bp_caccia_cani_lista')||'[]');
+    _caniOpts=_cl.map(function(c){return '<option value="'+c.id+'" data-nome="'+c.nome+'">'+c.nome+'</option>';}).join('');
+  } catch(e){}
   ov.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto">'
-    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:16px">🏆 Nuova Prova di Lavoro</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:16px">🏆 Nuova Prova</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
     +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Tipo prova *</label>'
     +'<select id="np-tipo" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
-    +'<option>Field Trial</option>'
-    +'<option>Prova di Lavoro</option>'
-    +'<option>Cerca Tartufo</option>'
-    +'<option>Campionato Italiano</option>'
-    +'<option>Trofeo Regionale</option>'
-    +'<option>Esame di Lavoro</option>'
-    +'<option>Prova FIDASC</option>'
-    +'<option>Prova ENCI</option>'
+    +'<option>San Uberto</option><option>Grande Cerca</option><option>Campo di Lavoro</option>'
+    +'<option>Field Trial Autunnale</option><option>Field Trial Primaverile</option>'
+    +'<option>Prova su Lepre</option><option>Prova su Cinghiale</option>'
+    +'<option>Working Test Retriever</option><option>Retriever Trial</option>'
+    +'<option>Hunt Point Retrieve</option>'
+    +'<option>VJP - Frühjahrssuche</option><option>HZP - Herbstzucht</option><option>VGP - Utility</option>'
+    +'<option>Gara su Ring Artificiale</option><option>Campionato Italiano Lagotto</option>'
+    +'<option>Campionato Italiano Cerca</option><option>European Truffle Dog Champ.</option>'
     +'</select></div>'
     +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Ente</label>'
     +'<select id="np-ente" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
-    +'<option>FIDASC</option><option>ENCI</option><option>Regionale</option><option>Altro</option>'
+    +'<option>ENCI</option><option>FCI</option><option>JGHV</option><option>FISC</option><option>Regionale</option>'
     +'</select></div></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
     +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Data *</label>'
     +'<input type="date" id="np-data" value="'+oggi+'" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px"/></div>'
-    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Qualifica *</label>'
-    +'<select id="np-qualifica" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
-    +'<option value="ECC">⭐ ECC – Eccellente</option>'
-    +'<option value="MB">👍 MB – Molto Buono</option>'
-    +'<option value="B">✅ B – Buono</option>'
-    +'<option value="S">📋 S – Sufficiente</option>'
-    +'<option value="NC">❌ NC – Non Classificato</option>'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Paese</label>'
+    +'<select id="np-paese" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
+    +'<option value="IT">🇮🇹 Italia</option><option value="DE">🇩🇪 Germania</option>'
+    +'<option value="FR">🇫🇷 Francia</option><option value="ES">🇪🇸 Spagna</option>'
+    +'<option value="HR">🇭🇷 Croazia</option><option value="INT">🌍 Internazionale</option>'
     +'</select></div></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
-    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Cane</label>'
-    +'<input id="np-cane" placeholder="Es. Birba" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Qualifica *</label>'
+    +'<select id="np-qualifica" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
+    +'<option value="ECC">⭐ ECC – Eccellente</option><option value="MB">👍 MB – Molto Buono</option>'
+    +'<option value="B">✅ B – Buono</option><option value="S">📋 S – Sufficiente</option>'
+    +'<option value="NC">❌ NC – Non Classificato</option>'
+    +'</select></div>'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Certificato</label>'
+    +'<select id="np-cert" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
+    +'<option value="">— nessuno —</option>'
+    +'<option value="CAC">CAC</option><option value="CACIT">CACIT</option>'
+    +'<option value="rCAC">rCAC</option><option value="rCACIT">rCACIT</option>'
+    +'<option value="CIL">CIL – Camp.Italiano Lagotto</option>'
+    +'</select></div></div>'
+    +(_caniOpts?'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Cane</label>'
+    +'<select id="np-cane-id" onchange="var o=this.options[this.selectedIndex];var el=document.getElementById(\'np-cane-nome\');if(el)el.value=o.text;" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
+    +'<option value="">— seleziona —</option>'+_caniOpts+'</select></div>':'')
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Nome cane</label>'
+    +'<input id="np-cane-nome" placeholder="Es. Birba" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
     +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Punteggio</label>'
     +'<input id="np-punteggio" placeholder="Es. 184/200" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div></div>'
-    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Zona / Località</label>'
-    +'<input id="np-zona" placeholder="Es. Riserva Val Pescara, PE" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
-    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Giudice</label>'
-    +'<input id="np-giudice" placeholder="Es. Mario Rossi" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
-    +'<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Note / Osservazioni</label>'
-    +'<textarea id="np-note" rows="3" placeholder="Es. Ottima prova, 3 ferme corrette..." style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box;resize:none"></textarea></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Zona / Località</label>'
+    +'<input id="np-zona" placeholder="Es. Riserva Val Pescara" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Giudice</label>'
+    +'<input id="np-giudice" placeholder="Es. Mario Rossi" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Note</label>'
+    +'<textarea id="np-note" rows="2" placeholder="Es. Ottima prova, 3 ferme corrette..." style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box;resize:none"></textarea></div>'
     +'<div style="display:flex;gap:10px">'
-    +'<button onclick="document.getElementById(\'ov-nuova-prova\').remove()" '
-    +'style="flex:1;background:#F1F8E9;color:#558B2F;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
-    +'<button onclick="salvaProva(this)" '
-    +'style="flex:2;background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;'
-    +'border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva prova</button>'
+    +'<button onclick="document.getElementById(\'ov-nuova-prova\').remove()" style="flex:1;background:#F1F8E9;color:#558B2F;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
+    +'<button onclick="salvaProva(this)" style="flex:2;background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva prova</button>'
     +'</div></div>';
   document.body.appendChild(ov);
 }
 
 async function salvaProva(btn){
-  var data = document.getElementById('np-data')&&document.getElementById('np-data').value;
+  var data=document.getElementById('np-data')&&document.getElementById('np-data').value;
   if(!data){ toast('Inserisci la data'); return; }
   btn.disabled=true; btn.textContent='⏳';
-  var prova = {
-    user_id: _currentUser ? _currentUser.id : null,
-    tipo_prova: document.getElementById('np-tipo').value,
-    ente: document.getElementById('np-ente').value,
-    data: data,
-    qualifica: document.getElementById('np-qualifica').value,
-    cane: document.getElementById('np-cane').value.trim()||null,
-    punteggio: document.getElementById('np-punteggio').value.trim()||null,
-    zona: document.getElementById('np-zona').value.trim()||null,
-    giudice: document.getElementById('np-giudice').value.trim()||null,
-    note: document.getElementById('np-note').value.trim()||null
+  var _caneId=document.getElementById('np-cane-id')&&document.getElementById('np-cane-id').value||null;
+  var _caneNome=document.getElementById('np-cane-nome')&&document.getElementById('np-cane-nome').value.trim()||null;
+  var prova={
+    user_id:_currentUser?_currentUser.id:null,
+    cane_id:_caneId||null,
+    tipo_prova:document.getElementById('np-tipo').value,
+    ente:document.getElementById('np-ente').value,
+    data:data,
+    paese:document.getElementById('np-paese').value,
+    qualifica:document.getElementById('np-qualifica').value,
+    certificato:document.getElementById('np-cert').value||null,
+    cane_nome:_caneNome,
+    punteggio:document.getElementById('np-punteggio').value.trim()||null,
+    zona:document.getElementById('np-zona').value.trim()||null,
+    giudice:document.getElementById('np-giudice').value.trim()||null,
+    note:document.getElementById('np-note').value.trim()||null
   };
-  // Salva localStorage immediato
-  var _loc = JSON.parse(localStorage.getItem('bp_caccia_prove')||'[]');
-  var _locEntry = Object.assign({}, prova, {id: 'loc_'+Date.now()});
-  _loc.unshift(_locEntry);
-  localStorage.setItem('bp_caccia_prove', JSON.stringify(_loc));
-  // Prova Supabase
-  try {
-    if(_currentUser){
-      await _supabase.from('caccia_prove').insert(prova);
-    }
-  } catch(e){ console.warn('[prove] supabase insert:', e.message); }
+  var _loc=JSON.parse(localStorage.getItem('bp_caccia_prove')||'[]');
+  _loc.unshift(Object.assign({},prova,{id:'loc_'+Date.now()}));
+  localStorage.setItem('bp_caccia_prove',JSON.stringify(_loc));
+  try { if(_currentUser) await _supabase.from('caccia_prove').insert(prova); } catch(e){ console.warn('[prove] insert:',e.message); }
   document.getElementById('ov-nuova-prova').remove();
   toast('✅ Prova salvata!');
-  var _tc = document.getElementById('caccia-tab-content');
+  var _tc=document.getElementById('caccia-tab-content');
   if(_tc) renderCacciaProve(_tc);
 }
 
 async function eliminaProva(id){
   if(!confirm('Eliminare questa prova?')) return;
-  try {
-    if(_currentUser){ await _supabase.from('caccia_prove').delete().eq('id', id); }
-  } catch(e){ console.warn('[prove] delete:', e.message); }
-  var _loc = JSON.parse(localStorage.getItem('bp_caccia_prove')||'[]');
-  _loc = _loc.filter(function(p){ return p.id !== id; });
-  localStorage.setItem('bp_caccia_prove', JSON.stringify(_loc));
+  try { if(_currentUser) await _supabase.from('caccia_prove').delete().eq('id',id); } catch(e){}
+  var _loc=JSON.parse(localStorage.getItem('bp_caccia_prove')||'[]');
+  localStorage.setItem('bp_caccia_prove',JSON.stringify(_loc.filter(function(p){return p.id!==id;})));
   toast('🗑️ Prova eliminata');
-  var _tc = document.getElementById('caccia-tab-content');
+  var _tc=document.getElementById('caccia-tab-content');
   if(_tc) renderCacciaProve(_tc);
 }
 
 function renderCacciaCalendario(container){
-  container.innerHTML = '<div style="text-align:center;padding:40px;color:#558B2F">'
-    +'<div style="font-size:48px;margin-bottom:12px">📅</div>'
+  container.innerHTML='<div style="text-align:center;padding:60px 20px;color:#558B2F">'
+    +'<div style="font-size:56px;margin-bottom:12px">📅</div>'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;margin-bottom:8px">Calendario Venatorio</div>'
     +'<div style="font-size:13px;color:#9ab0cc">Date apertura/chiusura per regione — in arrivo</div>'
     +'</div>';
