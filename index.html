@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.94';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.95';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10145,7 +10145,9 @@ async function renderCacciaCani(container){
     }
     container._caniRetry=0;
     var res = await _supabase.from('caccia_cani').select('*').eq('user_id',_currentUser.id).order('created_at',{ascending:false});
+    if(res.error) throw res.error;
     var _cani = res.data||[];
+    localStorage.setItem('bp_caccia_cani_lista', JSON.stringify(_cani));
     var listaEl = document.getElementById('caccia-cani-lista');
     if(!listaEl) return;
     if(!_cani.length){
@@ -10444,18 +10446,28 @@ function _renderScalataTracker(_prove, _caniList){
   el.innerHTML = html;
 }
 
-function apriNuovaProva(){
+async function apriNuovaProva(){
   var oggi=new Date().toISOString().substring(0,10);
   var ov=document.createElement('div');
   ov.id='ov-nuova-prova';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
   var _caniOpts='';
   try {
-    var _cl=JSON.parse(localStorage.getItem('bp_caccia_cani_lista')||'[]');
-    _caniOpts=_cl.map(function(c){return '<option value="'+c.id+'" data-nome="'+c.nome+'">'+c.nome+'</option>';}).join('');
-  } catch(e){}
+    var _cl=[];
+    if(_currentUser){
+      var rc=await _supabase.from('caccia_cani').select('id,nome,categoria,sistema_gare').eq('user_id',_currentUser.id).order('nome');
+      _cl=rc.data||[];
+      if(_cl.length) localStorage.setItem('bp_caccia_cani_lista',JSON.stringify(_cl));
+    }
+    if(!_cl.length) _cl=JSON.parse(localStorage.getItem('bp_caccia_cani_lista')||'[]');
+    _caniOpts=_cl.map(function(c){return '<option value="'+c.id+'">'+c.nome+(c.categoria?' ('+c.categoria+')':'')+'</option>';}).join('');
+  } catch(e){ console.warn('[prove] cani opts:',e.message); }
   ov.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:16px">🏆 Nuova Prova</div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">🐕 Cane *</label>'
+    +'<select id="np-cane-id" onchange="var o=this.options[this.selectedIndex];var el=document.getElementById(\'np-cane-nome\');if(el)el.value=o.text.split(\'(\')[0].trim();" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
+    +'<option value="">— seleziona cane —</option>'+_caniOpts
+    +'</select></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
     +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Tipo prova *</label>'
     +'<select id="np-tipo" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
@@ -10495,19 +10507,14 @@ function apriNuovaProva(){
     +'<option value="rCAC">rCAC</option><option value="rCACIT">rCACIT</option>'
     +'<option value="CIL">CIL – Camp.Italiano Lagotto</option>'
     +'</select></div></div>'
-    +(_caniOpts?'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Cane</label>'
-    +'<select id="np-cane-id" onchange="var o=this.options[this.selectedIndex];var el=document.getElementById(\'np-cane-nome\');if(el)el.value=o.text;" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
-    +'<option value="">— seleziona —</option>'+_caniOpts+'</select></div>':'')
+    +'<input type="hidden" id="np-cane-nome"/>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
-    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Nome cane</label>'
-    +'<input id="np-cane-nome" placeholder="Es. Birba" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
     +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Punteggio</label>'
-    +'<input id="np-punteggio" placeholder="Es. 184/200" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div></div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<input id="np-punteggio" placeholder="Es. 184/200" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
     +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Zona / Località</label>'
-    +'<input id="np-zona" placeholder="Es. Riserva Val Pescara" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
-    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Giudice</label>'
-    +'<input id="np-giudice" placeholder="Es. Mario Rossi" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div></div>'
+    +'<input id="np-zona" placeholder="Es. Riserva Val Pescara" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Giudice</label>'
+    +'<input id="np-giudice" placeholder="Es. Mario Rossi" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
     +'<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Note</label>'
     +'<textarea id="np-note" rows="2" placeholder="Es. Ottima prova, 3 ferme corrette..." style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box;resize:none"></textarea></div>'
     +'<div style="display:flex;gap:10px">'
