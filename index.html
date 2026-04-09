@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.92';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.93';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9531,6 +9531,12 @@ function renderCacciaGPS(container){
       +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#2E7D32;margin-bottom:8px">GPS Caccia & Tartufo</div>'
       +'<div style="font-size:13px;color:#9ab0cc;margin-bottom:24px">Segna waypoint durante l\'uscita.<br>Il percorso viene salvato automaticamente.</div>'
       +'</div>'
+      +'<div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;border:1.5px solid #C8E6C9">'
+      +'<div style="font-size:12px;font-weight:800;color:#558B2F;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">🔑 Hai ricevuto un codice GPS?</div>'
+      +'<div style="display:flex;gap:8px">'
+      +'<input id="input-codice-gps" placeholder="Es. GPS-7X9K2" style="flex:1;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;text-transform:uppercase"/>'
+      +'<button onclick="apriCodiceGPS(document.getElementById(\'input-codice-gps\').value)" style="background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer">Apri</button>'
+      +'</div></div>'
       +'<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(46,125,50,.08)">'
       +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Tipo uscita</label>'
       +'<select id="gps-tipo" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
@@ -9931,6 +9937,9 @@ async function apriMappaSalvata(uscitaId){
     +'display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10">'
     +'<button onclick="this.closest(\'[style*=fixed]\').remove()" '
     +'style="background:rgba(255,255,255,.2);border:none;border-radius:8px;padding:6px 12px;color:#fff;font-size:18px;cursor:pointer">←</button>'
+    +'<div style="flex:1"></div>'
+    +'<button onclick="apriCondividiUscita(\''+uscitaId+'\')" '
+    +'style="background:linear-gradient(135deg,#25D366,#128C7E);border:none;border-radius:8px;padding:8px 14px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">📤 Condividi</button>'
     +'<div>'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:16px;font-weight:700;color:#fff">'+u.zona+'</div>'
       +'<div style="font-size:11px;color:rgba(255,255,255,.7)">'
@@ -10162,6 +10171,7 @@ async function renderCacciaCani(container){
         +'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:6px">'
         +'<button onclick="switchCacciaTab(\'caccia-prove\')" style="background:#F1F8E9;color:#2E7D32;border:1.5px solid #C8E6C9;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer">🏆 Prove</button>'
+        +'<button onclick="condividiSchedaCane(\''+c.id+'\',\''+c.nome+'\',\''+(c.razza||'')+'\',\''+(c.categoria||'')+'\',\''+(c.sistema_gare||'ENCI')+'\')" style="background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer">📤 Invia</button>'
         +'<button onclick="eliminaCaneC(\''+c.id+'\')" style="background:#FFF0EE;color:#C0534A;border:1.5px solid #F5C4BE;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer">🗑️</button>'
         +'</div></div>';
     }).join('');
@@ -10539,6 +10549,173 @@ async function eliminaProva(id){
   toast('🗑️ Prova eliminata');
   var _tc=document.getElementById('caccia-tab-content');
   if(_tc) renderCacciaProve(_tc);
+}
+
+async function condividiSchedaCane(caneId, nomeC, razzaC, catC, sisC){
+  var _prove = [];
+  try {
+    if(_currentUser){
+      var rp = await _supabase.from('caccia_prove').select('*').eq('user_id',_currentUser.id).eq('cane_id',caneId).order('data',{ascending:false});
+      _prove = rp.data||[];
+    }
+  } catch(e){}
+  if(!_prove.length){
+    var _loc = JSON.parse(localStorage.getItem('bp_caccia_prove')||'[]');
+    _prove = _loc.filter(function(p){ return p.cane_id===caneId; });
+  }
+  var _uscite = [];
+  try {
+    if(_currentUser){
+      var ru = await _supabase.from('caccia_uscite').select('km,ore').eq('user_id',_currentUser.id);
+      _uscite = ru.data||[];
+    }
+  } catch(e){}
+  var _kmTot = Math.round(_uscite.reduce(function(a,u){return a+(u.km||0);},0)*10)/10;
+  var _oreTot = Math.round(_uscite.reduce(function(a,u){return a+(u.ore||0);},0)*10)/10;
+  var _stagione = new Date().getFullYear();
+  var _cac = _prove.filter(function(p){return p.certificato==='CAC';}).length;
+  var _cacit = _prove.filter(function(p){return p.certificato==='CACIT';}).length;
+  var _ecc = _prove.filter(function(p){return p.qualifica==='ECC';}).length;
+  var _mb = _prove.filter(function(p){return p.qualifica==='MB';}).length;
+  var _scalata = '';
+  if(sisC==='ENCI'&&_cac>0) _scalata='\n📈 Scalata CLI: '+Math.min(_cac,3)+'/3 CAC';
+  if(sisC==='FISC'&&_ecc>0) _scalata='\n📈 Scalata CIL: '+Math.min(_ecc,3)+'/3 ECC';
+  if(sisC==='JGHV') _scalata='\n📈 Sistema JGHV: '+_prove.length+' prove';
+  var _proveStr='';
+  if(_cac>0)  _proveStr+='🏅 '+_cac+' CAC  ';
+  if(_cacit>0) _proveStr+='🌍 '+_cacit+' CACIT  ';
+  if(_ecc>0)  _proveStr+='⭐ '+_ecc+' ECC  ';
+  if(_mb>0)   _proveStr+='👍 '+_mb+' MB  ';
+  if(!_proveStr) _proveStr='Nessuna prova ancora';
+  var testo='🐕 *'+nomeC+'*'+(razzaC?' — '+razzaC:'')
+    +'\n📋 Categoria: '+(catC||'—')+' · '+(sisC||'ENCI')
+    +'\n\n🏆 *Prove ufficiali:*\n'+_proveStr.trim()
+    +_scalata
+    +'\n\n📅 Stagione '+_stagione+': '+(_uscite.length||'—')+' uscite · '+_kmTot+' km · '+_oreTot+'h in campo'
+    +'\n\n_Scheda generata con BreedPed 🐾_\n_breedped.com_';
+  window.open('https://wa.me/?text='+encodeURIComponent(testo),'_blank');
+}
+
+async function apriCondividiUscita(uscitaId){
+  var u=null;
+  var _loc=JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+  u=_loc.find(function(x){return String(x.id)===String(uscitaId);});
+  if(!u&&_currentUser){
+    try{
+      var r=await _supabase.from('caccia_uscite').select('*').eq('id',uscitaId).eq('user_id',_currentUser.id).single();
+      if(r.data) u=r.data;
+    }catch(e){}
+  }
+  if(!u){toast('Uscita non trovata');return;}
+  var wps=u.waypoints||[];
+  var _icM={capo:'🎯',ferma:'🐕',tartufo:'🍄',nota:'⚠️'};
+  var ov=document.createElement('div');
+  ov.id='ov-condividi-uscita';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999999;display:flex;align-items:flex-end;justify-content:center';
+  ov.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:4px">📤 Condividi uscita</div>'
+    +'<div style="font-size:12px;color:#9ab0cc;margin-bottom:16px">'+u.zona+' · '+new Date(u.data).toLocaleDateString('it-IT')+'</div>'
+    +'<div style="background:#F1F8E9;border-radius:12px;padding:12px;margin-bottom:16px">'
+    +'<div style="font-size:11px;font-weight:800;color:#558B2F;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Scegli waypoint da condividere</div>'
+    +(wps.length===0?'<div style="font-size:13px;color:#9ab0cc">Nessun waypoint in questa uscita</div>'
+    :wps.map(function(w,i){
+      return '<label style="display:flex;align-items:center;gap:10px;padding:8px;background:#fff;border-radius:8px;margin-bottom:6px;cursor:pointer">'
+        +'<input type="checkbox" checked id="wp-share-'+i+'" style="width:18px;height:18px;accent-color:#2E7D32"/>'
+        +'<span style="font-size:18px">'+(_icM[w.tipo]||'📍')+'</span>'
+        +'<span style="font-size:13px;font-weight:600;color:#1a1a3a">'+(w.testo||w.tipo)+'</span>'
+        +'</label>';
+    }).join(''))
+    +'</div>'
+    +'<div style="background:#FFF9E6;border:1.5px solid #C9A961;border-radius:10px;padding:10px;margin-bottom:16px;font-size:12px;color:#A88A41">'
+    +'⚠️ Solo i waypoint selezionati saranno visibili. Il codice scade in 7 giorni.'
+    +'</div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button onclick="document.getElementById(\'ov-condividi-uscita\').remove()" style="flex:1;background:#F1F8E9;color:#558B2F;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
+    +'<button onclick="generaCodiceGPS(\''+uscitaId+'\','+JSON.stringify(u).replace(/'/g,"\\'")+','+wps.length+')" style="flex:2;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">📤 Genera codice WhatsApp</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+}
+
+async function generaCodiceGPS(uscitaId, u, wpCount){
+  var wps=(u.waypoints||[]).filter(function(w,i){
+    var cb=document.getElementById('wp-share-'+i);
+    return cb?cb.checked:true;
+  });
+  var codice='GPS-'+Math.random().toString(36).substr(2,5).toUpperCase();
+  var scade=new Date(Date.now()+7*24*60*60*1000).toISOString();
+  var dati={zona:u.zona,data:u.data,tipo:u.tipo||'Caccia',km:u.km||0,durata_minuti:u.durata_minuti||0,waypoints:wps,traccia:u.traccia||[]};
+  try{
+    if(_currentUser) await _supabase.from('caccia_condivisioni').insert({codice:codice,user_id:_currentUser.id,uscita_id:String(uscitaId),uscita_data:dati,scade_at:scade});
+  }catch(e){console.warn('[condividi]',e.message);}
+  document.getElementById('ov-condividi-uscita')&&document.getElementById('ov-condividi-uscita').remove();
+  var testo='🗺️ *Uscita '+u.zona+'*'
+    +'\n📅 '+new Date(u.data).toLocaleDateString('it-IT')+' · '+(u.tipo||'Caccia')
+    +'\n📏 '+(u.km||0)+' km · '+(u.durata_minuti||0)+' min'
+    +'\n📍 '+wps.length+' waypoint condivisi su '+wpCount
+    +'\n\n🔑 *Codice: '+codice+'*'
+    +'\n_(scade il '+new Date(scade).toLocaleDateString('it-IT')+')'
+    +'\n\nApri BreedPed → Caccia → GPS → inserisci il codice_'
+    +'\n\n_Powered by BreedPed 🐾_';
+  window.open('https://wa.me/?text='+encodeURIComponent(testo),'_blank');
+}
+
+async function apriCodiceGPS(codice){
+  if(!codice||!codice.trim()){toast('Inserisci il codice');return;}
+  var _cod=codice.trim().toUpperCase();
+  try{
+    var r=await _supabase.from('caccia_condivisioni').select('*').eq('codice',_cod).single();
+    if(r.error||!r.data){toast('❌ Codice non trovato');return;}
+    if(new Date(r.data.scade_at)<new Date()){toast('❌ Codice scaduto');return;}
+    apriMappaDaCondivisione(r.data.uscita_data,_cod);
+  }catch(e){toast('❌ Codice non trovato');}
+}
+
+function apriMappaDaCondivisione(u,codice){
+  var wps=u.waypoints||[];
+  var traccia=u.traccia||[];
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:#F1F8E9;z-index:99999;overflow-y:auto';
+  overlay.innerHTML=
+    '<div style="background:linear-gradient(135deg,#2E7D32,#388E3C);padding:16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10">'
+    +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;padding:6px 12px;color:#fff;font-size:18px;cursor:pointer">←</button>'
+    +'<div><div style="font-family:\'Playfair Display\',serif;font-size:16px;font-weight:700;color:#fff">'+u.zona+'</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,.7)">📤 Condiviso · '+codice+' · '+new Date(u.data).toLocaleDateString('it-IT')+'</div></div>'
+    +'</div>'
+    +'<div id="mappa-condivisione" style="height:420px;border-bottom:2px solid #C8E6C9"></div>'
+    +'<div style="padding:16px">'
+    +'<div style="font-size:11px;font-weight:800;color:#558B2F;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">'+wps.length+' Waypoint condivisi</div>'
+    +wps.map(function(w){
+      var icM={capo:'🎯',ferma:'🐕',tartufo:'🍄',nota:'⚠️'};
+      return '<div style="background:#fff;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(46,125,50,.08);margin-bottom:8px">'
+        +'<span style="font-size:20px">'+(icM[w.tipo]||'📍')+'</span>'
+        +'<div><div style="font-weight:700;font-size:13px">'+(w.testo||w.tipo)+'</div>'
+        +(w.lat?'<div style="font-size:10px;color:#9ab0cc">'+w.lat.toFixed(4)+', '+w.lng.toFixed(4)+'</div>':'')
+        +'</div></div>';
+    }).join('')
+    +'</div>';
+  document.body.appendChild(overlay);
+  setTimeout(function(){
+    if(!window.L){
+      var lk=document.createElement('link');lk.rel='stylesheet';lk.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.appendChild(lk);
+      var sc=document.createElement('script');sc.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      sc.onload=function(){_disegnaMappaCond(traccia,wps);};document.head.appendChild(sc);
+    } else {_disegnaMappaCond(traccia,wps);}
+  },100);
+}
+
+function _disegnaMappaCond(traccia,wps){
+  var el=document.getElementById('mappa-condivisione');
+  if(!el||!window.L) return;
+  var punti=traccia.length?traccia:wps.filter(function(w){return w.lat;});
+  if(!punti.length) return;
+  var map=L.map('mappa-condivisione').setView([punti[0].lat,punti[0].lng],14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'OSM'}).addTo(map);
+  if(traccia.length>=2) L.polyline(traccia.map(function(p){return[p.lat,p.lng];}),{color:'#2E7D32',weight:4}).addTo(map);
+  var icM={capo:'🎯',ferma:'🐕',tartufo:'🍄',nota:'⚠️'};
+  wps.forEach(function(w){
+    if(!w.lat) return;
+    L.marker([w.lat,w.lng],{icon:L.divIcon({html:'<div style="font-size:22px">'+(icM[w.tipo]||'📍')+'</div>',className:'',iconSize:[30,30]})}).bindPopup(w.testo||w.tipo).addTo(map);
+  });
 }
 
 function renderCacciaCalendario(container){
