@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.97';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.98';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9369,17 +9369,7 @@ function applicaModalita(mod){
       g('caccia-bottom-nav').style.display='flex';
     }
 
-    if(_currentUser){
-      switchCacciaTab('caccia-home');
-    } else {
-      var _cacciaInitRetry = 0;
-      var _waitUser = setInterval(function(){
-        if(_currentUser || _cacciaInitRetry++ > 15){
-          clearInterval(_waitUser);
-          switchCacciaTab('caccia-home');
-        }
-      }, 300);
-    }
+    caricaCaccia();
 
   } else if(mod!=='famiglia'){
     var _hc2 = g('home-caccia');
@@ -9387,6 +9377,47 @@ function applicaModalita(mod){
     var _cbn2 = g('caccia-bottom-nav');
     if(_cbn2) _cbn2.style.display='none';
   }
+}
+
+async function caricaCaccia(){
+  // Se _currentUser non è ancora pronto aspetta max 4 secondi
+  if(!_currentUser){
+    var _retry = 0;
+    await new Promise(function(resolve){
+      var _t = setInterval(function(){
+        if(_currentUser || _retry++ > 13){
+          clearInterval(_t);
+          resolve();
+        }
+      }, 300);
+    });
+  }
+  if(!_currentUser){
+    toast('⚠️ Sessione non trovata. Riprova.');
+    return;
+  }
+  // Mostra subito da localStorage (0ms)
+  var _caniLoc = localStorage.getItem('bp_caccia_cani_lista');
+  var _usciteLoc = localStorage.getItem('bp_caccia_uscite');
+  if(_caniLoc) {
+    try { window._cacciaCaniCache = JSON.parse(_caniLoc); } catch(e){}
+  }
+  if(_usciteLoc){
+    try { window._cacciaUsciteCache = JSON.parse(_usciteLoc); } catch(e){}
+  }
+  // Mostra home subito
+  switchCacciaTab('caccia-home');
+  // Aggiorna cache in background
+  try {
+    var res = await _supabase.from('caccia_cani')
+      .select('*').eq('user_id',_currentUser.id).order('created_at',{ascending:false});
+    if(res.data) localStorage.setItem('bp_caccia_cani_lista', JSON.stringify(res.data));
+    var res2 = await _supabase.from('caccia_uscite')
+      .select('id,zona,data,tipo,km,ore,durata_minuti')
+      .eq('user_id',_currentUser.id)
+      .order('data',{ascending:false}).limit(50);
+    if(res2.data) localStorage.setItem('bp_caccia_uscite', JSON.stringify(res2.data));
+  } catch(e){ console.warn('[caccia] sync background:', e.message); }
 }
 
 /* ════════════════════════════════════════
