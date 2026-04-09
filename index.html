@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.95';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.96';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10174,6 +10174,7 @@ async function renderCacciaCani(container){
         +'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:6px">'
         +'<button onclick="switchCacciaTab(\'caccia-prove\')" style="background:#F1F8E9;color:#2E7D32;border:1.5px solid #C8E6C9;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer">🏆 Prove</button>'
+        +'<button onclick="modificaCaneC(\''+c.id+'\')" style="background:#EEF3FB;color:#1565C0;border:1.5px solid #BFCFE8;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer">✏️ Modifica</button>'
         +'<button onclick="condividiSchedaCane(\''+c.id+'\',\''+c.nome+'\',\''+(c.razza||'')+'\',\''+(c.categoria||'')+'\',\''+(c.sistema_gare||'ENCI')+'\')" style="background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer">📤 Invia</button>'
         +'<button onclick="eliminaCaneC(\''+c.id+'\')" style="background:#FFF0EE;color:#C0534A;border:1.5px solid #F5C4BE;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer">🗑️</button>'
         +'</div></div>';
@@ -10265,6 +10266,90 @@ async function eliminaCaneC(id){
   try { if(_currentUser) await _supabase.from('caccia_cani').delete().eq('id',id); } catch(e){}
   toast('🗑️ Cane eliminato');
   var _tc=document.getElementById('caccia-tab-content');
+  if(_tc) renderCacciaCani(_tc);
+}
+
+async function modificaCaneC(id){
+  var _cani = JSON.parse(localStorage.getItem('bp_caccia_cani_lista')||'[]');
+  var c = _cani.find(function(x){return x.id===id;});
+  if(!c && _currentUser){
+    try {
+      var r = await _supabase.from('caccia_cani').select('*').eq('id',id).single();
+      if(r.data) c = r.data;
+    } catch(e){}
+  }
+  if(!c){ toast('Cane non trovato'); return; }
+  var ov = document.createElement('div');
+  ov.id = 'ov-modifica-cane-c';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  ov.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:16px">✏️ Modifica cane</div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Nome cane *</label>'
+    +'<input id="mc-nome" value="'+(c.nome||'')+'" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Razza</label>'
+    +'<input id="mc-razza" value="'+(c.razza||'')+'" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Data nascita</label>'
+    +'<input type="date" id="mc-nascita" value="'+(c.data_nascita||'')+'" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px"/></div>'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Sesso</label>'
+    +'<select id="mc-sesso" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
+    +'<option value="M"'+(c.sesso==='M'?' selected':'')+'>♂ Maschio</option>'
+    +'<option value="F"'+(c.sesso==='F'?' selected':'')+'>♀ Femmina</option>'
+    +'</select></div></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Categoria</label>'
+    +'<select id="mc-categoria" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
+    +'<option value="FERMA"'+(c.categoria==='FERMA'?' selected':'')+'>🎯 Ferma</option>'
+    +'<option value="SEGUGIO"'+(c.categoria==='SEGUGIO'?' selected':'')+'>🐾 Segugio</option>'
+    +'<option value="RETRIEVER"'+(c.categoria==='RETRIEVER'?' selected':'')+'>🦆 Retriever / Spaniel</option>'
+    +'<option value="HPR"'+(c.categoria==='HPR'?' selected':'')+'>🏔️ HPR</option>'
+    +'<option value="TARTUFO"'+(c.categoria==='TARTUFO'?' selected':'')+'>🍄 Cerca Tartufo</option>'
+    +'</select></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Sistema gare</label>'
+    +'<select id="mc-sistema" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
+    +'<option value="ENCI"'+(c.sistema_gare==='ENCI'?' selected':'')+'>🇮🇹 ENCI</option>'
+    +'<option value="JGHV"'+(c.sistema_gare==='JGHV'?' selected':'')+'>🇩🇪 JGHV</option>'
+    +'<option value="FISC"'+(c.sistema_gare==='FISC'?' selected':'')+'>🍄 FISC</option>'
+    +'<option value="FCI"'+(c.sistema_gare==='FCI'?' selected':'')+'>🌍 FCI</option>'
+    +'</select></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Numero LOI</label>'
+    +'<input id="mc-loi" value="'+(c.numero_loi||'')+'" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Microchip</label>'
+    +'<input id="mc-chip" value="'+(c.microchip||'')+'" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div></div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button onclick="document.getElementById(\'ov-modifica-cane-c\').remove()" style="flex:1;background:#F1F8E9;color:#558B2F;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
+    +'<button onclick="aggiornaCaneC(\''+id+'\',this)" style="flex:2;background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva modifiche</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+}
+
+async function aggiornaCaneC(id, btn){
+  var nome = document.getElementById('mc-nome').value.trim();
+  if(!nome){ toast('Inserisci il nome'); return; }
+  btn.disabled=true; btn.textContent='⏳';
+  var aggiornamenti = {
+    nome: nome,
+    razza: document.getElementById('mc-razza').value.trim()||null,
+    data_nascita: document.getElementById('mc-nascita').value||null,
+    sesso: document.getElementById('mc-sesso').value,
+    categoria: document.getElementById('mc-categoria').value,
+    sistema_gare: document.getElementById('mc-sistema').value,
+    numero_loi: document.getElementById('mc-loi').value.trim()||null,
+    microchip: document.getElementById('mc-chip').value.trim()||null
+  };
+  try {
+    if(_currentUser){
+      var res = await _supabase.from('caccia_cani').update(aggiornamenti).eq('id',id).eq('user_id',_currentUser.id);
+      if(res.error) throw res.error;
+    }
+  } catch(e){
+    toast('❌ Errore: '+e.message);
+    btn.disabled=false; btn.textContent='✓ Salva modifiche';
+    return;
+  }
+  document.getElementById('ov-modifica-cane-c').remove();
+  toast('✅ Cane aggiornato!');
+  var _tc = document.getElementById('caccia-tab-content');
   if(_tc) renderCacciaCani(_tc);
 }
 
