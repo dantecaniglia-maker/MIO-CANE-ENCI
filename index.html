@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.96';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.97';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9364,7 +9364,7 @@ function applicaModalita(mod){
       g('caccia-bottom-nav').style.display='flex';
     }
 
-    switchCacciaTab('caccia-home');
+    caricaCaccia();
 
   } else if(mod!=='famiglia'){
     var _hc2 = g('home-caccia');
@@ -9374,11 +9374,69 @@ function applicaModalita(mod){
   }
 }
 
+async function caricaCaccia(){
+  // 1. Mostra subito con dati da localStorage (se esistono)
+  var hadLocal = _caricaCacciaLocale();
+  switchCacciaTab('caccia-home');
+
+  // 2. Sync Supabase in background (solo se loggato)
+  if(!_currentUser){
+    // Aspetta max 3s che _currentUser sia pronto
+    await new Promise(function(resolve){
+      var t=0;
+      var iv = setInterval(function(){
+        t+=200;
+        if(_currentUser || t>=3000){ clearInterval(iv); resolve(); }
+      },200);
+    });
+  }
+  if(!_currentUser) return; // guest, i dati locali bastano
+
+  try {
+    var uid = _currentUser.id;
+    var [rc, ru, rp] = await Promise.all([
+      _supabase.from('caccia_cani').select('*').eq('user_id', uid).order('nome'),
+      _supabase.from('caccia_uscite').select('*').eq('user_id', uid).order('data', {ascending:false}).limit(50),
+      _supabase.from('caccia_prove').select('*').eq('user_id', uid).order('data', {ascending:false}).limit(100)
+    ]);
+    if(!rc.error) window._cacciaCaniList   = rc.data || [];
+    if(!ru.error) window._cacciaUsciteList = ru.data || [];
+    if(!rp.error) window._cacciaProveList  = rp.data || [];
+    _salvaCacciaLocale();
+    // Aggiorna la tab attiva se ancora visibile
+    var tc = document.getElementById('caccia-tab-content');
+    if(tc && _cacciaTabAttiva) switchCacciaTab(_cacciaTabAttiva);
+  } catch(e){ console.warn('[caccia] sync background err', e); }
+}
+
 /* ════════════════════════════════════════
    MODULO CACCIA & TARTUFO
 ════════════════════════════════════════ */
 
 var _cacciaTabAttiva = 'caccia-home';
+var _CACCIA_KEY = 'bp_caccia_stato_v1';
+function _salvaCacciaLocale(){
+  try {
+    var payload = {
+      cani: window._cacciaCaniList || [],
+      uscite: window._cacciaUsciteList || [],
+      prove: window._cacciaProveList || [],
+      ts: Date.now()
+    };
+    localStorage.setItem(_CACCIA_KEY, JSON.stringify(payload));
+  } catch(e){ console.warn('[caccia] _salvaCacciaLocale err', e); }
+}
+function _caricaCacciaLocale(){
+  try {
+    var raw = localStorage.getItem(_CACCIA_KEY);
+    if(!raw) return false;
+    var d = JSON.parse(raw);
+    if(d.cani)   window._cacciaCaniList   = d.cani;
+    if(d.uscite) window._cacciaUsciteList = d.uscite;
+    if(d.prove)  window._cacciaProveList  = d.prove;
+    return true;
+  } catch(e){ return false; }
+}
 var _cacciaUscitaCondividi = null;
 var _cacciaUscitaAttiva = null;
 var _cacciaWaypoints = [];
@@ -9904,6 +9962,7 @@ async function salvaFineUscitaCaccia(btn){
     window._cacciaPolyline = null;
     overlay.remove();
     toast('✅ Uscita salvata! '+uscita.waypoints.length+' waypoint · '+uscita.km+' km');
+    _salvaCacciaLocale();
     var _tc = g('caccia-tab-content');
     if(_tc) renderCacciaGPS(_tc);
   } catch(e){
@@ -10257,6 +10316,7 @@ async function salvaCaneC(btn){
   var ov = document.getElementById('ov-nuovo-cane-c');
   if(ov) ov.remove();
   toast('✅ Cane aggiunto!');
+  _salvaCacciaLocale();
   var _tc=document.getElementById('caccia-tab-content');
   if(_tc) renderCacciaCani(_tc);
 }
