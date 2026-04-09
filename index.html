@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.97';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.96';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4327,11 +4327,6 @@ async function onUserSignedIn(user){
     g('modal-modalita').style.display = 'flex';
   } else {
     applicaModalita(modSalvata);
-    // Se modalità caccia già attiva, ricarica home per avere _currentUser pronto
-    if(modSalvata === 'caccia'){
-      var _tc = g('caccia-tab-content');
-      if(_tc) setTimeout(function(){ renderCacciaHome(_tc); }, 400);
-    }
   }
   checkNotificheAlAvvio();
 }
@@ -9369,17 +9364,7 @@ function applicaModalita(mod){
       g('caccia-bottom-nav').style.display='flex';
     }
 
-    if(_currentUser){
-      switchCacciaTab('caccia-home');
-    } else {
-      var _cacciaInitRetry = 0;
-      var _waitUser = setInterval(function(){
-        if(_currentUser || _cacciaInitRetry++ > 15){
-          clearInterval(_waitUser);
-          switchCacciaTab('caccia-home');
-        }
-      }, 300);
-    }
+    switchCacciaTab('caccia-home');
 
   } else if(mod!=='famiglia'){
     var _hc2 = g('home-caccia');
