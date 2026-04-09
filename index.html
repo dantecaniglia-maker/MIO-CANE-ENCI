@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.98';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '11.99';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -3252,10 +3252,10 @@ _supabase.auth.onAuthStateChange(async function(event, session){
   }
 });
 
-_supabase.auth.getSession().then(function(result){
+_supabase.auth.getSession().then(async function(result){
   if(result.data && result.data.session){
     _currentUser = result.data.session.user;
-    onUserSignedIn(result.data.session.user);
+    await onUserSignedIn(result.data.session.user);
   }
 });
 // Compatibilità con vecchia chiave Gemini
@@ -9380,44 +9380,32 @@ function applicaModalita(mod){
 }
 
 async function caricaCaccia(){
-  // Se _currentUser non è ancora pronto aspetta max 4 secondi
   if(!_currentUser){
-    var _retry = 0;
+    var _retry=0;
     await new Promise(function(resolve){
-      var _t = setInterval(function(){
-        if(_currentUser || _retry++ > 13){
-          clearInterval(_t);
-          resolve();
-        }
-      }, 300);
+      var _t=setInterval(function(){
+        if(_currentUser||_retry++>20){ clearInterval(_t); resolve(); }
+      },200);
     });
   }
-  if(!_currentUser){
-    toast('⚠️ Sessione non trovata. Riprova.');
-    return;
+  if(!_currentUser){ toast('⚠️ Sessione non trovata. Riprova.'); return; }
+  var _tc = g('caccia-tab-content');
+  if(_tc){
+    _tc.innerHTML='<div style="text-align:center;padding:60px 20px">'
+      +'<div style="font-size:40px;margin-bottom:12px">🌿</div>'
+      +'<div style="color:#558B2F;font-size:14px">Caricamento...</div>'
+      +'</div>';
   }
-  // Mostra subito da localStorage (0ms)
-  var _caniLoc = localStorage.getItem('bp_caccia_cani_lista');
-  var _usciteLoc = localStorage.getItem('bp_caccia_uscite');
-  if(_caniLoc) {
-    try { window._cacciaCaniCache = JSON.parse(_caniLoc); } catch(e){}
-  }
-  if(_usciteLoc){
-    try { window._cacciaUsciteCache = JSON.parse(_usciteLoc); } catch(e){}
-  }
-  // Mostra home subito
-  switchCacciaTab('caccia-home');
-  // Aggiorna cache in background
+  // Precarica dati in background poi mostra home
   try {
-    var res = await _supabase.from('caccia_cani')
-      .select('*').eq('user_id',_currentUser.id).order('created_at',{ascending:false});
-    if(res.data) localStorage.setItem('bp_caccia_cani_lista', JSON.stringify(res.data));
-    var res2 = await _supabase.from('caccia_uscite')
-      .select('id,zona,data,tipo,km,ore,durata_minuti')
-      .eq('user_id',_currentUser.id)
-      .order('data',{ascending:false}).limit(50);
-    if(res2.data) localStorage.setItem('bp_caccia_uscite', JSON.stringify(res2.data));
-  } catch(e){ console.warn('[caccia] sync background:', e.message); }
+    var _r = await Promise.all([
+      _supabase.from('caccia_cani').select('*').eq('user_id',_currentUser.id).order('created_at',{ascending:false}),
+      _supabase.from('caccia_uscite').select('id,zona,data,tipo,km,ore,durata_minuti').eq('user_id',_currentUser.id).order('data',{ascending:false}).limit(50)
+    ]);
+    if(_r[0].data) localStorage.setItem('bp_caccia_cani_lista',JSON.stringify(_r[0].data));
+    if(_r[1].data) localStorage.setItem('bp_caccia_uscite',JSON.stringify(_r[1].data));
+  } catch(e){ console.warn('[caccia] preload:',e.message); }
+  switchCacciaTab('caccia-home');
 }
 
 /* ════════════════════════════════════════
