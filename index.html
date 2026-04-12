@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '11.99';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '12.00';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9426,10 +9426,13 @@ var _cacciaTabAttiva = 'caccia-home';
 var _CACCIA_KEY = 'bp_caccia_stato_v1';
 function _salvaCacciaLocale(){
   try {
+    var _caniSave = window._cacciaCaniList || JSON.parse(localStorage.getItem('bp_caccia_cani_lista')||'[]');
+    var _usciteSave = window._cacciaUsciteList || JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+    var _proveSave = window._cacciaProveList || [];
     var payload = {
-      cani: window._cacciaCaniList || [],
-      uscite: window._cacciaUsciteList || [],
-      prove: window._cacciaProveList || [],
+      cani: _caniSave,
+      uscite: _usciteSave,
+      prove: _proveSave,
       ts: Date.now()
     };
     localStorage.setItem(_CACCIA_KEY, JSON.stringify(payload));
@@ -9440,9 +9443,9 @@ function _caricaCacciaLocale(){
     var raw = localStorage.getItem(_CACCIA_KEY);
     if(!raw) return false;
     var d = JSON.parse(raw);
-    if(d.cani)   window._cacciaCaniList   = d.cani;
-    if(d.uscite) window._cacciaUsciteList = d.uscite;
-    if(d.prove)  window._cacciaProveList  = d.prove;
+    if(d.cani)   { window._cacciaCaniList   = d.cani;   localStorage.setItem('bp_caccia_cani_lista', JSON.stringify(d.cani)); }
+    if(d.uscite) { window._cacciaUsciteList = d.uscite; localStorage.setItem('bp_caccia_uscite', JSON.stringify(d.uscite)); }
+    if(d.prove)  { window._cacciaProveList  = d.prove; }
     return true;
   } catch(e){ return false; }
 }
