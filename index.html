@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '12.07';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '12.08';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9412,9 +9412,12 @@ async function caricaCaccia(){
     if(!ru.error) window._cacciaUsciteList = ru.data || [];
     if(!rp.error) window._cacciaProveList  = rp.data || [];
     _salvaCacciaLocale();
-    // Aggiorna la tab attiva se ancora visibile
+    // Aggiorna SEMPRE home con dati freschi da Supabase
     var tc = document.getElementById('caccia-tab-content');
-    if(tc && _cacciaTabAttiva) switchCacciaTab(_cacciaTabAttiva);
+    if(tc){
+      if(_cacciaTabAttiva === 'caccia-home') renderCacciaHome(tc);
+      else switchCacciaTab(_cacciaTabAttiva);
+    }
   } catch(e){ console.warn('[caccia] sync background err', e); }
 }
 
