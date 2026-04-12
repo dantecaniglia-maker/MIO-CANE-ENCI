@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '12.03';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '12.04';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10086,15 +10086,15 @@ async function salvaCarniere(btn){
     note: document.getElementById('car-note').value.trim()||null,
     uscita_id: document.getElementById('car-uscita-id').value||null,
     unita: sel==='Tartufo'?'kg':'capi',
-    stagione: document.getElementById('car-stagione')&&document.getElementById('car-stagione').value||null
+    stagione: (document.getElementById('car-stagione')&&document.getElementById('car-stagione').value)||null
   };
+  if(!_currentUser){ toast('⚠️ Devi essere loggato'); btn.disabled=false; btn.textContent='🏹 Salva'; return; }
   try {
-    if(_currentUser){
-      var res = await _supabase.from('caccia_carniere').insert(record);
-      if(res.error) throw res.error;
-    }
+    var res = await _supabase.from('caccia_carniere').insert(record);
+    if(res.error) throw res.error;
   } catch(e){
     toast('❌ Errore: '+e.message);
+    console.error('[carniere] insert:', e);
     btn.disabled=false; btn.textContent='🏹 Salva';
     return;
   }
