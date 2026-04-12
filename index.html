@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '12.01';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '12.02';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9960,8 +9960,27 @@ async function renderCacciaCarniere(container){
     +'<div id="carniere-lista"><div style="text-align:center;padding:20px;color:#9ab0cc;font-size:13px">⏳ Caricamento...</div></div>'
     +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
 
+  // Mostra subito stats a zero
+  var statsEl0 = document.getElementById('carniere-stats');
+  if(statsEl0) statsEl0.innerHTML =
+    '<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #F0E0A0"><div style="font-size:24px;margin-bottom:4px">🏹</div><div style="font-size:20px;font-weight:800;color:#A88A41">0</div><div style="font-size:10px;color:#9ab0cc">Capi totali</div></div>'
+    +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #F0E0A0"><div style="font-size:24px;margin-bottom:4px">🐾</div><div style="font-size:20px;font-weight:800;color:#A88A41">0</div><div style="font-size:10px;color:#9ab0cc">Specie</div></div>'
+    +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #F0E0A0"><div style="font-size:24px;margin-bottom:4px">🗓️</div><div style="font-size:20px;font-weight:800;color:#A88A41">0</div><div style="font-size:10px;color:#9ab0cc">Registrazioni</div></div>';
+  var listaEl0 = document.getElementById('carniere-lista');
+  if(listaEl0) listaEl0.innerHTML = '<div style="text-align:center;padding:40px 20px"><div style="font-size:56px;margin-bottom:12px">🏹</div><div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#A88A41;margin-bottom:8px">Carniere vuoto</div><div style="font-size:13px;color:#9ab0cc;margin-bottom:20px">Aggiungi la tua prima cattura stagionale</div><button onclick="apriNuovoCarniere()" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer">+ Prima registrazione</button></div>';
+
+  // Aspetta _currentUser max 4s
+  if(!_currentUser){
+    var _cRetry=0;
+    await new Promise(function(resolve){
+      var _ct=setInterval(function(){
+        if(_currentUser||_cRetry++>20){ clearInterval(_ct); resolve(); }
+      },200);
+    });
+  }
+  if(!_currentUser) return;
+
   try {
-    if(!_currentUser) return;
     var _anno = new Date().getFullYear();
     var res = await _supabase.from('caccia_carniere')
       .select('*').eq('user_id',_currentUser.id)
@@ -9995,6 +10014,12 @@ async function renderCacciaCarniere(container){
 
     var listaEl = document.getElementById('carniere-lista');
     if(!listaEl) return;
+
+    if(res.error){
+      console.error('[carniere]', res.error);
+      listaEl.innerHTML='<div style="text-align:center;padding:20px;color:#C0534A">Errore: '+res.error.message+'</div>';
+      return;
+    }
 
     if(!_lista.length){
       listaEl.innerHTML = '<div style="text-align:center;padding:40px 20px">'
