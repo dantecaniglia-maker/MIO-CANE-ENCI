@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '12.04';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '12.05';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9534,6 +9534,15 @@ async function renderCacciaHome(container){
       ultimaElL.innerHTML='<div onclick="apriMappaSalvata(\''+uL.id+'\')" style="cursor:pointer;background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9"><div style="font-size:11px;font-weight:800;color:#558B2F;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">📖 Ultima uscita</div><div style="font-weight:700;color:#1a1a3a">'+uL.zona+'</div><div style="font-size:12px;color:#9ab0cc;margin-top:2px">'+new Date(uL.data).toLocaleDateString('it-IT')+' · '+(uL.km||0)+' km · '+(uL.tipo||'Caccia')+'</div><div style="font-size:11px;color:#2E7D32;font-weight:700;margin-top:6px">🗺️ Vedi mappa →</div></div>';
     }
   }
+  // Aspetta _currentUser se non pronto
+  if(!_currentUser){
+    var _hRetry=0;
+    await new Promise(function(resolve){
+      var _hT=setInterval(function(){
+        if(_currentUser||_hRetry++>20){ clearInterval(_hT); resolve(); }
+      },200);
+    });
+  }
   // Poi aggiorna da Supabase in background
   try {
     if(!_currentUser) return;
@@ -10074,34 +10083,34 @@ function apriNuovoCarniere(uscitaId){
 }
 
 async function salvaCarniere(btn){
-  var sel = document.getElementById('car-selvaggina').value;
+  var sel = document.getElementById('car-selvaggina')&&document.getElementById('car-selvaggina').value;
   if(!sel){ toast('Seleziona la selvaggina'); return; }
+  if(!_currentUser){ toast('⚠️ Devi essere loggato'); return; }
   btn.disabled=true; btn.textContent='⏳';
   var record = {
-    user_id: _currentUser ? _currentUser.id : null,
+    user_id: _currentUser.id,
     selvaggina: sel,
     quantita: parseFloat(document.getElementById('car-quantita').value)||1,
-    data: document.getElementById('car-data').value,
+    data: document.getElementById('car-data').value||new Date().toISOString().substring(0,10),
     zona: document.getElementById('car-zona').value.trim()||null,
     note: document.getElementById('car-note').value.trim()||null,
     uscita_id: document.getElementById('car-uscita-id').value||null,
     unita: sel==='Tartufo'?'kg':'capi',
-    stagione: (document.getElementById('car-stagione')&&document.getElementById('car-stagione').value)||null
+    stagione: document.getElementById('car-stagione')&&document.getElementById('car-stagione').value||null
   };
-  if(!_currentUser){ toast('⚠️ Devi essere loggato'); btn.disabled=false; btn.textContent='🏹 Salva'; return; }
   try {
     var res = await _supabase.from('caccia_carniere').insert(record);
     if(res.error) throw res.error;
+    var ov = document.getElementById('ov-carniere');
+    if(ov) ov.remove();
+    toast('✅ Aggiunto al carniere!');
+    var _tc = document.getElementById('caccia-tab-content');
+    if(_tc && _cacciaTabAttiva==='caccia-carniere') renderCacciaCarniere(_tc);
   } catch(e){
     toast('❌ Errore: '+e.message);
     console.error('[carniere] insert:', e);
     btn.disabled=false; btn.textContent='🏹 Salva';
-    return;
   }
-  document.getElementById('ov-carniere').remove();
-  toast('✅ Aggiunto al carniere!');
-  var _tc = document.getElementById('caccia-tab-content');
-  if(_tc && _cacciaTabAttiva==='caccia-carniere') renderCacciaCarniere(_tc);
 }
 
 var _carniereListaGlobale = [];
