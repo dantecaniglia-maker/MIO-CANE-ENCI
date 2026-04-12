@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '12.02';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '12.03';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9952,11 +9952,26 @@ async function renderCacciaCarniere(container){
     +'<div style="font-size:12px;color:#6B8BB0">Registro venatorio stagionale</div></div>'
     +'<button onclick="apriNuovoCarniere()" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer">+ Aggiungi</button>'
     +'</div></div>'
+    +'<div style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px">'
+    +(function(){
+      var _btns=''; var _y=new Date().getFullYear();
+      var _stages=['Tutte'];
+      for(var _i=0;_i<4;_i++) _stages.push((_y-_i)+'/'+String(_y-_i+1).slice(-2));
+      _stages.forEach(function(s,i){
+        _btns+='<button id="cfil-'+i+'" onclick="filtraCarniere(\''+s+'\')" '
+          +'style="flex-shrink:0;background:'+(i===0?'linear-gradient(135deg,#C9A961,#A88A41)':'#fff')
+          +';color:'+(i===0?'#fff':'#A88A41')+';border:1.5px solid #F0E0A0;border-radius:20px;'
+          +'padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">'+s+'</button>';
+      });
+      return _btns;
+    })()
+    +'</div>'
     +'<div id="carniere-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">'
     +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #F0E0A0"><div style="font-size:20px">⏳</div></div>'
     +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #F0E0A0"><div style="font-size:20px">⏳</div></div>'
     +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #F0E0A0"><div style="font-size:20px">⏳</div></div>'
     +'</div>'
+    +'<div id="carniere-stagione-filtro"></div>'
     +'<div id="carniere-lista"><div style="text-align:center;padding:20px;color:#9ab0cc;font-size:13px">⏳ Caricamento...</div></div>'
     +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
 
@@ -9984,76 +9999,28 @@ async function renderCacciaCarniere(container){
     var _anno = new Date().getFullYear();
     var res = await _supabase.from('caccia_carniere')
       .select('*').eq('user_id',_currentUser.id)
-      .gte('data',_anno+'-01-01')
       .order('data',{ascending:false});
     var _lista = res.data||[];
 
-    // Stats
-    var _tipi = {};
-    _lista.forEach(function(r){
-      _tipi[r.selvaggina] = (_tipi[r.selvaggina]||0) + (r.quantita||1);
-    });
-    var _tipiKeys = Object.keys(_tipi);
-    var _totCapi = _lista.reduce(function(a,r){return a+(r.quantita||1);},0);
-    var _usciteConCarniere = [...new Set(_lista.map(function(r){return r.uscita_id;}).filter(Boolean))].length;
+    _carniereListaGlobale = _lista;
+    _carniereFiltoAttivo = 'Tutte';
 
-    var statsEl = document.getElementById('carniere-stats');
-    if(statsEl) statsEl.innerHTML =
-      '<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(201,169,97,.1);border:1.5px solid #F0E0A0">'
-      +'<div style="font-size:24px;margin-bottom:4px">🏹</div>'
-      +'<div style="font-size:20px;font-weight:800;color:#A88A41">'+_totCapi+'</div>'
-      +'<div style="font-size:10px;color:#9ab0cc">Capi totali</div></div>'
-      +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(201,169,97,.1);border:1.5px solid #F0E0A0">'
-      +'<div style="font-size:24px;margin-bottom:4px">🐾</div>'
-      +'<div style="font-size:20px;font-weight:800;color:#A88A41">'+_tipiKeys.length+'</div>'
-      +'<div style="font-size:10px;color:#9ab0cc">Specie</div></div>'
-      +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(201,169,97,.1);border:1.5px solid #F0E0A0">'
-      +'<div style="font-size:24px;margin-bottom:4px">🗓️</div>'
-      +'<div style="font-size:20px;font-weight:800;color:#A88A41">'+_lista.length+'</div>'
-      +'<div style="font-size:10px;color:#9ab0cc">Registrazioni</div></div>';
+    // Aggiorna stats totali
+    var _tipiTot={};
+    _lista.forEach(function(r){ _tipiTot[r.selvaggina]=(_tipiTot[r.selvaggina]||0)+(r.quantita||1); });
+    var _totCapi=_lista.reduce(function(a,r){return a+(r.quantita||1);},0);
+    var statsEl=document.getElementById('carniere-stats');
+    if(statsEl) statsEl.innerHTML=
+      '<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(201,169,97,.1);border:1.5px solid #F0E0A0"><div style="font-size:24px;margin-bottom:4px">🏹</div><div style="font-size:20px;font-weight:800;color:#A88A41">'+_totCapi+'</div><div style="font-size:10px;color:#9ab0cc">Capi totali</div></div>'
+      +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(201,169,97,.1);border:1.5px solid #F0E0A0"><div style="font-size:24px;margin-bottom:4px">🐾</div><div style="font-size:20px;font-weight:800;color:#A88A41">'+Object.keys(_tipiTot).length+'</div><div style="font-size:10px;color:#9ab0cc">Specie</div></div>'
+      +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(201,169,97,.1);border:1.5px solid #F0E0A0"><div style="font-size:24px;margin-bottom:4px">🗓️</div><div style="font-size:20px;font-weight:800;color:#A88A41">'+_lista.length+'</div><div style="font-size:10px;color:#9ab0cc">Registrazioni</div></div>';
 
-    var listaEl = document.getElementById('carniere-lista');
-    if(!listaEl) return;
+    _renderCarniereList(_lista);
 
-    if(res.error){
-      console.error('[carniere]', res.error);
-      listaEl.innerHTML='<div style="text-align:center;padding:20px;color:#C0534A">Errore: '+res.error.message+'</div>';
-      return;
-    }
-
-    if(!_lista.length){
-      listaEl.innerHTML = '<div style="text-align:center;padding:40px 20px">'
-        +'<div style="font-size:56px;margin-bottom:12px">🏹</div>'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#A88A41;margin-bottom:8px">Carniere vuoto</div>'
-        +'<div style="font-size:13px;color:#9ab0cc;margin-bottom:20px">Aggiungi la tua prima cattura stagionale</div>'
-        +'<button onclick="apriNuovoCarniere()" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer">+ Prima registrazione</button>'
-        +'</div>';
-      return;
-    }
-
-    var _icS = {Lepre:'🐇',Beccaccia:'🐦',Starna:'🐓',Fagiano:'🦃',Cinghiale:'🐗',Tartufo:'🍄',Pernice:'🐦',Quaglia:'🐤',Germano:'🦆',Altro:'🎯'};
-    listaEl.innerHTML = '<div style="background:#FFFDE7;border-radius:12px;padding:12px;margin-bottom:12px;border:1.5px solid #F0E0A0">'
-      +'<div style="font-size:11px;font-weight:800;color:#A88A41;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Riepilogo stagione</div>'
-      +'<div style="display:flex;flex-wrap:wrap;gap:8px">'
-      +_tipiKeys.map(function(k){
-        return '<div style="background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#A88A41;border:1.5px solid #F0E0A0">'
-          +(_icS[k]||'🎯')+' '+k+': <strong>'+_tipi[k]+'</strong></div>';
-      }).join('')
-      +'</div></div>'
-      +_lista.map(function(r){
-        return '<div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:8px;box-shadow:0 2px 8px rgba(201,169,97,.08);border:1.5px solid #F0E0A0;display:flex;align-items:center;gap:12px">'
-          +'<div style="font-size:32px">'+(_icS[r.selvaggina]||'🎯')+'</div>'
-          +'<div style="flex:1">'
-          +'<div style="font-weight:700;color:#1a1a3a;font-size:14px">'+r.selvaggina+' × '+r.quantita+'</div>'
-          +'<div style="font-size:11px;color:#9ab0cc;margin-top:2px">'+new Date(r.data).toLocaleDateString('it-IT')+(r.zona?' · '+r.zona:'')+'</div>'
-          +(r.note?'<div style="font-size:11px;color:#A88A41;margin-top:3px">'+r.note+'</div>':'')
-          +'</div>'
-          +'<button onclick="eliminaCarniere(\''+r.id+'\')" style="background:#FFF0EE;color:#C0534A;border:1.5px solid #F5C4BE;border-radius:8px;padding:6px 8px;font-size:11px;cursor:pointer">🗑️</button>'
-          +'</div>';
-      }).join('');
   } catch(e){
     console.warn('[carniere]',e.message);
-    document.getElementById('carniere-lista').innerHTML='<div style="text-align:center;padding:20px;color:#9ab0cc">Errore caricamento.</div>';
+    var listaElE=document.getElementById('carniere-lista');
+    if(listaElE) listaElE.innerHTML='<div style="text-align:center;padding:20px;color:#C0534A">Errore: '+e.message+'</div>';
   }
 }
 
@@ -10077,6 +10044,17 @@ function apriNuovoCarniere(uscitaId){
     +'<option value="Cinghiale">🐗 Cinghiale</option>'
     +'<option value="Tartufo">🍄 Tartufo (kg)</option>'
     +'<option value="Altro">🎯 Altro</option>'
+    +'</select></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#A88A41;display:block;margin-bottom:4px">Stagione</label>'
+    +'<select id="car-stagione" style="width:100%;padding:10px;border:1.5px solid #F0E0A0;border-radius:8px;font-size:14px;background:#FFFDE7">'
+    +(function(){
+      var _opts=''; var _y=new Date().getFullYear();
+      for(var _i=0;_i<5;_i++){
+        var _s=(_y-_i)+'/'+String(_y-_i+1).slice(-2);
+        _opts+='<option value="'+_s+'"'+(_i===0?' selected':'')+'>'+_s+'</option>';
+      }
+      return _opts;
+    })()
     +'</select></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
     +'<div><label style="font-size:12px;font-weight:700;color:#A88A41;display:block;margin-bottom:4px">Quantità *</label>'
@@ -10107,7 +10085,8 @@ async function salvaCarniere(btn){
     zona: document.getElementById('car-zona').value.trim()||null,
     note: document.getElementById('car-note').value.trim()||null,
     uscita_id: document.getElementById('car-uscita-id').value||null,
-    unita: sel==='Tartufo'?'kg':'capi'
+    unita: sel==='Tartufo'?'kg':'capi',
+    stagione: document.getElementById('car-stagione')&&document.getElementById('car-stagione').value||null
   };
   try {
     if(_currentUser){
@@ -10123,6 +10102,81 @@ async function salvaCarniere(btn){
   toast('✅ Aggiunto al carniere!');
   var _tc = document.getElementById('caccia-tab-content');
   if(_tc && _cacciaTabAttiva==='caccia-carniere') renderCacciaCarniere(_tc);
+}
+
+var _carniereListaGlobale = [];
+var _carniereFiltoAttivo = 'Tutte';
+
+function filtraCarniere(stagione){
+  _carniereFiltoAttivo = stagione;
+  // Aggiorna bottoni
+  var _y=new Date().getFullYear();
+  var _stages=['Tutte'];
+  for(var _i=0;_i<4;_i++) _stages.push((_y-_i)+'/'+String(_y-_i+1).slice(-2));
+  _stages.forEach(function(s,i){
+    var btn=document.getElementById('cfil-'+i);
+    if(!btn) return;
+    btn.style.background = s===stagione?'linear-gradient(135deg,#C9A961,#A88A41)':'#fff';
+    btn.style.color = s===stagione?'#fff':'#A88A41';
+  });
+  // Filtra lista
+  var _filtered = stagione==='Tutte' ? _carniereListaGlobale
+    : _carniereListaGlobale.filter(function(r){ return r.stagione===stagione; });
+  _renderCarniereList(_filtered);
+}
+
+function _renderCarniereList(_lista){
+  var listaEl = document.getElementById('carniere-lista');
+  if(!listaEl) return;
+  var _icS = {Lepre:'🐇',Beccaccia:'🐦',Starna:'🐓',Fagiano:'🦃',Quaglia:'🐤',Pernice:'🐦',Germano:'🦆',Cinghiale:'🐗',Tartufo:'🍄',Altro:'🎯'};
+  if(!_lista.length){
+    listaEl.innerHTML = '<div style="text-align:center;padding:30px;color:#9ab0cc;font-size:13px">Nessuna voce per questa stagione</div>';
+    return;
+  }
+  // Riepilogo
+  var _tipi={};
+  _lista.forEach(function(r){ _tipi[r.selvaggina]=(_tipi[r.selvaggina]||0)+(r.quantita||1); });
+  var _tipiKeys=Object.keys(_tipi);
+  var _totCapi=_lista.reduce(function(a,r){return a+(r.quantita||1);},0);
+  listaEl.innerHTML =
+    '<div style="background:#FFFDE7;border-radius:12px;padding:12px;margin-bottom:12px;border:1.5px solid #F0E0A0">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+    +'<div style="font-size:11px;font-weight:800;color:#A88A41;text-transform:uppercase;letter-spacing:.08em">Riepilogo</div>'
+    +'<button onclick="condividiCarniere()" style="background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">📤 WhatsApp</button>'
+    +'</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:8px">'
+    +_tipiKeys.map(function(k){
+      return '<div style="background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#A88A41;border:1.5px solid #F0E0A0">'+(_icS[k]||'🎯')+' '+k+': <strong>'+_tipi[k]+(_tipi[k]>1&&k==='Tartufo'?' kg':' capi')+'</strong></div>';
+    }).join('')
+    +'</div></div>'
+    +_lista.map(function(r){
+      return '<div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:8px;box-shadow:0 2px 8px rgba(201,169,97,.08);border:1.5px solid #F0E0A0;display:flex;align-items:center;gap:12px">'
+        +'<div style="font-size:32px">'+(_icS[r.selvaggina]||'🎯')+'</div>'
+        +'<div style="flex:1">'
+        +'<div style="font-weight:700;color:#1a1a3a;font-size:14px">'+r.selvaggina+' × '+r.quantita+(r.unita==='kg'?' kg':' capi')+'</div>'
+        +'<div style="font-size:11px;color:#9ab0cc;margin-top:2px">'+new Date(r.data).toLocaleDateString('it-IT')+(r.stagione?' · '+r.stagione:'')+(r.zona?' · '+r.zona:'')+'</div>'
+        +(r.note?'<div style="font-size:11px;color:#A88A41;margin-top:3px">'+r.note+'</div>':'')
+        +'</div>'
+        +'<button onclick="eliminaCarniere(\''+r.id+'\')" style="background:#FFF0EE;color:#C0534A;border:1.5px solid #F5C4BE;border-radius:8px;padding:6px 8px;font-size:11px;cursor:pointer">🗑️</button>'
+        +'</div>';
+    }).join('');
+}
+
+function condividiCarniere(){
+  var _filtro = _carniereFiltoAttivo==='Tutte' ? 'Tutto lo storico' : 'Stagione '+_carniereFiltoAttivo;
+  var _lista = _carniereFiltoAttivo==='Tutte' ? _carniereListaGlobale
+    : _carniereListaGlobale.filter(function(r){ return r.stagione===_carniereFiltoAttivo; });
+  if(!_lista.length){ toast('Nessun dato da condividere'); return; }
+  var _tipi={};
+  _lista.forEach(function(r){ _tipi[r.selvaggina]=(_tipi[r.selvaggina]||0)+(r.quantita||1); });
+  var _icS={Lepre:'🐇',Beccaccia:'🐦',Starna:'🐓',Fagiano:'🦃',Quaglia:'🐤',Pernice:'🐦',Germano:'🦆',Cinghiale:'🐗',Tartufo:'🍄',Altro:'🎯'};
+  var testo='🏹 *Carniere — '+_filtro+'*\n\n';
+  Object.keys(_tipi).forEach(function(k){
+    testo+=(_icS[k]||'🎯')+' '+k+': *'+_tipi[k]+(_tipi[k]>1&&k==='Tartufo'?' kg':' capi')+'*\n';
+  });
+  testo+='\n📊 Totale voci: '+_lista.length;
+  testo+='\n\n_Powered by BreedPed 🐾_\n_breedped.com_';
+  window.open('https://wa.me/?text='+encodeURIComponent(testo),'_blank');
 }
 
 async function eliminaCarniere(id){
