@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '12.05';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '12.06';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10098,18 +10098,22 @@ async function salvaCarniere(btn){
     unita: sel==='Tartufo'?'kg':'capi',
     stagione: document.getElementById('car-stagione')&&document.getElementById('car-stagione').value||null
   };
+  // Aggiorna subito localStorage e UI
+  record.id = 'loc_'+Date.now();
+  _carniereListaGlobale.unshift(record);
+  var ov = document.getElementById('ov-carniere');
+  if(ov) ov.remove();
+  toast('✅ Aggiunto al carniere!');
+  var _tc = document.getElementById('caccia-tab-content');
+  if(_tc && _cacciaTabAttiva==='caccia-carniere') _renderCarniereList(_carniereListaGlobale);
+  // Salva su Supabase in background
   try {
-    var res = await _supabase.from('caccia_carniere').insert(record);
-    if(res.error) throw res.error;
-    var ov = document.getElementById('ov-carniere');
-    if(ov) ov.remove();
-    toast('✅ Aggiunto al carniere!');
-    var _tc = document.getElementById('caccia-tab-content');
-    if(_tc && _cacciaTabAttiva==='caccia-carniere') renderCacciaCarniere(_tc);
+    var _recSupa = Object.assign({}, record);
+    delete _recSupa.id;
+    var res = await _supabase.from('caccia_carniere').insert(_recSupa);
+    if(res.error) console.warn('[carniere] insert remoto:', res.error.message);
   } catch(e){
-    toast('❌ Errore: '+e.message);
-    console.error('[carniere] insert:', e);
-    btn.disabled=false; btn.textContent='🏹 Salva';
+    console.warn('[carniere] insert:', e.message);
   }
 }
 
