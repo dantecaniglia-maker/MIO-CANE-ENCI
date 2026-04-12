@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '12.00';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '12.01';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9353,11 +9353,11 @@ function applicaModalita(mod){
         +'display:flex;align-items:stretch;padding:6px 8px;gap:4px;'
         +'box-shadow:0 -4px 20px rgba(46,125,50,.1)';
       cbn.innerHTML = [
-        {tab:'caccia-home',  ico:'🏠', label:'Home'},
-        {tab:'caccia-cani',  ico:'🐕', label:'Cani'},
-        {tab:'caccia-gps',   ico:'🗺️', label:'GPS'},
-        {tab:'caccia-diario',ico:'📖', label:'Diario'},
-        {tab:'caccia-prove', ico:'🏆', label:'Prove'}
+        {tab:'caccia-home',     ico:'🏠', label:'Home'},
+        {tab:'caccia-gps',      ico:'🗺️', label:'GPS'},
+        {tab:'caccia-diario',   ico:'📖', label:'Diario'},
+        {tab:'caccia-carniere', ico:'🏹', label:'Carniere'},
+        {tab:'caccia-altro',    ico:'☰',  label:'Altro'}
       ].map(function(t,i){
         var att = i===0;
         return '<button onclick="switchCacciaTab(\''+t.tab+'\')" id="ctab-'+t.tab+'" '
@@ -9461,7 +9461,7 @@ var _cacciaTracciaInterval = null;
 
 function switchCacciaTab(tab){
   _cacciaTabAttiva = tab;
-  ['caccia-home','caccia-cani','caccia-gps','caccia-diario','caccia-prove']
+  ['caccia-home','caccia-gps','caccia-diario','caccia-carniere','caccia-altro']
     .forEach(function(t){
       var b = document.getElementById('ctab-'+t);
       if(!b) return;
@@ -9474,14 +9474,10 @@ function switchCacciaTab(tab){
     if(!_currentUser){ setTimeout(function(){ renderCacciaHome(content); }, 800); }
     else { renderCacciaHome(content); }
   }
-  else if(tab==='caccia-cani')  renderCacciaCani(content);
-  else if(tab==='caccia-gps')   renderCacciaGPS(content);
-  else if(tab==='caccia-diario'){
-    if(!_currentUser){ setTimeout(function(){ renderCacciaDiario(content); }, 800); }
-    else { renderCacciaDiario(content); }
-  }
-  else if(tab==='caccia-prove')  renderCacciaProve(content);
-  else if(tab==='caccia-calendario') renderCacciaCalendario(content);
+  else if(tab==='caccia-gps')      renderCacciaGPS(content);
+  else if(tab==='caccia-diario')   renderCacciaDiario(content);
+  else if(tab==='caccia-carniere') renderCacciaCarniere(content);
+  else if(tab==='caccia-altro')    renderCacciaAltro(content);
 }
 
 async function renderCacciaHome(container){
@@ -9927,14 +9923,218 @@ function fineUscitaCaccia(){
     +'<button onclick="this.closest(\'[style*=fixed]\').remove();_riavviaUscitaDopoCancella()" '
     +'style="flex:1;background:#F1F8E9;color:#558B2F;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
     +'<button onclick="salvaFineUscitaCaccia(this)" '
-    +'style="flex:2;background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva</button>'
-    +'</div></div>';
+    +'style="flex:2;background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva uscita</button>'
+    +'</div>'
+    +'<button onclick="salvaFineESalvaApriCarniere(this)" '
+    +'style="width:100%;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer;margin-top:8px">🏹 Salva + Aggiungi al carniere</button>'
+    +'</div>';
   overlay.dataset.uscitaJson = JSON.stringify(uscita);
   document.body.appendChild(overlay);
 }
 
 function _riavviaUscitaDopoCancella(){
   _avviaTimerCaccia();
+}
+
+async function salvaFineESalvaApriCarniere(btn){
+  await salvaFineUscitaCaccia(btn);
+  setTimeout(function(){
+    switchCacciaTab('caccia-carniere');
+    setTimeout(function(){ apriNuovoCarniere(); }, 400);
+  }, 600);
+}
+
+async function renderCacciaCarniere(container){
+  container.innerHTML =
+    '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(201,169,97,.1)">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between">'
+    +'<div><div style="font-size:18px;font-weight:700;color:#1a1a3a">🏹 Carniere '+new Date().getFullYear()+'</div>'
+    +'<div style="font-size:12px;color:#6B8BB0">Registro venatorio stagionale</div></div>'
+    +'<button onclick="apriNuovoCarniere()" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer">+ Aggiungi</button>'
+    +'</div></div>'
+    +'<div id="carniere-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">'
+    +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #F0E0A0"><div style="font-size:20px">⏳</div></div>'
+    +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #F0E0A0"><div style="font-size:20px">⏳</div></div>'
+    +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #F0E0A0"><div style="font-size:20px">⏳</div></div>'
+    +'</div>'
+    +'<div id="carniere-lista"><div style="text-align:center;padding:20px;color:#9ab0cc;font-size:13px">⏳ Caricamento...</div></div>'
+    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+
+  try {
+    if(!_currentUser) return;
+    var _anno = new Date().getFullYear();
+    var res = await _supabase.from('caccia_carniere')
+      .select('*').eq('user_id',_currentUser.id)
+      .gte('data',_anno+'-01-01')
+      .order('data',{ascending:false});
+    var _lista = res.data||[];
+
+    // Stats
+    var _tipi = {};
+    _lista.forEach(function(r){
+      _tipi[r.selvaggina] = (_tipi[r.selvaggina]||0) + (r.quantita||1);
+    });
+    var _tipiKeys = Object.keys(_tipi);
+    var _totCapi = _lista.reduce(function(a,r){return a+(r.quantita||1);},0);
+    var _usciteConCarniere = [...new Set(_lista.map(function(r){return r.uscita_id;}).filter(Boolean))].length;
+
+    var statsEl = document.getElementById('carniere-stats');
+    if(statsEl) statsEl.innerHTML =
+      '<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(201,169,97,.1);border:1.5px solid #F0E0A0">'
+      +'<div style="font-size:24px;margin-bottom:4px">🏹</div>'
+      +'<div style="font-size:20px;font-weight:800;color:#A88A41">'+_totCapi+'</div>'
+      +'<div style="font-size:10px;color:#9ab0cc">Capi totali</div></div>'
+      +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(201,169,97,.1);border:1.5px solid #F0E0A0">'
+      +'<div style="font-size:24px;margin-bottom:4px">🐾</div>'
+      +'<div style="font-size:20px;font-weight:800;color:#A88A41">'+_tipiKeys.length+'</div>'
+      +'<div style="font-size:10px;color:#9ab0cc">Specie</div></div>'
+      +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(201,169,97,.1);border:1.5px solid #F0E0A0">'
+      +'<div style="font-size:24px;margin-bottom:4px">🗓️</div>'
+      +'<div style="font-size:20px;font-weight:800;color:#A88A41">'+_lista.length+'</div>'
+      +'<div style="font-size:10px;color:#9ab0cc">Registrazioni</div></div>';
+
+    var listaEl = document.getElementById('carniere-lista');
+    if(!listaEl) return;
+
+    if(!_lista.length){
+      listaEl.innerHTML = '<div style="text-align:center;padding:40px 20px">'
+        +'<div style="font-size:56px;margin-bottom:12px">🏹</div>'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#A88A41;margin-bottom:8px">Carniere vuoto</div>'
+        +'<div style="font-size:13px;color:#9ab0cc;margin-bottom:20px">Aggiungi la tua prima cattura stagionale</div>'
+        +'<button onclick="apriNuovoCarniere()" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer">+ Prima registrazione</button>'
+        +'</div>';
+      return;
+    }
+
+    var _icS = {Lepre:'🐇',Beccaccia:'🐦',Starna:'🐓',Fagiano:'🦃',Cinghiale:'🐗',Tartufo:'🍄',Pernice:'🐦',Quaglia:'🐤',Germano:'🦆',Altro:'🎯'};
+    listaEl.innerHTML = '<div style="background:#FFFDE7;border-radius:12px;padding:12px;margin-bottom:12px;border:1.5px solid #F0E0A0">'
+      +'<div style="font-size:11px;font-weight:800;color:#A88A41;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Riepilogo stagione</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:8px">'
+      +_tipiKeys.map(function(k){
+        return '<div style="background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:#A88A41;border:1.5px solid #F0E0A0">'
+          +(_icS[k]||'🎯')+' '+k+': <strong>'+_tipi[k]+'</strong></div>';
+      }).join('')
+      +'</div></div>'
+      +_lista.map(function(r){
+        return '<div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:8px;box-shadow:0 2px 8px rgba(201,169,97,.08);border:1.5px solid #F0E0A0;display:flex;align-items:center;gap:12px">'
+          +'<div style="font-size:32px">'+(_icS[r.selvaggina]||'🎯')+'</div>'
+          +'<div style="flex:1">'
+          +'<div style="font-weight:700;color:#1a1a3a;font-size:14px">'+r.selvaggina+' × '+r.quantita+'</div>'
+          +'<div style="font-size:11px;color:#9ab0cc;margin-top:2px">'+new Date(r.data).toLocaleDateString('it-IT')+(r.zona?' · '+r.zona:'')+'</div>'
+          +(r.note?'<div style="font-size:11px;color:#A88A41;margin-top:3px">'+r.note+'</div>':'')
+          +'</div>'
+          +'<button onclick="eliminaCarniere(\''+r.id+'\')" style="background:#FFF0EE;color:#C0534A;border:1.5px solid #F5C4BE;border-radius:8px;padding:6px 8px;font-size:11px;cursor:pointer">🗑️</button>'
+          +'</div>';
+      }).join('');
+  } catch(e){
+    console.warn('[carniere]',e.message);
+    document.getElementById('carniere-lista').innerHTML='<div style="text-align:center;padding:20px;color:#9ab0cc">Errore caricamento.</div>';
+  }
+}
+
+function apriNuovoCarniere(uscitaId){
+  var oggi = new Date().toISOString().substring(0,10);
+  var ov = document.createElement('div');
+  ov.id = 'ov-carniere';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  ov.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#A88A41;margin-bottom:16px">🏹 Aggiungi al carniere</div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#A88A41;display:block;margin-bottom:4px">Selvaggina *</label>'
+    +'<select id="car-selvaggina" style="width:100%;padding:10px;border:1.5px solid #F0E0A0;border-radius:8px;font-size:14px;background:#FFFDE7">'
+    +'<option value="">— seleziona —</option>'
+    +'<option value="Lepre">🐇 Lepre</option>'
+    +'<option value="Beccaccia">🐦 Beccaccia</option>'
+    +'<option value="Starna">🐓 Starna</option>'
+    +'<option value="Fagiano">🦃 Fagiano</option>'
+    +'<option value="Quaglia">🐤 Quaglia</option>'
+    +'<option value="Pernice">🐦 Pernice</option>'
+    +'<option value="Germano">🦆 Germano reale</option>'
+    +'<option value="Cinghiale">🐗 Cinghiale</option>'
+    +'<option value="Tartufo">🍄 Tartufo (kg)</option>'
+    +'<option value="Altro">🎯 Altro</option>'
+    +'</select></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div><label style="font-size:12px;font-weight:700;color:#A88A41;display:block;margin-bottom:4px">Quantità *</label>'
+    +'<input type="number" id="car-quantita" value="1" min="0.1" step="0.1" style="width:100%;padding:10px;border:1.5px solid #F0E0A0;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div><label style="font-size:12px;font-weight:700;color:#A88A41;display:block;margin-bottom:4px">Data</label>'
+    +'<input type="date" id="car-data" value="'+oggi+'" style="width:100%;padding:10px;border:1.5px solid #F0E0A0;border-radius:8px;font-size:14px"/></div></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#A88A41;display:block;margin-bottom:4px">Zona</label>'
+    +'<input id="car-zona" placeholder="Es. Bosco Velino" style="width:100%;padding:10px;border:1.5px solid #F0E0A0;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:700;color:#A88A41;display:block;margin-bottom:4px">Note</label>'
+    +'<textarea id="car-note" rows="2" placeholder="Es. Con Birba, ottima giornata..." style="width:100%;padding:10px;border:1.5px solid #F0E0A0;border-radius:8px;font-size:14px;box-sizing:border-box;resize:none"></textarea></div>'
+    +'<input type="hidden" id="car-uscita-id" value="'+(uscitaId||'')+'"/>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button onclick="document.getElementById(\'ov-carniere\').remove()" style="flex:1;background:#FFF9E6;color:#A88A41;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer">Annulla</button>'
+    +'<button onclick="salvaCarniere(this)" style="flex:2;background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">🏹 Salva</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+}
+
+async function salvaCarniere(btn){
+  var sel = document.getElementById('car-selvaggina').value;
+  if(!sel){ toast('Seleziona la selvaggina'); return; }
+  btn.disabled=true; btn.textContent='⏳';
+  var record = {
+    user_id: _currentUser ? _currentUser.id : null,
+    selvaggina: sel,
+    quantita: parseFloat(document.getElementById('car-quantita').value)||1,
+    data: document.getElementById('car-data').value,
+    zona: document.getElementById('car-zona').value.trim()||null,
+    note: document.getElementById('car-note').value.trim()||null,
+    uscita_id: document.getElementById('car-uscita-id').value||null,
+    unita: sel==='Tartufo'?'kg':'capi'
+  };
+  try {
+    if(_currentUser){
+      var res = await _supabase.from('caccia_carniere').insert(record);
+      if(res.error) throw res.error;
+    }
+  } catch(e){
+    toast('❌ Errore: '+e.message);
+    btn.disabled=false; btn.textContent='🏹 Salva';
+    return;
+  }
+  document.getElementById('ov-carniere').remove();
+  toast('✅ Aggiunto al carniere!');
+  var _tc = document.getElementById('caccia-tab-content');
+  if(_tc && _cacciaTabAttiva==='caccia-carniere') renderCacciaCarniere(_tc);
+}
+
+async function eliminaCarniere(id){
+  if(!confirm('Eliminare questa registrazione?')) return;
+  try { if(_currentUser) await _supabase.from('caccia_carniere').delete().eq('id',id); } catch(e){}
+  toast('🗑️ Eliminato');
+  var _tc = document.getElementById('caccia-tab-content');
+  if(_tc) renderCacciaCarniere(_tc);
+}
+
+function renderCacciaAltro(container){
+  container.innerHTML =
+    '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(46,125,50,.08)">'
+    +'<div style="font-size:18px;font-weight:700;color:#1a1a3a;margin-bottom:4px">☰ Altro</div>'
+    +'<div style="font-size:12px;color:#6B8BB0">Tutte le funzioni</div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +[
+      {ico:'🐕',label:'I miei cani',sub:'Profili e categorie',fn:'renderCacciaCani'},
+      {ico:'🏆',label:'Prove',sub:'ENCI · JGHV · FISC',fn:'renderCacciaProve'},
+      {ico:'📅',label:'Calendario',sub:'Date venatorie',fn:'renderCacciaCalendario'},
+      {ico:'📍',label:'Le mie zone',sub:'Heatmap uscite',fn:null},
+      {ico:'📡',label:'Collari GPS',sub:'Prossimamente',fn:null},
+      {ico:'🚨',label:'Emergenze',sub:'SOS + numeri rapidi',fn:null}
+    ].map(function(item){
+      return '<div onclick="'+(item.fn?'(function(){var c=g(\'caccia-tab-content\');if(c)'+item.fn+'(c);})()'
+        :'toast(\'Prossimamente!\')')+'" '
+        +'style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;border:1.5px solid #C8E6C9;'
+        +(item.fn?'':'opacity:.6;')
+        +'">'
+        +'<div style="font-size:28px;margin-bottom:6px">'+item.ico+'</div>'
+        +'<div style="font-size:12px;font-weight:700;color:#2E7D32">'+item.label+'</div>'
+        +'<div style="font-size:10px;color:#9ab0cc;margin-top:2px">'+item.sub+'</div>'
+        +'</div>';
+    }).join('')
+    +'</div>'
+    +'<div style="text-align:center;padding:20px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
 }
 
 async function salvaFineUscitaCaccia(btn){
