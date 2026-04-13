@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.13';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.14';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9539,7 +9539,7 @@ async function renderCacciaHome(container){
 
   // Mostra subito da localStorage
   var _stagione = new Date().getFullYear();
-  var _usciteLoc = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+  var _usciteLoc = window._cacciaUsciteList || [];
   if(_usciteLoc.length){
     var _kmL=_usciteLoc.reduce(function(a,u){return a+(u.km||0);},0);
     var _oreL=_usciteLoc.reduce(function(a,u){return a+(u.ore||0);},0);
@@ -9556,7 +9556,7 @@ async function renderCacciaHome(container){
     }
   }
   // Usa dati già in cache da caricaCaccia
-  var _uscite = window._cacciaUsciteList || JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+  var _uscite = window._cacciaUsciteList || [];
   var _stagione = new Date().getFullYear();
   _uscite = _uscite.filter(function(u){ return u.data && u.data.startsWith(_stagione); });
   var _kmTot = _uscite.reduce(function(a,u){return a+(u.km||0);},0);
@@ -9620,7 +9620,7 @@ function renderCacciaGPS(container){
       +'border:none;border-radius:16px;padding:18px;font-size:16px;font-weight:700;cursor:pointer">'
       +'🗺️ Inizia uscita GPS</button>'
       +(function(){
-        var _uscite = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]')
+        var _uscite = (window._cacciaUsciteList || [])
           .filter(function(u){ return u.waypoints && u.waypoints.length>0; });
         if(!_uscite.length) return '';
         return '<div style="margin-top:20px">'
@@ -10237,9 +10237,9 @@ async function salvaFineUscitaCaccia(btn){
     if(res.error) throw res.error;
 
     // Cache localStorage
-    var _uscite = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
-    _uscite.push(uscita);
-    localStorage.setItem('bp_caccia_uscite', JSON.stringify(_uscite));
+    window._cacciaUsciteList = window._cacciaUsciteList || [];
+    window._cacciaUsciteList.push(uscita);
+    _salvaCacciaLocale();
 
     // Reset stato GPS
     _cacciaUscitaAttiva = null;
@@ -10267,7 +10267,7 @@ async function salvaFineUscitaCaccia(btn){
 async function apriMappaSalvata(uscitaId){
   var u = null;
   // Prima cerca in localStorage (id numerico)
-  var _loc = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+  var _loc = window._cacciaUsciteList || [];
   u = _loc.find(function(x){ return String(x.id)===String(uscitaId); });
   // Se non trovato prova Supabase (id UUID dal diario)
   if(!u && _supabase && _currentUser){
@@ -10424,7 +10424,7 @@ async function renderCacciaDiario(container){
     var _uscite = res.data||[];
 
     // Merge con localStorage per uscite offline
-    var _local = JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+    var _local = window._cacciaUsciteList || [];
     _local.forEach(function(u){
       if(!_uscite.find(function(x){ return x.zona===u.zona&&x.data===u.data; }))
         _uscite.push(u);
@@ -10498,7 +10498,7 @@ async function renderCacciaCani(container){
     var res = await _supabase.from('caccia_cani').select('*').eq('user_id',_currentUser.id).order('created_at',{ascending:false});
     if(res.error) throw res.error;
     var _cani = res.data||[];
-    localStorage.setItem('bp_caccia_cani_lista', JSON.stringify(_cani));
+    window._cacciaCaniList = _cani; _salvaCacciaLocale();
     var listaEl = document.getElementById('caccia-cani-lista');
     if(!listaEl) return;
     if(!_cani.length){
@@ -10622,7 +10622,7 @@ async function eliminaCaneC(id){
 }
 
 async function modificaCaneC(id){
-  var _cani = JSON.parse(localStorage.getItem('bp_caccia_cani_lista')||'[]');
+  var _cani = window._cacciaCaniList || [];
   var c = _cani.find(function(x){return x.id===id;});
   if(!c && _currentUser){
     try {
@@ -10744,10 +10744,9 @@ async function renderCacciaProve(container){
     var res = await _supabase.from('caccia_prove').select('*').eq('user_id',_currentUser.id).order('data',{ascending:false});
     var _prove = res.data||[];
     if(!_prove.length){
-      var _loc = JSON.parse(localStorage.getItem('bp_caccia_prove')||'[]');
-      _prove = _loc;
+      _prove = window._cacciaProveList || [];
     } else {
-      localStorage.setItem('bp_caccia_prove', JSON.stringify(_prove));
+      window._cacciaProveList = _prove; _salvaCacciaLocale();
     }
 
     // === STATS ===
@@ -10894,9 +10893,9 @@ async function apriNuovaProva(){
     if(_currentUser){
       var rc=await _supabase.from('caccia_cani').select('id,nome,categoria,sistema_gare').eq('user_id',_currentUser.id).order('nome');
       _cl=rc.data||[];
-      if(_cl.length) localStorage.setItem('bp_caccia_cani_lista',JSON.stringify(_cl));
+      if(_cl.length){ window._cacciaCaniList = _cl; _salvaCacciaLocale(); }
     }
-    if(!_cl.length) _cl=JSON.parse(localStorage.getItem('bp_caccia_cani_lista')||'[]');
+    if(!_cl.length) _cl=window._cacciaCaniList || [];
     _caniOpts=_cl.map(function(c){return '<option value="'+c.id+'">'+c.nome+(c.categoria?' ('+c.categoria+')':'')+'</option>';}).join('');
   } catch(e){ console.warn('[prove] cani opts:',e.message); }
   ov.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto">'
@@ -10982,9 +10981,9 @@ async function salvaProva(btn){
     giudice:document.getElementById('np-giudice').value.trim()||null,
     note:document.getElementById('np-note').value.trim()||null
   };
-  var _loc=JSON.parse(localStorage.getItem('bp_caccia_prove')||'[]');
-  _loc.unshift(Object.assign({},prova,{id:'loc_'+Date.now()}));
-  localStorage.setItem('bp_caccia_prove',JSON.stringify(_loc));
+  window._cacciaProveList = window._cacciaProveList || [];
+  window._cacciaProveList.unshift(Object.assign({},prova,{id:'loc_'+Date.now()}));
+  _salvaCacciaLocale();
   try { if(_currentUser) await _supabase.from('caccia_prove').insert(prova); } catch(e){ console.warn('[prove] insert:',e.message); }
   document.getElementById('ov-nuova-prova').remove();
   toast('✅ Prova salvata!');
@@ -10995,8 +10994,8 @@ async function salvaProva(btn){
 async function eliminaProva(id){
   if(!confirm('Eliminare questa prova?')) return;
   try { if(_currentUser) await _supabase.from('caccia_prove').delete().eq('id',id); } catch(e){}
-  var _loc=JSON.parse(localStorage.getItem('bp_caccia_prove')||'[]');
-  localStorage.setItem('bp_caccia_prove',JSON.stringify(_loc.filter(function(p){return p.id!==id;})));
+  window._cacciaProveList = (window._cacciaProveList || []).filter(function(p){return p.id!==id;});
+  _salvaCacciaLocale();
   toast('🗑️ Prova eliminata');
   var _tc=document.getElementById('caccia-tab-content');
   if(_tc) renderCacciaProve(_tc);
@@ -11011,7 +11010,7 @@ async function condividiSchedaCane(caneId, nomeC, razzaC, catC, sisC){
     }
   } catch(e){}
   if(!_prove.length){
-    var _loc = JSON.parse(localStorage.getItem('bp_caccia_prove')||'[]');
+    var _loc = window._cacciaProveList || [];
     _prove = _loc.filter(function(p){ return p.cane_id===caneId; });
   }
   var _uscite = [];
@@ -11049,7 +11048,7 @@ async function condividiSchedaCane(caneId, nomeC, razzaC, catC, sisC){
 
 async function apriCondividiUscita(uscitaId){
   var u=null;
-  var _loc=JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+  var _loc=window._cacciaUsciteList || [];
   u=_loc.find(function(x){return String(x.id)===String(uscitaId);});
   if(!u&&_currentUser){
     try{
