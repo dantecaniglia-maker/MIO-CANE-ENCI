@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.15';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.16';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9401,42 +9401,6 @@ function applicaModalita(mod){
 }
 
 async function caricaCaccia(){
-  // === DEBUG MOBILE TEMPORANEO ===
-  var _dbg = [];
-  _dbg.push('auth: ' + (_currentUser ? _currentUser.email : 'NULL'));
-  _dbg.push('uscite mem: ' + (window._cacciaUsciteList ? window._cacciaUsciteList.length : 'NULL'));
-  _dbg.push('cani mem: ' + (window._cacciaCaniList ? window._cacciaCaniList.length : 'NULL'));
-  _dbg.push('prove mem: ' + (window._cacciaProveList ? window._cacciaProveList.length : 'NULL'));
-  var _lsRaw = localStorage.getItem('bp_caccia_stato_v1');
-  _dbg.push('localStorage: ' + (_lsRaw ? _lsRaw.length + ' chars' : 'VUOTO'));
-  if(_lsRaw){
-    try {
-      var _lsD = JSON.parse(_lsRaw);
-      _dbg.push('ls uid: ' + (_lsD.uid || 'NESSUNO'));
-      _dbg.push('ls uscite: ' + (_lsD.uscite ? _lsD.uscite.length : 0));
-      _dbg.push('ls cani: ' + (_lsD.cani ? _lsD.cani.length : 0));
-    } catch(e){ _dbg.push('ls PARSE ERROR'); }
-  }
-  var _debugDiv = document.createElement('div');
-  _debugDiv.id = 'debug-caccia-mobile';
-  _debugDiv.style.cssText = 'position:fixed;top:60px;left:8px;right:8px;background:#000;color:#0f0;font-family:monospace;font-size:11px;padding:12px;border-radius:8px;z-index:999999;max-height:40vh;overflow-y:auto;white-space:pre-wrap';
-  _debugDiv.textContent = '=== DEBUG CACCIA ===\n' + _dbg.join('\n');
-  document.body.appendChild(_debugDiv);
-  // Aggiorna dopo sync Supabase
-  setTimeout(function(){
-    var _dbg2 = [];
-    _dbg2.push('\n--- DOPO SYNC ---');
-    _dbg2.push('auth: ' + (_currentUser ? _currentUser.email : 'NULL'));
-    _dbg2.push('uscite mem: ' + (window._cacciaUsciteList ? window._cacciaUsciteList.length : 'NULL'));
-    _dbg2.push('cani mem: ' + (window._cacciaCaniList ? window._cacciaCaniList.length : 'NULL'));
-    _dbg2.push('prove mem: ' + (window._cacciaProveList ? window._cacciaProveList.length : 'NULL'));
-    var el = document.getElementById('debug-caccia-mobile');
-    if(el) el.textContent += '\n' + _dbg2.join('\n');
-  }, 5000);
-  // Tap per chiudere
-  _debugDiv.onclick = function(){ _debugDiv.remove(); };
-  // === FINE DEBUG ===
-
   // 1. Mostra subito con dati da localStorage (se esistono)
   var hadLocal = _caricaCacciaLocale();
   switchCacciaTab('caccia-home');
@@ -9456,21 +9420,20 @@ async function caricaCaccia(){
 
   try {
     var uid = _currentUser.id;
-    var [rc, ru, rp] = await Promise.all([
+    var [rc, ru, rp, rk] = await Promise.all([
       _supabase.from('caccia_cani').select('*').eq('user_id', uid).order('nome'),
       _supabase.from('caccia_uscite').select('*').eq('user_id', uid).order('data', {ascending:false}).limit(50),
-      _supabase.from('caccia_prove').select('*').eq('user_id', uid).order('data', {ascending:false}).limit(100)
+      _supabase.from('caccia_prove').select('*').eq('user_id', uid).order('data', {ascending:false}).limit(100),
+      _supabase.from('caccia_carniere').select('*').eq('user_id', uid).order('data', {ascending:false})
     ]);
     if(!rc.error) window._cacciaCaniList   = rc.data || [];
     if(!ru.error) window._cacciaUsciteList = ru.data || [];
     if(!rp.error) window._cacciaProveList  = rp.data || [];
+    if(!rk.error) window._cacciaCarniereList = rk.data || [];
     _salvaCacciaLocale();
-    // Aggiorna SEMPRE home con dati freschi da Supabase
+    // Aggiorna la tab attiva con dati freschi
     var tc = document.getElementById('caccia-tab-content');
-    if(tc){
-      if(_cacciaTabAttiva === 'caccia-home') renderCacciaHome(tc);
-      else switchCacciaTab(_cacciaTabAttiva);
-    }
+    if(tc) switchCacciaTab(_cacciaTabAttiva);
   } catch(e){ console.warn('[caccia] sync background err', e); }
 }
 
@@ -9528,8 +9491,7 @@ function switchCacciaTab(tab){
   var content = g('caccia-tab-content');
   if(!content) return;
   if(tab==='caccia-home'){
-    if(!_currentUser){ setTimeout(function(){ renderCacciaHome(content); }, 800); }
-    else { renderCacciaHome(content); }
+    renderCacciaHome(content);
   }
   else if(tab==='caccia-gps')      renderCacciaGPS(content);
   else if(tab==='caccia-diario')   renderCacciaDiario(content);
@@ -10002,23 +9964,20 @@ async function renderCacciaCarniere(container){
   var listaEl0 = document.getElementById('carniere-lista');
   if(listaEl0) listaEl0.innerHTML = '<div style="text-align:center;padding:40px 20px"><div style="font-size:56px;margin-bottom:12px">🏹</div><div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#A88A41;margin-bottom:8px">Carniere vuoto</div><div style="font-size:13px;color:#9ab0cc;margin-bottom:20px">Aggiungi la tua prima cattura stagionale</div><button onclick="apriNuovoCarniere()" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer">+ Prima registrazione</button></div>';
 
-  // Aspetta _currentUser max 4s
-  if(!_currentUser){
-    var _cRetry=0;
-    await new Promise(function(resolve){
-      var _ct=setInterval(function(){
-        if(_currentUser||_cRetry++>20){ clearInterval(_ct); resolve(); }
-      },200);
-    });
-  }
   if(!_currentUser) return;
 
   try {
+    // Prova prima da cache locale
+    var _lista = window._cacciaCarniereList || [];
+    // Refresh da Supabase
     var _anno = new Date().getFullYear();
     var res = await _supabase.from('caccia_carniere')
       .select('*').eq('user_id',_currentUser.id)
       .order('data',{ascending:false});
-    var _lista = res.data||[];
+    if(!res.error && res.data) {
+      _lista = res.data;
+      window._cacciaCarniereList = _lista;
+    }
 
     _carniereListaGlobale = _lista;
     _carniereFiltoAttivo = 'Tutte';
@@ -10110,6 +10069,7 @@ async function salvaCarniere(btn){
   // Aggiorna subito localStorage e UI
   record.id = 'loc_'+Date.now();
   _carniereListaGlobale.unshift(record);
+  window._cacciaCarniereList = _carniereListaGlobale;
   var ov = document.getElementById('ov-carniere');
   if(ov) ov.remove();
   toast('✅ Aggiunto al carniere!');
@@ -10445,26 +10405,20 @@ async function renderCacciaDiario(container){
     +'</div>';
 
   try {
-    if(!_currentUser){
-      var l2 = document.getElementById('caccia-diario-list');
-      if(l2) l2.innerHTML = '<div style="text-align:center;padding:20px;color:#9ab0cc">⏳ Attendere autenticazione...</div>';
-      setTimeout(function(){ renderCacciaDiario(container); }, 1000);
-      return;
+    // Usa dati già caricati da caricaCaccia(), refresh Supabase in background
+    var _uscite = window._cacciaUsciteList || [];
+    if(_currentUser && !_uscite.length){
+      var res = await _supabase.from('caccia_uscite')
+        .select('*')
+        .eq('user_id', _currentUser.id)
+        .order('data', {ascending:false})
+        .limit(50);
+      if(!res.error && res.data) {
+        _uscite = res.data;
+        window._cacciaUsciteList = _uscite;
+        _salvaCacciaLocale();
+      }
     }
-    var res = await _supabase.from('caccia_uscite')
-      .select('*')
-      .eq('user_id', _currentUser.id)
-      .order('data', {ascending:false})
-      .limit(50);
-
-    var _uscite = res.data||[];
-
-    // Merge con localStorage per uscite offline
-    var _local = window._cacciaUsciteList || [];
-    _local.forEach(function(u){
-      if(!_uscite.find(function(x){ return x.zona===u.zona&&x.data===u.data; }))
-        _uscite.push(u);
-    });
 
     var lista = document.getElementById('caccia-diario-list');
     if(!lista) return;
