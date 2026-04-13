@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.17';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.18';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -3243,34 +3243,19 @@ var _loggingOut = false;
 
 var _authHandled = false;
 
-// 1) getSession subito, senza timeout
-_supabase.auth.getSession().then(async function(result){
-  if(_authHandled) return;
-  if(result.data && result.data.session){
-    _authHandled = true;
-    _currentUser = result.data.session.user;
-    await onUserSignedIn(result.data.session.user);
-  } else {
-    // Nessuna sessione: mostra login
-    var ml = g('modal-login');
-    if(ml) ml.style.display = 'flex';
-  }
-}).catch(function(e){
-  console.warn('[Auth] getSession error:', e);
-  var ml = g('modal-login');
-  if(ml) ml.style.display = 'flex';
-});
-
-// 2) onAuthStateChange per eventi SUCCESSIVI
+// Auth unica via onAuthStateChange — gestisce TUTTI gli scenari
 _supabase.auth.onAuthStateChange(async function(event, session){
   if(_loggingOut) return;
-  if(event === 'INITIAL_SESSION') return; // già gestito da getSession
-  if(event === 'SIGNED_IN' && session && !_authHandled){
+  if((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session && !_authHandled){
     _authHandled = true;
     _currentUser = session.user;
     await onUserSignedIn(session.user);
+  } else if((event === 'INITIAL_SESSION') && !session){
+    // Nessuna sessione al caricamento: mostra login
+    var ml = g('modal-login');
+    if(ml) ml.style.display = 'flex';
   } else if(event === 'TOKEN_REFRESHED' && session){
-    _currentUser = session.user; // aggiorna silenziosamente
+    _currentUser = session.user;
   } else if(event === 'SIGNED_OUT'){
     _authHandled = false;
     _currentUser = null;
