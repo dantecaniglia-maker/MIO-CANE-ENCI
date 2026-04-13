@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.16';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.17';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9429,12 +9429,12 @@ async function caricaCaccia(){
     if(!rc.error) window._cacciaCaniList   = rc.data || [];
     if(!ru.error) window._cacciaUsciteList = ru.data || [];
     if(!rp.error) window._cacciaProveList  = rp.data || [];
-    if(!rk.error) window._cacciaCarniereList = rk.data || [];
+    if(!rk.error){ window._cacciaCarniereList = rk.data || []; _carniereListaGlobale = rk.data || []; }
     _salvaCacciaLocale();
     // Aggiorna la tab attiva con dati freschi
     var tc = document.getElementById('caccia-tab-content');
     if(tc) switchCacciaTab(_cacciaTabAttiva);
-  } catch(e){ console.warn('[caccia] sync background err', e); }
+  } catch(e){ console.warn('[caccia] sync err', e); toast('⚠️ Sync caccia: '+e.message); }
 }
 
 /* ════════════════════════════════════════
@@ -9967,19 +9967,23 @@ async function renderCacciaCarniere(container){
   if(!_currentUser) return;
 
   try {
-    // Prova prima da cache locale
-    var _lista = window._cacciaCarniereList || [];
-    // Refresh da Supabase
-    var _anno = new Date().getFullYear();
-    var res = await _supabase.from('caccia_carniere')
-      .select('*').eq('user_id',_currentUser.id)
-      .order('data',{ascending:false});
-    if(!res.error && res.data) {
-      _lista = res.data;
+    // Usa cache se già caricata (evita ri-query ad ogni tab switch)
+    if(_carniereListaGlobale && _carniereListaGlobale.length > 0){
+      var _lista = _carniereListaGlobale;
+    } else {
+      // Prima volta: carica da Supabase
+      var _lista = [];
+      var res = await _supabase.from('caccia_carniere')
+        .select('*').eq('user_id',_currentUser.id)
+        .order('data',{ascending:false});
+      if(res.error){
+        toast('⚠️ Errore carniere: '+res.error.message);
+      } else {
+        _lista = res.data || [];
+      }
       window._cacciaCarniereList = _lista;
+      _carniereListaGlobale = _lista;
     }
-
-    _carniereListaGlobale = _lista;
     _carniereFiltoAttivo = 'Tutte';
 
     // Aggiorna stats totali
@@ -10079,10 +10083,17 @@ async function salvaCarniere(btn){
   try {
     var _recSupa = Object.assign({}, record);
     delete _recSupa.id;
-    var res = await _supabase.from('caccia_carniere').insert(_recSupa);
-    if(res.error) console.warn('[carniere] insert remoto:', res.error.message);
+    var res = await _supabase.from('caccia_carniere').insert(_recSupa).select();
+    if(res.error){
+      toast('⚠️ Sync: '+res.error.message);
+    } else if(res.data && res.data[0]){
+      // Aggiorna ID locale con ID reale Supabase
+      var idx = _carniereListaGlobale.findIndex(function(r){ return r.id === record.id; });
+      if(idx >= 0) _carniereListaGlobale[idx] = res.data[0];
+      window._cacciaCarniereList = _carniereListaGlobale;
+    }
   } catch(e){
-    console.warn('[carniere] insert:', e.message);
+    toast('⚠️ Errore salvataggio: '+e.message);
   }
 }
 
