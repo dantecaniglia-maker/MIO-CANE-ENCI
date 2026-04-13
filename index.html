@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '12.09';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.09';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4311,11 +4311,22 @@ async function registraEmail(){
 }
 
 async function logout(){
-  try { _supabase.auth.signOut({scope:'global'}); } catch(e){}
+  _loggingOut = true;
+  _currentUser = null;
+  _authHandled = false;
 
-  // Cancella TUTTO
-  try { localStorage.clear(); } catch(e){}
+  // Pulisci solo dati utente, NON preferenze app
+  var keysToRemove = [];
+  for(var i=0; i<localStorage.length; i++){
+    var k = localStorage.key(i);
+    if(k && (k.startsWith('bp_') || k.startsWith('breedped_') || k === 'miocane_enci_v1' || k.startsWith('miocane_')))
+      keysToRemove.push(k);
+  }
+  keysToRemove.forEach(function(k){ localStorage.removeItem(k); });
   try { sessionStorage.clear(); } catch(e){}
+
+  // Logout Supabase CON await
+  try { await _supabase.auth.signOut({scope:'global'}); } catch(e){}
 
   // Deregistra Service Worker e svuota cache
   if('serviceWorker' in navigator){
@@ -4323,12 +4334,12 @@ async function logout(){
       var regs = await navigator.serviceWorker.getRegistrations();
       for(var r of regs) await r.unregister();
       var keys = await caches.keys();
-      for(var k of keys) await caches.delete(k);
+      for(var k2 of keys) await caches.delete(k2);
     } catch(e){}
   }
 
   // Forza ricarica totale
-  window.location.href = '/?t=' + Date.now();
+  window.location.href = '/?_logout=' + Date.now();
 }
 
 async function onUserSignedIn(user){
@@ -8952,14 +8963,6 @@ getReminders=function(c){
     }
   };
 
-  // Mostra login se non autenticato
-  _supabase.auth.getSession().then(function(result){
-    if(!result.data || !result.data.session){
-      var ml = g('modal-login');
-      if(ml) ml.style.display = 'flex';
-    }
-  });
-
   var hasSavedData = caricaDB();
   if(!hasSavedData){
     cani.push(luna, ramon);
@@ -9439,16 +9442,16 @@ var _cacciaTabAttiva = 'caccia-home';
 var _CACCIA_KEY = 'bp_caccia_stato_v1';
 function _salvaCacciaLocale(){
   try {
-    var _caniSave = window._cacciaCaniList || JSON.parse(localStorage.getItem('bp_caccia_cani_lista')||'[]');
-    var _usciteSave = window._cacciaUsciteList || JSON.parse(localStorage.getItem('bp_caccia_uscite')||'[]');
+    var _caniSave = window._cacciaCaniList || [];
+    var _usciteSave = window._cacciaUsciteList || [];
     var _proveSave = window._cacciaProveList || [];
-    var payload = {
+    localStorage.setItem(_CACCIA_KEY, JSON.stringify({
+      uid: _currentUser ? _currentUser.id : null,
       cani: _caniSave,
       uscite: _usciteSave,
       prove: _proveSave,
       ts: Date.now()
-    };
-    localStorage.setItem(_CACCIA_KEY, JSON.stringify(payload));
+    }));
   } catch(e){ console.warn('[caccia] _salvaCacciaLocale err', e); }
 }
 function _caricaCacciaLocale(){
@@ -9456,9 +9459,10 @@ function _caricaCacciaLocale(){
     var raw = localStorage.getItem(_CACCIA_KEY);
     if(!raw) return false;
     var d = JSON.parse(raw);
-    if(d.cani)   { window._cacciaCaniList   = d.cani;   localStorage.setItem('bp_caccia_cani_lista', JSON.stringify(d.cani)); }
-    if(d.uscite) { window._cacciaUsciteList = d.uscite; localStorage.setItem('bp_caccia_uscite', JSON.stringify(d.uscite)); }
-    if(d.prove)  { window._cacciaProveList  = d.prove; }
+    if(_currentUser && d.uid && d.uid !== _currentUser.id) return false;
+    if(d.cani)   window._cacciaCaniList   = d.cani;
+    if(d.uscite) window._cacciaUsciteList = d.uscite;
+    if(d.prove)  window._cacciaProveList  = d.prove;
     return true;
   } catch(e){ return false; }
 }
