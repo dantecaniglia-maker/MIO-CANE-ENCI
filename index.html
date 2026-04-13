@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.12';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.13';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4315,30 +4315,35 @@ async function logout(){
   _currentUser = null;
   _authHandled = false;
 
-  // 1. Logout Supabase PRIMA di tutto
-  try { await _supabase.auth.signOut({scope:'global'}); } catch(e){
-    console.warn('[logout] signOut error:', e);
-  }
-
-  // 2. Pulisci TUTTO — localStorage, sessionStorage
+  // 1. Pulisci storage SUBITO (sincrono, funziona sempre)
   try { localStorage.clear(); } catch(e){}
   try { sessionStorage.clear(); } catch(e){}
-  // Ripristina flag non-utente per evitare flash onboarding/GDPR
   localStorage.setItem('miocane_onboarding_done', '1');
   localStorage.setItem('miocane_gdpr_done', '1');
 
-  // 3. Deregistra Service Worker e svuota cache
-  if('serviceWorker' in navigator){
+  // 2. signOut con timeout 3s (su mobile può pendere)
+  try {
+    await Promise.race([
+      _supabase.auth.signOut({scope:'global'}),
+      new Promise(function(r){ setTimeout(r, 3000); })
+    ]);
+  } catch(e){}
+
+  // 3. Ri-pulisci nel caso signOut abbia riscritto il token
+  try { localStorage.clear(); } catch(e){}
+  localStorage.setItem('miocane_onboarding_done', '1');
+  localStorage.setItem('miocane_gdpr_done', '1');
+
+  // 4. Svuota cache SW (senza unregister — causa hang su mobile)
+  if(window.caches){
     try {
-      var regs = await navigator.serviceWorker.getRegistrations();
-      for(var r of regs) await r.unregister();
       var keys = await caches.keys();
-      for(var k2 of keys) await caches.delete(k2);
+      await Promise.all(keys.map(function(k){ return caches.delete(k); }));
     } catch(e){}
   }
 
-  // 4. Forza ricarica totale
-  window.location.href = '/?_logout=' + Date.now();
+  // 5. Redirect duro — location.replace evita bfcache mobile
+  window.location.replace('/?_logout=' + Date.now());
 }
 
 async function onUserSignedIn(user){
