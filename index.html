@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = true; var APP_VERSION = '12.08';</script>
+<script>var DEBUG_MODE = true; var APP_VERSION = '12.09';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -3241,32 +3241,42 @@ var _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 var _currentUser = null;
 var _loggingOut = false;
 
+var _authHandled = false;
+
+// 1) getSession subito, senza timeout
+_supabase.auth.getSession().then(async function(result){
+  if(_authHandled) return;
+  if(result.data && result.data.session){
+    _authHandled = true;
+    _currentUser = result.data.session.user;
+    await onUserSignedIn(result.data.session.user);
+  } else {
+    // Nessuna sessione: mostra login
+    var ml = g('modal-login');
+    if(ml) ml.style.display = 'flex';
+  }
+}).catch(function(e){
+  console.warn('[Auth] getSession error:', e);
+  var ml = g('modal-login');
+  if(ml) ml.style.display = 'flex';
+});
+
+// 2) onAuthStateChange per eventi SUCCESSIVI
 _supabase.auth.onAuthStateChange(async function(event, session){
   if(_loggingOut) return;
-  if(event === 'SIGNED_IN' && session){
+  if(event === 'INITIAL_SESSION') return; // già gestito da getSession
+  if(event === 'SIGNED_IN' && session && !_authHandled){
     _authHandled = true;
     _currentUser = session.user;
     await onUserSignedIn(session.user);
+  } else if(event === 'TOKEN_REFRESHED' && session){
+    _currentUser = session.user; // aggiorna silenziosamente
   } else if(event === 'SIGNED_OUT'){
     _authHandled = false;
     _currentUser = null;
     onUserSignedOut();
   }
 });
-
-// getSession usato SOLO se onAuthStateChange non scatta entro 1.5s
-var _authHandled = false;
-setTimeout(function(){
-  if(_authHandled) return;
-  _supabase.auth.getSession().then(async function(result){
-    if(_authHandled) return;
-    if(result.data && result.data.session){
-      _authHandled = true;
-      _currentUser = result.data.session.user;
-      await onUserSignedIn(result.data.session.user);
-    }
-  });
-}, 1500);
 // Compatibilità con vecchia chiave Gemini
 if(!_aiKeys.gemini && localStorage.getItem('miocane_gemini_v1')){
   _aiKeys.gemini = localStorage.getItem('miocane_gemini_v1');
