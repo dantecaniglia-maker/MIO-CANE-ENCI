@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.14';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.15';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9401,6 +9401,42 @@ function applicaModalita(mod){
 }
 
 async function caricaCaccia(){
+  // === DEBUG MOBILE TEMPORANEO ===
+  var _dbg = [];
+  _dbg.push('auth: ' + (_currentUser ? _currentUser.email : 'NULL'));
+  _dbg.push('uscite mem: ' + (window._cacciaUsciteList ? window._cacciaUsciteList.length : 'NULL'));
+  _dbg.push('cani mem: ' + (window._cacciaCaniList ? window._cacciaCaniList.length : 'NULL'));
+  _dbg.push('prove mem: ' + (window._cacciaProveList ? window._cacciaProveList.length : 'NULL'));
+  var _lsRaw = localStorage.getItem('bp_caccia_stato_v1');
+  _dbg.push('localStorage: ' + (_lsRaw ? _lsRaw.length + ' chars' : 'VUOTO'));
+  if(_lsRaw){
+    try {
+      var _lsD = JSON.parse(_lsRaw);
+      _dbg.push('ls uid: ' + (_lsD.uid || 'NESSUNO'));
+      _dbg.push('ls uscite: ' + (_lsD.uscite ? _lsD.uscite.length : 0));
+      _dbg.push('ls cani: ' + (_lsD.cani ? _lsD.cani.length : 0));
+    } catch(e){ _dbg.push('ls PARSE ERROR'); }
+  }
+  var _debugDiv = document.createElement('div');
+  _debugDiv.id = 'debug-caccia-mobile';
+  _debugDiv.style.cssText = 'position:fixed;top:60px;left:8px;right:8px;background:#000;color:#0f0;font-family:monospace;font-size:11px;padding:12px;border-radius:8px;z-index:999999;max-height:40vh;overflow-y:auto;white-space:pre-wrap';
+  _debugDiv.textContent = '=== DEBUG CACCIA ===\n' + _dbg.join('\n');
+  document.body.appendChild(_debugDiv);
+  // Aggiorna dopo sync Supabase
+  setTimeout(function(){
+    var _dbg2 = [];
+    _dbg2.push('\n--- DOPO SYNC ---');
+    _dbg2.push('auth: ' + (_currentUser ? _currentUser.email : 'NULL'));
+    _dbg2.push('uscite mem: ' + (window._cacciaUsciteList ? window._cacciaUsciteList.length : 'NULL'));
+    _dbg2.push('cani mem: ' + (window._cacciaCaniList ? window._cacciaCaniList.length : 'NULL'));
+    _dbg2.push('prove mem: ' + (window._cacciaProveList ? window._cacciaProveList.length : 'NULL'));
+    var el = document.getElementById('debug-caccia-mobile');
+    if(el) el.textContent += '\n' + _dbg2.join('\n');
+  }, 5000);
+  // Tap per chiudere
+  _debugDiv.onclick = function(){ _debugDiv.remove(); };
+  // === FINE DEBUG ===
+
   // 1. Mostra subito con dati da localStorage (se esistono)
   var hadLocal = _caricaCacciaLocale();
   switchCacciaTab('caccia-home');
