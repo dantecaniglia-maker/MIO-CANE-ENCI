@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.18';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.19';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -3250,8 +3250,7 @@ _supabase.auth.onAuthStateChange(async function(event, session){
     _authHandled = true;
     _currentUser = session.user;
     await onUserSignedIn(session.user);
-  } else if((event === 'INITIAL_SESSION') && !session){
-    // Nessuna sessione al caricamento: mostra login
+  } else if(event === 'INITIAL_SESSION' && !session){
     var ml = g('modal-login');
     if(ml) ml.style.display = 'flex';
   } else if(event === 'TOKEN_REFRESHED' && session){
@@ -9419,7 +9418,7 @@ async function caricaCaccia(){
     // Aggiorna la tab attiva con dati freschi
     var tc = document.getElementById('caccia-tab-content');
     if(tc) switchCacciaTab(_cacciaTabAttiva);
-  } catch(e){ console.warn('[caccia] sync err', e); toast('⚠️ Sync caccia: '+e.message); }
+  } catch(e){ console.warn('[caccia] sync background err', e); }
 }
 
 /* ════════════════════════════════════════
@@ -9953,11 +9952,12 @@ async function renderCacciaCarniere(container){
 
   try {
     // Usa cache se già caricata (evita ri-query ad ogni tab switch)
+    var _lista;
     if(_carniereListaGlobale && _carniereListaGlobale.length > 0){
-      var _lista = _carniereListaGlobale;
+      _lista = _carniereListaGlobale;
     } else {
       // Prima volta: carica da Supabase
-      var _lista = [];
+      _lista = [];
       var res = await _supabase.from('caccia_carniere')
         .select('*').eq('user_id',_currentUser.id)
         .order('data',{ascending:false});
@@ -10072,7 +10072,6 @@ async function salvaCarniere(btn){
     if(res.error){
       toast('⚠️ Sync: '+res.error.message);
     } else if(res.data && res.data[0]){
-      // Aggiorna ID locale con ID reale Supabase
       var idx = _carniereListaGlobale.findIndex(function(r){ return r.id === record.id; });
       if(idx >= 0) _carniereListaGlobale[idx] = res.data[0];
       window._cacciaCarniereList = _carniereListaGlobale;
