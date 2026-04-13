@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.11';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.12';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4320,9 +4320,12 @@ async function logout(){
     console.warn('[logout] signOut error:', e);
   }
 
-  // 2. Pulisci TUTTO — localStorage, sessionStorage, cookies
+  // 2. Pulisci TUTTO — localStorage, sessionStorage
   try { localStorage.clear(); } catch(e){}
   try { sessionStorage.clear(); } catch(e){}
+  // Ripristina flag non-utente per evitare flash onboarding/GDPR
+  localStorage.setItem('miocane_onboarding_done', '1');
+  localStorage.setItem('miocane_gdpr_done', '1');
 
   // 3. Deregistra Service Worker e svuota cache
   if('serviceWorker' in navigator){
