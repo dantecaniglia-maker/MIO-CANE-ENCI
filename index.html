@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.09';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.10';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4321,6 +4321,12 @@ async function logout(){
     var k = localStorage.key(i);
     if(k && (k.startsWith('bp_') || k.startsWith('breedped_') || k === 'miocane_enci_v1' || k.startsWith('miocane_')))
       keysToRemove.push(k);
+  }
+  keysToRemove.forEach(function(k){ localStorage.removeItem(k); });
+  // Fallback: rimuovi anche il token auth Supabase se signOut fallisce
+  for(var j=0; j<localStorage.length; j++){
+    var kk = localStorage.key(j);
+    if(kk && kk.startsWith('sb-')) keysToRemove.push(kk);
   }
   keysToRemove.forEach(function(k){ localStorage.removeItem(k); });
   try { sessionStorage.clear(); } catch(e){}
