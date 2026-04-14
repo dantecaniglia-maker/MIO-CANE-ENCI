@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.25';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.26';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -222,7 +222,7 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 #footer span{color:#C9A961;font-weight:700}
 
 /* BOTTOM NAV */
-#bottom-nav{position:fixed;bottom:0;left:0;width:100%;height:60px;background:#fff;border-top:1.5px solid #DDEAFF;z-index:99999;display:none;align-items:stretch;box-shadow:0 -4px 18px rgba(21,101,192,.12)}
+#bottom-nav{position:fixed;bottom:0;left:0;width:100%;height:60px;background:#fff;border-top:1.5px solid #DDEAFF;z-index:9990;display:none;align-items:stretch;box-shadow:0 -4px 18px rgba(21,101,192,.12)}
 /* SEZIONE REGISTRO (non-overlay, sezione fissa tra header e bottom-nav) */
 #sec-registro{position:fixed;top:54px;left:0;right:0;bottom:0;background:#EEF3FB;overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:200;padding:20px 14px}
 .bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;cursor:pointer;color:#9ab0cc;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:.03em;padding:4px 2px;transition:color .2s;-webkit-tap-highlight-color:transparent}
@@ -2019,7 +2019,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
 
   </div>
 </div>
-<div id="modal-cucc-share" class="overlay hidden" style="z-index:9999">
+<div id="modal-cucc-share" class="overlay hidden" style="z-index:9990">
   <div class="modal" style="max-width:560px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
       <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#0D47A1">📲 Annuncio Cucciolata</div>
@@ -4446,7 +4446,7 @@ function apriVetrina(cuccId){
 
   function _genitoreCard(info, label){
     var fotoHtml = info.foto
-      ? '<img src="'+info.foto+'" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #DDEAFF;cursor:pointer" onclick="var o=document.createElement(\'div\');o.style.cssText=\'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99999;display:flex;align-items:center;justify-content:center\';o.innerHTML=\'<img src=\\\''+info.foto+'\\\' style=\\\'max-width:90%;max-height:85vh;border-radius:12px\\\'/>\';o.onclick=function(){o.remove()};document.body.appendChild(o)"/>'
+      ? '<img src="'+info.foto+'" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #DDEAFF;cursor:pointer" onclick="var o=document.createElement(\'div\');o.style.cssText=\'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990;display:flex;align-items:center;justify-content:center\';o.innerHTML=\'<img src=\\\''+info.foto+'\\\' style=\\\'max-width:90%;max-height:85vh;border-radius:12px\\\'/>\';o.onclick=function(){o.remove()};document.body.appendChild(o)"/>'
       : '<div style="width:44px;height:44px;border-radius:50%;background:#EEF3FB;display:flex;align-items:center;justify-content:center;font-size:20px">🐕</div>';
     var details = '<div style="font-size:10px;color:#6B8BB0">'+label+'</div>'
       +'<div style="font-weight:700;font-size:12px;color:#1a1a3a">'+info.nome+'</div>';
@@ -4918,7 +4918,7 @@ function mostraAnteprimaAnnuncio(){
   if(desc) html+='<div style="font-size:13px;color:#4A6080;font-style:italic">'+desc+'</div>';
   html+='</div>';
   var overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:center;justify-content:center;padding:16px';
   overlay.innerHTML='<div style="background:#fff;border-radius:16px;padding:20px;max-width:440px;width:100%;max-height:85vh;overflow-y:auto">'
     +'<div style="display:flex;justify-content:space-between;margin-bottom:14px">'
     +'<div style="font-weight:700;color:#0D47A1">👁 Anteprima annuncio</div>'
@@ -7221,7 +7221,7 @@ function applicaPdfImport(){
 function toast(msg){
   var el=document.createElement('div');
   el.textContent=msg;
-  el.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a3a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.3);pointer-events:none;animation:fadeIn .2s';
+  el.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a3a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:9990;box-shadow:0 4px 16px rgba(0,0,0,.3);pointer-events:none;animation:fadeIn .2s';
   document.body.appendChild(el);
   setTimeout(function(){el.remove();},2500);
 }
@@ -7294,7 +7294,7 @@ function openAISettings(fromEl){
       +(hasKey?'<div style="font-size:11px;color:#6B8BB0;margin-top:6px">✏️ Tocca il campo e incolla la nuova key per cambiarla</div>':'')
       +'</div>';
   }
-  var html='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:flex-end" id="ai-settings-overlay">'
+  var html='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9990;display:flex;align-items:flex-end" id="ai-settings-overlay">'
     +'<div style="background:#fff;border-radius:18px 18px 0 0;padding:22px;width:100%;max-height:92vh;overflow-y:auto">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1">🤖 Configura AI</div>'
@@ -7788,7 +7788,7 @@ function controllaAggiornamenti(pedigreeFlat, titoli, hdMap){
 function mostraDialogAggiornamenti(aggiornamenti, onContinue){
   if(aggiornamenti.length === 0){ onContinue(); return; }
 
-  var html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px" id="dialog-aggiornamenti">'
+  var html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9990;display:flex;align-items:center;justify-content:center;padding:16px" id="dialog-aggiornamenti">'
     +'<div style="background:#fff;border-radius:16px;padding:22px;max-width:480px;width:100%;max-height:85vh;overflow-y:auto">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:17px;font-weight:700;color:#0D47A1;margin-bottom:6px">🔄 Aggiornamenti trovati</div>'
     +'<div style="font-size:13px;color:#4A6080;margin-bottom:16px">Il pedigree importato contiene nuovi dati per cani già presenti nel tuo allevamento:</div>';
@@ -9260,7 +9260,7 @@ function applicaModalita(mod){
       var fbn = document.createElement('nav');
       fbn.id = 'fam-bottom-nav';
       fbn.style.cssText = 'position:fixed;bottom:0;left:0;width:100%;'
-        +'background:#fff;border-top:1px solid #EEF3FB;z-index:99982;'
+        +'background:#fff;border-top:1px solid #EEF3FB;z-index:9985;'
         +'display:flex;align-items:stretch;padding:6px 8px;gap:4px;'
         +'box-shadow:0 -4px 20px rgba(13,71,161,.1)';
       fbn.innerHTML = [{tab:'home',ico:'🏠',label:'Home'},{tab:'diario',ico:'📖',label:'Diario'},{tab:'compiti',ico:'✅',label:'Compiti'},{tab:'percorsi',ico:'🗺️',label:'GPS'},{tab:'servizi',ico:'📍',label:'Servizi'},{tab:'famiglia',ico:'👨‍👩‍👧',label:'Branco'}]
@@ -9278,7 +9278,7 @@ function applicaModalita(mod){
     } else {
       g('fam-bottom-nav').style.display = 'flex';
     }
-    var _fab = g('chat-fab'); if(_fab){ _fab.style.zIndex='99990'; _fab.style.bottom='72px'; }
+    var _fab = g('chat-fab'); if(_fab){ _fab.style.zIndex='9988'; _fab.style.bottom='72px'; }
     caricaFamiglia();
     // Polling ogni 30s per compiti e log
     if(_pollingInterval) clearInterval(_pollingInterval);
@@ -9311,7 +9311,7 @@ function applicaModalita(mod){
     if(hf2) hf2.style.display = 'none';
     if(g('bottom-nav')) g('bottom-nav').classList.remove('fam-hidden');
     var fbn2 = g('fam-bottom-nav'); if(fbn2) fbn2.style.display = 'none';
-    var _fab2 = g('chat-fab'); if(_fab2){ _fab2.style.zIndex='9998'; _fab2.style.bottom='72px'; }
+    var _fab2 = g('chat-fab'); if(_fab2){ _fab2.style.zIndex='9988'; _fab2.style.bottom='72px'; }
     if(_pollingInterval){ clearInterval(_pollingInterval); _pollingInterval=null; }
   }
 
@@ -9350,7 +9350,7 @@ function applicaModalita(mod){
       var cbn = document.createElement('nav');
       cbn.id = 'caccia-bottom-nav';
       cbn.style.cssText = 'position:fixed;bottom:0;left:0;width:100%;'
-        +'background:#fff;border-top:1px solid #C8E6C9;z-index:99982;'
+        +'background:#fff;border-top:1px solid #C8E6C9;z-index:9985;'
         +'display:flex;align-items:stretch;padding:6px 8px;gap:4px;'
         +'box-shadow:0 -4px 20px rgba(46,125,50,.1)';
       cbn.innerHTML = [
@@ -9871,7 +9871,7 @@ function fineUscitaCaccia(){
     km: _kmCalcolati
   });
   var overlay = document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
   overlay.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:4px">🏁 Fine uscita</div>'
     +'<div style="font-size:12px;color:#9ab0cc;margin-bottom:16px">'+durata+' minuti · '+_cacciaWaypoints.length+' waypoint</div>'
@@ -9996,7 +9996,7 @@ function apriNuovoCarniere(uscitaId){
   var oggi = new Date().toISOString().substring(0,10);
   var ov = document.createElement('div');
   ov.id = 'ov-carniere';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
   ov.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#A88A41;margin-bottom:16px">🏹 Aggiungi al carniere</div>'
     +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#A88A41;display:block;margin-bottom:4px">Selvaggina *</label>'
@@ -10281,7 +10281,7 @@ async function apriMappaSalvata(uscitaId){
   var traccia = u.traccia||[];
 
   var overlay = document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:#F1F8E9;z-index:99999;overflow-y:auto';
+  overlay.style.cssText='position:fixed;inset:0;background:#F1F8E9;z-index:9990;overflow-y:auto';
   overlay.innerHTML=
     '<div style="background:linear-gradient(135deg,#2E7D32,#388E3C);padding:16px;'
     +'display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10">'
@@ -10532,7 +10532,7 @@ async function renderCacciaCani(container){
 function apriNuovoCaneC(){
   var ov=document.createElement('div');
   ov.id='ov-nuovo-cane-c';
-  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
   ov.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:16px">🐕 Nuovo cane</div>'
     +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Nome cane *</label>'
@@ -10626,7 +10626,7 @@ async function modificaCaneC(id){
   if(!c){ toast('Cane non trovato'); return; }
   var ov = document.createElement('div');
   ov.id = 'ov-modifica-cane-c';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
   ov.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:16px">✏️ Modifica cane</div>'
     +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Nome cane *</label>'
@@ -10879,7 +10879,7 @@ async function apriNuovaProva(){
   var oggi=new Date().toISOString().substring(0,10);
   var ov=document.createElement('div');
   ov.id='ov-nuova-prova';
-  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
   var _caniOpts='';
   try {
     var _cl=[];
@@ -11054,7 +11054,7 @@ async function apriCondividiUscita(uscitaId){
   var _icM={capo:'🎯',ferma:'🐕',tartufo:'🍄',nota:'⚠️'};
   var ov=document.createElement('div');
   ov.id='ov-condividi-uscita';
-  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999999;display:flex;align-items:flex-end;justify-content:center';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9995;display:flex;align-items:flex-end;justify-content:center';
   ov.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:4px">📤 Condividi uscita</div>'
     +'<div style="font-size:12px;color:#9ab0cc;margin-bottom:16px">'+u.zona+' · '+new Date(u.data).toLocaleDateString('it-IT')+'</div>'
@@ -11122,7 +11122,7 @@ function apriMappaDaCondivisione(u,codice){
   var wps=u.waypoints||[];
   var traccia=u.traccia||[];
   var overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:#F1F8E9;z-index:99999;overflow-y:auto';
+  overlay.style.cssText='position:fixed;inset:0;background:#F1F8E9;z-index:9990;overflow-y:auto';
   overlay.innerHTML=
     '<div style="background:linear-gradient(135deg,#2E7D32,#388E3C);padding:16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10">'
     +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;padding:6px 12px;color:#fff;font-size:18px;cursor:pointer">←</button>'
@@ -11177,7 +11177,7 @@ function renderCacciaCalendario(container){
 function apriNuovaUscitaCaccia(){
   var oggi = new Date().toISOString().substring(0,10);
   var overlay = document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
   overlay.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:16px">🐕‍🦺 Nuova uscita</div>'
     +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Tipo *</label>'
@@ -11552,7 +11552,7 @@ function apriSchedaSaluteCane(caneId){
   var overlay = document.createElement('div');
   overlay.id = 'scheda-salute-overlay';
   overlay.dataset.caneId = caneId;
-  overlay.style.cssText='position:fixed;inset:0;background:#F4F7FE;z-index:99999;overflow-y:auto';
+  overlay.style.cssText='position:fixed;inset:0;background:#F4F7FE;z-index:9990;overflow-y:auto';
   overlay.innerHTML=
     '<div style="background:linear-gradient(135deg,#0D47A1,#1565C0);padding:20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10">'
     +'<button onclick="this.closest(\'[style*=fixed]\').remove()" '
@@ -12586,7 +12586,7 @@ function apriCreaCompitoAdmin(){
     : null;
   var oggi = new Date().toISOString().substring(0,10);
   var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
   overlay.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:16px">✅ Nuovo compito</div>'
     +'<div style="margin-bottom:12px">'
@@ -12684,7 +12684,7 @@ function apriDelegaFisso(compitoId){
       return '<option value="'+m.user_id+'"'+sel+'>'+m.emoji+' '+m.nickname+'</option>';
     }).join('');
   var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:center;justify-content:center;padding:24px';
   overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:24px;width:100%;max-width:360px">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:16px;font-weight:700;color:#0D47A1;margin-bottom:16px">👤 Assegna compito</div>'
     +'<select id="delega-fisso-membro" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px;margin-bottom:16px">'
@@ -12720,7 +12720,7 @@ function apriRidelegaSpeciale(compitoId){
         +m.emoji+' '+m.nickname+'</option>';
     }).join('');
   var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
   overlay.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:16px">✏️ Modifica compito</div>'
     +'<div style="margin-bottom:12px">'
@@ -12963,7 +12963,7 @@ async function fermaPercorsoGPS(){
     var velMedia = durataMins>0 ? Math.round((km/durataMins)*60*10)/10 : 0;
     var calorie = Math.round(km * 60);
     var overlay = document.createElement('div');
-    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px';
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990;display:flex;align-items:center;justify-content:center;padding:24px';
     overlay.innerHTML='<div style="background:#fff;border-radius:20px;padding:24px;width:100%;max-width:360px;text-align:center">'
       +'<div style="font-size:48px;margin-bottom:8px">🎉</div>'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#0D47A1;margin-bottom:4px">Percorso completato!</div>'
@@ -13416,7 +13416,7 @@ function _distanzaKm(lat1,lon1,lat2,lon2){
 function apriRubricaEmergenze(){
   var overlay = document.createElement('div');
   overlay.id = 'rubrica-emergenze-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
   overlay.innerHTML = '<div style="background:#F4F7FE;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#E65100">🚨 Rubrica Emergenze</div>'
@@ -13464,7 +13464,7 @@ function apriFormEmergenza(idx){
   var c = idx !== null ? (contatti[idx]||{}) : {};
   var overlay = document.createElement('div');
   overlay.id = 'form-emergenza-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999999;display:flex;align-items:center;justify-content:center';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9995;display:flex;align-items:center;justify-content:center';
   var tipi = [
     ['veterinario','🩺 Veterinario'],
     ['clinica','🏥 Clinica veterinaria'],
@@ -13551,7 +13551,7 @@ function apriDettaglioSfida(idx){
   var tips = suggerimenti[s.nome] || ['Continua così!'];
 
   var overlay = document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
   overlay.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">'
     +'<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">'
       +'<div style="font-size:40px">'+s.ico+'</div>'
@@ -13605,7 +13605,7 @@ function apriDettaglioSfida(idx){
 
 async function apriClassificaNazionale(){
   var overlay = document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
   overlay.innerHTML='<div style="background:#F4F7FE;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1">🇮🇹 Classifica Nazionale</div>'
@@ -13805,7 +13805,7 @@ function aggiungiLogFamiglia(tipo){
   }
   var nomeC = _famigliaCaneSelezionato.nome||'il tuo cane';
   var overlay = document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
 
   var titoli={farmaco:'💊 Farmaco',vaccino:'💉 Vaccino',visita:'🏥 Visita veterinaria',nota:'📝 Nota',foto:'📸 Foto'};
   var titolo = titoli[tipo]||('+ '+tipo);
@@ -14226,7 +14226,7 @@ function mostraWizardFamiglia(){
   if(old) old.remove();
   var overlay = document.createElement('div');
   overlay.id = 'wizard-famiglia';
-  overlay.style.cssText = 'position:fixed;inset:0;background:#F4F7FE;z-index:99991;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#F4F7FE;z-index:9992;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center';
   overlay.innerHTML =
     '<img src="logo.jpeg" style="width:80px;height:80px;border-radius:20px;object-fit:cover;margin-bottom:20px;box-shadow:0 8px 32px rgba(201,169,97,.4)" onerror="this.style.display=\'none\'"/>'
     +'<img src="logo.jpeg" style="width:72px;height:72px;border-radius:16px;object-fit:cover;margin-bottom:16px;box-shadow:0 8px 32px rgba(201,169,97,.4)" onerror="this.style.display=\'none\'"/>'
@@ -14317,7 +14317,7 @@ async function accettaInvitoFamiglia(){
   var emoji = emojis[Math.floor(Math.random()*emojis.length)];
 
   var overlay = document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:center;justify-content:center;padding:24px';
   overlay.innerHTML='<div style="background:#fff;border-radius:20px;padding:28px;width:100%;max-width:360px;text-align:center">'
     +'<div style="font-size:48px;margin-bottom:12px">'+emoji+'</div>'
     +'<img src="logo.jpeg" style="width:48px;height:48px;border-radius:10px;object-fit:cover;margin-bottom:8px;box-shadow:0 4px 16px rgba(201,169,97,.4)" onerror="this.style.display=\'none\'"/>'
@@ -14417,7 +14417,7 @@ function apriAggiungiCaneFamiglia(){
     : '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="width:100%;background:#EEF3FB;color:#6B8BB0;border:none;border-radius:10px;padding:12px;font-weight:600;cursor:pointer;margin-top:8px">Chiudi</button>';
 
   var overlay = document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
   overlay.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:16px">🐾 Gestione cani</div>'
     +caniHtml+formHtml+'</div>';
@@ -14432,7 +14432,7 @@ function apriModificaCane(caneId){
     if(o.querySelector('#mc-nome')) o.remove();
   });
   var overlay = document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
   overlay.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:16px">✏️ Modifica '+c.nome+'</div>'
     +'<div style="margin-bottom:12px"><label>Nome</label><input id="mc-nome" value="'+(c.nome||'')+'"/></div>'
@@ -16348,11 +16348,11 @@ function mostraCuccioliPanel(btn){
 </div>
 
 <!-- ════ FAB CHATBOT ════ -->
-<div id="chat-fab" onclick="openChat()" style="position:fixed;bottom:72px;right:16px;z-index:9998;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#C9A961,#A88A41);box-shadow:0 4px 18px rgba(201,169,97,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;font-size:26px;animation:pulse-gold 2.5s infinite">🤖</div>
-<div id="chat-fab-badge" style="position:fixed;bottom:114px;right:14px;z-index:9999;background:#C0534A;color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:700;display:none"></div>
+<div id="chat-fab" onclick="openChat()" style="position:fixed;bottom:72px;right:16px;z-index:9988;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#C9A961,#A88A41);box-shadow:0 4px 18px rgba(201,169,97,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;font-size:26px;animation:pulse-gold 2.5s infinite">🤖</div>
+<div id="chat-fab-badge" style="position:fixed;bottom:114px;right:14px;z-index:9990;background:#C0534A;color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:700;display:none"></div>
 
 <!-- ════ MODAL CHATBOT ════ -->
-<div id="modal-chat" class="overlay hidden" style="z-index:99985">
+<div id="modal-chat" class="overlay hidden" style="z-index:9993">
   <div class="modal" style="max-width:480px;height:85vh;display:flex;flex-direction:column;padding:0;overflow:hidden">
     <div style="background:linear-gradient(135deg,#0D47A1,#1565C0);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
       <div style="display:flex;align-items:center;gap:10px">
@@ -16622,7 +16622,7 @@ function sendChat(){
 </script>
 
 <!-- ══ MODAL LOGIN ══ -->
-<div id="modal-login" class="overlay" style="display:none;z-index:99999">
+<div id="modal-login" class="overlay" style="display:none;z-index:9990">
   <div class="modal" style="max-width:380px;text-align:center;padding:40px 32px">
     <div style="margin-bottom:24px">
       <div style="width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,#1565C0,#0D47A1);display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto;box-shadow:0 8px 24px rgba(13,71,161,.3)">🐾</div>
@@ -16648,7 +16648,7 @@ function sendChat(){
 </div>
 
 <!-- ══ MODAL SELEZIONE MODALITÀ ══ -->
-<div id="modal-modalita" class="overlay" style="display:none;z-index:99998">
+<div id="modal-modalita" class="overlay" style="display:none;z-index:9996">
   <div class="modal" style="max-width:420px;padding:32px 24px;text-align:center">
     <img src="logo.jpeg" style="width:80px;height:80px;border-radius:20px;object-fit:cover;box-shadow:0 8px 24px rgba(201,169,97,.4);margin-bottom:20px" onerror="this.style.display='none'"/>
     <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#0D47A1;margin-bottom:8px">
