@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.22';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.23';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -3244,7 +3244,7 @@ var _loggingOut = false;
 // === DEBUG VISUALE — RIMUOVERE DOPO FIX ===
 var _dbgPanel = document.createElement('div');
 _dbgPanel.id = 'dbg';
-_dbgPanel.style.cssText = 'position:fixed;bottom:70px;left:0;right:0;background:#000;color:#0f0;font:11px/1.4 monospace;padding:8px;z-index:9999999;max-height:35vh;overflow-y:auto;white-space:pre-wrap;pointer-events:none';
+_dbgPanel.style.cssText = 'position:fixed;bottom:70px;left:0;right:0;background:#000;color:#0f0;font:11px/1.4 monospace;padding:8px;z-index:9999999;max-height:50vh;overflow-y:auto;white-space:pre-wrap;touch-action:pan-y;pointer-events:auto';
 _dbgPanel.textContent = 'v'+APP_VERSION+' DEBUG\n';
 document.addEventListener('DOMContentLoaded',function(){ document.body.appendChild(_dbgPanel); });
 function _dbg(msg){ var el=document.getElementById('dbg'); if(el) el.textContent+=msg+'\n'; console.log('[DBG]',msg); }
@@ -9985,23 +9985,28 @@ async function renderCacciaCarniere(container){
   var listaEl0 = document.getElementById('carniere-lista');
   if(listaEl0) listaEl0.innerHTML = '<div style="text-align:center;padding:40px 20px"><div style="font-size:56px;margin-bottom:12px">🏹</div><div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#A88A41;margin-bottom:8px">Carniere vuoto</div><div style="font-size:13px;color:#9ab0cc;margin-bottom:20px">Aggiungi la tua prima cattura stagionale</div><button onclick="apriNuovoCarniere()" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer">+ Prima registrazione</button></div>';
 
-  if(!_currentUser) return;
+  if(!_currentUser){ _dbg('CARNIERE: no user, abort'); return; }
 
   try {
     // Usa cache se già caricata (evita ri-query ad ogni tab switch)
     var _lista;
+    _dbg('CARNIERE: cache len='+(_carniereListaGlobale?_carniereListaGlobale.length:'NULL'));
     if(_carniereListaGlobale && _carniereListaGlobale.length > 0){
       _lista = _carniereListaGlobale;
+      _dbg('CARNIERE: uso cache, '+_lista.length+' records');
     } else {
       // Prima volta: carica da Supabase
       _lista = [];
+      _dbg('CARNIERE: query Supabase uid='+_currentUser.id.substring(0,8));
       var res = await _supabase.from('caccia_carniere')
         .select('*').eq('user_id',_currentUser.id)
         .order('data',{ascending:false});
       if(res.error){
+        _dbg('CARNIERE: ERROR '+res.error.message);
         toast('⚠️ Errore carniere: '+res.error.message);
       } else {
         _lista = res.data || [];
+        _dbg('CARNIERE: query OK, '+_lista.length+' records');
       }
       window._cacciaCarniereList = _lista;
       _carniereListaGlobale = _lista;
@@ -10439,7 +10444,9 @@ async function renderCacciaDiario(container){
   try {
     // Usa dati già caricati da caricaCaccia(), refresh Supabase in background
     var _uscite = window._cacciaUsciteList || [];
+    _dbg('DIARIO: uscite in mem='+_uscite.length);
     if(_currentUser && !_uscite.length){
+      _dbg('DIARIO: query Supabase...');
       var res = await _supabase.from('caccia_uscite')
         .select('*')
         .eq('user_id', _currentUser.id)
@@ -10447,8 +10454,11 @@ async function renderCacciaDiario(container){
         .limit(50);
       if(!res.error && res.data) {
         _uscite = res.data;
+        _dbg('DIARIO: query OK, '+_uscite.length+' records');
         window._cacciaUsciteList = _uscite;
         _salvaCacciaLocale();
+      } else {
+        _dbg('DIARIO: query ERR '+(res.error?res.error.message:'null data'));
       }
     }
 
