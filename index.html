@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.21';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.22';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -3244,9 +3244,8 @@ var _loggingOut = false;
 // === DEBUG VISUALE — RIMUOVERE DOPO FIX ===
 var _dbgPanel = document.createElement('div');
 _dbgPanel.id = 'dbg';
-_dbgPanel.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#000;color:#0f0;font:11px/1.4 monospace;padding:8px;z-index:9999999;max-height:35vh;overflow-y:auto;white-space:pre-wrap';
+_dbgPanel.style.cssText = 'position:fixed;bottom:70px;left:0;right:0;background:#000;color:#0f0;font:11px/1.4 monospace;padding:8px;z-index:9999999;max-height:35vh;overflow-y:auto;white-space:pre-wrap;pointer-events:none';
 _dbgPanel.textContent = 'v'+APP_VERSION+' DEBUG\n';
-_dbgPanel.onclick = function(){ _dbgPanel.style.display = _dbgPanel.style.display==='none'?'block':'none'; };
 document.addEventListener('DOMContentLoaded',function(){ document.body.appendChild(_dbgPanel); });
 function _dbg(msg){ var el=document.getElementById('dbg'); if(el) el.textContent+=msg+'\n'; console.log('[DBG]',msg); }
 // === FINE DEBUG SETUP ===
