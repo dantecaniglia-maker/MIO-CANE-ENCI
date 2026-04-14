@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.23';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.24';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9469,11 +9469,13 @@ function _salvaCacciaLocale(){
     var _caniSave = window._cacciaCaniList || [];
     var _usciteSave = window._cacciaUsciteList || [];
     var _proveSave = window._cacciaProveList || [];
+    var _carniereSave = window._cacciaCarniereList || [];
     localStorage.setItem(_CACCIA_KEY, JSON.stringify({
       uid: _currentUser ? _currentUser.id : null,
       cani: _caniSave,
       uscite: _usciteSave,
       prove: _proveSave,
+      carniere: _carniereSave,
       ts: Date.now()
     }));
   } catch(e){ console.warn('[caccia] _salvaCacciaLocale err', e); }
@@ -9487,6 +9489,7 @@ function _caricaCacciaLocale(){
     if(d.cani)   window._cacciaCaniList   = d.cani;
     if(d.uscite) window._cacciaUsciteList = d.uscite;
     if(d.prove)  window._cacciaProveList  = d.prove;
+    if(d.carniere){ window._cacciaCarniereList = d.carniere; _carniereListaGlobale = d.carniere; }
     return true;
   } catch(e){ return false; }
 }
@@ -10101,6 +10104,7 @@ async function salvaCarniere(btn){
   record.id = 'loc_'+Date.now();
   _carniereListaGlobale.unshift(record);
   window._cacciaCarniereList = _carniereListaGlobale;
+  _salvaCacciaLocale();
   var ov = document.getElementById('ov-carniere');
   if(ov) ov.remove();
   toast('✅ Aggiunto al carniere!');
@@ -10117,6 +10121,7 @@ async function salvaCarniere(btn){
       var idx = _carniereListaGlobale.findIndex(function(r){ return r.id === record.id; });
       if(idx >= 0) _carniereListaGlobale[idx] = res.data[0];
       window._cacciaCarniereList = _carniereListaGlobale;
+      _salvaCacciaLocale();
     }
   } catch(e){
     toast('⚠️ Errore salvataggio: '+e.message);
@@ -10200,6 +10205,9 @@ function condividiCarniere(){
 
 async function eliminaCarniere(id){
   if(!confirm('Eliminare questa registrazione?')) return;
+  _carniereListaGlobale = _carniereListaGlobale.filter(function(r){ return r.id !== id; });
+  window._cacciaCarniereList = _carniereListaGlobale;
+  _salvaCacciaLocale();
   try { if(_currentUser) await _supabase.from('caccia_carniere').delete().eq('id',id); } catch(e){}
   toast('🗑️ Eliminato');
   var _tc = document.getElementById('caccia-tab-content');
