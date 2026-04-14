@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.19';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.20';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4331,6 +4331,15 @@ async function logout(){
 }
 
 async function onUserSignedIn(user){
+  // Forza refresh token — ESSENZIALE dopo INITIAL_SESSION con token scaduto
+  try {
+    var _ref = await _supabase.auth.refreshSession();
+    if(_ref.data && _ref.data.session){
+      _currentUser = _ref.data.session.user;
+      user = _currentUser;
+    }
+  } catch(e){}
+
   var ml = g('modal-login');
   if(ml) ml.style.display = 'none';
   var bar = g('user-info-bar');
