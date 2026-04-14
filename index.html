@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.20';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.21';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -3241,21 +3241,37 @@ var _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 var _currentUser = null;
 var _loggingOut = false;
 
+// === DEBUG VISUALE — RIMUOVERE DOPO FIX ===
+var _dbgPanel = document.createElement('div');
+_dbgPanel.id = 'dbg';
+_dbgPanel.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#000;color:#0f0;font:11px/1.4 monospace;padding:8px;z-index:9999999;max-height:35vh;overflow-y:auto;white-space:pre-wrap';
+_dbgPanel.textContent = 'v'+APP_VERSION+' DEBUG\n';
+_dbgPanel.onclick = function(){ _dbgPanel.style.display = _dbgPanel.style.display==='none'?'block':'none'; };
+document.addEventListener('DOMContentLoaded',function(){ document.body.appendChild(_dbgPanel); });
+function _dbg(msg){ var el=document.getElementById('dbg'); if(el) el.textContent+=msg+'\n'; console.log('[DBG]',msg); }
+// === FINE DEBUG SETUP ===
+
 var _authHandled = false;
 
 // Auth unica via onAuthStateChange — gestisce TUTTI gli scenari
 _supabase.auth.onAuthStateChange(async function(event, session){
+  _dbg('AUTH event: '+event+' session:'+(session?'YES':'NO')+' handled:'+_authHandled);
   if(_loggingOut) return;
   if((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session && !_authHandled){
     _authHandled = true;
     _currentUser = session.user;
+    _dbg('AUTH → onUserSignedIn: '+session.user.email);
+    _dbg('TOKEN exp: '+new Date(session.expires_at*1000).toLocaleTimeString());
     await onUserSignedIn(session.user);
   } else if(event === 'INITIAL_SESSION' && !session){
+    _dbg('AUTH → no session, show login');
     var ml = g('modal-login');
     if(ml) ml.style.display = 'flex';
   } else if(event === 'TOKEN_REFRESHED' && session){
+    _dbg('AUTH → TOKEN_REFRESHED OK');
     _currentUser = session.user;
   } else if(event === 'SIGNED_OUT'){
+    _dbg('AUTH → SIGNED_OUT');
     _authHandled = false;
     _currentUser = null;
     onUserSignedOut();
@@ -4332,13 +4348,19 @@ async function logout(){
 
 async function onUserSignedIn(user){
   // Forza refresh token — ESSENZIALE dopo INITIAL_SESSION con token scaduto
+  _dbg('refreshSession START...');
   try {
     var _ref = await _supabase.auth.refreshSession();
-    if(_ref.data && _ref.data.session){
+    if(_ref.error){
+      _dbg('refreshSession ERROR: '+_ref.error.message);
+    } else if(_ref.data && _ref.data.session){
+      _dbg('refreshSession OK, new exp: '+new Date(_ref.data.session.expires_at*1000).toLocaleTimeString());
       _currentUser = _ref.data.session.user;
       user = _currentUser;
+    } else {
+      _dbg('refreshSession: no session returned');
     }
-  } catch(e){}
+  } catch(e){ _dbg('refreshSession CATCH: '+e.message); }
 
   var ml = g('modal-login');
   if(ml) ml.style.display = 'none';
@@ -9394,13 +9416,15 @@ function applicaModalita(mod){
 }
 
 async function caricaCaccia(){
+  _dbg('caricaCaccia START');
   // 1. Mostra subito con dati da localStorage (se esistono)
   var hadLocal = _caricaCacciaLocale();
+  _dbg('localStorage: '+(hadLocal?'OK':'VUOTO'));
   switchCacciaTab('caccia-home');
 
   // 2. Sync Supabase in background (solo se loggato)
   if(!_currentUser){
-    // Aspetta max 3s che _currentUser sia pronto
+    _dbg('currentUser NULL, attendo...');
     await new Promise(function(resolve){
       var t=0;
       var iv = setInterval(function(){
@@ -9409,7 +9433,8 @@ async function caricaCaccia(){
       },200);
     });
   }
-  if(!_currentUser) return; // guest, i dati locali bastano
+  if(!_currentUser){ _dbg('currentUser ancora NULL, abort'); return; }
+  _dbg('currentUser: '+_currentUser.email+' uid:'+_currentUser.id.substring(0,8));
 
   try {
     var uid = _currentUser.id;
@@ -9419,6 +9444,10 @@ async function caricaCaccia(){
       _supabase.from('caccia_prove').select('*').eq('user_id', uid).order('data', {ascending:false}).limit(100),
       _supabase.from('caccia_carniere').select('*').eq('user_id', uid).order('data', {ascending:false})
     ]);
+    _dbg('QUERY cani:'+(rc.error?'ERR:'+rc.error.message:(rc.data||[]).length));
+    _dbg('QUERY uscite:'+(ru.error?'ERR:'+ru.error.message:(ru.data||[]).length));
+    _dbg('QUERY prove:'+(rp.error?'ERR:'+rp.error.message:(rp.data||[]).length));
+    _dbg('QUERY carniere:'+(rk.error?'ERR:'+rk.error.message:(rk.data||[]).length));
     if(!rc.error) window._cacciaCaniList   = rc.data || [];
     if(!ru.error) window._cacciaUsciteList = ru.data || [];
     if(!rp.error) window._cacciaProveList  = rp.data || [];
