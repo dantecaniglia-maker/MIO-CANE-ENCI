@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.34';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.35';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9565,6 +9565,29 @@ async function renderCacciaHome(container){
         +'</div>';
     }
 
+    // === PERFORMANCE CANE ===
+    var _caniList = window._cacciaCaniList || [];
+    if(_caniList.length){
+      var _perfHtml = '<div style="background:#fff;border-radius:16px;padding:16px;margin-top:14px;box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9">'
+        +'<div style="font-size:14px;font-weight:800;color:#558B2F;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">🐕 Performance Cani</div>';
+      _caniList.forEach(function(cane){
+        var _usciteCane = _allUscite.filter(function(u){ return u.cane === cane.nome; });
+        var _kmCane = _usciteCane.reduce(function(a,u){return a+(u.km||0);},0);
+        var _wpCane = _usciteCane.reduce(function(a,u){return a+((u.waypoints||[]).length);},0);
+        var _fermeCane = _usciteCane.reduce(function(a,u){return a+((u.waypoints||[]).filter(function(w){return w.tipo==='ferma';}).length);},0);
+        _perfHtml += '<div style="background:#F1F8E9;border-radius:12px;padding:12px;margin-bottom:8px">'
+          +'<div style="font-weight:700;color:#2E7D32;margin-bottom:6px">'+cane.nome+(cane.razza?' · <span style="font-weight:400;font-size:11px;color:#558B2F">'+cane.razza+'</span>':'')+'</div>'
+          +'<div style="display:flex;gap:12px;font-size:11px;color:#558B2F">'
+          +'<span>📍 '+_usciteCane.length+' uscite</span>'
+          +'<span>🏃 '+Math.round(_kmCane*10)/10+' km</span>'
+          +'<span>🐕 '+_fermeCane+' ferme</span>'
+          +'<span>📌 '+_wpCane+' waypoint</span>'
+          +'</div></div>';
+      });
+      _perfHtml += '</div>';
+      container.innerHTML += _perfHtml;
+    }
+
     container.innerHTML += '<div style="text-align:center;padding:20px 0 8px;font-size:10px;color:#9ab0cc">'
     +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
 
@@ -10185,6 +10208,7 @@ function _renderCarniereList(_lista){
         +'<div style="font-size:11px;color:#9ab0cc;margin-top:2px">'+new Date(r.data).toLocaleDateString('it-IT')+(r.stagione?' · '+r.stagione:'')+(r.zona?' · '+r.zona:'')+'</div>'
         +(r.note?'<div style="font-size:11px;color:#A88A41;margin-top:3px">'+r.note+'</div>':'')
         +'</div>'
+        +'<button onclick="event.stopPropagation();window.open(\'https://wa.me/?text=\'+encodeURIComponent(\'🏹 Carniere BreedPed\\n\\n\'+r.selvaggina+\' × \'+(r.quantita||1)+\' \'+(r.unita||\'capi\')+\'\\n📅 \'+new Date(r.data).toLocaleDateString(\'it-IT\')+(r.zona?\'\\n📍 \'+r.zona:\'\')+(r.stagione?\'\\n🗓️ Stagione \'+r.stagione:\'\')+(r.note?\'\\n📝 \'+r.note:\'\')+\'\\n\\n_Registrato con BreedPed 🐾_\\nbreedped.com\'),\'_blank\')" style="background:none;border:none;cursor:pointer;font-size:15px;padding:4px" title="Condividi">📤</button>'
         +'<button onclick="eliminaCarniere(\''+r.id+'\')" style="background:#FFF0EE;color:#C0534A;border:1.5px solid #F5C4BE;border-radius:8px;padding:6px 8px;font-size:11px;cursor:pointer">🗑️</button>'
         +'</div>';
     }).join('');
