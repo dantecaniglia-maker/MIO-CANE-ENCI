@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.29';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.30';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10733,6 +10733,14 @@ async function renderCacciaProve(container){
         window._cacciaProveList = _prove;
         _salvaCacciaLocale();
       }
+    }
+
+    if(!_prove.length){
+      var listaVuota = document.getElementById('prove-lista');
+      if(listaVuota) listaVuota.innerHTML = '<div style="text-align:center;padding:40px;color:#9ab0cc"><div style="font-size:40px;margin-bottom:12px">🏆</div><div style="font-weight:600">Nessuna prova registrata</div><div style="font-size:13px;margin-top:4px">Aggiungi la tua prima prova di lavoro!</div></div>';
+      var statsVuoto = document.getElementById('prove-stats');
+      if(statsVuoto) statsVuoto.innerHTML = '<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #C8E6C9"><div style="font-size:22px;margin-bottom:4px">🏆</div><div style="font-size:20px;font-weight:800;color:#2E7D32">0</div><div style="font-size:10px;color:#9ab0cc">Prove totali</div></div><div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #C8E6C9"><div style="font-size:22px;margin-bottom:4px">⭐</div><div style="font-size:16px;font-weight:800;color:#9ab0cc">—</div><div style="font-size:10px;color:#9ab0cc">Miglior qualifica</div></div><div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #C8E6C9"><div style="font-size:22px;margin-bottom:4px">🥇</div><div style="font-size:20px;font-weight:800;color:#C9A961">0</div><div style="font-size:10px;color:#9ab0cc">Eccellenti</div></div>';
+      return;
     }
 
     // === STATS ===
