@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.36';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.37';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9493,6 +9493,10 @@ async function renderCacciaHome(container){
     +'<div style="font-size:18px;font-weight:700;color:#1a1a3a;margin-bottom:4px">🐕‍🦺 Stagione '+new Date().getFullYear()+'</div>'
     +'<div style="font-size:12px;color:#6B8BB0">La tua stagione venatoria e di cerca</div>'
     +'</div>'
+    // === METEO RAPIDO ===
+    +'<div id="caccia-meteo" style="background:#fff;border-radius:16px;padding:14px;margin-bottom:14px;border:1.5px solid #C8E6C9;display:none">'
+    +'<div style="font-size:11px;font-weight:800;color:#558B2F;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🌤️ Condizioni oggi</div>'
+    +'<div id="caccia-meteo-body" style="display:flex;align-items:center;gap:14px"></div></div>'
     +'<div id="caccia-home-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">'
     +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #C8E6C9"><div style="font-size:20px">⏳</div></div>'
     +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #C8E6C9"><div style="font-size:20px">⏳</div></div>'
@@ -9587,6 +9591,11 @@ async function renderCacciaHome(container){
         +'<div style="flex:1;background:#F1F8E9;border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;color:#558B2F;font-weight:700">MAX WAYPOINT</div><div style="font-size:16px;font-weight:800;color:#2E7D32">'+_maxWp+'</div></div>'
         +'<div style="flex:1;background:#FFFDE7;border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;color:#A88A41;font-weight:700">MEDIA KM</div><div style="font-size:16px;font-weight:800;color:#C9A961">'+(_usciteStagione.length?Math.round(_kmTotSt/_usciteStagione.length*10)/10:0)+'</div></div>'
         +'</div>'
+        +'<button onclick="var t=\'🏹 Stagione '+_anno+' BreedPed\\n\\n📊 '+_usciteStagione.length+' uscite · '+Math.round(_kmTotSt*10)/10+' km · '+_capiTot+' capi\\n\';'
+        +'if(window._cacciaCaniList&&window._cacciaCaniList.length) t+=\'\\n🐕 Cani: \'+window._cacciaCaniList.map(function(c){return c.nome;}).join(\', \');'
+        +'t+=\'\\n\\n_Tracciato con BreedPed 🐾_\\nbreedped.com\';'
+        +'window.open(\'https://wa.me/?text=\'+encodeURIComponent(t),\'_blank\')" '
+        +'style="width:100%;margin-top:12px;background:#25D366;color:#fff;border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:700;cursor:pointer">📤 Condividi stagione su WhatsApp</button>'
         +'</div>';
     }
 
@@ -9669,6 +9678,29 @@ async function renderCacciaHome(container){
   if(ultimaEl && _uscite.length>0){
     var u = _uscite[0];
     ultimaEl.innerHTML='<div onclick="apriMappaSalvata(\''+u.id+'\')" style="cursor:pointer;background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(46,125,50,.08);border:1.5px solid #C8E6C9"><div style="font-size:11px;font-weight:800;color:#558B2F;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">📖 Ultima uscita</div><div style="font-weight:700;color:#1a1a3a">'+u.zona+'</div><div style="font-size:12px;color:#9ab0cc;margin-top:2px">'+new Date(u.data).toLocaleDateString('it-IT')+' · '+(u.km||0)+' km · '+(u.tipo||'Caccia')+'</div><div style="font-size:11px;color:#2E7D32;font-weight:700;margin-top:6px">🗺️ Vedi mappa →</div></div>';
+  }
+  // Carica meteo
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(function(pos){
+      fetch('https://api.open-meteo.com/v1/forecast?latitude='+pos.coords.latitude+'&longitude='+pos.coords.longitude+'&current=temperature_2m,wind_speed_10m,weather_code&timezone=auto')
+        .then(function(r){return r.json();})
+        .then(function(d){
+          if(!d.current) return;
+          var t=d.current.temperature_2m, w=Math.round(d.current.wind_speed_10m), wc=d.current.weather_code;
+          var ico = wc<=1?'☀️':wc<=3?'⛅':wc<=48?'🌫️':wc<=67?'🌧️':wc<=77?'❄️':'⛈️';
+          var desc = wc<=1?'Sereno':wc<=3?'Parz. nuvoloso':wc<=48?'Nebbia':wc<=67?'Pioggia':wc<=77?'Neve':'Temporale';
+          var buono = wc<=3 && w<30;
+          var el = document.getElementById('caccia-meteo');
+          var body = document.getElementById('caccia-meteo-body');
+          if(el && body){
+            el.style.display = '';
+            body.innerHTML = '<div style="font-size:36px">'+ico+'</div>'
+              +'<div style="flex:1"><div style="font-weight:700;color:#1a1a3a">'+Math.round(t)+'°C · '+desc+'</div>'
+              +'<div style="font-size:11px;color:#9ab0cc">Vento: '+w+' km/h</div></div>'
+              +'<div style="background:'+(buono?'#E8F5E9':'#FFF3E0')+';border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:'+(buono?'#2E7D32':'#E65100')+'">'+(buono?'✅ Buone condizioni':'⚠️ Attenzione')+'</div>';
+          }
+        }).catch(function(){});
+    }, function(){}, {timeout:5000});
   }
 }
 
@@ -10096,6 +10128,22 @@ async function renderCacciaCarniere(container){
       '<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(201,169,97,.1);border:1.5px solid #F0E0A0"><div style="font-size:24px;margin-bottom:4px">🏹</div><div style="font-size:20px;font-weight:800;color:#A88A41">'+_totCapi+'</div><div style="font-size:10px;color:#9ab0cc">Capi totali</div></div>'
       +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(201,169,97,.1);border:1.5px solid #F0E0A0"><div style="font-size:24px;margin-bottom:4px">🐾</div><div style="font-size:20px;font-weight:800;color:#A88A41">'+Object.keys(_tipiTot).length+'</div><div style="font-size:10px;color:#9ab0cc">Specie</div></div>'
       +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(201,169,97,.1);border:1.5px solid #F0E0A0"><div style="font-size:24px;margin-bottom:4px">🗓️</div><div style="font-size:20px;font-weight:800;color:#A88A41">'+_lista.length+'</div><div style="font-size:10px;color:#9ab0cc">Registrazioni</div></div>';
+
+    // Grafico specie
+    var _specieHtml = '<div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:14px;border:1.5px solid #F0E0A0">'
+      +'<div style="font-size:11px;font-weight:800;color:#A88A41;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">📊 Specie catturate</div>';
+    var _maxCapi = Math.max.apply(null, Object.keys(_tipiTot).map(function(k){return _tipiTot[k];}));
+    Object.keys(_tipiTot).sort(function(a,b){return _tipiTot[b]-_tipiTot[a];}).forEach(function(sp){
+      var pct = Math.round((_tipiTot[sp]/_maxCapi)*100);
+      var icoSp = {Lepre:'🐇',Beccaccia:'🐦',Starna:'🐓',Fagiano:'🦃',Quaglia:'🐤',Pernice:'🐦',Germano:'🦆',Cinghiale:'🐗',Tartufo:'🍄'}[sp]||'🎯';
+      _specieHtml += '<div style="margin-bottom:8px">'
+        +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="color:#1a1a3a;font-weight:600">'+icoSp+' '+sp+'</span><span style="font-weight:700;color:#A88A41">'+_tipiTot[sp]+'</span></div>'
+        +'<div style="height:8px;background:#FFF8E1;border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#C9A961,#A88A41);border-radius:4px"></div></div>'
+        +'</div>';
+    });
+    _specieHtml += '</div>';
+    var carniereListaEl = document.getElementById('carniere-lista');
+    if(carniereListaEl) carniereListaEl.insertAdjacentHTML('beforebegin', _specieHtml);
 
     _renderCarniereList(_lista);
 
