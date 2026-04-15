@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.28';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.29';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10721,20 +10721,18 @@ async function renderCacciaProve(container){
 
   try {
     if(!_currentUser) return;
-    var _caniList = [];
-    try {
-      var rc = await _supabase.from('caccia_cani').select('id,nome,categoria,sistema_gare').eq('user_id',_currentUser.id);
-      _caniList = rc.data||[];
-    } catch(e){ console.warn('[prove] cani load:',e.message); }
+    var _caniList = window._cacciaCaniList || [];
     var _opzioniCani = _caniList.length
       ? _caniList.map(function(c){ return '<option value="'+c.id+'" data-cat="'+c.categoria+'" data-sis="'+c.sistema_gare+'">'+c.nome+'</option>'; }).join('')
       : '<option value="">— nessun cane registrato —</option>';
-    var res = await _supabase.from('caccia_prove').select('*').eq('user_id',_currentUser.id).order('data',{ascending:false});
-    var _prove = res.data||[];
+    var _prove = window._cacciaProveList || [];
     if(!_prove.length){
-      _prove = window._cacciaProveList || [];
-    } else {
-      window._cacciaProveList = _prove; _salvaCacciaLocale();
+      var res = await _supabase.from('caccia_prove').select('*').eq('user_id',_currentUser.id).order('data',{ascending:false});
+      if(!res.error && res.data){
+        _prove = res.data;
+        window._cacciaProveList = _prove;
+        _salvaCacciaLocale();
+      }
     }
 
     // === STATS ===
