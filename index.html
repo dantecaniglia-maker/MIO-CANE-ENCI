@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.30';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.31';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10183,9 +10183,9 @@ function renderCacciaAltro(container){
       {ico:'🐕',label:'I miei cani',sub:'Profili e categorie',fn:'renderCacciaCani'},
       {ico:'🏆',label:'Prove',sub:'ENCI · JGHV · FISC',fn:'renderCacciaProve'},
       {ico:'📅',label:'Calendario',sub:'Date venatorie',fn:'renderCacciaCalendario'},
-      {ico:'📍',label:'Le mie zone',sub:'Heatmap uscite',fn:null},
+      {ico:'📍',label:'Le mie zone',sub:'Heatmap uscite',fn:'renderCacciaZone'},
       {ico:'📡',label:'Collari GPS',sub:'Prossimamente',fn:null},
-      {ico:'🚨',label:'Emergenze',sub:'SOS + numeri rapidi',fn:null}
+      {ico:'🚨',label:'Emergenze',sub:'SOS + numeri rapidi',fn:'renderCacciaEmergenze'}
     ].map(function(item){
       return '<div onclick="'+(item.fn?'(function(){var c=g(\'caccia-tab-content\');if(c)'+item.fn+'(c);})()'
         :'toast(\'Prossimamente!\')')+'" '
@@ -10482,17 +10482,16 @@ async function renderCacciaCani(container){
     +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
 
   try {
-    if(!_currentUser){
-      if(!container._caniRetry) container._caniRetry=0;
-      if(container._caniRetry++ < 5) setTimeout(function(){ renderCacciaCani(container); },800);
-      else container.innerHTML='<div style="text-align:center;padding:30px;color:#9ab0cc">Effettua il login per vedere i tuoi cani.</div>';
-      return;
+    if(!_currentUser) return;
+    var _cani = window._cacciaCaniList || [];
+    if(!_cani.length && _currentUser){
+      var res = await _supabase.from('caccia_cani').select('*').eq('user_id',_currentUser.id).order('created_at',{ascending:false});
+      if(!res.error && res.data){
+        _cani = res.data;
+        window._cacciaCaniList = _cani;
+        _salvaCacciaLocale();
+      }
     }
-    container._caniRetry=0;
-    var res = await _supabase.from('caccia_cani').select('*').eq('user_id',_currentUser.id).order('created_at',{ascending:false});
-    if(res.error) throw res.error;
-    var _cani = res.data||[];
-    window._cacciaCaniList = _cani; _salvaCacciaLocale();
     var listaEl = document.getElementById('caccia-cani-lista');
     if(!listaEl) return;
     if(!_cani.length){
@@ -11167,12 +11166,127 @@ function _disegnaMappaCond(traccia,wps){
   });
 }
 
+function renderCacciaEmergenze(container){
+  var _numeri = [
+    {ico:'🚑',nome:'Emergenza unica',num:'112',desc:'Soccorso sanitario, incendi, forze ordine',bg:'#EF5350',color:'#fff'},
+    {ico:'🌲',nome:'Corpo Forestale',num:'1515',desc:'Emergenze ambientali, incendi boschivi, bracconaggio',bg:'#2E7D32',color:'#fff'},
+    {ico:'🐾',nome:'Guardia Zoofila',num:'800 137 079',desc:'Maltrattamento animali, abbandono',bg:'#1565C0',color:'#fff'},
+    {ico:'🏥',nome:'Centro Antiveleni',num:'02 66101029',desc:'Niguarda, Milano — H24 per avvelenamenti',bg:'#E65100',color:'#fff'},
+    {ico:'🐕',nome:'Pronto Soccorso Vet',num:null,desc:'Cerca il più vicino nella tua zona',bg:'#7B1FA2',color:'#fff'}
+  ];
+  container.innerHTML =
+    '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(46,125,50,.08)">'
+    +'<div style="font-size:18px;font-weight:700;color:#1a1a3a;margin-bottom:4px">🚨 Emergenze</div>'
+    +'<div style="font-size:12px;color:#6B8BB0">Numeri rapidi per cacciatori e cinofili</div></div>'
+    +'<div style="display:flex;flex-direction:column;gap:10px">'
+    +_numeri.map(function(n){
+      return '<div style="background:'+n.bg+';border-radius:14px;padding:16px;color:'+n.color+';cursor:pointer" '
+        +(n.num?'onclick="window.open(\'tel:'+n.num.replace(/\s/g,'')+'\')"':'onclick="toast(\'Cerca veterinario di emergenza nella tua zona\')"')+'>'
+        +'<div style="display:flex;justify-content:space-between;align-items:center">'
+        +'<div><div style="font-size:16px;font-weight:700">'+n.ico+' '+n.nome+'</div>'
+        +'<div style="font-size:11px;opacity:.85;margin-top:2px">'+n.desc+'</div></div>'
+        +(n.num?'<div style="font-size:22px;font-weight:800;letter-spacing:1px">'+n.num+'</div>':'<div style="font-size:20px">🔍</div>')
+        +'</div></div>';
+    }).join('')
+    +'</div>'
+    +'<div style="background:#FFF8E1;border-radius:12px;padding:12px;margin-top:14px;border:1px solid #F0E0A0;font-size:11px;color:#A88A41">'
+    +'💡 Salva questi numeri nella rubrica del telefono per accesso rapido anche senza connessione.</div>'
+    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+}
+
+function renderCacciaZone(container){
+  var _uscite = window._cacciaUsciteList || [];
+  var _zoneMap = {};
+  _uscite.forEach(function(u){
+    if(!u.zona) return;
+    if(!_zoneMap[u.zona]) _zoneMap[u.zona] = {count:0, km:0, capi:0, ultima:''};
+    _zoneMap[u.zona].count++;
+    _zoneMap[u.zona].km += (u.km||0);
+    if(u.data > _zoneMap[u.zona].ultima) _zoneMap[u.zona].ultima = u.data;
+  });
+  var _carniere = window._cacciaCarniereList || [];
+  _carniere.forEach(function(c){
+    if(!c.zona) return;
+    if(!_zoneMap[c.zona]) _zoneMap[c.zona] = {count:0, km:0, capi:0, ultima:''};
+    _zoneMap[c.zona].capi += (c.quantita||1);
+  });
+  var _zone = Object.keys(_zoneMap).map(function(k){ return {nome:k, dati:_zoneMap[k]}; });
+  _zone.sort(function(a,b){ return b.dati.count - a.dati.count; });
+
+  container.innerHTML =
+    '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(46,125,50,.08)">'
+    +'<div style="font-size:18px;font-weight:700;color:#1a1a3a;margin-bottom:4px">📍 Le mie zone</div>'
+    +'<div style="font-size:12px;color:#6B8BB0">Classifica zone per uscite e capi</div></div>'
+    +(!_zone.length
+      ? '<div style="text-align:center;padding:40px;color:#9ab0cc"><div style="font-size:40px;margin-bottom:12px">📍</div><div style="font-weight:600">Nessuna zona registrata</div><div style="font-size:13px;margin-top:4px">Le zone appariranno dopo le tue uscite GPS</div></div>'
+      : '<div style="display:flex;flex-direction:column;gap:10px">'
+        +_zone.map(function(z,i){
+          var maxCount = _zone[0].dati.count;
+          var pct = Math.round((z.dati.count/maxCount)*100);
+          return '<div style="background:#fff;border-radius:14px;padding:14px;border:1.5px solid #C8E6C9">'
+            +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+            +'<div style="font-weight:700;color:#1a1a3a">'+(i<3?['🥇','🥈','🥉'][i]:'')+' '+z.nome+'</div>'
+            +'<div style="font-size:13px;font-weight:700;color:#2E7D32">'+z.dati.count+' uscite</div>'
+            +'</div>'
+            +'<div style="height:6px;background:#E8F5E9;border-radius:3px;overflow:hidden;margin-bottom:8px">'
+            +'<div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#4CAF50,#2E7D32);border-radius:3px"></div></div>'
+            +'<div style="display:flex;gap:12px;font-size:11px;color:#9ab0cc">'
+            +'<span>🏃 '+Math.round(z.dati.km*10)/10+' km</span>'
+            +(z.dati.capi?'<span>🏹 '+z.dati.capi+' capi</span>':'')
+            +(z.dati.ultima?'<span>📅 '+new Date(z.dati.ultima).toLocaleDateString('it-IT')+'</span>':'')
+            +'</div></div>';
+        }).join('')
+        +'</div>'
+    )
+    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+}
+
 function renderCacciaCalendario(container){
-  container.innerHTML='<div style="text-align:center;padding:60px 20px;color:#558B2F">'
-    +'<div style="font-size:56px;margin-bottom:12px">📅</div>'
-    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;margin-bottom:8px">Calendario Venatorio</div>'
-    +'<div style="font-size:13px;color:#9ab0cc">Date apertura/chiusura per regione — in arrivo</div>'
-    +'</div>';
+  var _mesi = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+  var _oggi = new Date();
+  var _meseCorrente = _oggi.getMonth();
+  var _periodi = [
+    {nome:'Cinghiale (braccata)',da:9,a:0,ico:'🐗'},
+    {nome:'Cinghiale (girata)',da:9,a:0,ico:'🐗'},
+    {nome:'Lepre',da:8,a:11,ico:'🐇'},
+    {nome:'Fagiano',da:8,a:11,ico:'🦃'},
+    {nome:'Starna',da:8,a:11,ico:'🐓'},
+    {nome:'Beccaccia',da:9,a:0,ico:'🐦'},
+    {nome:'Germano reale',da:8,a:0,ico:'🦆'},
+    {nome:'Quaglia',da:8,a:10,ico:'🐤'},
+    {nome:'Colombaccio',da:8,a:0,ico:'🕊️'},
+    {nome:'Pernice rossa',da:8,a:11,ico:'🐦'},
+    {nome:'Tartufo bianco',da:9,a:11,ico:'🍄'},
+    {nome:'Tartufo nero',da:10,a:2,ico:'🍄'}
+  ];
+  container.innerHTML =
+    '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(46,125,50,.08)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center">'
+    +'<div><div style="font-size:18px;font-weight:700;color:#1a1a3a">📅 Calendario Venatorio</div>'
+    +'<div style="font-size:12px;color:#6B8BB0">Periodi apertura Italia · Stagione '+_oggi.getFullYear()+'/'+(String(_oggi.getFullYear()+1).slice(-2))+'</div></div>'
+    +'</div></div>'
+    +'<div style="overflow-x:auto;margin-bottom:14px"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:500px">'
+    +'<tr><th style="text-align:left;padding:8px;color:#558B2F;font-weight:700;border-bottom:1.5px solid #C8E6C9">Specie</th>'
+    +_mesi.map(function(m,i){return '<th style="text-align:center;padding:6px;color:'+(i===_meseCorrente?'#fff':'#558B2F')+';font-weight:700;border-bottom:1.5px solid #C8E6C9;'+(i===_meseCorrente?'background:#2E7D32;border-radius:6px':'')+'">'+m+'</th>';}).join('')
+    +'</tr>'
+    +_periodi.map(function(p){
+      return '<tr>'
+        +'<td style="padding:8px;font-weight:600;color:#1a1a3a;border-bottom:1px solid #E8F5E9;white-space:nowrap">'+p.ico+' '+p.nome+'</td>'
+        +_mesi.map(function(m,i){
+          var aperto = false;
+          if(p.da<=p.a){ aperto = i>=p.da && i<=p.a; }
+          else { aperto = i>=p.da || i<=p.a; }
+          return '<td style="text-align:center;padding:6px;border-bottom:1px solid #E8F5E9;'
+            +(aperto?'background:#E8F5E9':'')
+            +'"><div style="width:16px;height:16px;border-radius:50%;margin:0 auto;background:'
+            +(aperto?'#4CAF50':'#E0E0E0')+'"></div></td>';
+        }).join('')
+        +'</tr>';
+    }).join('')
+    +'</table></div>'
+    +'<div style="background:#FFF8E1;border-radius:12px;padding:12px;border:1px solid #F0E0A0;font-size:11px;color:#A88A41">'
+    +'⚠️ Periodi indicativi — consulta il calendario ATC della tua regione per date esatte.</div>'
+    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
 }
 
 function apriNuovaUscitaCaccia(){
