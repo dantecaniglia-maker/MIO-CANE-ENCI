@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.37';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.38';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9509,18 +9509,21 @@ async function renderCacciaHome(container){
     +'display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px">'
     +'<span style="font-size:22px">🗺️</span> Avvia GPS uscita'
     +'</button>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">'
     +'<div onclick="switchCacciaTab(\'caccia-diario\')" '
-    +'style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;border:1.5px solid #C8E6C9">'
-    +'<div style="font-size:28px;margin-bottom:6px">📖</div>'
-    +'<div style="font-size:12px;font-weight:700;color:#2E7D32">Diario</div>'
-    +'<div style="font-size:10px;color:#9ab0cc;margin-top:2px">Tutte le uscite</div>'
+    +'style="background:#fff;border-radius:14px;padding:14px;text-align:center;cursor:pointer;border:1.5px solid #C8E6C9">'
+    +'<div style="font-size:24px;margin-bottom:4px">📖</div>'
+    +'<div style="font-size:11px;font-weight:700;color:#2E7D32">Diario</div>'
+    +'</div>'
+    +'<div onclick="switchCacciaTab(\'caccia-carniere\')" '
+    +'style="background:#fff;border-radius:14px;padding:14px;text-align:center;cursor:pointer;border:1.5px solid #F0E0A0">'
+    +'<div style="font-size:24px;margin-bottom:4px">🏹</div>'
+    +'<div style="font-size:11px;font-weight:700;color:#A88A41">Carniere</div>'
     +'</div>'
     +'<div onclick="switchCacciaTab(\'caccia-prove\')" '
-    +'style="background:#fff;border-radius:14px;padding:16px;text-align:center;cursor:pointer;border:1.5px solid #C8E6C9">'
-    +'<div style="font-size:28px;margin-bottom:6px">🏆</div>'
-    +'<div style="font-size:12px;font-weight:700;color:#2E7D32">Prove Lavoro</div>'
-    +'<div style="font-size:10px;color:#9ab0cc;margin-top:2px">FIDASC / ENCI</div>'
+    +'style="background:#fff;border-radius:14px;padding:14px;text-align:center;cursor:pointer;border:1.5px solid #C8E6C9">'
+    +'<div style="font-size:24px;margin-bottom:4px">🏆</div>'
+    +'<div style="font-size:11px;font-weight:700;color:#2E7D32">Prove</div>'
     +'</div>'
     +'</div>';
     // === STREAK CACCIA ===
@@ -10346,6 +10349,7 @@ function renderCacciaAltro(container){
       {ico:'🏆',label:'Prove',sub:'ENCI · JGHV · FISC',fn:'renderCacciaProve'},
       {ico:'📅',label:'Calendario',sub:'Date venatorie',fn:'renderCacciaCalendario'},
       {ico:'📍',label:'Le mie zone',sub:'Heatmap uscite',fn:'renderCacciaZone'},
+      {ico:'🎖️',label:'Traguardi',sub:'I tuoi record',fn:'renderCacciaTraguardi'},
       {ico:'📡',label:'Collari GPS',sub:'Prossimamente',fn:null},
       {ico:'🚨',label:'Emergenze',sub:'SOS + numeri rapidi',fn:'renderCacciaEmergenze'}
     ].map(function(item){
@@ -11415,6 +11419,50 @@ function renderCacciaZone(container){
         }).join('')
         +'</div>'
     )
+    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+}
+
+function renderCacciaTraguardi(container){
+  var _u = window._cacciaUsciteList || [];
+  var _c = window._cacciaCarniereList || [];
+  var _p = window._cacciaProveList || [];
+  var _kmTot = _u.reduce(function(a,u){return a+(u.km||0);},0);
+  var _wpTot = _u.reduce(function(a,u){return a+((u.waypoints||[]).length);},0);
+  var _fermeTot = _u.reduce(function(a,u){return a+((u.waypoints||[]).filter(function(w){return w.tipo==='ferma';}).length);},0);
+  var _capiTot = _c.reduce(function(a,c){return a+(c.quantita||1);},0);
+  var _eccTot = _p.filter(function(p){return p.qualifica==='ECC';}).length;
+  var _traguardi = [
+    {ico:'🐾',nome:'Prima uscita',desc:'Completa la prima uscita GPS',done:_u.length>=1},
+    {ico:'🗺️',nome:'Esploratore',desc:'10 uscite completate',done:_u.length>=10,prog:Math.min(_u.length,10),max:10},
+    {ico:'🏔️',nome:'Maratoneta',desc:'100 km percorsi',done:_kmTot>=100,prog:Math.min(Math.round(_kmTot),100),max:100},
+    {ico:'🐕',nome:'Prima Ferma',desc:'Segna la prima ferma del cane',done:_fermeTot>=1},
+    {ico:'🎯',nome:'Occhio di Falco',desc:'50 waypoint segnati',done:_wpTot>=50,prog:Math.min(_wpTot,50),max:50},
+    {ico:'🏹',nome:'Primo Capo',desc:'Registra il primo capo al carniere',done:_capiTot>=1},
+    {ico:'👑',nome:'Stagione d\'Oro',desc:'50 capi in una stagione',done:_capiTot>=50,prog:Math.min(_capiTot,50),max:50},
+    {ico:'🏆',nome:'Eccellente',desc:'Ottieni un ECC in prove di lavoro',done:_eccTot>=1},
+    {ico:'⭐',nome:'Campione',desc:'3 ECC per scalata campionato',done:_eccTot>=3,prog:Math.min(_eccTot,3),max:3},
+    {ico:'🌍',nome:'500 Km Club',desc:'500 km totali percorsi',done:_kmTot>=500,prog:Math.min(Math.round(_kmTot),500),max:500}
+  ];
+  var _sbloccati = _traguardi.filter(function(t){return t.done;}).length;
+  container.innerHTML =
+    '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(46,125,50,.08)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center">'
+    +'<div><div style="font-size:18px;font-weight:700;color:#1a1a3a">🎖️ Traguardi</div>'
+    +'<div style="font-size:12px;color:#6B8BB0">I tuoi record da cacciatore</div></div>'
+    +'<div style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700">'+_sbloccati+'/'+_traguardi.length+'</div>'
+    +'</div></div>'
+    +'<div style="display:flex;flex-direction:column;gap:10px">'
+    +_traguardi.map(function(t){
+      return '<div style="background:#fff;border-radius:14px;padding:14px;border:1.5px solid '+(t.done?'#C9A961':'#E0E0E0')+';'+(t.done?'':'opacity:.7')+'">'
+        +'<div style="display:flex;align-items:center;gap:12px">'
+        +'<div style="font-size:28px;'+(t.done?'':'filter:grayscale(1)')+'">'+t.ico+'</div>'
+        +'<div style="flex:1">'
+        +'<div style="font-weight:700;color:'+(t.done?'#1a1a3a':'#9ab0cc')+'">'+t.nome+(t.done?' ✅':'')+'</div>'
+        +'<div style="font-size:11px;color:#9ab0cc;margin-top:2px">'+t.desc+'</div>'
+        +(t.prog!==undefined&&!t.done?'<div style="height:4px;background:#E0E0E0;border-radius:2px;margin-top:6px;overflow:hidden"><div style="height:100%;width:'+Math.round(t.prog/t.max*100)+'%;background:linear-gradient(90deg,#C9A961,#A88A41);border-radius:2px"></div></div><div style="font-size:9px;color:#A88A41;margin-top:2px">'+t.prog+'/'+t.max+'</div>':'')
+        +'</div></div></div>';
+    }).join('')
+    +'</div>'
     +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
 }
 
