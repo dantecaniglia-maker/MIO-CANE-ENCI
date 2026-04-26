@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.46';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.47';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -11153,20 +11153,19 @@ async function salvaProva(btn){
   window._cacciaProveList = window._cacciaProveList || [];
   window._cacciaProveList.unshift(Object.assign({},prova,{id:'loc_'+Date.now()}));
   _salvaCacciaLocale();
-  try {
-    if(_currentUser){
-      var _recSupa = Object.assign({}, prova);
-      delete _recSupa.id;
-      if(!_recSupa.cane_id) _recSupa.cane_id = null;
-      if(!_recSupa.certificato) _recSupa.certificato = null;
-      if(!_recSupa.punteggio) _recSupa.punteggio = null;
-      if(!_recSupa.zona) _recSupa.zona = null;
-      if(!_recSupa.giudice) _recSupa.giudice = null;
-      if(!_recSupa.note) _recSupa.note = null;
-      var res = await _supabase.from('caccia_prove').insert(_recSupa);
-      if(res.error) toast('⚠️ Sync prova: '+res.error.message);
-    }
-  } catch(e){ toast('⚠️ Errore: '+e.message); }
+  if(_currentUser){
+    var _recSupa = Object.assign({}, prova);
+    delete _recSupa.id;
+    if(!_recSupa.cane_id) _recSupa.cane_id = null;
+    if(!_recSupa.certificato) _recSupa.certificato = null;
+    if(!_recSupa.punteggio) _recSupa.punteggio = null;
+    if(!_recSupa.zona) _recSupa.zona = null;
+    if(!_recSupa.giudice) _recSupa.giudice = null;
+    if(!_recSupa.note) _recSupa.note = null;
+    _supabase.from('caccia_prove').insert(_recSupa).then(function(res){
+      if(res.error) toast('⚠️ Sync: '+res.error.message);
+    }).catch(function(e){ toast('⚠️ '+e.message); });
+  }
   document.getElementById('ov-nuova-prova').remove();
   toast('✅ Prova salvata!');
   var _tc=document.getElementById('caccia-tab-content');
