@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.38';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.42';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9645,7 +9645,7 @@ async function renderCacciaHome(container){
     }
 
     container.innerHTML += '<div style="text-align:center;padding:20px 0 8px;font-size:10px;color:#9ab0cc">'
-    +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+    +'<img src="logo.jpeg" style="width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:4px" onerror="this.style.display=\'none\'"/>Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>';
 
   // Mostra subito da localStorage
   var _stagione = new Date().getFullYear();
@@ -10088,7 +10088,7 @@ async function renderCacciaCarniere(container){
     +'</div>'
     +'<div id="carniere-stagione-filtro"></div>'
     +'<div id="carniere-lista"><div style="text-align:center;padding:20px;color:#9ab0cc;font-size:13px">⏳ Caricamento...</div></div>'
-    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc"><img src="logo.jpeg" style="width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:4px" onerror="this.style.display=\'none\'"/>Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>';
 
   // Mostra subito stats a zero
   var statsEl0 = document.getElementById('carniere-stats');
@@ -10167,15 +10167,41 @@ function apriNuovoCarniere(uscitaId){
     +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#A88A41;display:block;margin-bottom:4px">Selvaggina *</label>'
     +'<select id="car-selvaggina" style="width:100%;padding:10px;border:1.5px solid #F0E0A0;border-radius:8px;font-size:14px;background:#FFFDE7">'
     +'<option value="">— seleziona —</option>'
+    +'<optgroup label="Stanziale">'
     +'<option value="Lepre">🐇 Lepre</option>'
-    +'<option value="Beccaccia">🐦 Beccaccia</option>'
-    +'<option value="Starna">🐓 Starna</option>'
     +'<option value="Fagiano">🦃 Fagiano</option>'
+    +'<option value="Starna">🐓 Starna</option>'
+    +'<option value="Pernice">🐦 Pernice rossa</option>'
+    +'<option value="Coturnice">🐦 Coturnice</option>'
+    +'</optgroup>'
+    +'<optgroup label="Migratoria">'
+    +'<option value="Beccaccia">🐦 Beccaccia</option>'
     +'<option value="Quaglia">🐤 Quaglia</option>'
-    +'<option value="Pernice">🐦 Pernice</option>'
+    +'<option value="Colombaccio">🕊️ Colombaccio</option>'
+    +'<option value="Tordo">🐦 Tordo</option>'
+    +'<option value="Allodola">🐦 Allodola</option>'
+    +'<option value="Beccaccino">🐦 Beccaccino</option>'
+    +'</optgroup>'
+    +'<optgroup label="Acquatici">'
     +'<option value="Germano">🦆 Germano reale</option>'
+    +'<option value="Alzavola">🦆 Alzavola</option>'
+    +'<option value="Marzaiola">🦆 Marzaiola</option>'
+    +'<option value="Folaga">🦆 Folaga</option>'
+    +'</optgroup>'
+    +'<optgroup label="Ungulati">'
     +'<option value="Cinghiale">🐗 Cinghiale</option>'
-    +'<option value="Tartufo">🍄 Tartufo (kg)</option>'
+    +'<option value="Capriolo">🦌 Capriolo</option>'
+    +'<option value="Cervo">🦌 Cervo</option>'
+    +'<option value="Daino">🦌 Daino</option>'
+    +'<option value="Muflone">🐏 Muflone</option>'
+    +'<option value="Camoscio">🐐 Camoscio</option>'
+    +'</optgroup>'
+    +'<optgroup label="Tartufo">'
+    +'<option value="Tartufo bianco">🍄 Tartufo bianco pregiato</option>'
+    +'<option value="Tartufo nero">🍄 Tartufo nero pregiato</option>'
+    +'<option value="Tartufo scorzone">🍄 Scorzone estivo</option>'
+    +'<option value="Tartufo uncinato">🍄 Uncinato</option>'
+    +'</optgroup>'
     +'<option value="Altro">🎯 Altro</option>'
     +'</select></div>'
     +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#A88A41;display:block;margin-bottom:4px">Stagione</label>'
@@ -10364,7 +10390,7 @@ function renderCacciaAltro(container){
         +'</div>';
     }).join('')
     +'</div>'
-    +'<div style="text-align:center;padding:20px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+    +'<div style="text-align:center;padding:20px 0 4px;font-size:10px;color:#9ab0cc"><img src="logo.jpeg" style="width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:4px" onerror="this.style.display=\'none\'"/>Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>';
 }
 
 async function salvaFineUscitaCaccia(btn){
@@ -10647,7 +10673,7 @@ async function renderCacciaCani(container){
     +'<button onclick="apriNuovoCaneC()" style="background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer">+ Aggiungi</button>'
     +'</div></div>'
     +'<div id="caccia-cani-lista"><div style="text-align:center;padding:20px;color:#9ab0cc;font-size:13px">⏳ Caricamento...</div></div>'
-    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc"><img src="logo.jpeg" style="width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:4px" onerror="this.style.display=\'none\'"/>Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>';
 
   try {
     if(!_currentUser) return;
@@ -10884,7 +10910,7 @@ async function renderCacciaProve(container){
     +'</div>'
     +'<div id="scalata-tracker"></div>'
     +'<div id="prove-lista"><div style="text-align:center;padding:30px;color:#9ab0cc;font-size:13px">⏳ Caricamento prove...</div></div>'
-    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc"><img src="logo.jpeg" style="width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:4px" onerror="this.style.display=\'none\'"/>Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>';
 
   try {
     if(!_currentUser) return;
@@ -11068,14 +11094,30 @@ async function apriNuovaProva(){
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
     +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Tipo prova *</label>'
     +'<select id="np-tipo" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
+    +'<optgroup label="Cani da ferma">'
     +'<option>San Uberto</option><option>Grande Cerca</option><option>Campo di Lavoro</option>'
     +'<option>Field Trial Autunnale</option><option>Field Trial Primaverile</option>'
+    +'</optgroup>'
+    +'<optgroup label="Seguita e cerca">'
     +'<option>Prova su Lepre</option><option>Prova su Cinghiale</option>'
+    +'<option>Prova su Beccaccia</option>'
+    +'</optgroup>'
+    +'<optgroup label="Retriever / HPR">'
     +'<option>Working Test Retriever</option><option>Retriever Trial</option>'
     +'<option>Hunt Point Retrieve</option>'
+    +'</optgroup>'
+    +'<optgroup label="Sistema JGHV">'
     +'<option>VJP - Frühjahrssuche</option><option>HZP - Herbstzucht</option><option>VGP - Utility</option>'
+    +'</optgroup>'
+    +'<optgroup label="Tartufo">'
     +'<option>Gara su Ring Artificiale</option><option>Campionato Italiano Lagotto</option>'
     +'<option>Campionato Italiano Cerca</option><option>European Truffle Dog Champ.</option>'
+    +'</optgroup>'
+    +'<optgroup label="Utilità">'
+    +'<option>CAL - Certificato Attitudine Lavoro</option>'
+    +'<option>TAL - Test Attitudine Lavoro</option>'
+    +'<option>Prova attitudini naturali</option>'
+    +'</optgroup>'
     +'</select></div>'
     +'<div><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">Ente</label>'
     +'<select id="np-ente" style="width:100%;padding:10px;border:1.5px solid #C8E6C9;border-radius:8px;font-size:14px;background:#F9FBE7">'
@@ -11372,7 +11414,7 @@ function renderCacciaEmergenze(container){
     +'</div>'
     +'<div style="background:#FFF8E1;border-radius:12px;padding:12px;margin-top:14px;border:1px solid #F0E0A0;font-size:11px;color:#A88A41">'
     +'💡 Salva questi numeri nella rubrica del telefono per accesso rapido anche senza connessione.</div>'
-    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc"><img src="logo.jpeg" style="width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:4px" onerror="this.style.display=\'none\'"/>Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>';
 }
 
 function renderCacciaZone(container){
@@ -11419,7 +11461,7 @@ function renderCacciaZone(container){
         }).join('')
         +'</div>'
     )
-    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc"><img src="logo.jpeg" style="width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:4px" onerror="this.style.display=\'none\'"/>Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>';
 }
 
 function renderCacciaTraguardi(container){
@@ -11463,7 +11505,7 @@ function renderCacciaTraguardi(container){
         +'</div></div></div>';
     }).join('')
     +'</div>'
-    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc"><img src="logo.jpeg" style="width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:4px" onerror="this.style.display=\'none\'"/>Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>';
 }
 
 function renderCacciaCalendario(container){
@@ -11511,7 +11553,7 @@ function renderCacciaCalendario(container){
     +'</table></div>'
     +'<div style="background:#FFF8E1;border-radius:12px;padding:12px;border:1px solid #F0E0A0;font-size:11px;color:#A88A41">'
     +'⚠️ Periodi indicativi — consulta il calendario ATC della tua regione per date esatte.</div>'
-    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc">Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Caccia & Tartufo</div>';
+    +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc"><img src="logo.jpeg" style="width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:4px" onerror="this.style.display=\'none\'"/>Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>';
 }
 
 function apriNuovaUscitaCaccia(){
