@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.44';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.45';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -11071,17 +11071,8 @@ async function apriNuovaProva(){
   var ov=document.createElement('div');
   ov.id='ov-nuova-prova';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
-  var _caniOpts='';
-  try {
-    var _cl=[];
-    if(_currentUser){
-      var rc=await _supabase.from('caccia_cani').select('id,nome,categoria,sistema_gare').eq('user_id',_currentUser.id).order('nome');
-      _cl=rc.data||[];
-      if(_cl.length){ window._cacciaCaniList = _cl; _salvaCacciaLocale(); }
-    }
-    if(!_cl.length) _cl=window._cacciaCaniList || [];
-    _caniOpts=_cl.map(function(c){return '<option value="'+c.id+'">'+c.nome+(c.categoria?' ('+c.categoria+')':'')+'</option>';}).join('');
-  } catch(e){ console.warn('[prove] cani opts:',e.message); }
+  var _cl = window._cacciaCaniList || [];
+  var _caniOpts = _cl.map(function(c){return '<option value="'+c.id+'">'+c.nome+(c.categoria?' ('+c.categoria+')':'')+'</option>';}).join('');
   ov.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32;margin-bottom:16px">🏆 Nuova Prova</div>'
     +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#558B2F;display:block;margin-bottom:4px">🐕 Cane *</label>'

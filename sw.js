@@ -1,5 +1,5 @@
 // ── CAMBIA QUESTO NUMERO AD OGNI DEPLOY ──
-const VERSION = '12.44';
+const VERSION = '12.45';
 const CACHE = 'miocane-' + VERSION;
 
 self.addEventListener('message', function(e){
