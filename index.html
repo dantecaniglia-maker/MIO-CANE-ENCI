@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.45';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.46';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10600,21 +10600,7 @@ async function renderCacciaDiario(container){
     +'</div>';
 
   try {
-    // Usa dati già caricati da caricaCaccia(), refresh Supabase in background
     var _uscite = window._cacciaUsciteList || [];
-    if(_currentUser && !_uscite.length){
-      var res = await _supabase.from('caccia_uscite')
-        .select('*')
-        .eq('user_id', _currentUser.id)
-        .order('data', {ascending:false})
-        .limit(50);
-      if(!res.error && res.data) {
-        _uscite = res.data;
-        window._cacciaUsciteList = _uscite;
-        _salvaCacciaLocale();
-      } else {
-      }
-    }
 
     var lista = document.getElementById('caccia-diario-list');
     if(!lista) return;
@@ -10678,14 +10664,6 @@ async function renderCacciaCani(container){
   try {
     if(!_currentUser) return;
     var _cani = window._cacciaCaniList || [];
-    if(!_cani.length && _currentUser){
-      var res = await _supabase.from('caccia_cani').select('*').eq('user_id',_currentUser.id).order('created_at',{ascending:false});
-      if(!res.error && res.data){
-        _cani = res.data;
-        window._cacciaCaniList = _cani;
-        _salvaCacciaLocale();
-      }
-    }
     var listaEl = document.getElementById('caccia-cani-lista');
     if(!listaEl) return;
     if(!_cani.length){
@@ -11206,24 +11184,8 @@ async function eliminaProva(id){
 }
 
 async function condividiSchedaCane(caneId, nomeC, razzaC, catC, sisC){
-  var _prove = [];
-  try {
-    if(_currentUser){
-      var rp = await _supabase.from('caccia_prove').select('*').eq('user_id',_currentUser.id).eq('cane_id',caneId).order('data',{ascending:false});
-      _prove = rp.data||[];
-    }
-  } catch(e){}
-  if(!_prove.length){
-    var _loc = window._cacciaProveList || [];
-    _prove = _loc.filter(function(p){ return p.cane_id===caneId; });
-  }
-  var _uscite = [];
-  try {
-    if(_currentUser){
-      var ru = await _supabase.from('caccia_uscite').select('km,ore').eq('user_id',_currentUser.id);
-      _uscite = ru.data||[];
-    }
-  } catch(e){}
+  var _prove = (window._cacciaProveList || []).filter(function(p){ return p.cane_id===caneId; });
+  var _uscite = window._cacciaUsciteList || [];
   var _kmTot = Math.round(_uscite.reduce(function(a,u){return a+(u.km||0);},0)*10)/10;
   var _oreTot = Math.round(_uscite.reduce(function(a,u){return a+(u.ore||0);},0)*10)/10;
   var _stagione = new Date().getFullYear();
