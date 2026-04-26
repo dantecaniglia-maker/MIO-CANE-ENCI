@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.43';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.44';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10923,16 +10923,9 @@ async function renderCacciaProve(container){
       ? _caniList.map(function(c){ return '<option value="'+c.id+'" data-cat="'+c.categoria+'" data-sis="'+c.sistema_gare+'">'+c.nome+'</option>'; }).join('')
       : '<option value="">— nessun cane registrato —</option>';
     var _prove = window._cacciaProveList || [];
-    if(!_prove.length){
-      var res = await _supabase.from('caccia_prove').select('*').eq('user_id',_currentUser.id).order('data',{ascending:false});
-      if(!res.error && res.data){
-        _prove = res.data;
-        window._cacciaProveList = _prove;
-        _salvaCacciaLocale();
-      }
-    }
 
     if(!_prove.length){
+      // Mostra stato vuoto SUBITO
       var listaVuota = document.getElementById('prove-lista');
       if(listaVuota) listaVuota.innerHTML = '<div style="text-align:center;padding:40px;color:#9ab0cc"><div style="font-size:40px;margin-bottom:12px">🏆</div><div style="font-weight:600">Nessuna prova registrata</div><div style="font-size:13px;margin-top:4px">Aggiungi la tua prima prova di lavoro!</div></div>';
       var statsVuoto = document.getElementById('prove-stats');
