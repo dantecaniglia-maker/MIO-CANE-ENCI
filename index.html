@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.48';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.49';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -12975,30 +12975,32 @@ async function salvaCreaCompitoAdmin(btn){
   var punti = parseInt(document.getElementById('ca-punti')
     &&document.getElementById('ca-punti').value)||20;
   btn.disabled=true; btn.textContent='⏳';
-  try {
-    var _ins = await _supabase.from('famiglia_compiti').insert({
-      famiglia_id: _famigliaDati.id,
-      cane_id: caneId||(_famigliaCaneSelezionato&&_famigliaCaneSelezionato.id)||null,
-      creato_da: _currentUser.id,
-      testo: testo,
-      assegnato_a: assegnato||null,
-      completato: false,
-      data_scadenza: data||null
+  var _nuovoCompito = {
+    id: 'loc_'+Date.now(),
+    famiglia_id: _famigliaDati.id,
+    cane_id: caneId||(_famigliaCaneSelezionato&&_famigliaCaneSelezionato.id)||null,
+    creato_da: _currentUser.id,
+    testo: testo,
+    assegnato_a: assegnato||null,
+    completato: false,
+    data_scadenza: data||null,
+    punti: punti,
+    _note: note
+  };
+  _famigliaCompiti.unshift(_nuovoCompito);
+  _salvFam();
+  btn.closest('[style*=fixed]').remove();
+  switchFamTab('compiti');
+  toast('✅ Compito creato!');
+  var _recSupa = Object.assign({}, _nuovoCompito);
+  delete _recSupa.id; delete _recSupa.punti; delete _recSupa._note;
+  _supabase.from('famiglia_compiti').insert(_recSupa).then(function(_ins){
+    if(_ins.error) toast('⚠️ Sync: '+_ins.error.message);
+    else caricaCompitisFamiglia().then(function(){
+      var _tc = g('fam-tab-content');
+      if(_tc && _famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
     });
-    if(_ins.error) throw _ins.error;
-    await caricaCompitisFamiglia();
-    if(_famigliaCompiti.length>0 && _famigliaCompiti[0].testo===testo){
-      _famigliaCompiti[0].punti = punti;
-      _famigliaCompiti[0]._note = note;
-    }
-    btn.closest('[style*=fixed]').remove();
-    _salvFam();
-    switchFamTab('compiti');
-    toast('✅ Compito creato!');
-  } catch(e){
-    btn.disabled=false; btn.textContent='✓ Crea';
-    toast('❌ '+e.message);
-  }
+  }).catch(function(e){ console.warn('[compiti]',e.message); });
 }
 
 function apriDelegaFisso(compitoId){
@@ -13087,33 +13089,30 @@ async function salvaRidelegaSpeciale(compitoId, btn){
   var note = document.getElementById('cm-note')
     &&document.getElementById('cm-note').value.trim()||null;
   btn.disabled=true; btn.textContent='⏳';
-  var _upd = await _supabase.from('famiglia_compiti').update({
-    testo: testo,
-    assegnato_a: uid||null,
-    data_scadenza: data||null
-  }).eq('id', compitoId);
-  if(_upd.error){ btn.disabled=false; btn.textContent='✓ Salva'; toast('❌ '+_upd.error.message); return; }
   var _c = _famigliaCompiti.find(function(c){return c.id===compitoId;});
   if(_c){ _c.testo=testo; _c.assegnato_a=uid||null; _c.data_scadenza=data||null; _c._note=note; }
   _salvFam();
   btn.closest('[style*=fixed]').remove();
   switchFamTab('compiti');
   toast('✅ Compito aggiornato!');
+  _supabase.from('famiglia_compiti').update({
+    testo: testo, assegnato_a: uid||null, data_scadenza: data||null
+  }).eq('id', compitoId).then(function(_upd){
+    if(_upd.error) toast('⚠️ Sync: '+_upd.error.message);
+  }).catch(function(e){ console.warn('[compiti]',e.message); });
 }
 
 async function eliminaCompitoAdmin(compitoId, btn){
   if(!confirm('Eliminare questo compito?')) return;
   btn.disabled=true; btn.textContent='⏳';
-  var _del = await _supabase.from('famiglia_compiti').delete().eq('id', compitoId);
-  if(_del.error){
-    btn.disabled=false; btn.textContent='🗑';
-    toast('❌ '+_del.error.message); return;
-  }
   _famigliaCompiti = _famigliaCompiti.filter(function(c){return c.id!==compitoId;});
   _salvFam();
   btn.closest('[style*=fixed]').remove();
   switchFamTab('compiti');
   toast('🗑 Compito eliminato');
+  _supabase.from('famiglia_compiti').delete().eq('id', compitoId).then(function(_del){
+    if(_del.error) toast('⚠️ Sync: '+_del.error.message);
+  }).catch(function(e){ console.warn('[compiti]',e.message); });
 }
 
 function renderPercorsiFamiglia(container){
@@ -13260,15 +13259,6 @@ async function fermaPercorsoGPS(){
   if(km<0.01){ toast('Nessun movimento rilevato'); return; }
   if(_famigliaDati&&_famigliaCaneSelezionato){
     var puntiPercorso=Math.round(km*10);
-    await _supabase.from('famiglia_percorsi').insert({
-      famiglia_id:_famigliaDati.id,
-      cane_id:_famigliaCaneSelezionato.id,
-      user_id:_currentUser.id,
-      nome:'Passeggiata '+new Date().toLocaleDateString('it-IT'),
-      distanza_km:km,
-      durata_minuti:durataMins,
-      punti:puntiPercorso
-    });
     var nick=(_famigliaMembers.find(function(m){return m.user_id===_currentUser.id;})||{}).nickname||'Tu';
     var nowIso = new Date().toISOString();
     var nomePercorso = 'Passeggiata '+new Date().toLocaleDateString('it-IT');
@@ -13283,6 +13273,15 @@ async function fermaPercorsoGPS(){
     _famigliaPercorsi.unshift({nome:nomePercorso,
       distanza_km:km,durata_minuti:durataMins,created_at:nowIso});
     _salvFam();
+    _supabase.from('famiglia_percorsi').insert({
+      famiglia_id:_famigliaDati.id,
+      cane_id:_famigliaCaneSelezionato.id,
+      user_id:_currentUser.id,
+      nome:nomePercorso,
+      distanza_km:km,
+      durata_minuti:durataMins,
+      punti:puntiPercorso
+    }).then(function(){}).catch(function(){});
     // Aggiorna classifica dopo percorso GPS
     setTimeout(function(){
       var _tc = g('fam-tab-content');
@@ -13943,38 +13942,38 @@ async function apriClassificaNazionale(){
     +'</div>';
   document.body.appendChild(overlay);
   var content = document.getElementById('_class-naz-content');
-  try {
-    var res = await _supabase.from('famiglie')
-      .select('nome_famiglia, punteggio_mese')
-      .order('punteggio_mese', {ascending:false})
-      .limit(20);
-    var famiglie = (res.data||[])
-      .map(function(f){ return {nome_famiglia:f.nome_famiglia, punteggio_mese:f.punteggio_mese||0}; })
-      .filter(function(f){ return f.punteggio_mese > 0; })
-      .sort(function(a,b){ return b.punteggio_mese - a.punteggio_mese; });
-    var medaglie2 = ['🥇','🥈','🥉'];
-    var meseLabel = new Date().toLocaleString('it-IT',{month:'long',year:'numeric'});
-    content.innerHTML =
-      '<div style="font-size:11px;color:#9ab0cc;text-align:center;margin-bottom:16px">Top famiglie — '+meseLabel+'</div>'
-      +(famiglie.length===0
-        ?'<div style="text-align:center;padding:30px;color:#9ab0cc"><div style="font-size:32px;margin-bottom:8px">🐾</div>Sii il primo! Nessuna famiglia ha ancora punti questo mese.</div>'
-        :'<div style="display:flex;flex-direction:column;gap:8px">'
-          +famiglie.map(function(f,i){
-            var isMia = _famigliaDati && f.nome_famiglia===_famigliaDati.nome_famiglia;
-            return '<div style="background:'+(isMia?'#FFF8E7':'#fff')+';border-radius:12px;padding:14px;'
-              +'display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(13,71,161,.06);'
-              +'border:1.5px solid '+(isMia?'#C9A961':'#DDEAFF')+'">'
-              +'<div style="font-size:22px;flex-shrink:0">'+(medaglie2[i]||'#'+(i+1))+'</div>'
-              +'<div style="flex:1;font-weight:600;font-size:13px;color:#1a1a3a">'+f.nome_famiglia+(isMia?' 👈':'')+'</div>'
-              +'<div style="font-size:16px;font-weight:800;color:'+(isMia?'#A88A41':'#1565C0')+'">'
-              +(f.punteggio_mese||0)+'<span style="font-size:10px;color:#9ab0cc"> pt</span></div>'
-              +'</div>';
-          }).join('')+'</div>')
-      +'<div style="margin-top:16px;background:#EEF3FB;border-radius:12px;padding:12px;text-align:center;font-size:11px;color:#6B8BB0">'
-      +'🏆 A fine mese le top 3 famiglie ricevono un premio speciale!</div>';
-  } catch(e){
-    content.innerHTML='<div style="text-align:center;padding:20px;color:#C0534A">Classifica non disponibile: '+e.message+'</div>';
-  }
+  _supabase.from('famiglie')
+    .select('nome_famiglia, punteggio_mese')
+    .order('punteggio_mese', {ascending:false})
+    .limit(20)
+    .then(function(res){
+      var famiglie = (res.data||[])
+        .map(function(f){ return {nome_famiglia:f.nome_famiglia, punteggio_mese:f.punteggio_mese||0}; })
+        .filter(function(f){ return f.punteggio_mese > 0; })
+        .sort(function(a,b){ return b.punteggio_mese - a.punteggio_mese; });
+      var medaglie2 = ['🥇','🥈','🥉'];
+      var meseLabel = new Date().toLocaleString('it-IT',{month:'long',year:'numeric'});
+      content.innerHTML =
+        '<div style="font-size:11px;color:#9ab0cc;text-align:center;margin-bottom:16px">Top famiglie — '+meseLabel+'</div>'
+        +(famiglie.length===0
+          ?'<div style="text-align:center;padding:30px;color:#9ab0cc"><div style="font-size:32px;margin-bottom:8px">🐾</div>Sii il primo! Nessuna famiglia ha ancora punti questo mese.</div>'
+          :'<div style="display:flex;flex-direction:column;gap:8px">'
+            +famiglie.map(function(f,i){
+              var isMia = _famigliaDati && f.nome_famiglia===_famigliaDati.nome_famiglia;
+              return '<div style="background:'+(isMia?'#FFF8E7':'#fff')+';border-radius:12px;padding:14px;'
+                +'display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(13,71,161,.06);'
+                +'border:1.5px solid '+(isMia?'#C9A961':'#DDEAFF')+'">'
+                +'<div style="font-size:22px;flex-shrink:0">'+(medaglie2[i]||'#'+(i+1))+'</div>'
+                +'<div style="flex:1;font-weight:600;font-size:13px;color:#1a1a3a">'+f.nome_famiglia+(isMia?' 👈':'')+'</div>'
+                +'<div style="font-size:16px;font-weight:800;color:'+(isMia?'#A88A41':'#1565C0')+'">'
+                +(f.punteggio_mese||0)+'<span style="font-size:10px;color:#9ab0cc"> pt</span></div>'
+                +'</div>';
+            }).join('')+'</div>')
+        +'<div style="margin-top:16px;background:#EEF3FB;border-radius:12px;padding:12px;text-align:center;font-size:11px;color:#6B8BB0">'
+        +'🏆 A fine mese le top 3 famiglie ricevono un premio speciale!</div>';
+    }).catch(function(e){
+      content.innerHTML='<div style="text-align:center;padding:20px;color:#C0534A">Classifica non disponibile: '+e.message+'</div>';
+    });
 }
 
 function condividiCodiceFamiglia(){
@@ -14048,7 +14047,8 @@ function apriAggiungiCompito(){
 
 async function aggiungiCompitoSuggerito(testo, tipo){
   if(!_famigliaDati) return;
-  var _ins = await _supabase.from('famiglia_compiti').insert({
+  _famigliaCompiti.unshift({
+    id: 'loc_'+Date.now(),
     famiglia_id: _famigliaDati.id,
     cane_id: _famigliaCaneSelezionato&&_famigliaCaneSelezionato.id||null,
     creato_da: _currentUser.id,
@@ -14056,10 +14056,20 @@ async function aggiungiCompitoSuggerito(testo, tipo){
     completato: false,
     assegnato_a: null
   });
-  if(_ins.error){ toast('❌ Errore: '+_ins.error.message); return; }
-  await caricaCompitisFamiglia();
+  _salvFam();
   switchFamTab('compiti');
   toast('✅ Compito aggiunto!');
+  _supabase.from('famiglia_compiti').insert({
+    famiglia_id: _famigliaDati.id,
+    cane_id: _famigliaCaneSelezionato&&_famigliaCaneSelezionato.id||null,
+    creato_da: _currentUser.id,
+    testo: testo,
+    completato: false,
+    assegnato_a: null
+  }).then(function(_ins){
+    if(_ins.error) toast('⚠️ Sync: '+_ins.error.message);
+    else caricaCompitisFamiglia();
+  }).catch(function(e){ console.warn('[compiti]',e.message); });
 }
 
 function apriImpostazioniFamiglia(){
@@ -14605,27 +14615,27 @@ async function creaFamiglia(){
   switchFamTab('home');
 
   // ── SYNC Supabase in background ──
-  try {
-    var ins = await _supabase.from('famiglie').insert({
-      nome_famiglia: nomeFam, admin_uid: _currentUser.id,
-      codice_invito: codice,
-      codice_scadenza: new Date(Date.now()+30*24*60*60*1000).toISOString()
-    });
-    if(ins.error) throw ins.error;
-    var sel = await _supabase.from('famiglie').select('*').eq('codice_invito',codice).single();
-    if(sel.data){
-      _famigliaDati = sel.data;
-      delete _famigliaDati._pendingSync;
-    }
-    await _supabase.from('famiglia_membri').insert({
+  _supabase.from('famiglie').insert({
+    nome_famiglia: nomeFam, admin_uid: _currentUser.id,
+    codice_invito: codice,
+    codice_scadenza: new Date(Date.now()+30*24*60*60*1000).toISOString()
+  }).then(function(ins){
+    if(ins.error){ console.error('[Famiglia] sync:', ins.error); return null; }
+    return _supabase.from('famiglie').select('*').eq('codice_invito',codice).single();
+  }).then(function(sel){
+    if(!sel||!sel.data) return null;
+    _famigliaDati = sel.data;
+    delete _famigliaDati._pendingSync;
+    return _supabase.from('famiglia_membri').insert({
       famiglia_id: _famigliaDati.id, user_id: _currentUser.id,
       ruolo: 'admin', nickname:(_currentUser.email||'').split('@')[0]||'Admin', emoji:'👑'
     });
+  }).then(function(){
     _salvFam();
-    console.log('[Famiglia] sync OK:', _famigliaDati.id);
-  } catch(e){
+    console.log('[Famiglia] sync OK:', _famigliaDati&&_famigliaDati.id);
+  }).catch(function(e){
     console.error('[Famiglia] sync Supabase (non critico, riproverà):', e);
-  }
+  });
 }
 
 async function accettaInvitoFamiglia(){
@@ -14808,9 +14818,6 @@ async function salvaModificaCane(caneId, btn){
     microchip: document.getElementById('mc-chip').value.trim()||null
   };
   if(fotoUrl) upd.foto = fotoUrl;
-  var res = await _supabase.from('famiglia_cani').update(upd).eq('id',caneId);
-  if(res.error){ btn.disabled=false; btn.textContent='✓ Salva'; toast('❌ '+res.error.message); return; }
-  // Aggiorna in memoria
   var idx = _famigliaCani.findIndex(function(c){return c.id===caneId;});
   if(idx>=0) _famigliaCani[idx] = Object.assign(_famigliaCani[idx], upd);
   if(_famigliaCaneSelezionato&&_famigliaCaneSelezionato.id===caneId)
@@ -14819,12 +14826,13 @@ async function salvaModificaCane(caneId, btn){
   btn.closest('[style*=fixed]').remove();
   renderHomeFamiglia();
   toast('✅ '+upd.nome+' aggiornato!');
+  _supabase.from('famiglia_cani').update(upd).eq('id',caneId).then(function(res){
+    if(res.error) toast('⚠️ Sync: '+res.error.message);
+  }).catch(function(e){ console.warn('[famiglia-cani]',e.message); });
 }
 
 async function archiviaCaneFamiglia(caneId, nomeC){
   if(!confirm('Archiviare '+nomeC+'? Il cane non apparirà più nei ring ma i suoi dati resteranno nel diario in memoria.')) return;
-  var _upd = await _supabase.from('famiglia_cani').update({archiviato:true}).eq('id',caneId);
-  if(_upd.error){ toast('❌ '+_upd.error.message); return; }
   _famigliaCani = _famigliaCani.filter(function(c){ return c.id!==caneId; });
   if(_famigliaCaneSelezionato && _famigliaCaneSelezionato.id===caneId){
     _famigliaCaneSelezionato = _famigliaCani[0]||null;
@@ -14833,18 +14841,17 @@ async function archiviaCaneFamiglia(caneId, nomeC){
   document.querySelectorAll('[style*="fixed"]').forEach(function(o){
     if(o.querySelector('#nc-nome')||o.innerHTML.indexOf('Archivia')>=0) o.remove();
   });
-  await caricaLogFamiglia();
   renderHomeFamiglia();
   toast('🌈 '+nomeC+' archiviato con affetto');
+  _supabase.from('famiglia_cani').update({archiviato:true}).eq('id',caneId).then(function(_upd){
+    if(_upd.error) toast('⚠️ Sync: '+_upd.error.message);
+    else caricaLogFamiglia().then(function(){ renderHomeFamiglia(); });
+  }).catch(function(e){ console.warn('[famiglia-cani]',e.message); });
 }
 
 async function eliminaCaneFamiglia(caneId, nomeC){
   if(!confirm('Eliminare '+nomeC+'? Questa azione è irreversibile e rimuove tutti i dati associati.')) return;
   if(!confirm('Sei sicuro? Tutti i log e i percorsi di '+nomeC+' verranno eliminati.')) return;
-  await _supabase.from('famiglia_log').delete().eq('cane_id',caneId);
-  await _supabase.from('famiglia_percorsi').delete().eq('cane_id',caneId);
-  var _del = await _supabase.from('famiglia_cani').delete().eq('id',caneId);
-  if(_del.error){ toast('❌ '+_del.error.message); return; }
   _famigliaCani = _famigliaCani.filter(function(c){ return c.id!==caneId; });
   if(_famigliaCaneSelezionato && _famigliaCaneSelezionato.id===caneId){
     _famigliaCaneSelezionato = _famigliaCani[0]||null;
@@ -14856,9 +14863,15 @@ async function eliminaCaneFamiglia(caneId, nomeC){
   document.querySelectorAll('[style*="fixed"]').forEach(function(o){
     if(o.querySelector('#nc-nome')||o.innerHTML.indexOf('Elimina')>=0) o.remove();
   });
-  if(_famigliaCaneSelezionato) await caricaLogFamiglia();
   renderHomeFamiglia();
   toast('🗑 '+nomeC+' eliminato');
+  Promise.all([
+    _supabase.from('famiglia_log').delete().eq('cane_id',caneId),
+    _supabase.from('famiglia_percorsi').delete().eq('cane_id',caneId),
+    _supabase.from('famiglia_cani').delete().eq('id',caneId)
+  ]).then(function(results){
+    if(results[2].error) toast('⚠️ Sync: '+results[2].error.message);
+  }).catch(function(e){ console.warn('[famiglia-cani]',e.message); });
 }
 
 async function salvaCaneFamiglia(btn){
@@ -14875,28 +14888,34 @@ async function salvaCaneFamiglia(btn){
   if(fotoInput&&fotoInput.files&&fotoInput.files[0]){
     try { fotoUrl = await uploadFotoSupabase(await fileToBase64(fotoInput.files[0]),'cane_'+Date.now()+'.jpg'); } catch(e){}
   }
-  try {
-    var res = await _supabase.from('famiglia_cani').insert({
-      famiglia_id: _famigliaDati.id,
-      nome: nome,
-      razza: g('nc-razza')&&g('nc-razza').value.trim()||null,
-      sesso: g('nc-sesso')&&g('nc-sesso').value||'M',
-      taglia: g('nc-taglia')&&g('nc-taglia').value||'media',
-      data_nascita: g('nc-nascita')&&g('nc-nascita').value||null,
-      peso_attuale: g('nc-peso')&&parseFloat(g('nc-peso').value)||null,
-      microchip: g('nc-chip')&&g('nc-chip').value.trim()||null,
-      foto: fotoUrl
-    }).select().single();
-    _famigliaCani.push(res.data);
-    _famigliaCaneSelezionato = res.data;
-    btn.closest('[style*=fixed]').remove();
-    await caricaLogFamiglia();
-    renderHomeFamiglia();
-    toast('🎉 '+nome+' aggiunto alla famiglia!');
-  } catch(e){
-    btn.disabled=false; btn.textContent='🐾 Aggiungi cane';
-    toast('❌ Errore: '+e.message);
-  }
+  var _tempCane = {
+    id: 'loc_'+Date.now(),
+    famiglia_id: _famigliaDati.id,
+    nome: nome,
+    razza: g('nc-razza')&&g('nc-razza').value.trim()||null,
+    sesso: g('nc-sesso')&&g('nc-sesso').value||'M',
+    taglia: g('nc-taglia')&&g('nc-taglia').value||'media',
+    data_nascita: g('nc-nascita')&&g('nc-nascita').value||null,
+    peso_attuale: g('nc-peso')&&parseFloat(g('nc-peso').value)||null,
+    microchip: g('nc-chip')&&g('nc-chip').value.trim()||null,
+    foto: fotoUrl
+  };
+  _famigliaCani.push(_tempCane);
+  _famigliaCaneSelezionato = _tempCane;
+  _salvFam();
+  btn.closest('[style*=fixed]').remove();
+  renderHomeFamiglia();
+  toast('🎉 '+nome+' aggiunto alla famiglia!');
+  var _syncCane = Object.assign({}, _tempCane);
+  delete _syncCane.id;
+  _supabase.from('famiglia_cani').insert(_syncCane).select().single().then(function(res){
+    if(res.error){ toast('⚠️ Sync: '+res.error.message); return; }
+    var _idx = _famigliaCani.findIndex(function(c){ return c.id===_tempCane.id; });
+    if(_idx>=0) _famigliaCani[_idx] = res.data;
+    if(_famigliaCaneSelezionato&&_famigliaCaneSelezionato.id===_tempCane.id) _famigliaCaneSelezionato = res.data;
+    _salvFam();
+    caricaLogFamiglia().then(function(){ renderHomeFamiglia(); });
+  }).catch(function(e){ toast('⚠️ '+e.message); });
 }
 
 /* ── NOTIFICHE PUSH REALI ── */
