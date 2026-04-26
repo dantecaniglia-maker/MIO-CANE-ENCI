@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.53';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.54';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9647,6 +9647,19 @@ async function renderCacciaHome(container){
     +'</div>'
     +'<div id="cacciatori-vicini-content" style="padding:14px">'
     +'<div style="text-align:center;padding:10px"><button onclick="cercaCacciatoriVicini()" style="background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;border-radius:10px;padding:11px 24px;font-size:13px;font-weight:700;cursor:pointer;width:100%">📍 Cerca cacciatori vicini</button></div>'
+    +'</div></div>'
+    +'<div style="background:#fff;border:2px solid #A5D6A7;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(46,125,50,.08);margin-bottom:16px">'
+    +'<div style="background:linear-gradient(135deg,#558B2F,#33691E);padding:14px 18px;display:flex;align-items:center;gap:10px">'
+    +'<div style="font-size:22px">🗺️</div>'
+    +'<div><div style="font-weight:700;font-size:15px;color:#fff">Mappe Offline</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,.7)">Scarica mappe per zone senza segnale</div></div></div>'
+    +'<div style="padding:14px">'
+    +'<div style="font-size:12px;color:#6B8BB0;margin-bottom:10px">Le mappe che visualizzi nel GPS vengono salvate automaticamente. In zone senza segnale vedrai le mappe già caricate.</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="precaricaMappaCaccia()" style="flex:1;background:linear-gradient(135deg,#558B2F,#33691E);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">📥 Scarica zona attuale</button>'
+    +'<button onclick="svuotaCacheMappe()" style="flex:1;background:#F1F8E9;color:#558B2F;border:1.5px solid #A5D6A7;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer">🗑️ Svuota cache</button>'
+    +'</div>'
+    +'<div id="mappa-cache-info" style="margin-top:8px;font-size:11px;color:#9ab0cc;text-align:center"></div>'
     +'</div></div>';
     // === STREAK CACCIA ===
     var _allUscite = window._cacciaUsciteList || [];
@@ -10092,6 +10105,78 @@ function _tempoFa(iso){
   var ore=Math.floor(min/60);
   if(ore<24) return ore+'h fa';
   return Math.floor(ore/24)+'g fa';
+}
+
+/* ══ MAPPE OFFLINE ══ */
+function precaricaMappaCaccia(){
+  if(!navigator.geolocation){ toast('GPS non disponibile'); return; }
+  toast('📍 Ottengo posizione...');
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var lat=pos.coords.latitude, lng=pos.coords.longitude;
+    toast('📥 Scaricamento mappe in corso...');
+    var info=document.getElementById('mappa-cache-info');
+    if(info) info.textContent='Scaricamento in corso...';
+    var tiles=[];
+    // Scarica tile zoom 12-15 nell'area circostante (~5km)
+    for(var z=12;z<=15;z++){
+      var xt=_lngToTile(lng,z);
+      var yt=_latToTile(lat,z);
+      var raggio=z<=13?2:1;
+      for(var dx=-raggio;dx<=raggio;dx++){
+        for(var dy=-raggio;dy<=raggio;dy++){
+          tiles.push('https://tile.openstreetmap.org/'+z+'/'+(xt+dx)+'/'+(yt+dy)+'.png');
+        }
+      }
+    }
+    var done=0, tot=tiles.length, err=0;
+    tiles.forEach(function(url){
+      fetch(url).then(function(r){
+        if(r.ok&&'caches' in window){
+          caches.open('bp-map-tiles-v1').then(function(c){c.put(url,r);});
+        }
+        done++;
+        if(info) info.textContent='Scaricate '+done+'/'+tot+' tile'+(err?' ('+err+' errori)':'');
+        if(done+err>=tot){
+          toast('✅ '+done+' tile scaricate per la tua zona!');
+          _mostraCacheMappeInfo();
+        }
+      }).catch(function(){
+        err++; done++;
+        if(done+err>=tot) _mostraCacheMappeInfo();
+      });
+    });
+  },function(){
+    toast('❌ GPS negato');
+  },{enableHighAccuracy:true,timeout:10000});
+}
+
+function _lngToTile(lng,z){ return Math.floor((lng+180)/360*Math.pow(2,z)); }
+function _latToTile(lat,z){
+  return Math.floor((1-Math.log(Math.tan(lat*Math.PI/180)+1/Math.cos(lat*Math.PI/180))/Math.PI)/2*Math.pow(2,z));
+}
+
+function svuotaCacheMappe(){
+  if(!confirm('Eliminare tutte le mappe scaricate?')) return;
+  if('caches' in window){
+    caches.delete('bp-map-tiles-v1').then(function(){
+      toast('🗑️ Cache mappe eliminata');
+      _mostraCacheMappeInfo();
+    });
+  }
+}
+
+function _mostraCacheMappeInfo(){
+  var info=document.getElementById('mappa-cache-info');
+  if(!info) return;
+  if('caches' in window){
+    caches.open('bp-map-tiles-v1').then(function(c){
+      c.keys().then(function(keys){
+        info.textContent=keys.length>0?'📦 '+keys.length+' tile in cache':'Nessuna mappa scaricata';
+      });
+    });
+  } else {
+    info.textContent='Cache non supportata dal browser';
+  }
 }
 
 function renderCacciaGPS(container){

@@ -1,5 +1,5 @@
 // ── CAMBIA QUESTO NUMERO AD OGNI DEPLOY ──
-const VERSION = '12.53';
+const VERSION = '12.54';
 const CACHE = 'miocane-' + VERSION;
 
 self.addEventListener('message', function(e){
@@ -92,6 +92,22 @@ self.addEventListener('fetch', function(e) {
       })).catch(function() {
         // Offline: prova dalla cache come ultima risorsa
         return caches.match('/index.html');
+      })
+    );
+    return;
+  }
+
+  // Cache tile mappe OpenStreetMap — cache-first, poi rete
+  if(url.indexOf('tile.openstreetmap.org')>=0 || url.indexOf('/tiles/')>=0){
+    e.respondWith(
+      caches.open('bp-map-tiles-v1').then(function(cache){
+        return cache.match(e.request).then(function(cached){
+          if(cached) return cached;
+          return fetch(e.request).then(function(response){
+            if(response.ok) cache.put(e.request, response.clone());
+            return response;
+          }).catch(function(){ return cached || new Response('', {status:404}); });
+        });
       })
     );
     return;
