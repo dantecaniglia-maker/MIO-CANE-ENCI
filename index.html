@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.51';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.52';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9823,38 +9823,90 @@ function _generaCodiceCaccia(){
   return c;
 }
 
+function _salvaGruppoCacciaLocale(){
+  try{localStorage.setItem('bp_caccia_gruppo_v1',JSON.stringify({uid:_currentUser?_currentUser.id:null,dati:window._cacciGruppo}));}catch(e){}
+}
+
 function creaGruppoCaccia(){
   var nome=prompt('Nome del gruppo di caccia:');
   if(!nome||!nome.trim()) return;
+  if(!_currentUser){ toast('⚠️ Devi essere loggato'); return; }
   var codice=_generaCodiceCaccia();
+  // Salva subito in locale (ottimistic)
   window._cacciGruppo={
     nome:nome.trim(),
     codice:codice,
-    admin:_currentUser?_currentUser.id:null,
-    membri:[{id:_currentUser?_currentUser.id:null,nome:_currentUser?(_currentUser.user_metadata||{}).nome||_currentUser.email:'Tu',ruolo:'admin'}],
+    admin:_currentUser.id,
+    membri:[{id:_currentUser.id,nome:(_currentUser.user_metadata||{}).nome||_currentUser.email,ruolo:'admin'}],
     created:new Date().toISOString()
   };
-  try{localStorage.setItem('bp_caccia_gruppo_v1',JSON.stringify({uid:_currentUser?_currentUser.id:null,dati:window._cacciGruppo}));}catch(e){}
+  _salvaGruppoCacciaLocale();
   toast('✅ Gruppo "'+nome.trim()+'" creato! Codice: '+codice);
   var tc=document.getElementById('caccia-tab-content');
   if(tc) renderCacciaHome(tc);
+  // Sync Supabase in background
+  _supabase.from('caccia_gruppi').insert({
+    nome:nome.trim(),
+    codice:codice,
+    admin_id:_currentUser.id
+  }).select().then(function(res){
+    if(res.error){ console.warn('[gruppo] insert error:',res.error.message); return; }
+    var gruppo=res.data&&res.data[0];
+    if(!gruppo) return;
+    window._cacciGruppo.supaId=gruppo.id;
+    _salvaGruppoCacciaLocale();
+    _supabase.from('caccia_gruppi_membri').insert({
+      gruppo_id:gruppo.id,
+      user_id:_currentUser.id,
+      nome:(_currentUser.user_metadata||{}).nome||_currentUser.email,
+      ruolo:'admin'
+    }).then(function(){});
+  });
 }
 
 function uniscitiGruppoCaccia(){
   var codice=prompt('Inserisci il codice del gruppo (es. CAC-XXXXX):');
   if(!codice||!codice.trim()) return;
-  toast('🔍 Ricerca gruppo...');
-  window._cacciGruppo={
-    nome:'Gruppo '+codice.trim().toUpperCase(),
-    codice:codice.trim().toUpperCase(),
-    admin:null,
-    membri:[{id:_currentUser?_currentUser.id:null,nome:_currentUser?(_currentUser.user_metadata||{}).nome||_currentUser.email:'Tu',ruolo:'membro'}],
-    joined:new Date().toISOString()
-  };
-  try{localStorage.setItem('bp_caccia_gruppo_v1',JSON.stringify({uid:_currentUser?_currentUser.id:null,dati:window._cacciGruppo}));}catch(e){}
-  toast('✅ Unito al gruppo!');
-  var tc=document.getElementById('caccia-tab-content');
-  if(tc) renderCacciaHome(tc);
+  if(!_currentUser){ toast('⚠️ Devi essere loggato'); return; }
+  var cod=codice.trim().toUpperCase();
+  toast('🔍 Ricerca gruppo '+cod+'...');
+  _supabase.from('caccia_gruppi').select('*').eq('codice',cod).then(function(res){
+    if(res.error||!res.data||!res.data.length){
+      toast('❌ Gruppo non trovato. Verifica il codice.');
+      return;
+    }
+    var gruppo=res.data[0];
+    // Inserisci come membro
+    var mioNome=(_currentUser.user_metadata||{}).nome||_currentUser.email;
+    _supabase.from('caccia_gruppi_membri').insert({
+      gruppo_id:gruppo.id,
+      user_id:_currentUser.id,
+      nome:mioNome,
+      ruolo:'membro'
+    }).then(function(r2){
+      if(r2.error&&r2.error.code==='23505'){
+        toast('Sei già in questo gruppo!');
+      }
+      // Carica lista membri
+      _supabase.from('caccia_gruppi_membri').select('*').eq('gruppo_id',gruppo.id).then(function(r3){
+        var membri=(r3.data||[]).map(function(m){
+          return {id:m.user_id,nome:m.nome||'Membro',ruolo:m.ruolo||'membro'};
+        });
+        window._cacciGruppo={
+          supaId:gruppo.id,
+          nome:gruppo.nome,
+          codice:gruppo.codice,
+          admin:gruppo.admin_id,
+          membri:membri,
+          joined:new Date().toISOString()
+        };
+        _salvaGruppoCacciaLocale();
+        toast('✅ Unito a "'+gruppo.nome+'"!');
+        var tc=document.getElementById('caccia-tab-content');
+        if(tc) renderCacciaHome(tc);
+      });
+    });
+  });
 }
 
 function condividiCodiceCaccia(){
@@ -9866,6 +9918,23 @@ function condividiCodiceCaccia(){
 function apriGruppoCaccia(){
   if(!window._cacciGruppo) return;
   var gr=window._cacciGruppo;
+  // Refresh membri da Supabase
+  if(gr.supaId&&_currentUser){
+    _supabase.from('caccia_gruppi_membri').select('*').eq('gruppo_id',gr.supaId).then(function(r){
+      if(!r.error&&r.data){
+        window._cacciGruppo.membri=r.data.map(function(m){
+          return {id:m.user_id,nome:m.nome||'Membro',ruolo:m.ruolo||'membro'};
+        });
+        _salvaGruppoCacciaLocale();
+        // Aggiorna il contatore nel modale se aperto
+        var mc=document.querySelector('#ov-gruppo-caccia');
+        if(mc){
+          mc.remove();
+          apriGruppoCaccia();
+        }
+      }
+    });
+  }
   var ov=document.createElement('div');
   ov.id='ov-gruppo-caccia';
   ov.className='overlay';
@@ -9893,6 +9962,12 @@ function apriGruppoCaccia(){
 
 function esciDaGruppoCaccia(){
   if(!confirm('Vuoi uscire dal gruppo?')) return;
+  // Rimuovi da Supabase
+  if(window._cacciGruppo&&window._cacciGruppo.supaId&&_currentUser){
+    _supabase.from('caccia_gruppi_membri').delete()
+      .eq('gruppo_id',window._cacciGruppo.supaId)
+      .eq('user_id',_currentUser.id).then(function(){});
+  }
   window._cacciGruppo=null;
   localStorage.removeItem('bp_caccia_gruppo_v1');
   var ov=document.getElementById('ov-gruppo-caccia');
