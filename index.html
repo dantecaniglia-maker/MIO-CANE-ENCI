@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.52';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.53';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9574,6 +9574,9 @@ async function renderCacciaHome(container){
       if(_gcr&&_gcr.dati&&(!_currentUser||!_gcr.uid||_gcr.uid===_currentUser.id)) window._cacciGruppo=_gcr.dati;
     }catch(e){}
   }
+  if(window._cacciaVisibile===undefined){
+    window._cacciaVisibile=localStorage.getItem('bp_caccia_visibile')==='true';
+  }
   container.innerHTML =
     '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;'
     +'box-shadow:0 2px 8px rgba(46,125,50,.08)">'
@@ -9634,6 +9637,16 @@ async function renderCacciaHome(container){
         +'<button onclick="creaGruppoCaccia()" style="flex:1;background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">+ Crea gruppo</button>'
         +'<button onclick="uniscitiGruppoCaccia()" style="flex:1;background:#F1F8E9;color:#2E7D32;border:1.5px solid #A5D6A7;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">🔗 Ho un codice</button>'
         +'</div></div>')
+    +'</div></div>'
+    +'<div style="background:#fff;border:2px solid #90CAF9;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(21,101,192,.08);margin-bottom:16px">'
+    +'<div style="background:linear-gradient(135deg,#1565C0,#0D47A1);padding:14px 18px;display:flex;align-items:center;gap:10px">'
+    +'<div style="font-size:22px">📡</div>'
+    +'<div><div style="font-weight:700;font-size:15px;color:#fff">Cacciatori Vicini</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,.7)">Scopri chi caccia nella tua zona</div></div>'
+    +'<div style="margin-left:auto"><button onclick="toggleVisibilitaCacciatore()" id="btn-visibilita-caccia" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;padding:6px 10px;color:#fff;font-size:11px;font-weight:600;cursor:pointer">'+(window._cacciaVisibile?'👁️ Visibile':'🔒 Nascosto')+'</button></div>'
+    +'</div>'
+    +'<div id="cacciatori-vicini-content" style="padding:14px">'
+    +'<div style="text-align:center;padding:10px"><button onclick="cercaCacciatoriVicini()" style="background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;border-radius:10px;padding:11px 24px;font-size:13px;font-weight:700;cursor:pointer;width:100%">📍 Cerca cacciatori vicini</button></div>'
     +'</div></div>';
     // === STREAK CACCIA ===
     var _allUscite = window._cacciaUsciteList || [];
@@ -9975,6 +9988,110 @@ function esciDaGruppoCaccia(){
   toast('Uscito dal gruppo');
   var tc=document.getElementById('caccia-tab-content');
   if(tc) renderCacciaHome(tc);
+}
+
+/* ══ PERSONE VICINE ══ */
+function toggleVisibilitaCacciatore(){
+  window._cacciaVisibile=!window._cacciaVisibile;
+  localStorage.setItem('bp_caccia_visibile',window._cacciaVisibile?'true':'false');
+  if(window._cacciaVisibile){
+    _aggiornaPosizioneCaccia();
+    toast('👁️ Ora sei visibile agli altri cacciatori');
+  } else {
+    if(_currentUser){
+      _supabase.from('caccia_posizioni').update({visibile:false}).eq('user_id',_currentUser.id).then(function(){});
+    }
+    toast('🔒 Posizione nascosta');
+  }
+  var btn=document.getElementById('btn-visibilita-caccia');
+  if(btn){btn.textContent=window._cacciaVisibile?'👁️ Visibile':'🔒 Nascosto';}
+}
+
+function _aggiornaPosizioneCaccia(){
+  if(!_currentUser||!window._cacciaVisibile) return;
+  if(!navigator.geolocation){ toast('GPS non disponibile'); return; }
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var lat=pos.coords.latitude, lng=pos.coords.longitude;
+    var nome=(_currentUser.user_metadata||{}).nome||_currentUser.email;
+    _supabase.from('caccia_posizioni').upsert({
+      user_id:_currentUser.id,
+      nome:nome,
+      lat:lat,
+      lng:lng,
+      visibile:true,
+      ultimo_aggiornamento:new Date().toISOString()
+    },{onConflict:'user_id'}).then(function(r){
+      if(r.error) console.warn('[posizione]',r.error.message);
+    });
+  },function(){},{enableHighAccuracy:true,timeout:10000});
+}
+
+function cercaCacciatoriVicini(){
+  if(!_currentUser){ toast('⚠️ Devi essere loggato'); return; }
+  var content=document.getElementById('cacciatori-vicini-content');
+  if(!content) return;
+  content.innerHTML='<div style="text-align:center;padding:16px;color:#6B8BB0">🔍 Cerco cacciatori vicini...</div>';
+  // Aggiorna la mia posizione
+  if(window._cacciaVisibile) _aggiornaPosizioneCaccia();
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var mioLat=pos.coords.latitude, mioLng=pos.coords.longitude;
+    _supabase.from('caccia_posizioni').select('*').eq('visibile',true).then(function(res){
+      if(res.error){
+        content.innerHTML='<div style="text-align:center;padding:16px;color:#C0534A">❌ Errore: '+res.error.message+'</div>';
+        return;
+      }
+      var tutti=(res.data||[]).filter(function(p){return p.user_id!==_currentUser.id;});
+      // Calcola distanza e filtra entro 50km
+      tutti.forEach(function(p){
+        p._dist=_distanzaKm(mioLat,mioLng,p.lat,p.lng);
+      });
+      tutti=tutti.filter(function(p){return p._dist<=50;});
+      tutti.sort(function(a,b){return a._dist-b._dist;});
+      if(!tutti.length){
+        content.innerHTML='<div style="text-align:center;padding:20px;color:#9ab0cc">'
+          +'<div style="font-size:32px;margin-bottom:8px">🏔️</div>'
+          +'<div style="font-size:13px">Nessun cacciatore nel raggio di 50 km</div>'
+          +'<div style="font-size:11px;color:#BFCFE8;margin-top:4px">Invita i tuoi compagni su BreedPed!</div>'
+          +'<button onclick="cercaCacciatoriVicini()" style="margin-top:12px;background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;color:#1565C0;cursor:pointer">🔄 Riprova</button></div>';
+        return;
+      }
+      var h='<div style="font-size:12px;font-weight:700;color:#1565C0;margin-bottom:10px">📍 '+tutti.length+' cacciator'+(tutti.length===1?'e':'i')+' nel raggio di 50 km</div>';
+      tutti.slice(0,15).forEach(function(p){
+        var tempo=_tempoFa(p.ultimo_aggiornamento);
+        h+='<div style="display:flex;align-items:center;gap:10px;padding:10px;background:#F8FAFF;border-radius:10px;margin-bottom:6px;border:1px solid #DDEAFF">'
+          +'<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1565C0,#0D47A1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700">'+((p.nome||'?')[0]).toUpperCase()+'</div>'
+          +'<div style="flex:1"><div style="font-weight:600;font-size:13px;color:#1a1a3a">'+esc(p.nome||'Cacciatore')+'</div>'
+          +'<div style="font-size:11px;color:#9ab0cc">'+tempo+'</div></div>'
+          +'<div style="text-align:right"><div style="font-size:15px;font-weight:800;color:#1565C0">'+p._dist.toFixed(1)+'</div>'
+          +'<div style="font-size:9px;color:#6B8BB0">km</div></div></div>';
+      });
+      h+='<div style="display:flex;gap:8px;margin-top:12px">'
+        +'<button onclick="cercaCacciatoriVicini()" style="flex:1;background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:8px;padding:9px;font-size:12px;font-weight:600;color:#1565C0;cursor:pointer">🔄 Aggiorna</button>'
+        +'</div>';
+      content.innerHTML=h;
+    });
+  },function(){
+    content.innerHTML='<div style="text-align:center;padding:16px;color:#C0534A">❌ GPS negato. Attiva la geolocalizzazione.</div>';
+  },{enableHighAccuracy:true,timeout:10000});
+}
+
+function _distanzaKm(lat1,lon1,lat2,lon2){
+  var R=6371;
+  var dLat=(lat2-lat1)*Math.PI/180;
+  var dLon=(lon2-lon1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function _tempoFa(iso){
+  if(!iso) return '';
+  var diff=Date.now()-new Date(iso).getTime();
+  var min=Math.floor(diff/60000);
+  if(min<1) return 'Adesso';
+  if(min<60) return min+' min fa';
+  var ore=Math.floor(min/60);
+  if(ore<24) return ore+'h fa';
+  return Math.floor(ore/24)+'g fa';
 }
 
 function renderCacciaGPS(container){
