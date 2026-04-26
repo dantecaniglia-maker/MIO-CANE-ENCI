@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.42';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.43';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10913,7 +10913,11 @@ async function renderCacciaProve(container){
     +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc"><img src="logo.jpeg" style="width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:4px" onerror="this.style.display=\'none\'"/>Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>';
 
   try {
-    if(!_currentUser) return;
+    if(!_currentUser){
+      var _lv = document.getElementById('prove-lista');
+      if(_lv) _lv.innerHTML = '<div style="text-align:center;padding:40px;color:#9ab0cc"><div style="font-size:40px;margin-bottom:12px">🏆</div><div style="font-weight:600">Nessuna prova registrata</div><div style="font-size:13px;margin-top:4px">Effettua il login per registrare prove</div></div>';
+      return;
+    }
     var _caniList = window._cacciaCaniList || [];
     var _opzioniCani = _caniList.length
       ? _caniList.map(function(c){ return '<option value="'+c.id+'" data-cat="'+c.categoria+'" data-sis="'+c.sistema_gare+'">'+c.nome+'</option>'; }).join('')
