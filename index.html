@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.47';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.48';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10258,22 +10258,17 @@ async function salvaCarniere(btn){
   toast('✅ Aggiunto al carniere!');
   var _tc = document.getElementById('caccia-tab-content');
   if(_tc && _cacciaTabAttiva==='caccia-carniere') _renderCarniereList(_carniereListaGlobale);
-  // Salva su Supabase in background
-  try {
-    var _recSupa = Object.assign({}, record);
-    delete _recSupa.id;
-    var res = await _supabase.from('caccia_carniere').insert(_recSupa).select();
-    if(res.error){
-      toast('⚠️ Sync: '+res.error.message);
-    } else if(res.data && res.data[0]){
+  var _recSupa = Object.assign({}, record);
+  delete _recSupa.id;
+  _supabase.from('caccia_carniere').insert(_recSupa).select().then(function(res){
+    if(res.error){ toast('⚠️ Sync: '+res.error.message); }
+    else if(res.data && res.data[0]){
       var idx = _carniereListaGlobale.findIndex(function(r){ return r.id === record.id; });
       if(idx >= 0) _carniereListaGlobale[idx] = res.data[0];
       window._cacciaCarniereList = _carniereListaGlobale;
       _salvaCacciaLocale();
     }
-  } catch(e){
-    toast('⚠️ Errore salvataggio: '+e.message);
-  }
+  }).catch(function(e){ toast('⚠️ '+e.message); });
 }
 
 var _carniereListaGlobale = [];
@@ -10357,7 +10352,7 @@ async function eliminaCarniere(id){
   _carniereListaGlobale = _carniereListaGlobale.filter(function(r){ return r.id !== id; });
   window._cacciaCarniereList = _carniereListaGlobale;
   _salvaCacciaLocale();
-  try { if(_currentUser) await _supabase.from('caccia_carniere').delete().eq('id',id); } catch(e){}
+  if(_currentUser) _supabase.from('caccia_carniere').delete().eq('id',id).then(function(){}).catch(function(){});
   toast('🗑️ Eliminato');
   var _tc = document.getElementById('caccia-tab-content');
   if(_tc) renderCacciaCarniere(_tc);
@@ -10761,26 +10756,30 @@ async function salvaCaneC(btn){
     numero_loi: document.getElementById('nc-loi').value.trim()||null,
     microchip: document.getElementById('nc-chip').value.trim()||null
   };
-  try {
-    var res = await _supabase.from('caccia_cani').insert(cane);
-    if(res.error) throw res.error;
-  } catch(e){
-    console.error('[caccia-cani] insert:',e.message);
-    toast('❌ Errore salvataggio: '+e.message);
-    btn.disabled=false; btn.textContent='✓ Salva cane';
-    return;
-  }
+  cane.id = 'loc_'+Date.now();
+  if(!window._cacciaCaniList) window._cacciaCaniList = [];
+  window._cacciaCaniList.unshift(cane);
+  _salvaCacciaLocale();
   var ov = document.getElementById('ov-nuovo-cane-c');
   if(ov) ov.remove();
   toast('✅ Cane aggiunto!');
-  _salvaCacciaLocale();
   var _tc=document.getElementById('caccia-tab-content');
   if(_tc) renderCacciaCani(_tc);
+  var _caneSync = Object.assign({}, cane);
+  delete _caneSync.id;
+  _supabase.from('caccia_cani').insert(_caneSync).select().then(function(res){
+    if(res.error){ toast('⚠️ Sync: '+res.error.message); }
+    else if(res.data && res.data[0]){
+      var _idx = window._cacciaCaniList.findIndex(function(c){ return c.id === cane.id; });
+      if(_idx >= 0) window._cacciaCaniList[_idx] = res.data[0];
+      _salvaCacciaLocale();
+    }
+  }).catch(function(e){ console.warn('[caccia-cani]',e.message); });
 }
 
 async function eliminaCaneC(id){
   if(!confirm('Eliminare questo cane? Anche le prove associate verranno scollegate.')) return;
-  try { if(_currentUser) await _supabase.from('caccia_cani').delete().eq('id',id); } catch(e){}
+  if(_currentUser) _supabase.from('caccia_cani').delete().eq('id',id).then(function(){}).catch(function(){});
   toast('🗑️ Cane eliminato');
   var _tc=document.getElementById('caccia-tab-content');
   if(_tc) renderCacciaCani(_tc);
@@ -10854,20 +10853,18 @@ async function aggiornaCaneC(id, btn){
     numero_loi: document.getElementById('mc-loi').value.trim()||null,
     microchip: document.getElementById('mc-chip').value.trim()||null
   };
-  try {
-    if(_currentUser){
-      var res = await _supabase.from('caccia_cani').update(aggiornamenti).eq('id',id).eq('user_id',_currentUser.id);
-      if(res.error) throw res.error;
-    }
-  } catch(e){
-    toast('❌ Errore: '+e.message);
-    btn.disabled=false; btn.textContent='✓ Salva modifiche';
-    return;
+  if(window._cacciaCaniList){
+    var _idx = window._cacciaCaniList.findIndex(function(c){ return String(c.id)===String(id); });
+    if(_idx >= 0) window._cacciaCaniList[_idx] = Object.assign({}, window._cacciaCaniList[_idx], aggiornamenti);
+    _salvaCacciaLocale();
   }
   document.getElementById('ov-modifica-cane-c').remove();
   toast('✅ Cane aggiornato!');
   var _tc = document.getElementById('caccia-tab-content');
   if(_tc) renderCacciaCani(_tc);
+  if(_currentUser) _supabase.from('caccia_cani').update(aggiornamenti).eq('id',id).eq('user_id',_currentUser.id).then(function(res){
+    if(res.error) toast('⚠️ Sync: '+res.error.message);
+  }).catch(function(e){ console.warn('[caccia-cani]',e.message); });
 }
 
 async function renderCacciaProve(container){
@@ -11174,7 +11171,7 @@ async function salvaProva(btn){
 
 async function eliminaProva(id){
   if(!confirm('Eliminare questa prova?')) return;
-  try { if(_currentUser) await _supabase.from('caccia_prove').delete().eq('id',id); } catch(e){}
+  if(_currentUser) _supabase.from('caccia_prove').delete().eq('id',id).then(function(){}).catch(function(){});
   window._cacciaProveList = (window._cacciaProveList || []).filter(function(p){return p.id!==id;});
   _salvaCacciaLocale();
   toast('🗑️ Prova eliminata');
