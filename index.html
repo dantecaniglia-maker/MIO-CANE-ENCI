@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.55';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.56';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10444,12 +10444,334 @@ function renderSportHome(container){
 }
 
 // ── PLACEHOLDER per le altre tab (implementate nelle fasi successive) ──
+var COMANDI_OBBEDIENZA = [
+  {id:'guinzaglio',nome:'Guinzaglio',icona:'🦮',desc:'Cammina al piede senza tirare',
+    livelli:{
+      base:{titolo:'Cammina rilassato',obiettivo:'Il cane cammina con guinzaglio morbido per 20 metri',
+        passi:['Tieni il guinzaglio corto ma morbido, premia appena il cane è al tuo fianco','Se tira, fermati completamente. Riprendete quando il guinzaglio è morbido','Ogni 10 passi senza tirare, premio vocale + croccantino','Pratica 5-10 minuti, meglio sessioni brevi e frequenti'],sessioni:10},
+      intermedio:{titolo:'Cammina con distrazioni',obiettivo:'Cammina rilassato anche con persone, cani o rumori',
+        passi:['Inizia in un ambiente leggermente più stimolante','Quando appare una distrazione, richiama l\'attenzione con il nome','Premia il contatto visivo e il ritorno al fianco','Aumenta gradualmente le distrazioni'],sessioni:15},
+      avanzato:{titolo:'Al piede senza guinzaglio',obiettivo:'Cammina al fiede in area recintata senza guinzaglio',
+        passi:['In area recintata, togli il guinzaglio quando il cane è calmo','Usa il comando "piede" e parti. Premia ogni 5 passi al fianco','Se si allontana, fermati e richiama. Non rincorrere mai','Sessioni da 3-5 minuti, poi aumenta gradualmente'],sessioni:20}
+    }},
+  {id:'seduto',nome:'Seduto',icona:'🐕',desc:'Si siede a comando e resta',
+    livelli:{
+      base:{titolo:'Seduto base',obiettivo:'Il cane si siede a comando vocale',
+        passi:['Tieni un croccantino sopra il naso del cane, spostalo verso la nuca','Il cane alzerà il muso e si siederà naturalmente. Dì "Seduto" nel momento esatto','Premia immediatamente. Ripeti 10 volte per sessione','Dopo 3 sessioni, prova senza cibo in mano (ma premia dopo)'],sessioni:8},
+      intermedio:{titolo:'Seduto con durata',obiettivo:'Resta seduto 30 secondi con te a 3 metri',
+        passi:['Chiedi "Seduto", conta 5 secondi, poi premia. Aumenta di 5s ogni sessione','Quando resta 15 secondi, fai un passo indietro. Torna e premia','Aumenta gradualmente la distanza (1 passo alla volta)','Se si alza, riportalo nella posizione originale senza premiare'],sessioni:12},
+      avanzato:{titolo:'Seduto con distrazioni',obiettivo:'Resta seduto 60 secondi con distrazioni',
+        passi:['Pratica il seduto in ambienti diversi (parco, strada, negozio pet)','Chiedi il seduto quando passano altri cani o persone','Lancia un gioco a terra — il cane deve restare seduto finché non lo liberi','Usa il comando di rilascio "OK" o "Vai" per indicare che può muoversi'],sessioni:15}
+    }},
+  {id:'terra',nome:'Terra / Cuccia',icona:'🐶',desc:'Si sdraia a terra a comando',
+    livelli:{
+      base:{titolo:'Terra base',obiettivo:'Il cane si sdraia a comando',
+        passi:['Dal seduto, porta il croccantino dal naso verso il pavimento','Appena le zampe anteriori toccano terra, dì "Terra" e premia','Se non si sdraia, guida con il cibo sotto una sedia bassa','Ripeti 10 volte, poi prova con gesto della mano senza cibo'],sessioni:10},
+      intermedio:{titolo:'Terra con durata',obiettivo:'Resta a terra 45 secondi',
+        passi:['Chiedi "Terra", aspetta 5s, premia. Aumenta gradualmente','Fai un passo di lato, torna, premia se è rimasto','Aumenta distanza fino a 3 metri','Se si alza, riportalo in posizione senza premiare'],sessioni:12},
+      avanzato:{titolo:'Terra a distanza',obiettivo:'Si sdraia a comando anche a 5 metri di distanza',
+        passi:['Allenati con gesto chiaro della mano verso il basso','Aumenta la distanza da 1 metro a 5 metri gradualmente','Premia SEMPRE il successo, anche se lento','Pratica in ambienti diversi con distrazioni'],sessioni:18}
+    }},
+  {id:'fermo',nome:'Fermo / Resta',icona:'✋',desc:'Resta nella posizione indicata',
+    livelli:{
+      base:{titolo:'Resta 10 secondi',obiettivo:'Resta fermo per 10 secondi con te davanti',
+        passi:['Metti il cane seduto o a terra. Mostra il palmo aperto e dì "Fermo"','Conta 3 secondi, premia. Aumenta di 2s ogni sessione','Non allontanarti ancora — resta davanti a lui','Se si muove, rimettilo in posizione, ricomincia'],sessioni:10},
+      intermedio:{titolo:'Resta con distanza',obiettivo:'Resta fermo 30 secondi con te a 3 metri',
+        passi:['Chiedi "Fermo", fai 1 passo indietro, torna, premia','Aumenta di 1 passo alla volta fino a 3 metri','Varia la durata: a volte 10s, a volte 30s','Mai richiamare dal fermo — torna SEMPRE tu da lui'],sessioni:15},
+      avanzato:{titolo:'Resta con distrazioni',obiettivo:'Resta fermo 60 secondi mentre cammini intorno',
+        passi:['Gira intorno al cane fermo — se si muove, ricomincia','Fai rimbalzare una pallina — deve restare fermo','Chiedi a qualcuno di passare davanti — premia se resta','Pratica in luoghi pubblici con stimoli reali'],sessioni:20}
+    }},
+  {id:'vieni',nome:'Vieni / Richiamo',icona:'📣',desc:'Torna dal padrone a comando',
+    livelli:{
+      base:{titolo:'Richiamo base',obiettivo:'Viene da te a 3 metri in ambiente chiuso',
+        passi:['In casa, accovacciati, mostra un premio e dì "Vieni!" con voce allegra','Quando arriva, festa ENORME — il richiamo deve essere la cosa più bella','Mai usare "Vieni" per cose negative (bagno, chiudere in gabbia)','Ripeti in stanze diverse, sempre con mega-premio'],sessioni:8},
+      intermedio:{titolo:'Richiamo outdoor',obiettivo:'Viene da te a 10 metri al parco con lunghina',
+        passi:['Usa una lunghina da 5-10 metri al parco','Lascialo esplorare, poi chiama "Vieni!" e corri all\'indietro','Quando arriva, premio speciale (pollo, formaggio — il top)','Mai tirare la lunghina — serve solo come sicurezza'],sessioni:15},
+      avanzato:{titolo:'Richiamo affidabile',obiettivo:'Viene sempre, anche con distrazioni forti',
+        passi:['Pratica il richiamo quando gioca con altri cani (la sfida più grande)','Usa un fischietto — suono unico = premio garantito','Il richiamo non significa fine del gioco — richiama, premia, rilascia','100 richiami premiati per ogni volta che lo chiami senza premio'],sessioni:25}
+    }},
+  {id:'zampa',nome:'Dai la zampa',icona:'🐾',desc:'Porge la zampa su richiesta',
+    livelli:{
+      base:{titolo:'Zampa base',obiettivo:'Porge la zampa nella tua mano',
+        passi:['Chiudi un croccantino nel pugno. Il cane gratterà la mano — dì "Zampa" e apri','Se non gratta, tocca leggermente la zampa per suggerire il movimento','Premia ogni tentativo — anche un piccolo sollevamento della zampa','Dopo 5 sessioni, presenta la mano aperta vuota come target'],sessioni:6},
+      intermedio:{titolo:'Zampa destra e sinistra',obiettivo:'Distingue "Zampa" (destra) e "Altra zampa" (sinistra)',
+        passi:['Presenta la mano destra per zampa destra, sinistra per sinistra','Usa nomi diversi: "Zampa" e "Altra zampa" (o "Dai cinque")','Premia solo la zampa corretta — se sbaglia, nessun premio, riprova','Alterna casualmente per consolidare'],sessioni:10},
+      avanzato:{titolo:'High five e wave',obiettivo:'Fa il "cinque" in aria e saluta con la zampa',
+        passi:['Per high five: alza la mano target più in alto, palmo verso il cane','Per wave (saluto): sposta la mano appena tocca — il cane agiterà la zampa in aria','Premia il gesto in aria senza contatto (wave)','Aggiungi comando vocale "Saluta!" per il wave'],sessioni:12}
+    }},
+  {id:'lascia',nome:'Lascia',icona:'🚫',desc:'Lascia ciò che ha in bocca o ignora oggetti',
+    livelli:{
+      base:{titolo:'Lascia base',obiettivo:'Lascia un croccantino dalla mano chiusa',
+        passi:['Mostra un croccantino nel pugno chiuso. Il cane annuserà e leccherà','Appena si allontana anche di 1 secondo, dì "Bravo!" e dai un premio DIVERSO dall\'altra mano','Il concetto: "Lascia quella cosa = ne arriva una migliore"','Mai forzare la bocca aperta — sempre per scelta del cane'],sessioni:8},
+      intermedio:{titolo:'Lascia oggetti a terra',obiettivo:'Ignora cibo a terra a comando',
+        passi:['Metti un croccantino a terra, copri col piede se necessario','Dì "Lascia" — appena distoglie lo sguardo, premia dall\'altra mano','Aumenta: croccantino scoperto, poi cibo più appetitoso','Mai lasciarlo prendere l\'oggetto "lasciato" — perderebbe significato'],sessioni:12},
+      avanzato:{titolo:'Lascia durante il gioco',obiettivo:'Molla il gioco su comando',
+        passi:['Durante il tira e molla, ferma il gioco e dì "Lascia"','Presenta un secondo gioco o un premio — quando molla, festa','Se non molla, il gioco diventa noioso (non tirare, non muovere)','Appena molla, il gioco riprende — "Lascia" = pausa, non fine'],sessioni:15}
+    }},
+  {id:'piede',nome:'Al piede',icona:'👟',desc:'Cammina al fianco sinistro preciso',
+    livelli:{
+      base:{titolo:'Posizione base',obiettivo:'Si posiziona al fianco sinistro',
+        passi:['Con un premio, guida il cane al tuo fianco sinistro. Dì "Piede" quando è in posizione','Premia quando la sua spalla è allineata alla tua gamba','Ripeti da diverse posizioni — davanti, dietro, di lato','Il cane deve capire che "Piede" = fianco sinistro sempre'],sessioni:10},
+      intermedio:{titolo:'Al piede in movimento',obiettivo:'Cammina al piede per 20 passi senza guinzaglio',
+        passi:['Parti dalla posizione base, fai 3 passi, fermati, premia','Aumenta di 2 passi alla volta — 3, 5, 8, 10, 15, 20','Cambia direzione (a destra, sinistra, dietrofront)','Il cane deve seguire ogni cambio rimanendo al fianco'],sessioni:15},
+      avanzato:{titolo:'Al piede in competizione',obiettivo:'Al piede preciso con seduta automatica alla fermata',
+        passi:['Quando ti fermi, il cane si siede automaticamente al fianco (seduta automatica)','Pratica cambi di velocità — normale, lento, corsa','Aggiungi il dietrofront fluido — il cane gira e si riposiziona','Pratica lo schema completo di obbedienza IGP/Rally'],sessioni:25}
+    }}
+];
+
 function renderSportObbedienza(container){
-  container.innerHTML='<div style="text-align:center;padding:40px 16px">'
-    +'<div style="font-size:48px;margin-bottom:12px">🐕‍🦺</div>'
-    +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#E65100;margin-bottom:8px">Obbedienza Base</div>'
-    +'<div style="font-size:13px;color:#6B8BB0">Prossimamente — Fase 2</div></div>';
+  // Mappa progressi da window vars
+  var progMap={};
+  (_sportObbedienza||[]).forEach(function(o){
+    progMap[o.comando]=o;
+  });
+
+  var html='<div style="margin-bottom:16px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#E65100;margin-bottom:4px">🐕‍🦺 Obbedienza Base</div>'
+    +'<div style="font-size:12px;color:#6B8BB0;margin-bottom:16px">Insegna al tuo cane i fondamentali. Completa tutti gli 8 comandi!</div>';
+
+  // Progress bar generale
+  var totCompl=Object.keys(progMap).filter(function(k){return progMap[k].completato;}).length;
+  var perc=Math.round(totCompl/8*100);
+  html+='<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:14px;padding:14px;margin-bottom:16px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    +'<div style="font-size:13px;font-weight:700;color:#BF360C">Progresso globale</div>'
+    +'<div style="font-size:13px;font-weight:800;color:#E65100">'+totCompl+'/8 comandi</div></div>'
+    +'<div style="background:#FBE9E7;border-radius:8px;height:10px;overflow:hidden">'
+    +'<div style="background:linear-gradient(90deg,#E65100,#FF8F00);height:100%;width:'+perc+'%;border-radius:8px;transition:width .5s"></div></div>'
+    +(totCompl===8?'<div style="text-align:center;margin-top:10px;font-size:14px;font-weight:700;color:#E65100">🎓 Obbedienza Completa! Sei un maestro!</div>':'')
+    +'</div>';
+
+  // Lista comandi
+  COMANDI_OBBEDIENZA.forEach(function(cmd){
+    var prog=progMap[cmd.id]||{sessioni_totali:0,livello:'base',completato:false,ultimo_voto:0};
+    var livelloInfo=cmd.livelli[prog.livello]||cmd.livelli.base;
+    var sessFatte=prog.sessioni_totali||0;
+    var sessTarget=livelloInfo.sessioni||10;
+    var percCmd=Math.min(100,Math.round(sessFatte/sessTarget*100));
+    var livNome=prog.livello==='avanzato'?'Avanzato':prog.livello==='intermedio'?'Intermedio':'Base';
+    var stelle='';
+    for(var s=1;s<=5;s++) stelle+='<span style="color:'+(s<=(prog.ultimo_voto||0)?'#FF8F00':'#ddd')+'">★</span>';
+
+    html+='<div onclick="apriDettaglioComando(\''+cmd.id+'\')" style="display:flex;align-items:center;gap:12px;padding:14px;background:#fff;border-radius:14px;border:1.5px solid '+(prog.completato?'#E65100':'#FFCCBC')+';margin-bottom:10px;cursor:pointer;transition:all .2s">'
+      +'<div style="width:48px;height:48px;border-radius:14px;background:'+(prog.completato?'linear-gradient(135deg,#E65100,#BF360C)':'#FBE9E7')+';display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">'
+      +(prog.completato?'<span style="color:#fff">'+cmd.icona+'</span>':cmd.icona)+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'
+          +'<span style="font-weight:700;font-size:14px;color:#1a1a3a">'+cmd.nome+'</span>'
+          +(prog.completato?'<span style="font-size:11px">🏅</span>':'')
+        +'</div>'
+        +'<div style="font-size:11px;color:#6B8BB0;margin-bottom:4px">'+livNome+' · '+sessFatte+' sessioni · '+stelle+'</div>'
+        +'<div style="background:#FBE9E7;border-radius:6px;height:6px;overflow:hidden">'
+          +'<div style="background:'+(prog.completato?'#E65100':'#FF8F00')+';height:100%;width:'+percCmd+'%;border-radius:6px"></div></div>'
+      +'</div>'
+      +'<span style="color:#FFCCBC;font-size:20px;flex-shrink:0">›</span>'
+    +'</div>';
+  });
+
+  html+='</div>';
+  container.innerHTML=html;
 }
+
+function apriDettaglioComando(cmdId){
+  var cmd=COMANDI_OBBEDIENZA.find(function(c){return c.id===cmdId;});
+  if(!cmd) return;
+  var prog=(_sportObbedienza||[]).find(function(o){return o.comando===cmdId;})||{sessioni_totali:0,livello:'base',completato:false,ultimo_voto:0};
+  var livelloAttuale=prog.livello||'base';
+  var livInfo=cmd.livelli[livelloAttuale]||cmd.livelli.base;
+  var sessFatte=prog.sessioni_totali||0;
+  var sessTarget=livInfo.sessioni||10;
+  var percCmd=Math.min(100,Math.round(sessFatte/sessTarget*100));
+
+  var ov=document.createElement('div');
+  ov.id='ov-cmd-dettaglio';
+  ov.style.cssText='position:fixed;inset:0;z-index:10100;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center';
+  ov.onclick=function(e){if(e.target===ov) ov.remove();};
+
+  var livTabs='<div style="display:flex;gap:6px;margin-bottom:14px">';
+  ['base','intermedio','avanzato'].forEach(function(lv){
+    var att=lv===livelloAttuale;
+    var sbloccato=lv==='base'||(lv==='intermedio'&&(livelloAttuale==='intermedio'||livelloAttuale==='avanzato'))||(lv==='avanzato'&&livelloAttuale==='avanzato');
+    livTabs+='<button style="flex:1;padding:8px;border-radius:8px;font-size:11px;font-weight:700;border:1.5px solid '+(att?'#E65100':'#FFCCBC')+';background:'+(att?'#E65100':'#fff')+';color:'+(att?'#fff':'#BF360C')+';cursor:'+(sbloccato?'pointer':'default')+';opacity:'+(sbloccato?'1':'.4')+'">'
+      +(lv==='base'?'🟢 Base':lv==='intermedio'?'🟡 Intermedio':'🔴 Avanzato')+'</button>';
+  });
+  livTabs+='</div>';
+
+  var passiHtml=livInfo.passi.map(function(p,i){
+    return '<div style="display:flex;gap:10px;margin-bottom:10px">'
+      +'<div style="width:24px;height:24px;border-radius:50%;background:#E65100;color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</div>'
+      +'<div style="font-size:13px;color:#333;line-height:1.5">'+esc(p)+'</div></div>';
+  }).join('');
+
+  ov.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;padding-bottom:40px">'
+    // Header
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    +'<div style="display:flex;align-items:center;gap:10px">'
+    +'<div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#E65100,#BF360C);display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff">'+cmd.icona+'</div>'
+    +'<div><div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#E65100">'+cmd.nome+'</div>'
+    +'<div style="font-size:11px;color:#6B8BB0">'+esc(cmd.desc)+'</div></div></div>'
+    +'<button onclick="document.getElementById(\'ov-cmd-dettaglio\').remove()" style="background:#FBE9E7;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;color:#E65100;font-size:16px">✕</button></div>'
+    // Progress
+    +'<div style="background:#FBE9E7;border-radius:12px;padding:14px;margin-bottom:16px">'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+    +'<span style="font-size:12px;font-weight:700;color:#BF360C">'+esc(livInfo.titolo)+'</span>'
+    +'<span style="font-size:12px;font-weight:800;color:#E65100">'+sessFatte+'/'+sessTarget+' sessioni</span></div>'
+    +'<div style="background:#FFCCBC;border-radius:6px;height:8px;overflow:hidden;margin-bottom:6px">'
+    +'<div style="background:linear-gradient(90deg,#E65100,#FF8F00);height:100%;width:'+percCmd+'%;border-radius:6px"></div></div>'
+    +'<div style="font-size:11px;color:#BF360C">Obiettivo: '+esc(livInfo.obiettivo)+'</div>'
+    +(prog.completato?'<div style="margin-top:8px;text-align:center;font-size:14px;font-weight:700;color:#E65100">🏅 Comando completato!</div>':'')
+    +'</div>'
+    // Livelli tabs
+    +livTabs
+    // Guida step-by-step
+    +'<div style="font-size:13px;font-weight:700;color:#BF360C;margin-bottom:10px">📋 Come insegnare</div>'
+    +passiHtml
+    // Registra sessione
+    +'<div style="background:#fff;border:2px solid #FFCCBC;border-radius:14px;padding:16px;margin-top:16px">'
+    +'<div style="font-size:13px;font-weight:700;color:#E65100;margin-bottom:10px">📝 Registra sessione</div>'
+    +'<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:#BF360C;display:block;margin-bottom:4px">Durata (minuti)</label>'
+    +'<input id="obb-durata" type="number" value="10" min="1" max="120" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:#BF360C;display:block;margin-bottom:4px">Come è andata? (1-5)</label>'
+    +'<div id="obb-voto-stars" style="display:flex;gap:6px;font-size:28px;cursor:pointer">'
+    +'<span onclick="document.getElementById(\'obb-voto\').value=1;_aggiornaStelle(1)" style="color:#ddd">★</span>'
+    +'<span onclick="document.getElementById(\'obb-voto\').value=2;_aggiornaStelle(2)" style="color:#ddd">★</span>'
+    +'<span onclick="document.getElementById(\'obb-voto\').value=3;_aggiornaStelle(3)" style="color:#ddd">★</span>'
+    +'<span onclick="document.getElementById(\'obb-voto\').value=4;_aggiornaStelle(4)" style="color:#ddd">★</span>'
+    +'<span onclick="document.getElementById(\'obb-voto\').value=5;_aggiornaStelle(5)" style="color:#ddd">★</span>'
+    +'</div><input type="hidden" id="obb-voto" value="3"/></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#BF360C;display:block;margin-bottom:4px">Note (opzionale)</label>'
+    +'<textarea id="obb-note" rows="2" placeholder="Come è andata la sessione..." style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:13px;resize:none;box-sizing:border-box"></textarea></div>'
+    +'<button onclick="salvaSessioneObbedienza(this,\''+cmd.id+'\')" style="width:100%;background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">✅ Registra sessione</button>'
+    +'</div>'
+    // Condividi
+    +(prog.completato
+      ?'<button onclick="condividiObbedienzaWA(\''+cmd.id+'\')" style="width:100%;margin-top:10px;background:#25D366;color:#fff;border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">📲 Condividi su WhatsApp</button>'
+      :'')
+    +'</div>';
+  document.body.appendChild(ov);
+  _aggiornaStelle(3);
+}
+
+function _aggiornaStelle(n){
+  var cont=document.getElementById('obb-voto-stars');
+  if(!cont) return;
+  var spans=cont.querySelectorAll('span');
+  for(var i=0;i<spans.length;i++){
+    spans[i].style.color=i<n?'#FF8F00':'#ddd';
+  }
+}
+
+function salvaSessioneObbedienza(btn,cmdId){
+  if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
+  btn.disabled=true;btn.textContent='⏳ Salvataggio...';
+
+  var durata=parseInt((document.getElementById('obb-durata')||{}).value)||10;
+  var voto=parseInt((document.getElementById('obb-voto')||{}).value)||3;
+  var note=(document.getElementById('obb-note')||{}).value||'';
+
+  // Aggiorna progressi obbedienza locali
+  var idx=_sportObbedienza.findIndex(function(o){return o.comando===cmdId;});
+  var prog;
+  if(idx>=0){
+    prog=_sportObbedienza[idx];
+    prog.sessioni_totali=(prog.sessioni_totali||0)+1;
+    prog.ultimo_voto=voto;
+    prog.updated_at=new Date().toISOString();
+  } else {
+    prog={
+      id:'tmp_obb_'+Date.now(),
+      user_id:_currentUser.id,
+      cane_id:null,
+      comando:cmdId,
+      livello:'base',
+      sessioni_totali:1,
+      ultimo_voto:voto,
+      completato:false,
+      badge:null,
+      updated_at:new Date().toISOString()
+    };
+    _sportObbedienza.push(prog);
+    idx=_sportObbedienza.length-1;
+  }
+
+  // Check promozione livello
+  var cmd=COMANDI_OBBEDIENZA.find(function(c){return c.id===cmdId;});
+  if(cmd){
+    var livInfo=cmd.livelli[prog.livello]||cmd.livelli.base;
+    if(prog.sessioni_totali>=livInfo.sessioni){
+      if(prog.livello==='base'){
+        prog.livello='intermedio';
+        toast('🟡 Livello Intermedio sbloccato per '+cmd.nome+'!');
+      } else if(prog.livello==='intermedio'){
+        prog.livello='avanzato';
+        toast('🔴 Livello Avanzato sbloccato per '+cmd.nome+'!');
+      } else if(prog.livello==='avanzato'&&!prog.completato){
+        prog.completato=true;
+        prog.badge=cmd.nome+' Master 🏅';
+        toast('🏅 '+cmd.nome+' COMPLETATO! Badge: '+prog.badge);
+      }
+    }
+  }
+  _sportObbedienza[idx]=prog;
+
+  // Salva allenamento nel diario
+  var allen={
+    id:'tmp_allen_'+Date.now(),
+    user_id:_currentUser.id,
+    cane_id:null,
+    cane_nome:'',
+    disciplina:'obbedienza',
+    tipo:'obbedienza_'+cmdId,
+    data:new Date().toISOString().slice(0,10),
+    durata_minuti:durata,
+    note:note,
+    voto:voto,
+    comando:cmdId,
+    livello:prog.livello,
+    completato:false,
+    created_at:new Date().toISOString()
+  };
+  _sportAllenamenti.unshift(allen);
+
+  _salvaSportLocale();
+
+  // Chiudi overlay e aggiorna
+  var ov=document.getElementById('ov-cmd-dettaglio');
+  if(ov) ov.remove();
+  toast('✅ Sessione '+cmd.nome+' registrata!');
+  switchSportTab('sport-obbedienza');
+
+  // Supabase background — upsert obbedienza
+  var obbRec={
+    user_id:_currentUser.id,
+    cane_id:prog.cane_id||null,
+    comando:cmdId,
+    livello:prog.livello,
+    sessioni_totali:prog.sessioni_totali,
+    ultimo_voto:voto,
+    completato:prog.completato||false,
+    badge:prog.badge||null,
+    updated_at:new Date().toISOString()
+  };
+  _supabase.from('sport_obbedienza').upsert(obbRec,{onConflict:'user_id,cane_id,comando'}).then(function(r){
+    if(r.error) console.warn('[sport] obb upsert:',r.error.message);
+  });
+
+  // Salva allenamento
+  var allenRec=Object.assign({},allen);
+  delete allenRec.id;
+  _supabase.from('sport_allenamenti').insert(allenRec).then(function(r){
+    if(r.error) console.warn('[sport] allen save:',r.error.message);
+  });
+}
+
+function condividiObbedienzaWA(cmdId){
+  var cmd=COMANDI_OBBEDIENZA.find(function(c){return c.id===cmdId;});
+  if(!cmd) return;
+  var msg=encodeURIComponent('🐕‍🦺 Il mio cane ha completato il comando "'+cmd.nome+'" su BreedPed Sport!\n🏅 Badge: '+cmd.nome+' Master\nApp: mio-cane-enci.vercel.app');
+  window.open('https://wa.me/?text='+msg,'_blank');
+}
+
 function renderSportGare(container){
   container.innerHTML='<div style="text-align:center;padding:40px 16px">'
     +'<div style="font-size:48px;margin-bottom:12px">🏋️</div>'
