@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.59';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.60';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -11637,6 +11637,79 @@ function apriEmergenzeSport(){
   document.body.appendChild(ov);
 }
 
+function apriQuizSportivo(){
+  var ov=document.createElement('div');
+  ov.id='ov-quiz-sport';
+  ov.style.cssText='position:fixed;inset:0;z-index:10100;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
+
+  var domande=[
+    {q:'Quanti anni ha il tuo cane?',opts:[
+      {t:'Meno di 1 anno',pt:7},{t:'1-3 anni',pt:10},{t:'3-7 anni',pt:8},{t:'Più di 7 anni',pt:4}]},
+    {q:'Quanta energia ha?',opts:[
+      {t:'🔋 Pila inesauribile',pt:10},{t:'⚡ Attivo e giocoso',pt:8},{t:'😌 Tranquillo',pt:5},{t:'😴 Molto calmo',pt:3}]},
+    {q:'Conosce comandi base (seduto, vieni)?',opts:[
+      {t:'Sì, perfettamente',pt:10},{t:'Qualcuno sì',pt:7},{t:'Pochissimo',pt:4},{t:'Per niente',pt:2}]},
+    {q:'Quanto tempo hai al giorno per allenare?',opts:[
+      {t:'1+ ora',pt:10},{t:'30 min',pt:8},{t:'15 min',pt:5},{t:'Quasi niente',pt:2}]},
+    {q:'Qual è il tuo obiettivo?',opts:[
+      {t:'🏆 Competizioni e titoli',pt:10},{t:'💪 Migliorare il cane',pt:8},{t:'😄 Divertirsi insieme',pt:6},{t:'🤔 Solo curiosità',pt:3}]}
+  ];
+
+  window._quizStep=0;
+  window._quizScore=0;
+  window._quizDomande=domande;
+  _renderQuizStep(ov);
+  document.body.appendChild(ov);
+}
+
+function _renderQuizStep(ov){
+  var step=window._quizStep;
+  var domande=window._quizDomande;
+
+  if(step>=domande.length){
+    // Risultato
+    var score=window._quizScore;
+    var maxScore=domande.length*10;
+    var perc=Math.round(score/maxScore*100);
+    var livello,consiglio,disc;
+    if(perc>=80){livello='🌟 Altissimo!';consiglio='Il tuo cane è un atleta nato. Prova IGP o Agility competitivo!';disc='difesa';}
+    else if(perc>=60){livello='💪 Alto';consiglio='Ottime basi! Inizia con l\'obbedienza e passa ad Agility.';disc='agility';}
+    else if(perc>=40){livello='🐕 Medio';consiglio='Parti dall\'obbedienza base — vedrai progressi subito!';disc='obbedienza';}
+    else{livello='🐣 Da costruire';consiglio='Nessun problema! L\'obbedienza base è il punto di partenza perfetto.';disc='obbedienza';}
+
+    ov.innerHTML='<div style="background:#fff;border-radius:20px;max-width:400px;width:100%;padding:28px;text-align:center">'
+      +'<div style="font-size:56px;margin-bottom:8px;animation:bounce 1s">🏅</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#E65100;margin-bottom:4px">Potenziale Sportivo</div>'
+      +'<div style="font-size:36px;font-weight:800;color:#BF360C;margin-bottom:4px">'+perc+'%</div>'
+      +'<div style="font-size:16px;font-weight:700;color:#E65100;margin-bottom:12px">'+livello+'</div>'
+      +'<div style="font-size:13px;color:#6B8BB0;margin-bottom:20px;line-height:1.5">'+consiglio+'</div>'
+      +'<div style="background:#FBE9E7;border-radius:12px;padding:12px;margin-bottom:16px">'
+        +'<div style="font-size:11px;color:#BF360C;font-weight:600;margin-bottom:6px">Disciplina consigliata</div>'
+        +'<div style="font-size:18px;font-weight:800;color:#E65100">'
+        +(disc==='difesa'?'🛡️ Guardia/Difesa':disc==='agility'?'🚧 Agility':'🐕‍🦺 Obbedienza Base')
+        +'</div></div>'
+      +'<div style="display:flex;gap:8px">'
+        +'<button onclick="document.getElementById(\'ov-quiz-sport\').remove();scegliModalita(\'sport\')" style="flex:1;background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:12px;padding:13px;font-weight:700;cursor:pointer">🐕‍🦺 Inizia Sport!</button>'
+        +'<button onclick="document.getElementById(\'ov-quiz-sport\').remove()" style="background:#FBE9E7;color:#BF360C;border:1.5px solid #FFCCBC;border-radius:12px;padding:13px;font-weight:700;cursor:pointer">Dopo</button>'
+      +'</div></div>';
+    return;
+  }
+
+  var d=domande[step];
+  ov.innerHTML='<div style="background:#fff;border-radius:20px;max-width:400px;width:100%;padding:28px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    +'<div style="font-size:11px;font-weight:700;color:#BF360C">'+(step+1)+'/'+domande.length+'</div>'
+    +'<button onclick="document.getElementById(\'ov-quiz-sport\').remove()" style="background:#FBE9E7;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;color:#BF360C;font-weight:700">✕</button></div>'
+    +'<div style="background:#FBE9E7;border-radius:8px;height:6px;overflow:hidden;margin-bottom:20px">'
+    +'<div style="background:linear-gradient(90deg,#E65100,#FF8F00);height:100%;width:'+Math.round((step+1)/domande.length*100)+'%;border-radius:6px"></div></div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#E65100;margin-bottom:20px;text-align:center">'+d.q+'</div>'
+    +'<div style="display:flex;flex-direction:column;gap:10px">'
+    +d.opts.map(function(o,i){
+      return '<button onclick="window._quizScore+='+o.pt+';window._quizStep++;_renderQuizStep(document.getElementById(\'ov-quiz-sport\'))" style="width:100%;background:#fff;border:2px solid #FFCCBC;border-radius:12px;padding:14px;font-size:14px;font-weight:600;color:#1a1a3a;cursor:pointer;text-align:left;transition:all .2s" onmouseover="this.style.borderColor=\'#E65100\';this.style.background=\'#FBE9E7\'" onmouseout="this.style.borderColor=\'#FFCCBC\';this.style.background=\'#fff\'">'+o.t+'</button>';
+    }).join('')
+    +'</div></div>';
+}
+
 // ── Aggiungi cane sport ──
 function apriAggiungiCaneSport(){
   var ov=document.createElement('div');
@@ -13591,6 +13664,10 @@ async function salvaUscitaCaccia(btn){
 async function caricaFamiglia(){
   if(!_currentUser) return;
 
+  if(!localStorage.getItem('bp_famiglia_first_use')){
+    try{localStorage.setItem('bp_famiglia_first_use',Date.now().toString());}catch(e){}
+  }
+
   // PASSO 1 — localStorage: istantaneo, 0ms
   if(_caricaFamLocale()){
     console.log('[Famiglia] dati locali OK, mostro UI');
@@ -14230,6 +14307,17 @@ function renderHealthDashboard(container){
       +'</svg>';
   }
 
+  // Ponte Famiglia → Sport
+  var _ponteDismissed=localStorage.getItem('bp_sport_ponte_dismissed')==='true';
+  var _caneEta=0;
+  if(_famigliaCaneSelezionato&&_famigliaCaneSelezionato.data_nascita){
+    try{_caneEta=Math.floor((Date.now()-new Date(_famigliaCaneSelezionato.data_nascita).getTime())/31536000000);}catch(e){}
+  }
+  var _famAttivita=(_famigliaLogTutti||[]).length;
+  var _profCreato=localStorage.getItem('bp_famiglia_first_use');
+  if(!_profCreato){try{localStorage.setItem('bp_famiglia_first_use',Date.now().toString());_profCreato=Date.now().toString();}catch(e){}}
+  var _mostraPonte=!_ponteDismissed&&_caneEta>=0.5&&_famAttivita>=5;
+
   container.innerHTML =
 
   // ── BLOCCO 2: Saluto + Streak ──
@@ -14315,6 +14403,25 @@ function renderHealthDashboard(container){
   +mkRing('🏃',kmOggi,3,'#90CAF9','uscita')
   +'</div>'
   +'</div></div>'
+
+  // Ponte Sport
+  +(_mostraPonte
+    ?'<div id="ponte-sport-banner" style="background:linear-gradient(135deg,#FFF3E0,#FBE9E7);border:2px solid #FFCCBC;border-radius:16px;padding:16px;margin-bottom:16px;position:relative">'
+      +'<button onclick="localStorage.setItem(\'bp_sport_ponte_dismissed\',\'true\');document.getElementById(\'ponte-sport-banner\').remove()" style="position:absolute;top:8px;right:8px;background:none;border:none;font-size:16px;color:#BF360C;cursor:pointer">✕</button>'
+      +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'
+        +'<div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#E65100,#BF360C);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🐕‍🦺</div>'
+        +'<div>'
+          +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#E65100">Il tuo cane è pronto per lo sport?</div>'
+          +'<div style="font-size:11px;color:#6B8BB0;line-height:1.4;margin-top:2px">Insegna i comandi base: seduto, terra, richiamo e tanto altro. Gratis!</div>'
+        +'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
+        +'<button onclick="scegliModalita(\'sport\')" style="flex:1;background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">🐕‍🦺 Prova obbedienza base</button>'
+        +'<button onclick="apriQuizSportivo()" style="background:#FFF3E0;color:#E65100;border:1.5px solid #FFCCBC;border-radius:10px;padding:11px;font-size:12px;font-weight:600;cursor:pointer">📊 Quiz</button>'
+        +'<button onclick="localStorage.setItem(\'bp_sport_ponte_dismissed\',\'true\');document.getElementById(\'ponte-sport-banner\').remove()" style="background:#fff;color:#BF360C;border:1.5px solid #FFCCBC;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer">Non ora</button>'
+      +'</div>'
+    +'</div>'
+    :'')
 
   // ── BLOCCO 3: Punti giornalieri ──
   +'<div style="background:linear-gradient(135deg,#FFF8E7,#FFFDF5);border:1.5px solid #F0D98A;border-radius:16px;padding:16px;margin-bottom:14px">'
