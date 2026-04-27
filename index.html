@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.56';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.57';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10772,12 +10772,324 @@ function condividiObbedienzaWA(cmdId){
   window.open('https://wa.me/?text='+msg,'_blank');
 }
 
+var SPORT_DISCIPLINE = [
+  {id:'obbedienza',nome:'Obbedienza',ico:'🐕‍🦺',colore:'#E65100',
+    prove:['Rally Obedience 1','Rally Obedience 2','Rally Obedience 3','BH - Begleithund','Obedience Internazionale']},
+  {id:'difesa',nome:'Guardia/Difesa',ico:'🛡️',colore:'#1565C0',
+    prove:['IGP-1','IGP-2','IGP-3','Mondioring I','Mondioring II','Mondioring III','Ring Française I','Ring Française II','Ring Française III','BH - Begleithund','AD - Ausdauerprüfung','Campionato Utilità e Difesa']},
+  {id:'soccorso',nome:'Soccorso',ico:'🚑',colore:'#2E7D32',
+    prove:['SAR Superficie (FL)','SAR Macerie (T)','SAR Pista (F)','Mantrailing (MT)','Soccorso in acqua','Trofeo ENCI Cani da Soccorso','Urban Search and Rescue']},
+  {id:'pastore',nome:'Conduzione/Pastore',ico:'🐾',colore:'#6D4C41',
+    prove:['Sheepdog Trial (ISDS)','Pastore Trial (FIDASC)','Herd Trial','Prova conduzione gregge ENCI','Treibball']},
+  {id:'agility',nome:'Agility',ico:'🚧',colore:'#FF6F00',
+    prove:['Agility 1','Agility 2','Agility 3','Jumping 1','Jumping 2','Jumping 3','Snooker','Gambler','Open Agility','CAE-1','CAE-2','CAE-3']},
+  {id:'corsa',nome:'Corsa',ico:'🏃',colore:'#7B1FA2',
+    prove:['Lure Coursing (FCI)','Straight Racing (ENCI)','Coursing 500m','Coursing 1000m','Speed test']}
+];
+
 function renderSportGare(container){
-  container.innerHTML='<div style="text-align:center;padding:40px 16px">'
-    +'<div style="font-size:48px;margin-bottom:12px">🏋️</div>'
-    +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#E65100;margin-bottom:8px">Gare e Prove</div>'
-    +'<div style="font-size:13px;color:#6B8BB0">Prossimamente — Fase 3</div></div>';
+  var filtro=window._sportGareFiltro||'tutti';
+
+  // Filtra prove
+  var lista=(_sportProve||[]).slice();
+  if(filtro!=='tutti') lista=lista.filter(function(p){return p.disciplina===filtro;});
+
+  var html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#E65100">🏋️ Gare e Prove</div>'
+    +'<button onclick="apriNuovaGaraSport()" style="background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Nuova gara</button>'
+    +'</div>';
+
+  // Filtro discipline
+  html+='<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:14px;-webkit-overflow-scrolling:touch">';
+  html+='<button onclick="window._sportGareFiltro=\'tutti\';switchSportTab(\'sport-gare\')" style="white-space:nowrap;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;border:1.5px solid '+(filtro==='tutti'?'#E65100':'#FFCCBC')+';background:'+(filtro==='tutti'?'#E65100':'#fff')+';color:'+(filtro==='tutti'?'#fff':'#BF360C')+';cursor:pointer">Tutte</button>';
+  SPORT_DISCIPLINE.forEach(function(d){
+    html+='<button onclick="window._sportGareFiltro=\''+d.id+'\';switchSportTab(\'sport-gare\')" style="white-space:nowrap;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;border:1.5px solid '+(filtro===d.id?d.colore:'#FFCCBC')+';background:'+(filtro===d.id?d.colore:'#fff')+';color:'+(filtro===d.id?'#fff':'#BF360C')+';cursor:pointer">'+d.ico+' '+d.nome+'</button>';
+  });
+  html+='</div>';
+
+  if(!lista.length){
+    html+='<div style="text-align:center;padding:40px 16px">'
+      +'<div style="font-size:48px;margin-bottom:12px">🏅</div>'
+      +'<div style="font-size:14px;color:#6B8BB0;margin-bottom:8px">Nessuna gara registrata'+(filtro!=='tutti'?' per questa disciplina':'')+'</div>'
+      +'<div style="font-size:12px;color:#9ab0cc;margin-bottom:16px">Registra la tua prima prova sportiva!</div>'
+      +'<button onclick="apriNuovaGaraSport()" style="background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer">+ Registra gara</button></div>';
+  } else {
+    lista.forEach(function(p){
+      var disc=SPORT_DISCIPLINE.find(function(d){return d.id===p.disciplina;})||{ico:'🏅',nome:p.disciplina||'',colore:'#E65100'};
+      var det=p.dettagli||{};
+      var detHtml='';
+      // Dettagli specifici per disciplina
+      if(p.disciplina==='difesa'&&(det.sezione_a||det.sezione_b||det.sezione_c)){
+        detHtml='<div style="display:flex;gap:8px;margin-top:6px;font-size:11px">'
+          +(det.sezione_a?'<span style="background:#EEF3FB;border-radius:6px;padding:2px 8px">A: '+det.sezione_a+'</span>':'')
+          +(det.sezione_b?'<span style="background:#EEF3FB;border-radius:6px;padding:2px 8px">B: '+det.sezione_b+'</span>':'')
+          +(det.sezione_c?'<span style="background:#EEF3FB;border-radius:6px;padding:2px 8px">C: '+det.sezione_c+'</span>':'')
+          +'</div>';
+      }
+      if(p.disciplina==='agility'&&(det.tempo||det.penalita)){
+        detHtml='<div style="display:flex;gap:8px;margin-top:6px;font-size:11px">'
+          +(det.tempo?'<span style="background:#FFF3E0;border-radius:6px;padding:2px 8px">⏱ '+det.tempo+'s</span>':'')
+          +(det.tps?'<span style="background:#FFF3E0;border-radius:6px;padding:2px 8px">TPS: '+det.tps+'s</span>':'')
+          +(det.penalita?'<span style="background:#FFEBEE;border-radius:6px;padding:2px 8px">Pen: '+det.penalita+'</span>':'')
+          +'</div>';
+      }
+      if(p.disciplina==='corsa'&&(det.tempo||det.velocita)){
+        detHtml='<div style="display:flex;gap:8px;margin-top:6px;font-size:11px">'
+          +(det.tempo?'<span style="background:#F3E5F5;border-radius:6px;padding:2px 8px">⏱ '+det.tempo+'s</span>':'')
+          +(det.velocita?'<span style="background:#F3E5F5;border-radius:6px;padding:2px 8px">🚀 '+det.velocita+' km/h</span>':'')
+          +'</div>';
+      }
+
+      html+='<div style="background:#fff;border-radius:14px;border:1.5px solid #FFCCBC;padding:14px;margin-bottom:10px">'
+        +'<div style="display:flex;align-items:flex-start;gap:10px">'
+        +'<div style="width:40px;height:40px;border-radius:10px;background:'+disc.colore+';display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;flex-shrink:0">'+disc.ico+'</div>'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'
+            +'<span style="font-weight:700;font-size:14px;color:#1a1a3a">'+esc(p.tipo_prova||'Prova')+'</span>'
+            +(p.punteggio?'<span style="background:#FBE9E7;color:#E65100;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px">'+esc(p.punteggio)+'</span>':'')
+            +(p.qualifica?'<span style="background:#FFF8E1;color:#FF6F00;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px">'+esc(p.qualifica)+'</span>':'')
+          +'</div>'
+          +'<div style="font-size:11px;color:#6B8BB0;margin-top:3px">📅 '+esc(p.data||'')+(p.luogo?' · 📍 '+esc(p.luogo):'')+'</div>'
+          +(p.ente||p.giudice?'<div style="font-size:11px;color:#9ab0cc;margin-top:2px">'+(p.ente?esc(p.ente):'')+(p.giudice?' · Giudice: '+esc(p.giudice):'')+'</div>':'')
+          +(p.certificato?'<div style="margin-top:4px"><span style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px">🏆 '+esc(p.certificato)+'</span></div>':'')
+          +detHtml
+          +(p.note?'<div style="font-size:11px;color:#888;margin-top:4px;font-style:italic">'+esc(p.note)+'</div>':'')
+        +'</div></div>'
+        +'<div style="display:flex;gap:6px;margin-top:10px;border-top:1px solid #FBE9E7;padding-top:10px">'
+        +'<button onclick="condividiGaraSportWA(\''+p.id+'\')" style="flex:1;background:#25D366;color:#fff;border:none;border-radius:8px;padding:7px;font-size:11px;font-weight:600;cursor:pointer">📲 Condividi</button>'
+        +'<button onclick="eliminaGaraSport(\''+p.id+'\')" style="background:#FFEBEE;color:#C62828;border:none;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer">🗑️</button>'
+        +'</div></div>';
+    });
+  }
+
+  // Statistiche rapide
+  if(_sportProve.length){
+    var totPerDisc={};
+    _sportProve.forEach(function(p){
+      totPerDisc[p.disciplina]=(totPerDisc[p.disciplina]||0)+1;
+    });
+    html+='<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:14px;padding:14px;margin-top:12px">'
+      +'<div style="font-size:12px;font-weight:700;color:#BF360C;margin-bottom:8px">📊 Riepilogo</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:8px">';
+    SPORT_DISCIPLINE.forEach(function(d){
+      if(totPerDisc[d.id]) html+='<span style="background:'+d.colore+';color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">'+d.ico+' '+totPerDisc[d.id]+' '+d.nome+'</span>';
+    });
+    html+='</div></div>';
+  }
+
+  container.innerHTML=html;
 }
+
+function apriNuovaGaraSport(preselDisc){
+  var ov=document.createElement('div');
+  ov.id='ov-nuova-gara-sport';
+  ov.style.cssText='position:fixed;inset:0;z-index:10100;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center';
+  ov.onclick=function(e){if(e.target===ov) ov.remove();};
+
+  var discOpts=SPORT_DISCIPLINE.map(function(d){
+    return '<option value="'+d.id+'"'+(preselDisc===d.id?' selected':'')+'>'+d.ico+' '+d.nome+'</option>';
+  }).join('');
+
+  var caniOpts='<option value="">— Nessun cane —</option>';
+  (_sportCani||[]).forEach(function(c){
+    caniOpts+='<option value="'+c.id+'">'+esc(c.nome)+'</option>';
+  });
+
+  ov.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;padding-bottom:40px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#E65100">🏋️ Nuova gara</div>'
+    +'<button onclick="document.getElementById(\'ov-nuova-gara-sport\').remove()" style="background:#FBE9E7;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;color:#E65100">✕</button></div>'
+    // Cane
+    +'<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Cane</label>'
+    +'<select id="ng-cane" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px">'+caniOpts+'</select></div>'
+    // Disciplina
+    +'<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Disciplina *</label>'
+    +'<select id="ng-disciplina" onchange="_aggiornaProveSelect()" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px">'+discOpts+'</select></div>'
+    // Tipo prova (dinamico)
+    +'<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Tipo prova *</label>'
+    +'<select id="ng-tipo" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px"></select></div>'
+    // Data + Luogo
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Data *</label>'
+    +'<input id="ng-data" type="date" value="'+new Date().toISOString().slice(0,10)+'" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Luogo</label>'
+    +'<input id="ng-luogo" placeholder="Es. Verona" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px;box-sizing:border-box"/></div></div>'
+    // Ente + Giudice
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Ente</label>'
+    +'<select id="ng-ente" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px">'
+    +'<option value="">—</option><option>ENCI</option><option>FCI</option><option>SV/JGHV</option><option>FIDASC</option><option>CSEN</option><option>Club di razza</option><option>Regionale</option></select></div>'
+    +'<div><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Giudice</label>'
+    +'<input id="ng-giudice" placeholder="Nome giudice" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px;box-sizing:border-box"/></div></div>'
+    // Punteggio + Qualifica
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Punteggio</label>'
+    +'<input id="ng-punteggio" placeholder="Es. 284/300" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Qualifica</label>'
+    +'<select id="ng-qualifica" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px">'
+    +'<option value="">—</option><option value="ECC">Eccellente (V)</option><option value="MB">Molto Buono (SG)</option><option value="B">Buono (G)</option><option value="S">Sufficiente (Bfr)</option><option value="NC">Non classificato</option><option value="ELIM">Eliminato</option><option value="NQ">Non qualificato</option></select></div></div>'
+    // Certificato
+    +'<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Certificato ottenuto</label>'
+    +'<select id="ng-cert" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px">'
+    +'<option value="">Nessuno</option><option value="CAC">CAC</option><option value="CACIT">CACIT</option><option value="rCAC">rCAC</option><option value="rCACIT">rCACIT</option>'
+    +'<option value="CAE-1">CAE-1 (Agility)</option><option value="CAE-2">CAE-2</option><option value="CAE-3">CAE-3</option>'
+    +'<option value="CACT">CACT</option><option value="rCACT">rCACT</option><option value="CACIL">CACIL</option></select></div>'
+    // Campi specifici (container dinamico)
+    +'<div id="ng-campi-extra"></div>'
+    // Note
+    +'<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Note</label>'
+    +'<textarea id="ng-note" rows="2" placeholder="Note sulla gara..." style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:13px;resize:none;box-sizing:border-box"></textarea></div>'
+    // Bottone
+    +'<button onclick="salvaGaraSport(this)" style="width:100%;background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">✅ Registra gara</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+  _aggiornaProveSelect();
+}
+
+function _aggiornaProveSelect(){
+  var discId=(document.getElementById('ng-disciplina')||{}).value;
+  var sel=document.getElementById('ng-tipo');
+  var extra=document.getElementById('ng-campi-extra');
+  if(!sel) return;
+  var disc=SPORT_DISCIPLINE.find(function(d){return d.id===discId;});
+  sel.innerHTML=(disc?disc.prove:[]).map(function(p){return '<option>'+p+'</option>';}).join('');
+
+  // Campi extra per disciplina
+  if(!extra) return;
+  if(discId==='difesa'){
+    extra.innerHTML='<div style="background:#EEF3FB;border-radius:12px;padding:12px;margin-bottom:12px">'
+      +'<div style="font-size:11px;font-weight:700;color:#1565C0;margin-bottom:8px">🛡️ Sezioni IGP</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'
+      +'<div><label style="font-size:10px;color:#6B8BB0">Sez. A (Pista)</label>'
+      +'<input id="ng-sez-a" type="number" min="0" max="100" placeholder="0-100" style="width:100%;padding:8px;border:1px solid #DDEAFF;border-radius:6px;font-size:13px;text-align:center;box-sizing:border-box"/></div>'
+      +'<div><label style="font-size:10px;color:#6B8BB0">Sez. B (Obb.)</label>'
+      +'<input id="ng-sez-b" type="number" min="0" max="100" placeholder="0-100" style="width:100%;padding:8px;border:1px solid #DDEAFF;border-radius:6px;font-size:13px;text-align:center;box-sizing:border-box"/></div>'
+      +'<div><label style="font-size:10px;color:#6B8BB0">Sez. C (Difesa)</label>'
+      +'<input id="ng-sez-c" type="number" min="0" max="100" placeholder="0-100" style="width:100%;padding:8px;border:1px solid #DDEAFF;border-radius:6px;font-size:13px;text-align:center;box-sizing:border-box"/></div>'
+      +'</div></div>';
+  } else if(discId==='agility'){
+    extra.innerHTML='<div style="background:#FFF3E0;border-radius:12px;padding:12px;margin-bottom:12px">'
+      +'<div style="font-size:11px;font-weight:700;color:#FF6F00;margin-bottom:8px">🚧 Dati Agility</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'
+      +'<div><label style="font-size:10px;color:#6B8BB0">Tempo (sec)</label>'
+      +'<input id="ng-tempo" type="number" step="0.01" placeholder="42.30" style="width:100%;padding:8px;border:1px solid #FFE0B2;border-radius:6px;font-size:13px;text-align:center;box-sizing:border-box"/></div>'
+      +'<div><label style="font-size:10px;color:#6B8BB0">TPS (sec)</label>'
+      +'<input id="ng-tps" type="number" step="0.01" placeholder="48.00" style="width:100%;padding:8px;border:1px solid #FFE0B2;border-radius:6px;font-size:13px;text-align:center;box-sizing:border-box"/></div>'
+      +'<div><label style="font-size:10px;color:#6B8BB0">Penalità</label>'
+      +'<input id="ng-penalita" type="number" min="0" placeholder="0" style="width:100%;padding:8px;border:1px solid #FFE0B2;border-radius:6px;font-size:13px;text-align:center;box-sizing:border-box"/></div>'
+      +'</div></div>';
+  } else if(discId==='corsa'){
+    extra.innerHTML='<div style="background:#F3E5F5;border-radius:12px;padding:12px;margin-bottom:12px">'
+      +'<div style="font-size:11px;font-weight:700;color:#7B1FA2;margin-bottom:8px">🏃 Dati Corsa</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+      +'<div><label style="font-size:10px;color:#6B8BB0">Tempo (sec)</label>'
+      +'<input id="ng-tempo-corsa" type="number" step="0.01" placeholder="32.50" style="width:100%;padding:8px;border:1px solid #E1BEE7;border-radius:6px;font-size:13px;text-align:center;box-sizing:border-box"/></div>'
+      +'<div><label style="font-size:10px;color:#6B8BB0">Velocità max (km/h)</label>'
+      +'<input id="ng-vel" type="number" step="0.1" placeholder="55.0" style="width:100%;padding:8px;border:1px solid #E1BEE7;border-radius:6px;font-size:13px;text-align:center;box-sizing:border-box"/></div>'
+      +'</div></div>';
+  } else {
+    extra.innerHTML='';
+  }
+}
+
+function salvaGaraSport(btn){
+  var disciplina=(document.getElementById('ng-disciplina')||{}).value;
+  var tipo=(document.getElementById('ng-tipo')||{}).value;
+  var data=(document.getElementById('ng-data')||{}).value;
+  if(!disciplina||!tipo||!data){toast('Compila disciplina, prova e data');return;}
+  if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
+  btn.disabled=true;btn.textContent='⏳';
+
+  var caneId=(document.getElementById('ng-cane')||{}).value||null;
+  var caneNome='';
+  if(caneId){
+    var _c=_sportCani.find(function(c){return c.id===caneId;});
+    if(_c) caneNome=_c.nome;
+  }
+
+  // Dettagli specifici
+  var dettagli={};
+  if(disciplina==='difesa'){
+    var sa=(document.getElementById('ng-sez-a')||{}).value;
+    var sb=(document.getElementById('ng-sez-b')||{}).value;
+    var sc=(document.getElementById('ng-sez-c')||{}).value;
+    if(sa) dettagli.sezione_a=parseInt(sa);
+    if(sb) dettagli.sezione_b=parseInt(sb);
+    if(sc) dettagli.sezione_c=parseInt(sc);
+  } else if(disciplina==='agility'){
+    var te=(document.getElementById('ng-tempo')||{}).value;
+    var tp=(document.getElementById('ng-tps')||{}).value;
+    var pe=(document.getElementById('ng-penalita')||{}).value;
+    if(te) dettagli.tempo=parseFloat(te);
+    if(tp) dettagli.tps=parseFloat(tp);
+    if(pe) dettagli.penalita=parseInt(pe);
+  } else if(disciplina==='corsa'){
+    var tc=(document.getElementById('ng-tempo-corsa')||{}).value;
+    var ve=(document.getElementById('ng-vel')||{}).value;
+    if(tc) dettagli.tempo=parseFloat(tc);
+    if(ve) dettagli.velocita=parseFloat(ve);
+  }
+
+  var prova={
+    id:'tmp_gara_'+Date.now(),
+    user_id:_currentUser.id,
+    cane_id:caneId,
+    cane_nome:caneNome,
+    disciplina:disciplina,
+    tipo_prova:tipo,
+    data:data,
+    luogo:(document.getElementById('ng-luogo')||{}).value||'',
+    ente:(document.getElementById('ng-ente')||{}).value||'',
+    giudice:(document.getElementById('ng-giudice')||{}).value||'',
+    punteggio:(document.getElementById('ng-punteggio')||{}).value||'',
+    qualifica:(document.getElementById('ng-qualifica')||{}).value||'',
+    certificato:(document.getElementById('ng-cert')||{}).value||'',
+    dettagli:dettagli,
+    note:(document.getElementById('ng-note')||{}).value||'',
+    created_at:new Date().toISOString()
+  };
+
+  // Ottimistic
+  _sportProve.unshift(prova);
+  _salvaSportLocale();
+  var ov=document.getElementById('ov-nuova-gara-sport');
+  if(ov) ov.remove();
+  toast('✅ Gara registrata!');
+  switchSportTab('sport-gare');
+
+  // Supabase background
+  var rec=Object.assign({},prova);
+  delete rec.id;
+  rec.dettagli=JSON.stringify(rec.dettagli);
+  _supabase.from('sport_prove').insert(rec).select().then(function(res){
+    if(res.error){console.warn('[sport] gara save:',res.error.message);return;}
+    if(res.data&&res.data[0]){
+      var idx=_sportProve.findIndex(function(p){return p.id===prova.id;});
+      if(idx>=0) _sportProve[idx]=res.data[0];
+      _salvaSportLocale();
+    }
+  });
+}
+
+function condividiGaraSportWA(provaId){
+  var p=(_sportProve||[]).find(function(x){return x.id===provaId;});
+  if(!p) return;
+  var msg=encodeURIComponent('🏋️ Risultato gara su BreedPed Sport!\n'+p.tipo_prova+(p.punteggio?' — '+p.punteggio:'')+(p.qualifica?' ('+p.qualifica+')':'')+(p.certificato?'\n🏆 '+p.certificato:'')+'\n📅 '+p.data+(p.luogo?' · '+p.luogo:'')+'\nApp: mio-cane-enci.vercel.app');
+  window.open('https://wa.me/?text='+msg,'_blank');
+}
+
+function eliminaGaraSport(provaId){
+  if(!confirm('Eliminare questa gara?')) return;
+  _sportProve=_sportProve.filter(function(p){return p.id!==provaId;});
+  _salvaSportLocale();
+  toast('🗑️ Gara eliminata');
+  switchSportTab('sport-gare');
+  // Supabase background
+  if(provaId&&provaId.indexOf('tmp_')<0&&_currentUser){
+    _supabase.from('sport_prove').delete().eq('id',provaId).eq('user_id',_currentUser.id).then(function(){});
+  }
+}
+
 function renderSportDiario(container){
   container.innerHTML='<div style="text-align:center;padding:40px 16px">'
     +'<div style="font-size:48px;margin-bottom:12px">📖</div>'
