@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.54';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.55';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9219,6 +9219,18 @@ var _notifDef={vaccini:true,trattamenti:true,esposizioni:true,anticipo:14};
 var _modalitaKey = 'breedped_modalita_v1';
 
 /* ── STATO MODULO FAMIGLIA ── */
+/* ── STATO MODULO SPORT ── */
+var _sportCani = [];
+var _sportProve = [];
+var _sportAllenamenti = [];
+var _sportObbedienza = [];
+var _sportGruppo = null;
+var _sportTabAttiva = 'sport-home';
+var _sportScore = 0;
+var _sportStreak = 0;
+var _sportCaneSelezionato = null;
+var _SPORT_KEY = 'bp_sport_stato_v1';
+
 var _famigliaDati = null;
 var _famigliaMembers = [];
 var _famigliaCani = [];
@@ -9277,24 +9289,22 @@ function getModalita(){
 }
 
 function scegliModalita(mod){
-  if(mod === 'agility'){
-    toast('🚀 Agility — Prossimamente!');
-    return;
-  }
   localStorage.setItem(_modalitaKey, mod);
   g('modal-modalita').style.display = 'none';
   if(_currentUser){
     _supabase.from('profili').update({modalita: mod}).eq('id', _currentUser.id).then(function(){});
   }
   applicaModalita(mod);
-  toast('✅ Modalità ' + (mod==='allevatore'?'Allevatore':mod==='famiglia'?'Famiglia':'Caccia & Tartufo') + ' attivata!');
+  var nomi={allevatore:'Allevatore',famiglia:'Famiglia',caccia:'Caccia & Tartufo',sport:'Sport & Agility'};
+  toast('✅ Modalità ' + (nomi[mod]||mod) + ' attivata!');
 }
 
 function applicaModalita(mod){
   var badge = g('modalita-badge');
   if(badge){
     badge.style.display = '';
-    badge.textContent = mod === 'allevatore' ? '🏆 Allevatore' : '🏠 Famiglia';
+    var badgeNomi = {allevatore:'🏆 Allevatore', famiglia:'🏠 Famiglia', caccia:'🐕‍🦺 Caccia', sport:'🏋️ Sport'};
+    badge.textContent = badgeNomi[mod] || '🏠 Famiglia';
   }
   // Nascondi sempre il vecchio coming-soon
   var oldBanner = g('famiglia-coming-soon');
@@ -9335,6 +9345,8 @@ function applicaModalita(mod){
       document.body.appendChild(hf);
     }
     g('home-famiglia').style.display = 'block';
+    var _hs4 = g('home-sport'); if(_hs4) _hs4.style.display='none';
+    var _sbn4 = g('sport-bottom-nav'); if(_sbn4) _sbn4.style.display='none';
     if(g('bottom-nav')) g('bottom-nav').classList.add('fam-hidden');
     // Crea bottom nav famiglia se non esiste
     if(!g('fam-bottom-nav')){
@@ -9424,6 +9436,8 @@ function applicaModalita(mod){
     document.body.appendChild(hc);
 
     if(g('home-famiglia')) g('home-famiglia').style.display='none';
+    var _hs3 = g('home-sport'); if(_hs3) _hs3.style.display='none';
+    var _sbn3 = g('sport-bottom-nav'); if(_sbn3) _sbn3.style.display='none';
     if(g('bottom-nav')) g('bottom-nav').classList.add('fam-hidden');
     var fbn = g('fam-bottom-nav'); if(fbn) fbn.style.display='none';
 
@@ -9462,6 +9476,77 @@ function applicaModalita(mod){
     if(_hc2) _hc2.style.display='none';
     var _cbn2 = g('caccia-bottom-nav');
     if(_cbn2) _cbn2.style.display='none';
+  }
+
+  // ═══ MODULO SPORT & AGILITY ═══
+  if(mod === 'sport'){
+    var _oldHs = g('home-sport');
+    if(_oldHs) _oldHs.remove();
+    var hs = document.createElement('div');
+    hs.id = 'home-sport';
+    hs.style.cssText = 'display:block;position:fixed;inset:0;background:#FFF3E0;z-index:9980;overflow-y:auto;padding-bottom:80px';
+    hs.innerHTML =
+      '<div style="background:linear-gradient(135deg,#E65100,#BF360C);padding:20px;display:flex;align-items:center;justify-content:space-between">'
+        +'<div style="display:flex;align-items:center;gap:10px">'
+          +'<img src="logo.jpeg" style="width:42px;height:42px;border-radius:12px;object-fit:cover;border:2px solid rgba(201,169,97,.4)" onerror="this.style.display=\'none\'"/>'
+          +'<div>'
+            +'<div style="font-family:\'Playfair Display\',serif;color:#fff;font-weight:700;font-size:16px">Breed<span style="color:#C9A961">Ped</span> Sport</div>'
+            +'<div style="font-size:11px;color:rgba(255,255,255,.6)">Sport & Agility</div>'
+          +'</div>'
+        +'</div>'
+        +'<div style="display:flex;gap:8px;align-items:center">'
+          +'<button onclick="show(\'modal-impostazioni\')" style="background:rgba(255,255,255,.15);border:none;border-radius:50%;width:34px;height:34px;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">⚙️</button>'
+          +'<button onclick="g(\'modal-modalita\').style.display=\'flex\'" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:6px 10px;color:#fff;font-size:11px;font-weight:600;cursor:pointer">🔄 Modalità</button>'
+        +'</div>'
+      +'</div>'
+      +'<div id="sport-tab-content" style="padding:16px"></div>'
+      +'<div style="text-align:center;padding:12px 16px 20px;font-size:10px;color:#BF360C">'
+      +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong>'
+      +' · Breed<span style="color:#C9A961">Ped</span> v'+APP_VERSION
+      +'</div>';
+    document.body.appendChild(hs);
+
+    if(g('home-famiglia')) g('home-famiglia').style.display='none';
+    if(g('home-caccia')) g('home-caccia').style.display='none';
+    if(g('bottom-nav')) g('bottom-nav').classList.add('fam-hidden');
+    var _fbn3=g('fam-bottom-nav'); if(_fbn3) _fbn3.style.display='none';
+    var _cbn3=g('caccia-bottom-nav'); if(_cbn3) _cbn3.style.display='none';
+
+    if(!g('sport-bottom-nav')){
+      var sbn = document.createElement('nav');
+      sbn.id = 'sport-bottom-nav';
+      sbn.style.cssText = 'position:fixed;bottom:0;left:0;width:100%;'
+        +'background:#fff;border-top:1px solid #FFCCBC;z-index:9985;'
+        +'display:flex;align-items:stretch;padding:6px 8px;gap:4px;'
+        +'box-shadow:0 -4px 20px rgba(230,81,0,.1)';
+      sbn.innerHTML = [
+        {tab:'sport-home',       ico:'🏠',  label:'Home'},
+        {tab:'sport-obbedienza', ico:'🐕‍🦺', label:'Comandi'},
+        {tab:'sport-gare',       ico:'🏋️',  label:'Gare'},
+        {tab:'sport-diario',     ico:'📖',  label:'Diario'},
+        {tab:'sport-altro',      ico:'☰',   label:'Altro'}
+      ].map(function(t,i){
+        var att=i===0;
+        return '<button onclick="switchSportTab(\''+t.tab+'\')" id="stab-'+t.tab+'" '
+          +'style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;'
+          +'border:none;cursor:pointer;border-radius:12px;padding:6px 2px;gap:1px;'
+          +'background:'+(att?'#FBE9E7':'transparent')+';transition:all .2s">'
+          +'<span style="font-size:22px;line-height:1.2">'+t.ico+'</span>'
+          +'<span style="font-size:9px;font-weight:800;color:'+(att?'#E65100':'#9ab0cc')+'">'+t.label+'</span>'
+          +'</button>';
+      }).join('');
+      document.body.appendChild(sbn);
+    } else {
+      g('sport-bottom-nav').style.display='flex';
+    }
+
+    caricaSport();
+
+  } else if(mod!=='famiglia' && mod!=='caccia'){
+    var _hs2 = g('home-sport');
+    if(_hs2) _hs2.style.display='none';
+    var _sbn2 = g('sport-bottom-nav');
+    if(_sbn2) _sbn2.style.display='none';
   }
 }
 
@@ -10177,6 +10262,289 @@ function _mostraCacheMappeInfo(){
   } else {
     info.textContent='Cache non supportata dal browser';
   }
+}
+
+/* ══════════════════════════════════════
+   MODULO SPORT & AGILITY
+══════════════════════════════════════ */
+
+function _salvaSportLocale(){
+  try{
+    localStorage.setItem(_SPORT_KEY, JSON.stringify({
+      uid:_currentUser?_currentUser.id:null,
+      dati:{
+        cani:_sportCani,
+        prove:_sportProve,
+        allenamenti:_sportAllenamenti.slice(0,100),
+        obbedienza:_sportObbedienza
+      },
+      ts:Date.now()
+    }));
+  }catch(e){}
+}
+
+function _caricaSportLocale(){
+  try{
+    var raw=localStorage.getItem(_SPORT_KEY);
+    if(!raw) return false;
+    var d=JSON.parse(raw);
+    if(!d||!d.dati) return false;
+    if(_currentUser&&d.uid&&d.uid!==_currentUser.id) return false;
+    _sportCani=d.dati.cani||[];
+    _sportProve=d.dati.prove||[];
+    _sportAllenamenti=d.dati.allenamenti||[];
+    _sportObbedienza=d.dati.obbedienza||[];
+    return true;
+  }catch(e){return false;}
+}
+
+async function caricaSport(){
+  var hadLocal=_caricaSportLocale();
+  switchSportTab('sport-home');
+  if(!_currentUser){
+    await new Promise(function(resolve){
+      var t=0,iv=setInterval(function(){
+        t+=200;
+        if(_currentUser||t>=3000){clearInterval(iv);resolve();}
+      },200);
+    });
+  }
+  if(!_currentUser) return;
+  try{
+    var uid=_currentUser.id;
+    var [rc,rp,ra,ro]=await Promise.all([
+      _supabase.from('sport_cani').select('*').eq('user_id',uid).order('nome'),
+      _supabase.from('sport_prove').select('*').eq('user_id',uid).order('data',{ascending:false}).limit(100),
+      _supabase.from('sport_allenamenti').select('*').eq('user_id',uid).order('data',{ascending:false}).limit(100),
+      _supabase.from('sport_obbedienza').select('*').eq('user_id',uid)
+    ]);
+    _sportCani=rc.data||[];
+    _sportProve=rp.data||[];
+    _sportAllenamenti=ra.data||[];
+    _sportObbedienza=ro.data||[];
+    _salvaSportLocale();
+    switchSportTab('sport-home');
+  }catch(e){
+    console.warn('[sport] sync error:',e.message);
+  }
+}
+
+function switchSportTab(tabId){
+  _sportTabAttiva=tabId;
+  ['sport-home','sport-obbedienza','sport-gare','sport-diario','sport-altro'].forEach(function(t){
+    var btn=g('stab-'+t);
+    if(!btn) return;
+    var att=t===tabId;
+    btn.style.background=att?'#FBE9E7':'transparent';
+    btn.querySelector('span:last-child').style.color=att?'#E65100':'#9ab0cc';
+  });
+  var container=g('sport-tab-content');
+  if(!container) return;
+  if(tabId==='sport-home') renderSportHome(container);
+  else if(tabId==='sport-obbedienza') renderSportObbedienza(container);
+  else if(tabId==='sport-gare') renderSportGare(container);
+  else if(tabId==='sport-diario') renderSportDiario(container);
+  else if(tabId==='sport-altro') renderSportAltro(container);
+}
+
+function renderSportHome(container){
+  // Calcola stats
+  var totProve=_sportProve.length;
+  var totAllen=_sportAllenamenti.length;
+  var totObbCompl=_sportObbedienza.filter(function(o){return o.completato;}).length;
+  // Sport Score semplice
+  _sportScore=(totAllen*10)+(totProve*25)+(totObbCompl*75);
+  // Streak
+  var oggi=new Date().toISOString().slice(0,10);
+  var ieri=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  var giorniAttivi={};
+  _sportAllenamenti.forEach(function(a){if(a.data) giorniAttivi[a.data]=true;});
+  _sportProve.forEach(function(p){if(p.data) giorniAttivi[p.data]=true;});
+  _sportStreak=0;
+  var d=new Date();
+  for(var i=0;i<365;i++){
+    var ds=d.toISOString().slice(0,10);
+    if(giorniAttivi[ds]){_sportStreak++;d=new Date(d.getTime()-86400000);}
+    else if(i===0){d=new Date(d.getTime()-86400000);}
+    else break;
+  }
+  // Livello
+  var livello=_sportScore>=2000?'👑 Leggenda':_sportScore>=1000?'⭐ Campione':_sportScore>=600?'🏆 Atleta':_sportScore>=300?'🏅 Sportivo':_sportScore>=100?'🐕 Allievo':'🐣 Principiante';
+  // Discipline attive
+  var discAttive={};
+  _sportProve.forEach(function(p){if(p.disciplina) discAttive[p.disciplina]=true;});
+  _sportAllenamenti.forEach(function(a){if(a.disciplina) discAttive[a.disciplina]=true;});
+
+  container.innerHTML=
+    // Hero score
+    '<div style="background:linear-gradient(135deg,#E65100,#BF360C);border-radius:20px;padding:20px;margin-bottom:16px;color:#fff;text-align:center">'
+      +'<div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:4px">SPORT SCORE</div>'
+      +'<div style="font-size:42px;font-weight:800">'+_sportScore+'</div>'
+      +'<div style="font-size:14px;color:#FFCCBC">'+livello+'</div>'
+      +'<div style="display:flex;justify-content:center;gap:24px;margin-top:14px">'
+        +'<div><div style="font-size:22px;font-weight:800">'+_sportStreak+'</div><div style="font-size:10px;color:rgba(255,255,255,.6)">🔥 Streak</div></div>'
+        +'<div><div style="font-size:22px;font-weight:800">'+totAllen+'</div><div style="font-size:10px;color:rgba(255,255,255,.6)">💪 Sessioni</div></div>'
+        +'<div><div style="font-size:22px;font-weight:800">'+totProve+'</div><div style="font-size:10px;color:rgba(255,255,255,.6)">🏆 Gare</div></div>'
+        +'<div><div style="font-size:22px;font-weight:800">'+totObbCompl+'/8</div><div style="font-size:10px;color:rgba(255,255,255,.6)">🐕‍🦺 Comandi</div></div>'
+      +'</div>'
+    +'</div>'
+    // Quick actions
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">'
+      +'<button onclick="switchSportTab(\'sport-obbedienza\')" style="background:#fff;border:2px solid #FFCCBC;border-radius:14px;padding:16px 8px;cursor:pointer;text-align:center">'
+        +'<div style="font-size:28px;margin-bottom:4px">🐕‍🦺</div>'
+        +'<div style="font-size:11px;font-weight:700;color:#E65100">Obbedienza</div></button>'
+      +'<button onclick="switchSportTab(\'sport-gare\')" style="background:#fff;border:2px solid #FFCCBC;border-radius:14px;padding:16px 8px;cursor:pointer;text-align:center">'
+        +'<div style="font-size:28px;margin-bottom:4px">🏋️</div>'
+        +'<div style="font-size:11px;font-weight:700;color:#E65100">Nuova gara</div></button>'
+      +'<button onclick="switchSportTab(\'sport-diario\')" style="background:#fff;border:2px solid #FFCCBC;border-radius:14px;padding:16px 8px;cursor:pointer;text-align:center">'
+        +'<div style="font-size:28px;margin-bottom:4px">📖</div>'
+        +'<div style="font-size:11px;font-weight:700;color:#E65100">Diario</div></button>'
+    +'</div>'
+    // Discipline
+    +'<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:16px;padding:16px;margin-bottom:16px">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:16px;font-weight:700;color:#BF360C;margin-bottom:12px">🏅 Le tue discipline</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'
+      +[
+        {id:'obbedienza',ico:'🐕‍🦺',nome:'Obbedienza'},
+        {id:'difesa',ico:'🛡️',nome:'Guardia'},
+        {id:'soccorso',ico:'🚑',nome:'Soccorso'},
+        {id:'pastore',ico:'🐾',nome:'Pastore'},
+        {id:'agility',ico:'🚧',nome:'Agility'},
+        {id:'corsa',ico:'🏃',nome:'Corsa'}
+      ].map(function(d){
+        var attiva=discAttive[d.id];
+        return '<div style="background:'+(attiva?'#FBE9E7':'#F5F5F5')+';border-radius:10px;padding:10px;text-align:center;border:1.5px solid '+(attiva?'#FFCCBC':'#eee')+'">'
+          +'<div style="font-size:22px">'+d.ico+'</div>'
+          +'<div style="font-size:10px;font-weight:700;color:'+(attiva?'#E65100':'#9ab0cc')+'">'+d.nome+'</div>'
+          +(attiva?'<div style="font-size:9px;color:#E65100">✓ Attiva</div>':'')
+          +'</div>';
+      }).join('')
+      +'</div>'
+    +'</div>'
+    // Cane selezionato o aggiungi
+    +(_sportCani.length
+      ?'<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:14px;padding:14px;margin-bottom:16px">'
+        +'<div style="font-size:13px;font-weight:700;color:#BF360C;margin-bottom:8px">🐕 I tuoi cani sportivi</div>'
+        +_sportCani.map(function(c){
+          return '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#FBE9E7;border-radius:10px;margin-bottom:6px">'
+            +'<div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#E65100,#BF360C);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px">🐕</div>'
+            +'<div style="flex:1"><div style="font-weight:700;font-size:13px;color:#1a1a3a">'+esc(c.nome)+'</div>'
+            +'<div style="font-size:11px;color:#6B8BB0">'+esc(c.razza||'')+(c.discipline&&c.discipline.length?' · '+c.discipline.join(', '):'')+'</div></div></div>';
+        }).join('')
+        +'<button onclick="apriAggiungiCaneSport()" style="margin-top:8px;background:#FBE9E7;border:1.5px dashed #FFCCBC;border-radius:10px;padding:10px;width:100%;font-size:12px;font-weight:600;color:#E65100;cursor:pointer">+ Aggiungi cane</button>'
+      +'</div>'
+      :'<div style="background:#fff;border:2px dashed #FFCCBC;border-radius:14px;padding:20px;text-align:center;margin-bottom:16px">'
+        +'<div style="font-size:32px;margin-bottom:8px">🐕</div>'
+        +'<div style="font-size:13px;color:#6B8BB0;margin-bottom:10px">Aggiungi il tuo primo cane sportivo</div>'
+        +'<button onclick="apriAggiungiCaneSport()" style="background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:10px;padding:11px 24px;font-size:13px;font-weight:700;cursor:pointer">+ Aggiungi cane</button>'
+      +'</div>')
+    // Footer
+    +'<div style="text-align:center;padding:8px;font-size:10px;color:#FFCCBC">'
+    +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong></div>';
+}
+
+// ── PLACEHOLDER per le altre tab (implementate nelle fasi successive) ──
+function renderSportObbedienza(container){
+  container.innerHTML='<div style="text-align:center;padding:40px 16px">'
+    +'<div style="font-size:48px;margin-bottom:12px">🐕‍🦺</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#E65100;margin-bottom:8px">Obbedienza Base</div>'
+    +'<div style="font-size:13px;color:#6B8BB0">Prossimamente — Fase 2</div></div>';
+}
+function renderSportGare(container){
+  container.innerHTML='<div style="text-align:center;padding:40px 16px">'
+    +'<div style="font-size:48px;margin-bottom:12px">🏋️</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#E65100;margin-bottom:8px">Gare e Prove</div>'
+    +'<div style="font-size:13px;color:#6B8BB0">Prossimamente — Fase 3</div></div>';
+}
+function renderSportDiario(container){
+  container.innerHTML='<div style="text-align:center;padding:40px 16px">'
+    +'<div style="font-size:48px;margin-bottom:12px">📖</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#E65100;margin-bottom:8px">Diario Allenamenti</div>'
+    +'<div style="font-size:13px;color:#6B8BB0">Prossimamente — Fase 4</div></div>';
+}
+function renderSportAltro(container){
+  container.innerHTML='<div style="padding:16px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#E65100;margin-bottom:16px">☰ Altro</div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px">'
+    +[
+      {ico:'🏆',t:'Palmarès sportivo',s:'Tutti i tuoi risultati'},
+      {ico:'📊',t:'Statistiche',s:'Per disciplina e periodo'},
+      {ico:'🗺️',t:'GPS Percorsi',s:'Traccia allenamenti outdoor'},
+      {ico:'🫂',t:'Squadra',s:'Gruppo allenamento con codice'},
+      {ico:'📡',t:'Atleti vicini',s:'Chi si allena nella tua zona'},
+      {ico:'📅',t:'Calendario gare',s:'Prossimi eventi'},
+      {ico:'🗺️',t:'Mappe offline',s:'Scarica per zone senza segnale'},
+      {ico:'🚑',t:'Emergenze vet',s:'Numeri utili rapidi'}
+    ].map(function(it){
+      return '<div style="display:flex;align-items:center;gap:12px;padding:14px;background:#fff;border-radius:12px;border:1.5px solid #FFCCBC;cursor:pointer" onclick="toast(\'🚧 Prossimamente!\')">'
+        +'<div style="width:40px;height:40px;border-radius:10px;background:#FBE9E7;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+it.ico+'</div>'
+        +'<div><div style="font-weight:700;font-size:13px;color:#1a1a3a">'+it.t+'</div>'
+        +'<div style="font-size:11px;color:#6B8BB0">'+it.s+'</div></div>'
+        +'<span style="margin-left:auto;color:#FFCCBC;font-size:18px">›</span></div>';
+    }).join('')
+    +'</div></div>';
+}
+
+// ── Aggiungi cane sport ──
+function apriAggiungiCaneSport(){
+  var ov=document.createElement('div');
+  ov.id='ov-add-sport-cane';
+  ov.style.cssText='position:fixed;inset:0;z-index:10100;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML='<div style="background:#fff;border-radius:20px;max-width:420px;width:100%;padding:24px;max-height:80vh;overflow-y:auto">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#E65100">🐕 Aggiungi cane</div>'
+    +'<button onclick="document.getElementById(\'ov-add-sport-cane\').remove()" style="background:#FBE9E7;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;color:#E65100">✕</button></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Nome *</label>'
+    +'<input id="sc-nome" placeholder="Es. Rex" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Razza</label>'
+    +'<input id="sc-razza" placeholder="Es. Pastore Tedesco" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div><label style="font-size:12px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Sesso</label>'
+    +'<select id="sc-sesso" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px">'
+    +'<option value="maschio">♂ Maschio</option><option value="femmina">♀ Femmina</option></select></div>'
+    +'<div><label style="font-size:12px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Taglia (agility)</label>'
+    +'<select id="sc-taglia" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px">'
+    +'<option value="large">Large (>43cm)</option><option value="medium">Medium (35-43cm)</option><option value="small">Small (<35cm)</option></select></div></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Data nascita</label>'
+    +'<input id="sc-nascita" type="date" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<button onclick="salvaCaneSport(this)" style="width:100%;background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">✓ Aggiungi cane</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+}
+
+function salvaCaneSport(btn){
+  var nome=(document.getElementById('sc-nome')||{}).value;
+  if(!nome||!nome.trim()){toast('Inserisci il nome');return;}
+  if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
+  btn.disabled=true;btn.textContent='⏳';
+  var cane={
+    user_id:_currentUser.id,
+    nome:nome.trim(),
+    razza:(document.getElementById('sc-razza')||{}).value||'',
+    sesso:(document.getElementById('sc-sesso')||{}).value||'maschio',
+    taglia:(document.getElementById('sc-taglia')||{}).value||'large',
+    data_nascita:(document.getElementById('sc-nascita')||{}).value||null,
+    discipline:[]
+  };
+  // Ottimistic
+  cane.id='tmp_'+Date.now();
+  _sportCani.push(cane);
+  _salvaSportLocale();
+  var ov=document.getElementById('ov-add-sport-cane');
+  if(ov) ov.remove();
+  toast('✅ '+cane.nome+' aggiunto!');
+  switchSportTab('sport-home');
+  // Supabase background
+  var rec=Object.assign({},cane);
+  delete rec.id;
+  _supabase.from('sport_cani').insert(rec).select().then(function(res){
+    if(res.error){console.warn('[sport] cane save:',res.error.message);return;}
+    if(res.data&&res.data[0]){
+      var idx=_sportCani.findIndex(function(c){return c.id===cane.id;});
+      if(idx>=0) _sportCani[idx]=res.data[0];
+      _salvaSportLocale();
+    }
+  });
 }
 
 function renderCacciaGPS(container){
@@ -17513,12 +17881,12 @@ function sendChat(){
         <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Cane di Famiglia</div>
         <div style="font-size:11px;color:#6B8BB0;line-height:1.4">Diario, salute, famiglia<br>condivisa</div>
       </div>
-      <div onclick="scegliModalita('agility')" style="border:2px solid #DDEAFF;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:#fff"
-        onmouseover="this.style.borderColor='#C9A961';this.style.background='#FFFBF0'"
-        onmouseout="this.style.borderColor='#DDEAFF';this.style.background='#fff'">
-        <div style="font-size:36px;margin-bottom:10px">🏃</div>
-        <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Agility</div>
-        <div style="font-size:11px;color:#6B8BB0;line-height:1.4">Percorsi, timer, gare<br>e statistiche<br><span style="color:#C9A961;font-weight:700">Prossimamente</span></div>
+      <div onclick="scegliModalita('sport')" style="border:2px solid #FFCCBC;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:#FFF3E0"
+        onmouseover="this.style.borderColor='#E65100';this.style.background='#FBE9E7'"
+        onmouseout="this.style.borderColor='#FFCCBC';this.style.background='#FFF3E0'">
+        <div style="font-size:36px;margin-bottom:10px">🐕‍🦺</div>
+        <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Sport & Agility</div>
+        <div style="font-size:11px;color:#6B8BB0;line-height:1.4">Obbedienza, difesa,<br>agility, soccorso</div>
       </div>
       <div onclick="scegliModalita('caccia')" style="border:2px solid #C8E6C9;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:#F9FBE7"
         onmouseover="this.style.borderColor='#2E7D32';this.style.background='#F1F8E9'"
