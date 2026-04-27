@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.58';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.59';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -384,6 +384,8 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
   50%{box-shadow:0 4px 28px rgba(201,169,97,.85);}
 }
 #chat-fab.hidden{display:none!important}
+@keyframes scaleIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes bounce{0%,100%{transform:translateY(0)}25%{transform:translateY(-20px)}50%{transform:translateY(0)}75%{transform:translateY(-10px)}}
 </style>
 </head>
 <body>
@@ -10347,16 +10349,92 @@ function switchSportTab(tabId){
   else if(tabId==='sport-altro') renderSportAltro(container);
 }
 
+function _calcolaBadgeSport(){
+  var totAllen=(_sportAllenamenti||[]).length;
+  var totProve=(_sportProve||[]).length;
+  var totObbCompl=(_sportObbedienza||[]).filter(function(o){return o.completato;}).length;
+  var totECC=(_sportProve||[]).filter(function(p){return p.qualifica==='ECC';}).length;
+  var discAttive={};
+  (_sportProve||[]).forEach(function(p){if(p.disciplina) discAttive[p.disciplina]=true;});
+  (_sportAllenamenti||[]).forEach(function(a){if(a.disciplina) discAttive[a.disciplina]=true;});
+  var numDisc=Object.keys(discAttive).length;
+  var haCleanRun=(_sportProve||[]).some(function(p){return p.disciplina==='agility'&&p.dettagli&&(p.dettagli.penalita===0||p.dettagli.penalita==='0');});
+  var ha300=(_sportProve||[]).some(function(p){return p.disciplina==='difesa'&&p.punteggio&&p.punteggio.indexOf('300/')>=0;});
+  var totObbSess=0;
+  (_sportObbedienza||[]).forEach(function(o){totObbSess+=(o.sessioni_totali||0);});
+
+  var badges=[
+    // Obbedienza
+    {id:'obb_compl',nome:'Obbedienza Completa',ico:'🎓',ottenuto:totObbCompl>=8},
+    {id:'trainer',nome:'Trainer Esperto',ico:'🧑‍🏫',ottenuto:totObbSess>=50},
+    // Gare
+    {id:'prima_gara',nome:'Prima Gara',ico:'🏁',ottenuto:totProve>=1},
+    {id:'dieci_gare',nome:'10 Gare Club',ico:'🔟',ottenuto:totProve>=10},
+    {id:'venti_gare',nome:'Veterano 20',ico:'🎖️',ottenuto:totProve>=20},
+    // Qualifiche
+    {id:'primo_ecc',nome:'Primo Eccellente',ico:'⭐',ottenuto:totECC>=1},
+    {id:'cinque_ecc',nome:'5 Eccellenti',ico:'🌟',ottenuto:totECC>=5},
+    // Discipline
+    {id:'multisport',nome:'Multisport',ico:'🌈',ottenuto:numDisc>=3},
+    {id:'tuttofaro',nome:'Tuttofaro',ico:'🔆',ottenuto:numDisc>=5},
+    // Specifici
+    {id:'clean_run',nome:'Clean Run',ico:'🧹',ottenuto:haCleanRun},
+    {id:'club_300',nome:'300 Punti Club',ico:'💯',ottenuto:ha300},
+    // Allenamenti
+    {id:'dieci_allen',nome:'10 Sessioni',ico:'💪',ottenuto:totAllen>=10},
+    {id:'cinquanta_allen',nome:'50 Sessioni',ico:'🏋️',ottenuto:totAllen>=50},
+    {id:'cento_allen',nome:'100 Sessioni',ico:'💎',ottenuto:totAllen>=100},
+    // Streak
+    {id:'streak_7',nome:'Settimana di fuoco',ico:'🔥',ottenuto:_sportStreak>=7},
+    {id:'streak_30',nome:'Mese inarrestabile',ico:'🌋',ottenuto:_sportStreak>=30},
+    {id:'streak_100',nome:'100 giorni',ico:'💫',ottenuto:_sportStreak>=100}
+  ];
+
+  // Aggiungi badge individuali obbedienza
+  (_sportObbedienza||[]).forEach(function(o){
+    if(o.completato&&o.badge){
+      badges.push({id:'obb_'+o.comando,nome:o.badge,ico:'🏅',ottenuto:true});
+    }
+  });
+
+  return badges;
+}
+
+function _checkNuoviBadge(){
+  var badges=_calcolaBadgeSport();
+  var salvati=[];
+  try{salvati=JSON.parse(localStorage.getItem('bp_sport_badges_visti')||'[]');}catch(e){}
+  var nuovi=badges.filter(function(b){return b.ottenuto&&salvati.indexOf(b.id)<0;});
+  if(nuovi.length){
+    salvati=salvati.concat(nuovi.map(function(b){return b.id;}));
+    try{localStorage.setItem('bp_sport_badges_visti',JSON.stringify(salvati));}catch(e){}
+    // Mostra popup per il primo nuovo badge
+    _mostraBadgePopup(nuovi[0]);
+  }
+}
+
+function _mostraBadgePopup(badge){
+  var pop=document.createElement('div');
+  pop.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:10200;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .3s';
+  pop.onclick=function(){pop.remove();};
+  pop.innerHTML='<div style="background:#fff;border-radius:24px;padding:32px;text-align:center;max-width:320px;width:100%;animation:scaleIn .4s" onclick="event.stopPropagation()">'
+    +'<div style="font-size:64px;margin-bottom:12px;animation:bounce 1s">'+badge.ico+'</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:22px;font-weight:700;color:#E65100;margin-bottom:8px">Nuovo Badge!</div>'
+    +'<div style="font-size:16px;font-weight:700;color:#1a1a3a;margin-bottom:4px">'+badge.nome+'</div>'
+    +'<div style="font-size:13px;color:#6B8BB0;margin-bottom:20px">Continua così, campione! 💪</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="flex:1;background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:12px;padding:12px;font-weight:700;cursor:pointer">✅ Fantastico!</button>'
+    +'<button onclick="var m=encodeURIComponent(\'🎖️ Ho ottenuto il badge \\\''+badge.nome+'\\\' su BreedPed Sport! '+badge.ico+'\\nApp: mio-cane-enci.vercel.app\');window.open(\'https://wa.me/?text=\'+m);this.closest(\'div[style*=fixed]\').remove()" style="flex:1;background:#25D366;color:#fff;border:none;border-radius:12px;padding:12px;font-weight:700;cursor:pointer">📲 Condividi</button>'
+    +'</div></div>';
+  document.body.appendChild(pop);
+}
+
 function renderSportHome(container){
   // Calcola stats
   var totProve=_sportProve.length;
   var totAllen=_sportAllenamenti.length;
   var totObbCompl=_sportObbedienza.filter(function(o){return o.completato;}).length;
-  // Sport Score semplice
-  _sportScore=(totAllen*10)+(totProve*25)+(totObbCompl*75);
   // Streak
-  var oggi=new Date().toISOString().slice(0,10);
-  var ieri=new Date(Date.now()-86400000).toISOString().slice(0,10);
   var giorniAttivi={};
   _sportAllenamenti.forEach(function(a){if(a.data) giorniAttivi[a.data]=true;});
   _sportProve.forEach(function(p){if(p.data) giorniAttivi[p.data]=true;});
@@ -10368,24 +10446,60 @@ function renderSportHome(container){
     else if(i===0){d=new Date(d.getTime()-86400000);}
     else break;
   }
-  // Livello
-  var livello=_sportScore>=2000?'👑 Leggenda':_sportScore>=1000?'⭐ Campione':_sportScore>=600?'🏆 Atleta':_sportScore>=300?'🏅 Sportivo':_sportScore>=100?'🐕 Allievo':'🐣 Principiante';
+  // Calcolo Sport Score completo
+  var ptAllen=totAllen*10;
+  var ptProve=totProve*25;
+  var ptObbCompl=totObbCompl*75;
+  var ptECC=_sportProve.filter(function(p){return p.qualifica==='ECC';}).length*50;
+  var ptMB=_sportProve.filter(function(p){return p.qualifica==='MB';}).length*30;
+  var ptCert=0;
+  _sportProve.forEach(function(p){if(p.certificato) ptCert+=100;});
+  // Km bonus
+  var totKm=0;
+  _sportAllenamenti.forEach(function(a){totKm+=parseFloat(a.km||0);});
+  var ptKm=Math.round(totKm*5);
+  // Streak bonus
+  _sportScore=ptAllen+ptProve+ptObbCompl+ptECC+ptMB+ptCert+ptKm+(_sportStreak*5);
+
+  var livello,livProg,livNext,livPerc;
+  if(_sportScore>=2000){livello='👑 Leggenda';livProg=2000;livNext=9999;livPerc=100;}
+  else if(_sportScore>=1000){livello='⭐ Campione';livProg=1000;livNext=2000;livPerc=Math.round((_sportScore-1000)/1000*100);}
+  else if(_sportScore>=600){livello='🏆 Atleta';livProg=600;livNext=1000;livPerc=Math.round((_sportScore-600)/400*100);}
+  else if(_sportScore>=300){livello='🏅 Sportivo';livProg=300;livNext=600;livPerc=Math.round((_sportScore-300)/300*100);}
+  else if(_sportScore>=100){livello='🐕 Allievo';livProg=100;livNext=300;livPerc=Math.round((_sportScore-100)/200*100);}
+  else{livello='🐣 Principiante';livProg=0;livNext=100;livPerc=Math.round(_sportScore/100*100);}
   // Discipline attive
   var discAttive={};
   _sportProve.forEach(function(p){if(p.disciplina) discAttive[p.disciplina]=true;});
   _sportAllenamenti.forEach(function(a){if(a.disciplina) discAttive[a.disciplina]=true;});
 
   container.innerHTML=
-    // Hero score
-    '<div style="background:linear-gradient(135deg,#E65100,#BF360C);border-radius:20px;padding:20px;margin-bottom:16px;color:#fff;text-align:center">'
-      +'<div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:4px">SPORT SCORE</div>'
-      +'<div style="font-size:42px;font-weight:800">'+_sportScore+'</div>'
-      +'<div style="font-size:14px;color:#FFCCBC">'+livello+'</div>'
-      +'<div style="display:flex;justify-content:center;gap:24px;margin-top:14px">'
-        +'<div><div style="font-size:22px;font-weight:800">'+_sportStreak+'</div><div style="font-size:10px;color:rgba(255,255,255,.6)">🔥 Streak</div></div>'
-        +'<div><div style="font-size:22px;font-weight:800">'+totAllen+'</div><div style="font-size:10px;color:rgba(255,255,255,.6)">💪 Sessioni</div></div>'
-        +'<div><div style="font-size:22px;font-weight:800">'+totProve+'</div><div style="font-size:10px;color:rgba(255,255,255,.6)">🏆 Gare</div></div>'
-        +'<div><div style="font-size:22px;font-weight:800">'+totObbCompl+'/8</div><div style="font-size:10px;color:rgba(255,255,255,.6)">🐕‍🦺 Comandi</div></div>'
+    // Hero score con ring
+    '<div style="background:linear-gradient(135deg,#E65100,#BF360C);border-radius:20px;padding:20px;margin-bottom:16px;color:#fff">'
+      +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">'
+        // Ring SVG
+        +'<div style="position:relative;width:90px;height:90px;flex-shrink:0">'
+        +'<svg viewBox="0 0 36 36" style="width:90px;height:90px;transform:rotate(-90deg)">'
+        +'<circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="3"/>'
+        +'<circle cx="18" cy="18" r="15.5" fill="none" stroke="#FFCCBC" stroke-width="3" stroke-dasharray="'+Math.round(livPerc*97.4/100)+' 97.4" stroke-linecap="round"/>'
+        +'</svg>'
+        +'<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">'
+        +'<div style="font-size:22px;font-weight:800;line-height:1">'+_sportScore+'</div>'
+        +'<div style="font-size:8px;color:rgba(255,255,255,.6)">PUNTI</div>'
+        +'</div></div>'
+        // Info
+        +'<div style="flex:1">'
+          +'<div style="font-size:18px;font-weight:800;margin-bottom:2px">'+livello+'</div>'
+          +'<div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:6px">'+(livPerc<100?'Prossimo: '+(livNext-_sportScore)+' pt per il prossimo livello':'Livello massimo raggiunto!')+'</div>'
+          +'<div style="background:rgba(255,255,255,.15);border-radius:6px;height:6px;overflow:hidden">'
+          +'<div style="background:#FFCCBC;height:100%;width:'+livPerc+'%;border-radius:6px"></div></div>'
+        +'</div>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-around;text-align:center">'
+        +'<div><div style="font-size:20px;font-weight:800">'+_sportStreak+'</div><div style="font-size:10px;color:rgba(255,255,255,.6)">🔥 Streak</div></div>'
+        +'<div><div style="font-size:20px;font-weight:800">'+totAllen+'</div><div style="font-size:10px;color:rgba(255,255,255,.6)">💪 Sessioni</div></div>'
+        +'<div><div style="font-size:20px;font-weight:800">'+totProve+'</div><div style="font-size:10px;color:rgba(255,255,255,.6)">🏆 Gare</div></div>'
+        +'<div><div style="font-size:20px;font-weight:800">'+totObbCompl+'/8</div><div style="font-size:10px;color:rgba(255,255,255,.6)">🐕‍🦺 Comandi</div></div>'
       +'</div>'
     +'</div>'
     // Quick actions
@@ -10418,6 +10532,17 @@ function renderSportHome(container){
           +'<div style="font-size:10px;font-weight:700;color:'+(attiva?'#E65100':'#9ab0cc')+'">'+d.nome+'</div>'
           +(attiva?'<div style="font-size:9px;color:#E65100">✓ Attiva</div>':'')
           +'</div>';
+      }).join('')
+      +'</div>'
+    +'</div>'
+    // Badge guadagnati
+    +'<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:16px;padding:16px;margin-bottom:16px">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:16px;font-weight:700;color:#BF360C;margin-bottom:12px">🎖️ I tuoi Badge</div>'
+      +'<div id="sport-badges-container" style="display:flex;flex-wrap:wrap;gap:8px">'
+      +_calcolaBadgeSport().map(function(b){
+        return '<div style="background:'+(b.ottenuto?'linear-gradient(135deg,#E65100,#BF360C)':'#F5F5F5')+';border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:6px;opacity:'+(b.ottenuto?'1':'.4')+'">'
+          +'<span style="font-size:16px">'+b.ico+'</span>'
+          +'<span style="font-size:11px;font-weight:700;color:'+(b.ottenuto?'#fff':'#999')+'">'+b.nome+'</span></div>';
       }).join('')
       +'</div>'
     +'</div>'
@@ -10740,6 +10865,7 @@ function salvaSessioneObbedienza(btn,cmdId){
   if(ov) ov.remove();
   toast('✅ Sessione '+cmd.nome+' registrata!');
   switchSportTab('sport-obbedienza');
+  _checkNuoviBadge();
 
   // Supabase background — upsert obbedienza
   var obbRec={
@@ -11056,6 +11182,7 @@ function salvaGaraSport(btn){
   if(ov) ov.remove();
   toast('✅ Gara registrata!');
   switchSportTab('sport-gare');
+  _checkNuoviBadge();
 
   // Supabase background
   var rec=Object.assign({},prova);
@@ -11257,6 +11384,7 @@ function salvaAllenamentoSport(btn){
   if(ov) ov.remove();
   toast('✅ Allenamento registrato!');
   switchSportTab('sport-diario');
+  _checkNuoviBadge();
 
   var rec=Object.assign({},allen);
   delete rec.id;
