@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.57';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.58';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -11091,32 +11091,422 @@ function eliminaGaraSport(provaId){
 }
 
 function renderSportDiario(container){
-  container.innerHTML='<div style="text-align:center;padding:40px 16px">'
-    +'<div style="font-size:48px;margin-bottom:12px">📖</div>'
-    +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#E65100;margin-bottom:8px">Diario Allenamenti</div>'
-    +'<div style="font-size:13px;color:#6B8BB0">Prossimamente — Fase 4</div></div>';
+  var lista=(_sportAllenamenti||[]).slice();
+  var html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#E65100">📖 Diario Allenamenti</div>'
+    +'<button onclick="apriNuovoAllenamentoSport()" style="background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Allenamento</button>'
+    +'</div>';
+
+  if(!lista.length){
+    html+='<div style="text-align:center;padding:40px 16px">'
+      +'<div style="font-size:48px;margin-bottom:12px">📖</div>'
+      +'<div style="font-size:14px;color:#6B8BB0;margin-bottom:8px">Nessun allenamento registrato</div>'
+      +'<div style="font-size:12px;color:#9ab0cc;margin-bottom:16px">Le sessioni di obbedienza appaiono qui automaticamente</div>'
+      +'<button onclick="apriNuovoAllenamentoSport()" style="background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer">+ Registra allenamento</button></div>';
+    container.innerHTML=html;
+    return;
+  }
+
+  // Stats rapide
+  var totMin=0,totKm=0,totSess=lista.length;
+  lista.forEach(function(a){totMin+=(a.durata_minuti||0);totKm+=parseFloat(a.km||0);});
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">'
+    +'<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:12px;padding:12px;text-align:center">'
+    +'<div style="font-size:22px;font-weight:800;color:#E65100">'+totSess+'</div>'
+    +'<div style="font-size:10px;color:#6B8BB0;font-weight:600">Sessioni</div></div>'
+    +'<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:12px;padding:12px;text-align:center">'
+    +'<div style="font-size:22px;font-weight:800;color:#E65100">'+Math.round(totMin)+'</div>'
+    +'<div style="font-size:10px;color:#6B8BB0;font-weight:600">Minuti totali</div></div>'
+    +'<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:12px;padding:12px;text-align:center">'
+    +'<div style="font-size:22px;font-weight:800;color:#E65100">'+totKm.toFixed(1)+'</div>'
+    +'<div style="font-size:10px;color:#6B8BB0;font-weight:600">Km percorsi</div></div>'
+    +'</div>';
+
+  // Raggruppa per data
+  var perData={};
+  lista.forEach(function(a){
+    var d=a.data||'Senza data';
+    if(!perData[d]) perData[d]=[];
+    perData[d].push(a);
+  });
+
+  var giorni=Object.keys(perData).sort(function(a,b){return b.localeCompare(a);});
+  giorni.forEach(function(giorno){
+    var dataLabel=giorno;
+    try{
+      var dp=new Date(giorno+'T00:00:00');
+      var oggi=new Date();oggi.setHours(0,0,0,0);
+      var diff=Math.round((oggi-dp)/86400000);
+      if(diff===0) dataLabel='Oggi';
+      else if(diff===1) dataLabel='Ieri';
+      else dataLabel=dp.toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'});
+    }catch(e){}
+
+    html+='<div style="font-size:12px;font-weight:700;color:#BF360C;margin-bottom:6px;margin-top:14px">📅 '+dataLabel+'</div>';
+
+    perData[giorno].forEach(function(a){
+      var disc=SPORT_DISCIPLINE.find(function(d){return d.id===a.disciplina;})||{ico:'🏋️',nome:a.disciplina||'Sport',colore:'#E65100'};
+      var stelle='';
+      if(a.voto){for(var s=1;s<=5;s++) stelle+='<span style="color:'+(s<=a.voto?'#FF8F00':'#ddd')+';font-size:12px">★</span>';}
+
+      var tipoLabel=a.tipo||a.disciplina||'Allenamento';
+      if(a.comando){
+        var cmd=COMANDI_OBBEDIENZA.find(function(c){return c.id===a.comando;});
+        if(cmd) tipoLabel=cmd.icona+' '+cmd.nome+(a.livello?' ('+a.livello+')':'');
+      }
+
+      html+='<div style="background:#fff;border-radius:12px;border:1.5px solid #FFCCBC;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">'
+        +'<div style="width:40px;height:40px;border-radius:10px;background:'+disc.colore+';display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;flex-shrink:0">'+disc.ico+'</div>'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="font-weight:700;font-size:13px;color:#1a1a3a">'+esc(tipoLabel)+'</div>'
+          +'<div style="font-size:11px;color:#6B8BB0">'
+            +(a.durata_minuti?a.durata_minuti+' min':'')
+            +(a.km&&parseFloat(a.km)>0?' · '+parseFloat(a.km).toFixed(1)+' km':'')
+            +(a.cane_nome?' · '+esc(a.cane_nome):'')
+          +'</div>'
+          +(stelle?'<div style="margin-top:2px">'+stelle+'</div>':'')
+          +(a.note?'<div style="font-size:11px;color:#999;margin-top:2px;font-style:italic">'+esc(a.note)+'</div>':'')
+        +'</div>'
+        +'<button onclick="eliminaAllenamentoSport(\''+a.id+'\')" style="background:#FFEBEE;border:none;border-radius:8px;padding:6px;cursor:pointer;color:#C62828;font-size:12px;flex-shrink:0">🗑️</button>'
+      +'</div>';
+    });
+  });
+
+  container.innerHTML=html;
 }
+
+function apriNuovoAllenamentoSport(){
+  var discOpts=SPORT_DISCIPLINE.map(function(d){
+    return '<option value="'+d.id+'">'+d.ico+' '+d.nome+'</option>';
+  }).join('');
+  var caniOpts='<option value="">— Nessun cane —</option>';
+  (_sportCani||[]).forEach(function(c){
+    caniOpts+='<option value="'+c.id+'">'+esc(c.nome)+'</option>';
+  });
+
+  var ov=document.createElement('div');
+  ov.id='ov-nuovo-allen-sport';
+  ov.style.cssText='position:fixed;inset:0;z-index:10100;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center';
+  ov.onclick=function(e){if(e.target===ov) ov.remove();};
+  ov.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;max-width:480px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;padding-bottom:40px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#E65100">💪 Nuovo allenamento</div>'
+    +'<button onclick="document.getElementById(\'ov-nuovo-allen-sport\').remove()" style="background:#FBE9E7;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;color:#E65100">✕</button></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Cane</label>'
+    +'<select id="na-cane" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px">'+caniOpts+'</select></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Disciplina *</label>'
+    +'<select id="na-disc" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px">'+discOpts+'</select></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Tipo allenamento</label>'
+    +'<input id="na-tipo" placeholder="Es. Pista, ostacoli, richiamo..." style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Data</label>'
+    +'<input id="na-data" type="date" value="'+new Date().toISOString().slice(0,10)+'" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Durata (min)</label>'
+    +'<input id="na-durata" type="number" value="30" min="1" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px;box-sizing:border-box"/></div></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Come è andata? (1-5)</label>'
+    +'<div id="na-voto-stars" style="display:flex;gap:6px;font-size:28px;cursor:pointer">'
+    +'<span onclick="document.getElementById(\'na-voto\').value=1;_aggStarsNA(1)" style="color:#ddd">★</span>'
+    +'<span onclick="document.getElementById(\'na-voto\').value=2;_aggStarsNA(2)" style="color:#ddd">★</span>'
+    +'<span onclick="document.getElementById(\'na-voto\').value=3;_aggStarsNA(3)" style="color:#FF8F00">★</span>'
+    +'<span onclick="document.getElementById(\'na-voto\').value=4;_aggStarsNA(4)" style="color:#ddd">★</span>'
+    +'<span onclick="document.getElementById(\'na-voto\').value=5;_aggStarsNA(5)" style="color:#ddd">★</span>'
+    +'</div><input type="hidden" id="na-voto" value="3"/></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Note</label>'
+    +'<textarea id="na-note" rows="2" placeholder="Note sulla sessione..." style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:13px;resize:none;box-sizing:border-box"></textarea></div>'
+    +'<button onclick="salvaAllenamentoSport(this)" style="width:100%;background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">✅ Registra</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+  _aggStarsNA(3);
+}
+
+function _aggStarsNA(n){
+  var cont=document.getElementById('na-voto-stars');
+  if(!cont) return;
+  var spans=cont.querySelectorAll('span');
+  for(var i=0;i<spans.length;i++) spans[i].style.color=i<n?'#FF8F00':'#ddd';
+}
+
+function salvaAllenamentoSport(btn){
+  var disc=(document.getElementById('na-disc')||{}).value;
+  var data=(document.getElementById('na-data')||{}).value;
+  if(!disc||!data){toast('Compila disciplina e data');return;}
+  if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
+  btn.disabled=true;btn.textContent='⏳';
+
+  var caneId=(document.getElementById('na-cane')||{}).value||null;
+  var caneNome='';
+  if(caneId){var _c=_sportCani.find(function(c){return c.id===caneId;});if(_c) caneNome=_c.nome;}
+
+  var allen={
+    id:'tmp_allen_'+Date.now(),
+    user_id:_currentUser.id,
+    cane_id:caneId,
+    cane_nome:caneNome,
+    disciplina:disc,
+    tipo:(document.getElementById('na-tipo')||{}).value||'',
+    data:data,
+    durata_minuti:parseInt((document.getElementById('na-durata')||{}).value)||30,
+    note:(document.getElementById('na-note')||{}).value||'',
+    voto:parseInt((document.getElementById('na-voto')||{}).value)||3,
+    created_at:new Date().toISOString()
+  };
+
+  _sportAllenamenti.unshift(allen);
+  _salvaSportLocale();
+  var ov=document.getElementById('ov-nuovo-allen-sport');
+  if(ov) ov.remove();
+  toast('✅ Allenamento registrato!');
+  switchSportTab('sport-diario');
+
+  var rec=Object.assign({},allen);
+  delete rec.id;
+  _supabase.from('sport_allenamenti').insert(rec).select().then(function(res){
+    if(res.error){console.warn('[sport] allen save:',res.error.message);return;}
+    if(res.data&&res.data[0]){
+      var idx=_sportAllenamenti.findIndex(function(a){return a.id===allen.id;});
+      if(idx>=0) _sportAllenamenti[idx]=res.data[0];
+      _salvaSportLocale();
+    }
+  });
+}
+
+function eliminaAllenamentoSport(allenId){
+  if(!confirm('Eliminare questo allenamento?')) return;
+  _sportAllenamenti=_sportAllenamenti.filter(function(a){return a.id!==allenId;});
+  _salvaSportLocale();
+  toast('🗑️ Allenamento eliminato');
+  switchSportTab('sport-diario');
+  if(allenId&&allenId.indexOf('tmp_')<0&&_currentUser){
+    _supabase.from('sport_allenamenti').delete().eq('id',allenId).eq('user_id',_currentUser.id).then(function(){});
+  }
+}
+
 function renderSportAltro(container){
-  container.innerHTML='<div style="padding:16px">'
-    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#E65100;margin-bottom:16px">☰ Altro</div>'
-    +'<div style="display:flex;flex-direction:column;gap:8px">'
-    +[
-      {ico:'🏆',t:'Palmarès sportivo',s:'Tutti i tuoi risultati'},
-      {ico:'📊',t:'Statistiche',s:'Per disciplina e periodo'},
-      {ico:'🗺️',t:'GPS Percorsi',s:'Traccia allenamenti outdoor'},
-      {ico:'🫂',t:'Squadra',s:'Gruppo allenamento con codice'},
-      {ico:'📡',t:'Atleti vicini',s:'Chi si allena nella tua zona'},
-      {ico:'📅',t:'Calendario gare',s:'Prossimi eventi'},
-      {ico:'🗺️',t:'Mappe offline',s:'Scarica per zone senza segnale'},
-      {ico:'🚑',t:'Emergenze vet',s:'Numeri utili rapidi'}
-    ].map(function(it){
-      return '<div style="display:flex;align-items:center;gap:12px;padding:14px;background:#fff;border-radius:12px;border:1.5px solid #FFCCBC;cursor:pointer" onclick="toast(\'🚧 Prossimamente!\')">'
-        +'<div style="width:40px;height:40px;border-radius:10px;background:#FBE9E7;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+it.ico+'</div>'
-        +'<div><div style="font-weight:700;font-size:13px;color:#1a1a3a">'+it.t+'</div>'
-        +'<div style="font-size:11px;color:#6B8BB0">'+it.s+'</div></div>'
-        +'<span style="margin-left:auto;color:#FFCCBC;font-size:18px">›</span></div>';
-    }).join('')
+  // Carica gruppo sport
+  if(!window._sportGruppo){
+    try{
+      var _gsr=JSON.parse(localStorage.getItem('bp_sport_gruppo_v1')||'null');
+      if(_gsr&&_gsr.dati&&(!_currentUser||!_gsr.uid||_gsr.uid===_currentUser.id)) window._sportGruppo=_gsr.dati;
+    }catch(e){}
+  }
+  if(window._sportVisibile===undefined){
+    window._sportVisibile=localStorage.getItem('bp_sport_visibile')==='true';
+  }
+
+  var html='<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#E65100;margin-bottom:16px">☰ Altro</div>';
+
+  // Palmarès sportivo
+  html+='<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:14px;padding:14px;margin-bottom:12px">'
+    +'<div style="font-size:13px;font-weight:700;color:#BF360C;margin-bottom:10px">🏆 Palmarès sportivo</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:8px">';
+  var certCount={};
+  (_sportProve||[]).forEach(function(p){if(p.certificato) certCount[p.certificato]=(certCount[p.certificato]||0)+1;});
+  var totGare=_sportProve.length;
+  var totECC=_sportProve.filter(function(p){return p.qualifica==='ECC';}).length;
+  [{n:totGare,l:'Gare',ico:'🏋️'},{n:totECC,l:'Eccellenti',ico:'⭐'},{n:_sportAllenamenti.length,l:'Sessioni',ico:'💪'},
+   {n:Object.keys(certCount).length?Object.values(certCount).reduce(function(a,b){return a+b;},0):0,l:'Certificati',ico:'🏆'}
+  ].forEach(function(s){
+    html+='<div style="background:#FBE9E7;border-radius:10px;padding:10px;text-align:center">'
+      +'<div style="font-size:16px">'+s.ico+'</div>'
+      +'<div style="font-size:18px;font-weight:800;color:#E65100">'+s.n+'</div>'
+      +'<div style="font-size:9px;color:#6B8BB0;font-weight:600">'+s.l+'</div></div>';
+  });
+  if(Object.keys(certCount).length){
+    html+='</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">';
+    Object.keys(certCount).forEach(function(c){
+      html+='<span style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px">'+c+' ×'+certCount[c]+'</span>';
+    });
+  }
+  html+='</div></div>';
+
+  // Squadra Sport
+  html+='<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:14px;overflow:hidden;margin-bottom:12px">'
+    +'<div style="background:linear-gradient(135deg,#E65100,#BF360C);padding:12px 16px;display:flex;align-items:center;gap:8px">'
+    +'<div style="font-size:18px">🫂</div>'
+    +'<div style="font-weight:700;font-size:13px;color:#fff">Squadra Sport</div></div>'
+    +'<div style="padding:12px">'
+    +(window._sportGruppo
+      ?'<div style="background:#FBE9E7;border-radius:10px;padding:12px;margin-bottom:8px">'
+        +'<div style="font-size:12px;font-weight:700;color:#BF360C;margin-bottom:4px">'+esc(window._sportGruppo.nome)+'</div>'
+        +'<div style="font-size:11px;color:#6B8BB0;margin-bottom:6px">Codice: <strong style="color:#E65100;letter-spacing:1px">'+window._sportGruppo.codice+'</strong> · '+(window._sportGruppo.membri||[]).length+' membri</div>'
+        +'<div style="display:flex;gap:6px">'
+        +'<button onclick="condividiCodiceSport()" style="flex:1;background:#E65100;color:#fff;border:none;border-radius:8px;padding:8px;font-size:11px;font-weight:600;cursor:pointer">📲 Invita</button>'
+        +'<button onclick="esciDaGruppoSport()" style="background:#FFEBEE;color:#C62828;border:none;border-radius:8px;padding:8px 12px;font-size:11px;font-weight:600;cursor:pointer">🚪</button></div></div>'
+      :'<div style="text-align:center;padding:8px">'
+        +'<div style="font-size:12px;color:#6B8BB0;margin-bottom:10px">Crea o unisciti a una squadra</div>'
+        +'<div style="display:flex;gap:8px">'
+        +'<button onclick="creaGruppoSport()" style="flex:1;background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:8px;padding:10px;font-size:12px;font-weight:700;cursor:pointer">+ Crea</button>'
+        +'<button onclick="uniscitiGruppoSport()" style="flex:1;background:#FBE9E7;color:#E65100;border:1.5px solid #FFCCBC;border-radius:8px;padding:10px;font-size:12px;font-weight:700;cursor:pointer">🔗 Codice</button></div></div>')
     +'</div></div>';
+
+  // Atleti vicini
+  html+='<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:14px;overflow:hidden;margin-bottom:12px">'
+    +'<div style="background:linear-gradient(135deg,#1565C0,#0D47A1);padding:12px 16px;display:flex;align-items:center;gap:8px">'
+    +'<div style="font-size:18px">📡</div>'
+    +'<div style="flex:1;font-weight:700;font-size:13px;color:#fff">Atleti Vicini</div>'
+    +'<button onclick="toggleVisibilitaSport()" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:4px 8px;color:#fff;font-size:10px;font-weight:600;cursor:pointer">'+(window._sportVisibile?'👁️ Visibile':'🔒 Nascosto')+'</button>'
+    +'</div>'
+    +'<div style="padding:12px;text-align:center">'
+    +'<button onclick="cercaAtletiVicini()" style="background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;border-radius:8px;padding:10px;width:100%;font-size:12px;font-weight:700;cursor:pointer">📍 Cerca atleti vicini</button>'
+    +'<div id="atleti-vicini-content" style="margin-top:10px"></div>'
+    +'</div></div>';
+
+  // Menu restante
+  html+='<div style="display:flex;flex-direction:column;gap:8px">';
+  [{ico:'📅',t:'Calendario gare',f:'toast(\'🚧 Prossimamente!\')'},
+   {ico:'🗺️',t:'Mappe offline',f:'toast(\'🚧 Prossimamente!\')'},
+   {ico:'🚑',t:'Emergenze vet',f:'apriEmergenzeSport()'}
+  ].forEach(function(it){
+    html+='<div onclick="'+it.f+'" style="display:flex;align-items:center;gap:12px;padding:14px;background:#fff;border-radius:12px;border:1.5px solid #FFCCBC;cursor:pointer">'
+      +'<div style="width:36px;height:36px;border-radius:10px;background:#FBE9E7;display:flex;align-items:center;justify-content:center;font-size:18px">'+it.ico+'</div>'
+      +'<div style="flex:1;font-weight:700;font-size:13px;color:#1a1a3a">'+it.t+'</div>'
+      +'<span style="color:#FFCCBC;font-size:18px">›</span></div>';
+  });
+  html+='</div>';
+
+  container.innerHTML=html;
+}
+
+/* ══ SQUADRA SPORT ══ */
+function _generaCodiceSport(){
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var c='SPT-';
+  for(var i=0;i<5;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+  return c;
+}
+function _salvaGruppoSportLocale(){
+  try{localStorage.setItem('bp_sport_gruppo_v1',JSON.stringify({uid:_currentUser?_currentUser.id:null,dati:window._sportGruppo}));}catch(e){}
+}
+function creaGruppoSport(){
+  var nome=prompt('Nome della squadra:');
+  if(!nome||!nome.trim()) return;
+  if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
+  var codice=_generaCodiceSport();
+  window._sportGruppo={
+    nome:nome.trim(),codice:codice,admin:_currentUser.id,
+    membri:[{id:_currentUser.id,nome:(_currentUser.user_metadata||{}).nome||_currentUser.email,ruolo:'admin'}],
+    created:new Date().toISOString()
+  };
+  _salvaGruppoSportLocale();
+  toast('✅ Squadra "'+nome.trim()+'" creata! Codice: '+codice);
+  switchSportTab('sport-altro');
+  _supabase.from('sport_gruppi').insert({nome:nome.trim(),codice:codice,admin_id:_currentUser.id}).select().then(function(res){
+    if(res.error){console.warn('[sport] gruppo:',res.error.message);return;}
+    var g=res.data&&res.data[0];
+    if(!g) return;
+    window._sportGruppo.supaId=g.id;
+    _salvaGruppoSportLocale();
+    _supabase.from('sport_gruppi_membri').insert({gruppo_id:g.id,user_id:_currentUser.id,nome:(_currentUser.user_metadata||{}).nome||_currentUser.email,ruolo:'admin'}).then(function(){});
+  });
+}
+function uniscitiGruppoSport(){
+  var codice=prompt('Inserisci il codice squadra (es. SPT-XXXXX):');
+  if(!codice||!codice.trim()) return;
+  if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
+  var cod=codice.trim().toUpperCase();
+  toast('🔍 Ricerca squadra...');
+  _supabase.from('sport_gruppi').select('*').eq('codice',cod).then(function(res){
+    if(res.error||!res.data||!res.data.length){toast('❌ Squadra non trovata');return;}
+    var g=res.data[0];
+    var mioNome=(_currentUser.user_metadata||{}).nome||_currentUser.email;
+    _supabase.from('sport_gruppi_membri').insert({gruppo_id:g.id,user_id:_currentUser.id,nome:mioNome,ruolo:'membro'}).then(function(r2){
+      if(r2.error&&r2.error.code==='23505') toast('Sei già in questa squadra!');
+      _supabase.from('sport_gruppi_membri').select('*').eq('gruppo_id',g.id).then(function(r3){
+        window._sportGruppo={supaId:g.id,nome:g.nome,codice:g.codice,admin:g.admin_id,
+          membri:(r3.data||[]).map(function(m){return{id:m.user_id,nome:m.nome||'Membro',ruolo:m.ruolo};})};
+        _salvaGruppoSportLocale();
+        toast('✅ Unito a "'+g.nome+'"!');
+        switchSportTab('sport-altro');
+      });
+    });
+  });
+}
+function condividiCodiceSport(){
+  if(!window._sportGruppo) return;
+  var msg=encodeURIComponent('Unisciti alla mia squadra su BreedPed Sport! 🐕‍🦺💪\nSquadra: '+window._sportGruppo.nome+'\nCodice: '+window._sportGruppo.codice+'\nApp: mio-cane-enci.vercel.app');
+  window.open('https://wa.me/?text='+msg,'_blank');
+}
+function esciDaGruppoSport(){
+  if(!confirm('Vuoi uscire dalla squadra?')) return;
+  if(window._sportGruppo&&window._sportGruppo.supaId&&_currentUser){
+    _supabase.from('sport_gruppi_membri').delete().eq('gruppo_id',window._sportGruppo.supaId).eq('user_id',_currentUser.id).then(function(){});
+  }
+  window._sportGruppo=null;
+  localStorage.removeItem('bp_sport_gruppo_v1');
+  toast('Uscito dalla squadra');
+  switchSportTab('sport-altro');
+}
+
+/* ══ ATLETI VICINI (riusa _distanzaKm e _tempoFa da Caccia) ══ */
+function toggleVisibilitaSport(){
+  window._sportVisibile=!window._sportVisibile;
+  localStorage.setItem('bp_sport_visibile',window._sportVisibile?'true':'false');
+  if(window._sportVisibile&&_currentUser){
+    navigator.geolocation.getCurrentPosition(function(pos){
+      _supabase.from('caccia_posizioni').upsert({
+        user_id:_currentUser.id,nome:(_currentUser.user_metadata||{}).nome||_currentUser.email,
+        lat:pos.coords.latitude,lng:pos.coords.longitude,visibile:true,
+        ultimo_aggiornamento:new Date().toISOString()
+      },{onConflict:'user_id'}).then(function(){});
+    },function(){},{enableHighAccuracy:true,timeout:10000});
+    toast('👁️ Sei visibile');
+  } else {
+    if(_currentUser) _supabase.from('caccia_posizioni').update({visibile:false}).eq('user_id',_currentUser.id).then(function(){});
+    toast('🔒 Nascosto');
+  }
+  switchSportTab('sport-altro');
+}
+
+function cercaAtletiVicini(){
+  if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
+  var content=document.getElementById('atleti-vicini-content');
+  if(!content) return;
+  content.innerHTML='<div style="color:#6B8BB0;font-size:12px">🔍 Cerco...</div>';
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var mLat=pos.coords.latitude,mLng=pos.coords.longitude;
+    _supabase.from('caccia_posizioni').select('*').eq('visibile',true).then(function(res){
+      if(res.error){content.innerHTML='<div style="color:#C0534A;font-size:12px">❌ Errore</div>';return;}
+      var tutti=(res.data||[]).filter(function(p){return p.user_id!==_currentUser.id;});
+      tutti.forEach(function(p){p._dist=_distanzaKm(mLat,mLng,p.lat,p.lng);});
+      tutti=tutti.filter(function(p){return p._dist<=50;}).sort(function(a,b){return a._dist-b._dist;});
+      if(!tutti.length){
+        content.innerHTML='<div style="font-size:12px;color:#9ab0cc;padding:10px">🏔️ Nessun atleta nel raggio di 50 km</div>';
+        return;
+      }
+      var h='<div style="font-size:11px;font-weight:700;color:#1565C0;margin-bottom:8px;text-align:left">'+tutti.length+' atleta/i vicini</div>';
+      tutti.slice(0,10).forEach(function(p){
+        h+='<div style="display:flex;align-items:center;gap:8px;padding:8px;background:#F8FAFF;border-radius:8px;margin-bottom:4px;text-align:left">'
+          +'<div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#E65100,#BF360C);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">'+((p.nome||'?')[0]).toUpperCase()+'</div>'
+          +'<div style="flex:1;font-size:12px;font-weight:600;color:#1a1a3a">'+esc(p.nome||'Atleta')+'</div>'
+          +'<div style="font-size:13px;font-weight:800;color:#E65100">'+p._dist.toFixed(1)+' km</div></div>';
+      });
+      content.innerHTML=h;
+    });
+  },function(){
+    content.innerHTML='<div style="color:#C0534A;font-size:12px">❌ GPS negato</div>';
+  },{enableHighAccuracy:true,timeout:10000});
+}
+
+function apriEmergenzeSport(){
+  var ov=document.createElement('div');
+  ov.id='ov-emergenze-sport';
+  ov.style.cssText='position:fixed;inset:0;z-index:10100;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.onclick=function(e){if(e.target===ov) ov.remove();};
+  ov.innerHTML='<div style="background:#fff;border-radius:20px;max-width:400px;width:100%;padding:24px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#C62828">🚑 Emergenze</div>'
+    +'<button onclick="document.getElementById(\'ov-emergenze-sport\').remove()" style="background:#FFEBEE;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;color:#C62828">✕</button></div>'
+    +[{n:'Veterinario emergenze',t:'Cerca il più vicino',ico:'🏥'},
+      {n:'Pronto soccorso vet',t:'Clinica 24h',ico:'🚨'},
+      {n:'Centro antiveleni',t:'800 860 022',ico:'☠️'}
+    ].map(function(e){
+      return '<div style="display:flex;align-items:center;gap:10px;padding:12px;background:#FBE9E7;border-radius:10px;margin-bottom:8px">'
+        +'<div style="font-size:22px">'+e.ico+'</div>'
+        +'<div style="flex:1"><div style="font-weight:700;font-size:13px;color:#1a1a3a">'+e.n+'</div>'
+        +'<div style="font-size:11px;color:#6B8BB0">'+e.t+'</div></div></div>';
+    }).join('')
+    +'</div>';
+  document.body.appendChild(ov);
 }
 
 // ── Aggiungi cane sport ──
