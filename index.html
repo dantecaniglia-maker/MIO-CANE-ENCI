@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.60';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.61';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -10519,18 +10519,18 @@ function renderSportHome(container){
       +'<div style="font-family:\'Playfair Display\',serif;font-size:16px;font-weight:700;color:#BF360C;margin-bottom:12px">🏅 Le tue discipline</div>'
       +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'
       +[
-        {id:'obbedienza',ico:'🐕‍🦺',nome:'Obbedienza'},
-        {id:'difesa',ico:'🛡️',nome:'Guardia'},
-        {id:'soccorso',ico:'🚑',nome:'Soccorso'},
-        {id:'pastore',ico:'🐾',nome:'Pastore'},
-        {id:'agility',ico:'🚧',nome:'Agility'},
-        {id:'corsa',ico:'🏃',nome:'Corsa'}
+        {id:'obbedienza',ico:'🐕‍🦺',nome:'Obbedienza',f:'switchSportTab(\'sport-obbedienza\')'},
+        {id:'difesa',ico:'🛡️',nome:'Guardia',f:'apriDisciplinaSport(\'difesa\')'},
+        {id:'soccorso',ico:'🚑',nome:'Soccorso',f:'apriDisciplinaSport(\'soccorso\')'},
+        {id:'pastore',ico:'🐾',nome:'Pastore',f:'apriDisciplinaSport(\'pastore\')'},
+        {id:'agility',ico:'🚧',nome:'Agility',f:'apriDisciplinaSport(\'agility\')'},
+        {id:'corsa',ico:'🏃',nome:'Corsa',f:'apriDisciplinaSport(\'corsa\')'}
       ].map(function(d){
         var attiva=discAttive[d.id];
-        return '<div style="background:'+(attiva?'#FBE9E7':'#F5F5F5')+';border-radius:10px;padding:10px;text-align:center;border:1.5px solid '+(attiva?'#FFCCBC':'#eee')+'">'
-          +'<div style="font-size:22px">'+d.ico+'</div>'
-          +'<div style="font-size:10px;font-weight:700;color:'+(attiva?'#E65100':'#9ab0cc')+'">'+d.nome+'</div>'
-          +(attiva?'<div style="font-size:9px;color:#E65100">✓ Attiva</div>':'')
+        return '<div onclick="'+d.f+'" style="background:'+(attiva?'#FBE9E7':'#fff')+';border-radius:12px;padding:12px;text-align:center;border:1.5px solid '+(attiva?'#FFCCBC':'#eee')+';cursor:pointer;transition:all .2s" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'">'
+          +'<div style="font-size:24px">'+d.ico+'</div>'
+          +'<div style="font-size:10px;font-weight:700;color:'+(attiva?'#E65100':'#6B8BB0')+'">'+d.nome+'</div>'
+          +(attiva?'<div style="font-size:8px;color:#E65100;margin-top:2px">✓ Attiva</div>':'')
           +'</div>';
       }).join('')
       +'</div>'
@@ -11635,6 +11635,359 @@ function apriEmergenzeSport(){
     }).join('')
     +'</div>';
   document.body.appendChild(ov);
+}
+
+/* ══ AGILITY — REGOLAMENTO FCI 2023/2024 ══ */
+var AGILITY_TAGLIE=[
+  {id:'S',nome:'Small',altezza:'< 35 cm',salto:{min:25,max:30},pneumatico:55,lungo:{min:40,max:50,pz:'2'},colore:'#4CAF50'},
+  {id:'M',nome:'Medium',altezza:'35-43 cm',salto:{min:35,max:40},pneumatico:55,lungo:{min:70,max:90,pz:'3'},colore:'#2196F3'},
+  {id:'I',nome:'Intermediate',altezza:'43-48 cm',salto:{min:45,max:50},pneumatico:70,lungo:{min:90,max:110,pz:'3-4'},colore:'#FF9800'},
+  {id:'L',nome:'Large',altezza:'> 48 cm',salto:{min:55,max:60},pneumatico:80,lungo:{min:120,max:150,pz:'4-5'},colore:'#E65100'}
+];
+var AGILITY_OSTACOLI_FCI=[
+  {id:'salto',nome:'Salto singolo',ico:'🏃',larg:'120-130cm',note:'Primo e ultimo ostacolo. Palo Ø3-5cm, legno/sintetico, NO metallo'},
+  {id:'doppio',nome:'Salto doppio',ico:'🏃',larg:'120-130cm',note:'NON ammesso in Agility/Jumping 1. Differenza altezza 15-25cm'},
+  {id:'muro',nome:'Muro',ico:'🧱',larg:'120-130cm',note:'Max 1× nel percorso. Elementi rimovibili in cima'},
+  {id:'pneumatico',nome:'Pneumatico',ico:'⭕',larg:'Ø50-60cm',note:'Max 1× nel percorso. Spezzabile 2-4 parti. No barra sopra'},
+  {id:'lungo',nome:'Salto in lungo',ico:'↔️',larg:'Variabile',note:'Paletti angolo 120-130cm. Superficie non riflettente'},
+  {id:'palizzata',nome:'Palizzata (A-Frame)',ico:'⛰️',larg:'Rampa 90cm',note:'Apice 170cm. Rampa 265-275cm. Zona contatto 106cm. Listelli ogni 25cm'},
+  {id:'passerella',nome:'Passerella (Dog Walk)',ico:'🌉',larg:'Asse 30cm',note:'Alt. 120-130cm. Lung. 360-380cm. Contatto solo discesa (2023+)'},
+  {id:'bascula',nome:'Bascula (See-Saw)',ico:'⚖️',larg:'Asse 30cm',note:'Perno 60cm. Asse 360-380cm. Contatto salita+discesa. No listelli'},
+  {id:'slalom',nome:'Slalom',ico:'🐍',larg:'12 pali',note:'Max 1× nel percorso. Pali Ø3-5cm, distanza 60cm. Ingresso a SX'},
+  {id:'tunnel',nome:'Tunnel rigido',ico:'🕳️',larg:'Ø60cm',note:'Max 5× nel percorso. Lunghezza 3-6m'}
+];
+var AGILITY_PENALITA_FCI=[
+  {tipo:'Abbattimento',punti:5,desc:'Palo o elemento cade a terra'},
+  {tipo:'Contatto mancato',punti:5,desc:'Non tocca zona contatto in discesa'},
+  {tipo:'Rifiuto',punti:5,desc:'Si ferma o devia davanti all\'ostacolo'},
+  {tipo:'Pneumatico aperto',punti:5,desc:'Il pneumatico si apre durante il passaggio'},
+  {tipo:'Tempo eccedente',punti:'1pt/sec',desc:'Ogni secondo oltre il SCT'},
+  {tipo:'Eliminazione',punti:'ELIM',desc:'Percorso errato, 2° rifiuto stesso ostacolo, collare, ecc.'}
+];
+
+function renderSportAgility(container){
+  var taglia=window._agilityTaglia||'L';
+  var tagliaObj=AGILITY_TAGLIE.find(function(t){return t.id===taglia;})||AGILITY_TAGLIE[3];
+  var proveAgility=(_sportProve||[]).filter(function(p){return p.disciplina==='agility';});
+
+  var html=
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+    +'<button onclick="switchSportTab(\'sport-home\')" style="background:#FBE9E7;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#E65100;font-size:16px">‹</button>'
+    +'<div style="flex:1"><div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#E65100">🚧 Agility</div>'
+    +'<div style="font-size:11px;color:#6B8BB0">Regolamento FCI 2023/2024</div></div></div>'
+
+    +'<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:14px;padding:14px;margin-bottom:14px">'
+    +'<div style="font-size:12px;font-weight:700;color:#BF360C;margin-bottom:8px">📏 Taglia del cane</div>'
+    +'<div style="display:flex;gap:6px">';
+  AGILITY_TAGLIE.forEach(function(t){
+    html+='<button onclick="window._agilityTaglia=\''+t.id+'\';apriDisciplinaSport(\'agility\')" style="flex:1;padding:10px 4px;border-radius:10px;border:2px solid '+(taglia===t.id?t.colore:'#eee')+';background:'+(taglia===t.id?t.colore:'#fff')+';color:'+(taglia===t.id?'#fff':'#333')+';font-size:11px;font-weight:700;cursor:pointer;text-align:center">'+t.id+'<br><span style="font-size:9px;font-weight:400;opacity:.8">'+t.altezza+'</span></button>';
+  });
+  html+='</div></div>'
+
+    +'<div style="background:linear-gradient(135deg,'+tagliaObj.colore+','+tagliaObj.colore+'cc);border-radius:14px;padding:16px;margin-bottom:14px;color:#fff">'
+    +'<div style="font-size:14px;font-weight:700;margin-bottom:10px">📐 Misure '+tagliaObj.nome+' ('+tagliaObj.id+') — '+tagliaObj.altezza+'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800">'+tagliaObj.salto.min+'-'+tagliaObj.salto.max+'</div><div style="font-size:10px;opacity:.8">cm Salti</div></div>'
+    +'<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800">'+tagliaObj.pneumatico+'</div><div style="font-size:10px;opacity:.8">cm Pneumatico</div></div>'
+    +'<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800">'+tagliaObj.lungo.min+'-'+tagliaObj.lungo.max+'</div><div style="font-size:10px;opacity:.8">cm Lungo ('+tagliaObj.lungo.pz+' pz)</div></div>'
+    +'<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800">170</div><div style="font-size:10px;opacity:.8">cm A-Frame apice</div></div>'
+    +'</div></div>'
+
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
+    +'<button onclick="apriNuovaGaraSport(\'agility\')" style="background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">🏆 Registra gara</button>'
+    +'<button onclick="apriTimerAgility()" style="background:#fff;color:#E65100;border:2px solid #FFCCBC;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">⏱️ Timer gara</button>'
+    +'</div>'
+
+    +'<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:14px;overflow:hidden;margin-bottom:14px">'
+    +'<div onclick="var c=document.getElementById(\'agi-ost-body\');c.style.display=c.style.display===\'none\'?\'block\':\'none\'" style="background:#FBE9E7;padding:12px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="font-size:13px;font-weight:700;color:#BF360C">📋 Ostacoli FCI ('+AGILITY_OSTACOLI_FCI.length+')</div><span style="color:#E65100">▼</span></div>'
+    +'<div id="agi-ost-body" style="display:none;padding:8px">';
+  AGILITY_OSTACOLI_FCI.forEach(function(o){
+    var altSpec='';
+    if(o.id==='salto'||o.id==='doppio'||o.id==='muro') altSpec=' · Alt: '+tagliaObj.salto.min+'-'+tagliaObj.salto.max+'cm ('+tagliaObj.id+')';
+    else if(o.id==='pneumatico') altSpec=' · Centro: '+tagliaObj.pneumatico+'cm ('+tagliaObj.id+')';
+    else if(o.id==='lungo') altSpec=' · Lung: '+tagliaObj.lungo.min+'-'+tagliaObj.lungo.max+'cm ('+tagliaObj.lungo.pz+' pz)';
+    html+='<div style="display:flex;align-items:flex-start;gap:8px;padding:10px;border-bottom:1px solid #FBE9E7">'
+      +'<div style="font-size:20px;flex-shrink:0">'+o.ico+'</div>'
+      +'<div><div style="font-weight:700;font-size:12px;color:#1a1a3a">'+o.nome+'</div>'
+      +'<div style="font-size:11px;color:#E65100;font-weight:600">'+o.larg+altSpec+'</div>'
+      +'<div style="font-size:10px;color:#6B8BB0;margin-top:2px">'+o.note+'</div></div></div>';
+  });
+  html+='</div></div>'
+
+    +'<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:14px;overflow:hidden;margin-bottom:14px">'
+    +'<div onclick="var c=document.getElementById(\'agi-rules-body\');c.style.display=c.style.display===\'none\'?\'block\':\'none\'" style="background:#FBE9E7;padding:12px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="font-size:13px;font-weight:700;color:#BF360C">📖 Regole percorso FCI</div><span style="color:#E65100">▼</span></div>'
+    +'<div id="agi-rules-body" style="display:none;padding:12px;font-size:12px;color:#333;line-height:1.6">'
+    +'<b style="color:#BF360C">Ring:</b> Min 20m × 40m<br>'
+    +'<b style="color:#BF360C">Distanze:</b> Min 5m · Max 7m (rettilineo) · Max 9m (percorso)<br>'
+    +'<b style="color:#BF360C">Ostacoli:</b> 15-22 per percorso, minimo 7 salti<br>'
+    +'<b style="color:#BF360C">Limiti:</b> Max 5 tunnel · Max 1 slalom · Max 1 pneumatico · Max 1 muro<br>'
+    +'<b style="color:#BF360C">Primo/Ultimo:</b> Salto singolo · Salto singolo o doppio<br>'
+    +'<b style="color:#BF360C">SCT:</b> Ag.1: 3.0-3.5 m/s · Ag.2: 3.5-4.0 m/s · Ag.3: 4.0-5.0 m/s'
+    +'</div></div>'
+
+    +'<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:14px;overflow:hidden;margin-bottom:14px">'
+    +'<div onclick="var c=document.getElementById(\'agi-pen-body\');c.style.display=c.style.display===\'none\'?\'block\':\'none\'" style="background:#FBE9E7;padding:12px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="font-size:13px;font-weight:700;color:#BF360C">⚠️ Penalità</div><span style="color:#E65100">▼</span></div>'
+    +'<div id="agi-pen-body" style="display:none;padding:8px">';
+  AGILITY_PENALITA_FCI.forEach(function(p){
+    html+='<div style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid #FBE9E7">'
+      +'<div style="background:'+(p.punti==='ELIM'?'#C62828':'#E65100')+';color:#fff;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:800;min-width:48px;text-align:center">'+(typeof p.punti==='number'?'+'+p.punti:p.punti)+'</div>'
+      +'<div><div style="font-weight:700;font-size:12px;color:#1a1a3a">'+p.tipo+'</div>'
+      +'<div style="font-size:10px;color:#6B8BB0">'+p.desc+'</div></div></div>';
+  });
+  html+='</div></div>'
+
+    +'<div style="font-size:13px;font-weight:700;color:#BF360C;margin-bottom:8px">🏆 Ultime gare ('+proveAgility.length+')</div>';
+  if(proveAgility.length){
+    proveAgility.slice(0,5).forEach(function(p){
+      var det=p.dettagli||{};
+      html+='<div style="background:#fff;border-radius:10px;border:1px solid #FFCCBC;padding:10px;margin-bottom:6px;font-size:12px">'
+        +'<div style="display:flex;justify-content:space-between"><strong>'+esc(p.tipo_prova)+'</strong>'
+        +(p.qualifica?'<span style="color:#E65100;font-weight:700">'+esc(p.qualifica)+'</span>':'')+'</div>'
+        +'<div style="color:#6B8BB0;margin-top:2px">📅 '+esc(p.data||'')+(p.luogo?' · '+esc(p.luogo):'')+(det.tempo?' · ⏱ '+det.tempo+'s':'')+(det.penalita?' · Pen: '+det.penalita:'')+'</div></div>';
+    });
+  } else {
+    html+='<div style="text-align:center;padding:16px;color:#9ab0cc;font-size:12px">Nessuna gara registrata.</div>';
+  }
+
+  container.innerHTML=html;
+}
+
+/* ══ TIMER AGILITY ══ */
+function apriTimerAgility(){
+  var taglia=window._agilityTaglia||'L';
+  var ov=document.createElement('div');
+  ov.id='ov-timer-agility';
+  ov.style.cssText='position:fixed;inset:0;z-index:10100;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px';
+
+  window._agiTimerRunning=false;
+  window._agiTimerStart=0;
+  window._agiTimerElapsed=0;
+  window._agiTimerInterval=null;
+  window._agiPenalita=0;
+
+  ov.innerHTML='<div style="max-width:400px;width:100%;text-align:center">'
+    +'<div style="color:rgba(255,255,255,.6);font-size:12px;margin-bottom:8px">⏱️ Timer Agility — Taglia '+taglia+'</div>'
+    +'<div id="agi-timer-display" style="font-size:72px;font-weight:800;color:#fff;font-family:monospace;letter-spacing:4px;margin-bottom:8px">00.000</div>'
+    +'<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px">'
+    +'<span style="color:rgba(255,255,255,.6);font-size:11px">Percorso:</span>'
+    +'<input id="agi-percorso-m" type="number" value="160" min="50" max="300" style="width:60px;padding:6px;border-radius:6px;border:none;text-align:center;font-size:14px;font-weight:700" onchange="_aggSCT()"/>'
+    +'<span style="color:rgba(255,255,255,.6);font-size:11px">m · Vel:</span>'
+    +'<select id="agi-vel" style="padding:6px;border-radius:6px;border:none;font-size:13px;font-weight:700" onchange="_aggSCT()">'
+    +'<option value="3.0">3.0 m/s (Ag.1)</option><option value="3.5">3.5 m/s</option><option value="4.0" selected>4.0 m/s (Ag.2)</option><option value="4.5">4.5 m/s</option><option value="5.0">5.0 m/s (Ag.3)</option></select>'
+    +'</div>'
+    +'<div id="agi-sct-display" style="color:#FFCCBC;font-size:16px;font-weight:700;margin-bottom:24px">SCT: 40.0s</div>'
+    +'<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:24px">'
+    +'<button onclick="if(window._agiPenalita>0){window._agiPenalita-=5;_aggPenDisplay()}" style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.3);color:#fff;font-size:20px;font-weight:800;cursor:pointer">−</button>'
+    +'<div style="text-align:center"><div id="agi-pen-display" style="font-size:32px;font-weight:800;color:#FF8F00">0</div>'
+    +'<div style="font-size:10px;color:rgba(255,255,255,.5)">PENALITÀ</div></div>'
+    +'<button onclick="window._agiPenalita+=5;_aggPenDisplay()" style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.3);color:#fff;font-size:20px;font-weight:800;cursor:pointer">+</button>'
+    +'</div>'
+    +'<div style="display:flex;gap:12px;margin-bottom:16px">'
+    +'<button id="agi-btn-start" onclick="_toggleTimerAgility()" style="flex:1;padding:16px;border-radius:14px;border:none;font-size:18px;font-weight:800;cursor:pointer;background:#4CAF50;color:#fff">▶ START</button>'
+    +'<button onclick="_resetTimerAgility()" style="padding:16px 20px;border-radius:14px;border:none;font-size:18px;cursor:pointer;background:rgba(255,255,255,.1);color:#fff">↺</button>'
+    +'</div>'
+    +'<div id="agi-risultato" style="display:none;background:rgba(255,255,255,.1);border-radius:14px;padding:16px;margin-bottom:16px"></div>'
+    +'<button onclick="_chiudiTimerAgility()" style="background:none;border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:10px 24px;color:rgba(255,255,255,.6);font-size:12px;cursor:pointer">✕ Chiudi timer</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+  _aggSCT();
+}
+
+function _aggSCT(){
+  var m=parseFloat((document.getElementById('agi-percorso-m')||{}).value)||160;
+  var v=parseFloat((document.getElementById('agi-vel')||{}).value)||4.0;
+  var sct=(m/v).toFixed(1);
+  window._agiSCT=parseFloat(sct);
+  var el=document.getElementById('agi-sct-display');
+  if(el) el.textContent='SCT: '+sct+'s';
+}
+
+function _aggPenDisplay(){
+  var el=document.getElementById('agi-pen-display');
+  if(el) el.textContent=window._agiPenalita||0;
+}
+
+function _toggleTimerAgility(){
+  var btn=document.getElementById('agi-btn-start');
+  if(!window._agiTimerRunning){
+    window._agiTimerRunning=true;
+    window._agiTimerStart=Date.now()-window._agiTimerElapsed;
+    window._agiTimerInterval=setInterval(function(){
+      window._agiTimerElapsed=Date.now()-window._agiTimerStart;
+      var s=(window._agiTimerElapsed/1000).toFixed(3);
+      var el=document.getElementById('agi-timer-display');
+      if(el) el.textContent=s;
+    },10);
+    if(btn){btn.textContent='⏹ STOP';btn.style.background='#C62828';}
+  } else {
+    window._agiTimerRunning=false;
+    clearInterval(window._agiTimerInterval);
+    if(btn){btn.textContent='▶ START';btn.style.background='#4CAF50';}
+    var tempoSec=(window._agiTimerElapsed/1000);
+    var pen=window._agiPenalita||0;
+    var sct=window._agiSCT||40;
+    var tempoExceed=Math.max(0,tempoSec-sct);
+    var penTempo=Math.ceil(tempoExceed);
+    var totale=pen+penTempo;
+    var qualifica=totale===0&&tempoSec<=sct?'✅ NETTO!':totale<=5?'Buono':'Rivedere';
+    var res=document.getElementById('agi-risultato');
+    if(res){
+      res.style.display='block';
+      res.innerHTML='<div style="font-size:14px;font-weight:700;color:#FFCCBC;margin-bottom:8px">📊 Risultato</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">'
+        +'<div style="text-align:center"><div style="font-size:20px;font-weight:800;color:#fff">'+tempoSec.toFixed(3)+'</div><div style="font-size:9px;color:rgba(255,255,255,.5)">Tempo (s)</div></div>'
+        +'<div style="text-align:center"><div style="font-size:20px;font-weight:800;color:#FF8F00">'+pen+'</div><div style="font-size:9px;color:rgba(255,255,255,.5)">Pen. percorso</div></div>'
+        +'<div style="text-align:center"><div style="font-size:20px;font-weight:800;color:'+(totale===0?'#4CAF50':'#FF8F00')+'">'+totale+'</div><div style="font-size:9px;color:rgba(255,255,255,.5)">Pen. totali</div></div>'
+        +'</div>'
+        +(penTempo>0?'<div style="font-size:11px;color:#FF8F00;margin-bottom:6px">⏱ +'+penTempo+' pen. tempo ('+tempoExceed.toFixed(1)+'s oltre SCT '+sct+'s)</div>':'')
+        +'<div style="font-size:16px;font-weight:800;color:'+(totale===0?'#4CAF50':'#fff')+'">'+qualifica+'</div>';
+    }
+  }
+}
+
+function _resetTimerAgility(){
+  window._agiTimerRunning=false;
+  clearInterval(window._agiTimerInterval);
+  window._agiTimerElapsed=0;
+  window._agiPenalita=0;
+  var el=document.getElementById('agi-timer-display');
+  if(el) el.textContent='00.000';
+  var pen=document.getElementById('agi-pen-display');
+  if(pen) pen.textContent='0';
+  var btn=document.getElementById('agi-btn-start');
+  if(btn){btn.textContent='▶ START';btn.style.background='#4CAF50';}
+  var res=document.getElementById('agi-risultato');
+  if(res) res.style.display='none';
+}
+
+function _chiudiTimerAgility(){
+  window._agiTimerRunning=false;
+  clearInterval(window._agiTimerInterval);
+  var ov=document.getElementById('ov-timer-agility');
+  if(ov) ov.remove();
+}
+
+/* ══ GUARDIA/DIFESA ══ */
+function renderSportDifesa(container){
+  var html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+    +'<button onclick="switchSportTab(\'sport-home\')" style="background:#FBE9E7;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#E65100;font-size:16px">‹</button>'
+    +'<div style="flex:1"><div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#1565C0">🛡️ Guardia / Difesa</div>'
+    +'<div style="font-size:11px;color:#6B8BB0">IGP · Mondioring · Ring</div></div></div>'
+    +'<div style="background:#fff;border:1.5px solid #90CAF9;border-radius:14px;padding:14px;margin-bottom:14px">'
+    +'<div style="font-size:13px;font-weight:700;color:#1565C0;margin-bottom:10px">📋 Percorso IGP</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:12px">'
+    +['BH','IGP-1','IGP-2','IGP-3'].map(function(l){
+      return '<button onclick="toast(\'🚧 Dettaglio '+l+' — Sessione B\')" style="flex:1;padding:10px;border-radius:10px;border:2px solid #90CAF9;background:#fff;font-size:12px;font-weight:700;color:#1565C0;cursor:pointer">'+l+'</button>';
+    }).join('')
+    +'</div>'
+    +'<div style="font-size:12px;color:#6B8BB0;line-height:1.6">'
+    +'<strong>Sezione A</strong> — Pista: tracciamento, oggetti, curve<br>'
+    +'<strong>Sezione B</strong> — Obbedienza: condotta, seduto/terra in mov., riporti, invio avanti<br>'
+    +'<strong>Sezione C</strong> — Protezione: ricerca, abbaio, fuga, attacchi, coraggio<br>'
+    +'<div style="margin-top:6px">Ogni sezione: 100 punti · Totale: 300 · Min per fase: 70</div>'
+    +'</div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
+    +'<button onclick="apriNuovaGaraSport(\'difesa\')" style="background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">🏆 Registra prova</button>'
+    +'<button onclick="apriNuovoAllenamentoSport();setTimeout(function(){var s=document.getElementById(\'na-disc\');if(s)s.value=\'difesa\';},100)" style="background:#fff;color:#1565C0;border:2px solid #90CAF9;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">💪 Allenamento</button>'
+    +'</div>'
+    +'<div style="text-align:center;padding:20px;color:#9ab0cc;font-size:12px">📋 Checklist esercizi dettagliata — Sessione B</div>';
+  container.innerHTML=html;
+}
+
+/* ══ SOCCORSO ══ */
+function renderSportSoccorso(container){
+  var html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+    +'<button onclick="switchSportTab(\'sport-home\')" style="background:#FBE9E7;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#E65100;font-size:16px">‹</button>'
+    +'<div style="flex:1"><div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#2E7D32">🚑 Soccorso</div>'
+    +'<div style="font-size:11px;color:#6B8BB0">SAR · Mantrailing · Trofeo ENCI</div></div></div>'
+    +'<div style="background:#fff;border:1.5px solid #A5D6A7;border-radius:14px;padding:14px;margin-bottom:14px">'
+    +'<div style="font-size:13px;font-weight:700;color:#2E7D32;margin-bottom:10px">📋 Tipologie prove</div>';
+  [{ico:'🌲',n:'SAR Superficie (FL)',d:'Area 20.000-40.000 mq · 2-3 figuranti · 15-30 min'},
+   {ico:'🏚️',n:'SAR Macerie (T)',d:'Area 500-2.000 mq · 2-3 figuranti sotto macerie · 10-20 min'},
+   {ico:'👣',n:'Mantrailing (MT)',d:'500-2.000m · Invecchiamento 30-180 min'},
+   {ico:'🌊',n:'Soccorso in acqua',d:'Entrata, nuoto, traino, riporto a riva'}
+  ].forEach(function(p){
+    html+='<div style="display:flex;align-items:center;gap:10px;padding:10px;background:#F1F8E9;border-radius:10px;margin-bottom:6px">'
+      +'<div style="font-size:22px">'+p.ico+'</div>'
+      +'<div><div style="font-weight:700;font-size:12px;color:#1a1a3a">'+p.n+'</div>'
+      +'<div style="font-size:10px;color:#6B8BB0">'+p.d+'</div></div></div>';
+  });
+  html+='</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<button onclick="apriNuovaGaraSport(\'soccorso\')" style="background:linear-gradient(135deg,#2E7D32,#1B5E20);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">🏆 Registra prova</button>'
+    +'<button onclick="apriNuovoAllenamentoSport();setTimeout(function(){var s=document.getElementById(\'na-disc\');if(s)s.value=\'soccorso\';},100)" style="background:#fff;color:#2E7D32;border:2px solid #A5D6A7;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">💪 Allenamento</button>'
+    +'</div>';
+  container.innerHTML=html;
+}
+
+/* ══ PASTORE ══ */
+function renderSportPastore(container){
+  var html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+    +'<button onclick="switchSportTab(\'sport-home\')" style="background:#FBE9E7;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#E65100;font-size:16px">‹</button>'
+    +'<div style="flex:1"><div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#6D4C41">🐾 Conduzione / Pastore</div>'
+    +'<div style="font-size:11px;color:#6B8BB0">Sheepdog Trial · Treibball</div></div></div>'
+    +'<div style="background:#fff;border:1.5px solid #BCAAA4;border-radius:14px;padding:14px;margin-bottom:14px">'
+    +'<div style="font-size:13px;font-weight:700;color:#6D4C41;margin-bottom:10px">📋 Fasi Sheepdog Trial (ISDS)</div>';
+  [{n:'Outrun',pt:20,d:'Corsa ad arco verso le pecore'},{n:'Lift',pt:10,d:'Primo contatto, inizio movimento'},
+   {n:'Fetch',pt:20,d:'Portare pecore al conduttore attraverso cancello'},{n:'Drive',pt:30,d:'Spingere pecore lontano attraverso cancelli'},
+   {n:'Shedding',pt:10,d:'Separare pecore marcate'},{n:'Pen',pt:10,d:'Guidare pecore nel recinto'}
+  ].forEach(function(f){
+    html+='<div style="display:flex;align-items:center;gap:10px;padding:10px;background:#EFEBE9;border-radius:10px;margin-bottom:6px">'
+      +'<div style="background:#6D4C41;color:#fff;border-radius:8px;padding:4px 8px;font-size:11px;font-weight:800;min-width:36px;text-align:center">'+f.pt+'pt</div>'
+      +'<div><div style="font-weight:700;font-size:12px;color:#1a1a3a">'+f.n+'</div>'
+      +'<div style="font-size:10px;color:#6B8BB0">'+f.d+'</div></div></div>';
+  });
+  html+='</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<button onclick="apriNuovaGaraSport(\'pastore\')" style="background:linear-gradient(135deg,#6D4C41,#4E342E);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">🏆 Registra prova</button>'
+    +'<button onclick="apriNuovoAllenamentoSport();setTimeout(function(){var s=document.getElementById(\'na-disc\');if(s)s.value=\'pastore\';},100)" style="background:#fff;color:#6D4C41;border:2px solid #BCAAA4;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">💪 Allenamento</button>'
+    +'</div>';
+  container.innerHTML=html;
+}
+
+/* ══ CORSA ══ */
+function renderSportCorsa(container){
+  var html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+    +'<button onclick="switchSportTab(\'sport-home\')" style="background:#FBE9E7;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#E65100;font-size:16px">‹</button>'
+    +'<div style="flex:1"><div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#7B1FA2">🏃 Corsa</div>'
+    +'<div style="font-size:11px;color:#6B8BB0">Lure Coursing · Straight Racing</div></div></div>'
+    +'<div style="background:#fff;border:1.5px solid #CE93D8;border-radius:14px;padding:14px;margin-bottom:14px">'
+    +'<div style="font-size:13px;font-weight:700;color:#7B1FA2;margin-bottom:10px">📋 Lure Coursing FCI — Criteri valutazione</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
+  [{n:'Velocità',pt:30,ico:'⚡'},{n:'Entusiasmo',pt:20,ico:'🔥'},{n:'Agilità',pt:20,ico:'🏃'},
+   {n:'Resistenza',pt:20,ico:'💪'},{n:'Follow',pt:10,ico:'🎯'}
+  ].forEach(function(c){
+    html+='<div style="background:#F3E5F5;border-radius:10px;padding:10px;text-align:center">'
+      +'<div style="font-size:18px">'+c.ico+'</div>'
+      +'<div style="font-weight:700;font-size:12px;color:#7B1FA2">'+c.n+'</div>'
+      +'<div style="font-size:11px;color:#6B8BB0">'+c.pt+' punti</div></div>';
+  });
+  html+='</div>'
+    +'<div style="font-size:11px;color:#6B8BB0;margin-top:8px">Totale: 100 punti · Distanza: 400-1000m · Min 30m oltre traguardo</div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<button onclick="apriNuovaGaraSport(\'corsa\')" style="background:linear-gradient(135deg,#7B1FA2,#4A148C);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">🏆 Registra gara</button>'
+    +'<button onclick="apriNuovoAllenamentoSport();setTimeout(function(){var s=document.getElementById(\'na-disc\');if(s)s.value=\'corsa\';},100)" style="background:#fff;color:#7B1FA2;border:2px solid #CE93D8;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">💪 Allenamento</button>'
+    +'</div>';
+  container.innerHTML=html;
+}
+
+function apriDisciplinaSport(discId){
+  var container=g('sport-tab-content');
+  if(!container) return;
+  if(discId==='agility') renderSportAgility(container);
+  else if(discId==='difesa') renderSportDifesa(container);
+  else if(discId==='soccorso') renderSportSoccorso(container);
+  else if(discId==='pastore') renderSportPastore(container);
+  else if(discId==='corsa') renderSportCorsa(container);
+  else toast('🚧 Disciplina in arrivo!');
+  ['sport-home','sport-obbedienza','sport-gare','sport-diario','sport-altro'].forEach(function(t){
+    var btn=g('stab-'+t);
+    if(btn){btn.style.background='transparent';btn.querySelector('span:last-child').style.color='#9ab0cc';}
+  });
 }
 
 function apriQuizSportivo(){
