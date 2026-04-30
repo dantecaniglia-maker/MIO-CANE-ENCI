@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.62';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.63';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -12189,81 +12189,268 @@ function salvaAllenamentoIGP(btn){
 }
 
 /* ══ SOCCORSO ══ */
+var SOCCORSO_PROVE_FCI=[
+  {id:'sar_fl',nome:'Ricerca in superficie (FL)',ico:'🌲',
+    params:'Area 20.000-40.000 mq · 2-3 figuranti · 15-30 min',
+    criteri:['Motivazione ricerca','Copertura area sistematica','Segnalazione (abbaio persistente)','Obbedienza durante ricerca','Conduzione handler'],
+    allenamenti:['Ricerca in bosco','Ricerca in campo aperto','Segnalazione figurante','Obbedienza durante ricerca','Copertura area sistematica']},
+  {id:'sar_t',nome:'Ricerca in macerie (T)',ico:'🏚️',
+    params:'Area 500-2.000 mq · 2-3 figuranti sotto macerie · 10-20 min',
+    criteri:['Motivazione','Tecnica ricerca su macerie','Segnalazione precisa posizione','Agilità su terreno instabile'],
+    allenamenti:['Equilibrio su macerie','Passaggio in spazi stretti','Segnalazione sotto macerie','Ricerca con distrazioni']},
+  {id:'mantrailing',nome:'Mantrailing (MT)',ico:'👣',
+    params:'Distanza 500-2.000m · Invecchiamento 30-180 min',
+    criteri:['Identificazione odore iniziale','Tenuta traccia','Determinazione nei punti difficili','Segnalazione finale persona'],
+    allenamenti:['Traccia semplice 100m','Traccia con curve','Traccia in città','Traccia invecchiata','Discriminazione olfattiva']},
+  {id:'acqua',nome:'Soccorso in acqua',ico:'🌊',
+    params:'Prove su lago/mare con figurante in acqua',
+    criteri:['Entrata in acqua decisa','Nuoto efficiente','Presa/traino persona','Riporto a riva'],
+    allenamenti:['Entrata in acqua','Nuoto con oggetto','Traino persona','Riporto a riva','Tuffo da imbarcazione']}
+];
+
 function renderSportSoccorso(container){
-  var html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+  var proveSocc=(_sportProve||[]).filter(function(p){return p.disciplina==='soccorso';});
+  var allenSocc=(_sportAllenamenti||[]).filter(function(a){return a.disciplina==='soccorso';});
+
+  var html=
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
     +'<button onclick="switchSportTab(\'sport-home\')" style="background:#FBE9E7;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#E65100;font-size:16px">‹</button>'
     +'<div style="flex:1"><div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#2E7D32">🚑 Soccorso</div>'
     +'<div style="font-size:11px;color:#6B8BB0">SAR · Mantrailing · Trofeo ENCI</div></div></div>'
-    +'<div style="background:#fff;border:1.5px solid #A5D6A7;border-radius:14px;padding:14px;margin-bottom:14px">'
-    +'<div style="font-size:13px;font-weight:700;color:#2E7D32;margin-bottom:10px">📋 Tipologie prove</div>';
-  [{ico:'🌲',n:'SAR Superficie (FL)',d:'Area 20.000-40.000 mq · 2-3 figuranti · 15-30 min'},
-   {ico:'🏚️',n:'SAR Macerie (T)',d:'Area 500-2.000 mq · 2-3 figuranti sotto macerie · 10-20 min'},
-   {ico:'👣',n:'Mantrailing (MT)',d:'500-2.000m · Invecchiamento 30-180 min'},
-   {ico:'🌊',n:'Soccorso in acqua',d:'Entrata, nuoto, traino, riporto a riva'}
-  ].forEach(function(p){
-    html+='<div style="display:flex;align-items:center;gap:10px;padding:10px;background:#F1F8E9;border-radius:10px;margin-bottom:6px">'
-      +'<div style="font-size:22px">'+p.ico+'</div>'
-      +'<div><div style="font-weight:700;font-size:12px;color:#1a1a3a">'+p.n+'</div>'
-      +'<div style="font-size:10px;color:#6B8BB0">'+p.d+'</div></div></div>';
-  });
-  html+='</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-    +'<button onclick="apriNuovaGaraSport(\'soccorso\')" style="background:linear-gradient(135deg,#2E7D32,#1B5E20);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">🏆 Registra prova</button>'
-    +'<button onclick="apriNuovoAllenamentoSport();setTimeout(function(){var s=document.getElementById(\'na-disc\');if(s)s.value=\'soccorso\';},100)" style="background:#fff;color:#2E7D32;border:2px solid #A5D6A7;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">💪 Allenamento</button>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">'
+    +'<div style="background:#F1F8E9;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#2E7D32">'+proveSocc.length+'</div><div style="font-size:10px;color:#6B8BB0">Prove</div></div>'
+    +'<div style="background:#F1F8E9;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#2E7D32">'+allenSocc.length+'</div><div style="font-size:10px;color:#6B8BB0">Sessioni</div></div>'
+    +'<div style="background:#F1F8E9;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#2E7D32">'+Math.round(allenSocc.reduce(function(a,b){return a+(b.durata_minuti||0);},0)/60)+'</div><div style="font-size:10px;color:#6B8BB0">Ore totali</div></div>'
     +'</div>';
+
+  SOCCORSO_PROVE_FCI.forEach(function(prova){
+    html+='<div style="background:#fff;border:1.5px solid #A5D6A7;border-radius:14px;overflow:hidden;margin-bottom:12px">'
+      +'<div onclick="var c=document.getElementById(\'socc-'+prova.id+'\');c.style.display=c.style.display===\'none\'?\'block\':\'none\'" style="background:#F1F8E9;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:10px">'
+      +'<div style="font-size:24px">'+prova.ico+'</div>'
+      +'<div style="flex:1"><div style="font-weight:700;font-size:13px;color:#2E7D32">'+prova.nome+'</div>'
+      +'<div style="font-size:10px;color:#6B8BB0">'+prova.params+'</div></div>'
+      +'<span style="color:#A5D6A7;font-size:14px">▼</span></div>'
+      +'<div id="socc-'+prova.id+'" style="display:none;padding:12px">'
+      +'<div style="font-size:11px;font-weight:700;color:#558B2F;margin-bottom:6px">📋 Criteri di valutazione</div>'
+      +prova.criteri.map(function(c){
+        return '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;color:#333">'
+          +'<div style="width:6px;height:6px;border-radius:50%;background:#2E7D32;flex-shrink:0"></div>'+c+'</div>';
+      }).join('')
+      +'<div style="font-size:11px;font-weight:700;color:#558B2F;margin-top:10px;margin-bottom:6px">💪 Allenamenti suggeriti</div>'
+      +prova.allenamenti.map(function(a){
+        return '<button onclick="avviaAllenamentoSoccorso(\''+a+'\')" style="display:block;width:100%;text-align:left;background:#F1F8E9;border:1px solid #C8E6C9;border-radius:8px;padding:8px 12px;margin-bottom:4px;font-size:12px;color:#2E7D32;font-weight:600;cursor:pointer">💪 '+a+'</button>';
+      }).join('')
+      +'</div></div>';
+  });
+
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
+    +'<button onclick="apriNuovaGaraSport(\'soccorso\')" style="background:linear-gradient(135deg,#2E7D32,#1B5E20);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">🏆 Registra prova</button>'
+    +'<button onclick="apriNuovoAllenamentoSport();setTimeout(function(){var s=document.getElementById(\'na-disc\');if(s)s.value=\'soccorso\';},100)" style="background:#fff;color:#2E7D32;border:2px solid #A5D6A7;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">💪 Allenamento libero</button>'
+    +'</div>';
+
+  if(proveSocc.length){
+    html+='<div style="font-size:13px;font-weight:700;color:#2E7D32;margin-bottom:8px">🏆 Ultime prove ('+proveSocc.length+')</div>';
+    proveSocc.slice(0,5).forEach(function(p){
+      html+='<div style="background:#fff;border-radius:10px;border:1px solid #A5D6A7;padding:10px;margin-bottom:6px;font-size:12px">'
+        +'<div style="display:flex;justify-content:space-between"><strong>'+esc(p.tipo_prova)+'</strong>'
+        +(p.qualifica?'<span style="color:#2E7D32;font-weight:700">'+esc(p.qualifica)+'</span>':'')+'</div>'
+        +'<div style="color:#6B8BB0;margin-top:2px">📅 '+esc(p.data||'')+(p.luogo?' · '+esc(p.luogo):'')+'</div></div>';
+    });
+  }
+
   container.innerHTML=html;
+}
+
+function avviaAllenamentoSoccorso(tipo){
+  apriNuovoAllenamentoSport();
+  setTimeout(function(){
+    var disc=document.getElementById('na-disc');
+    if(disc) disc.value='soccorso';
+    var tip=document.getElementById('na-tipo');
+    if(tip) tip.value=tipo;
+  },150);
 }
 
 /* ══ PASTORE ══ */
+var PASTORE_FASI_ISDS=[
+  {id:'outrun',nome:'Outrun',punti:20,ico:'🏃',desc:'Corsa ad arco per raggiungere le pecore senza disturbarle',
+    dettaglio:'Il cane deve correre in un ampio arco (destro o sinistro) per posizionarsi dietro le pecore. Non deve tagliare, avvicinarsi troppo o spaventare il gregge. Penalità per arco stretto, cross-over o disturbo.',
+    allenamenti:['Outrun destro 100m','Outrun sinistro 100m','Outrun allungato 200m','Arco ampio senza cross-over']},
+  {id:'lift',nome:'Lift',punti:10,ico:'👁️',desc:'Primo contatto con le pecore, inizio movimento',
+    dettaglio:'Momento in cui il cane prende controllo del gregge. Deve essere calmo, controllato, senza carica aggressiva. Le pecore devono iniziare a muoversi dolcemente verso il conduttore.',
+    allenamenti:['Approccio calmo al gregge','Lift senza carica','Controllo distanza dal gregge']},
+  {id:'fetch',nome:'Fetch',punti:20,ico:'↩️',desc:'Portare le pecore verso il conduttore attraverso il cancello',
+    dettaglio:'Il cane guida le pecore verso il conduttore in linea retta, passando attraverso un cancello posto a metà percorso. Penalità per deviazioni, pecore perse o cancello mancato.',
+    allenamenti:['Fetch in linea retta','Passaggio cancello','Controllo velocità gregge','Fetch con ostacoli']},
+  {id:'drive',nome:'Drive',punti:30,ico:'➡️',desc:'Spingere le pecore lontano dal conduttore attraverso cancelli',
+    dettaglio:'La fase più impegnativa. Il cane spinge le pecore LONTANO dal conduttore attraverso 2 cancelli laterali e un cancello di cross-drive. Il conduttore resta fermo al palo.',
+    allenamenti:['Drive rettilineo 50m','Cross-drive','Passaggio cancelli laterali','Drive senza conduttore vicino']},
+  {id:'shedding',nome:'Shedding',punti:10,ico:'✂️',desc:'Separare pecore marcate dal gruppo',
+    dettaglio:'Il conduttore e il cane lavorano insieme per separare 2-5 pecore marcate dal gruppo. Il cane deve entrare nel gap e mantenere la separazione.',
+    allenamenti:['Separazione 2 pecore','Tenuta separazione','Ingresso nel gap','Shedding sotto pressione']},
+  {id:'pen',nome:'Pen',punti:10,ico:'🚪',desc:'Guidare le pecore nel recinto e chiudere il cancello',
+    dettaglio:'Il conduttore tiene la corda del cancello (non può lasciare). Il cane deve guidare tutte le pecore dentro il recinto. Tempo limitato. Molto tecnico.',
+    allenamenti:['Approccio al pen','Guida nel recinto','Pen con pecore difficili','Chiusura cancello']},
+  {id:'single',nome:'Single (opzionale)',punti:10,ico:'1️⃣',desc:'Isolare una singola pecora marcata',
+    dettaglio:'La prova più difficile. Il cane deve separare UNA pecora specifica dal gruppo e mantenerla isolata. Richiede massimo controllo e calma.',
+    allenamenti:['Isolamento pecora singola','Mantenimento isolamento','Single sotto pressione']}
+];
+
 function renderSportPastore(container){
-  var html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+  var proveP=(_sportProve||[]).filter(function(p){return p.disciplina==='pastore';});
+  var allenP=(_sportAllenamenti||[]).filter(function(a){return a.disciplina==='pastore';});
+
+  var html=
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
     +'<button onclick="switchSportTab(\'sport-home\')" style="background:#FBE9E7;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#E65100;font-size:16px">‹</button>'
     +'<div style="flex:1"><div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#6D4C41">🐾 Conduzione / Pastore</div>'
-    +'<div style="font-size:11px;color:#6B8BB0">Sheepdog Trial · Treibball</div></div></div>'
-    +'<div style="background:#fff;border:1.5px solid #BCAAA4;border-radius:14px;padding:14px;margin-bottom:14px">'
-    +'<div style="font-size:13px;font-weight:700;color:#6D4C41;margin-bottom:10px">📋 Fasi Sheepdog Trial (ISDS)</div>';
-  [{n:'Outrun',pt:20,d:'Corsa ad arco verso le pecore'},{n:'Lift',pt:10,d:'Primo contatto, inizio movimento'},
-   {n:'Fetch',pt:20,d:'Portare pecore al conduttore attraverso cancello'},{n:'Drive',pt:30,d:'Spingere pecore lontano attraverso cancelli'},
-   {n:'Shedding',pt:10,d:'Separare pecore marcate'},{n:'Pen',pt:10,d:'Guidare pecore nel recinto'}
-  ].forEach(function(f){
-    html+='<div style="display:flex;align-items:center;gap:10px;padding:10px;background:#EFEBE9;border-radius:10px;margin-bottom:6px">'
-      +'<div style="background:#6D4C41;color:#fff;border-radius:8px;padding:4px 8px;font-size:11px;font-weight:800;min-width:36px;text-align:center">'+f.pt+'pt</div>'
-      +'<div><div style="font-weight:700;font-size:12px;color:#1a1a3a">'+f.n+'</div>'
-      +'<div style="font-size:10px;color:#6B8BB0">'+f.d+'</div></div></div>';
-  });
-  html+='</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-    +'<button onclick="apriNuovaGaraSport(\'pastore\')" style="background:linear-gradient(135deg,#6D4C41,#4E342E);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">🏆 Registra prova</button>'
-    +'<button onclick="apriNuovoAllenamentoSport();setTimeout(function(){var s=document.getElementById(\'na-disc\');if(s)s.value=\'pastore\';},100)" style="background:#fff;color:#6D4C41;border:2px solid #BCAAA4;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">💪 Allenamento</button>'
+    +'<div style="font-size:11px;color:#6B8BB0">Sheepdog Trial ISDS · Treibball</div></div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">'
+    +'<div style="background:#EFEBE9;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#6D4C41">'+proveP.length+'</div><div style="font-size:10px;color:#6B8BB0">Prove</div></div>'
+    +'<div style="background:#EFEBE9;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#6D4C41">'+allenP.length+'</div><div style="font-size:10px;color:#6B8BB0">Sessioni</div></div>'
+    +'<div style="background:#EFEBE9;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#6D4C41">110</div><div style="font-size:10px;color:#6B8BB0">Punti max</div></div>'
+    +'</div>'
+    +'<div style="background:linear-gradient(135deg,#6D4C41,#4E342E);border-radius:14px;padding:16px;margin-bottom:14px;color:#fff">'
+    +'<div style="font-size:14px;font-weight:700;margin-bottom:6px">📋 Sheepdog Trial — Standard ISDS</div>'
+    +'<div style="font-size:11px;opacity:.8;line-height:1.5">Il conduttore resta fermo al palo. Il cane lavora a distanza con fischi e comandi vocali. Tempo limite: 10-15 minuti. Pecore: 3-5 per prova. Totale: 100-110 punti.</div>'
     +'</div>';
+
+  PASTORE_FASI_ISDS.forEach(function(fase){
+    html+='<div style="background:#fff;border:1.5px solid #BCAAA4;border-radius:14px;overflow:hidden;margin-bottom:10px">'
+      +'<div onclick="var c=document.getElementById(\'past-'+fase.id+'\');c.style.display=c.style.display===\'none\'?\'block\':\'none\'" style="background:#EFEBE9;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:10px">'
+      +'<div style="font-size:22px">'+fase.ico+'</div>'
+      +'<div style="flex:1"><div style="font-weight:700;font-size:13px;color:#4E342E">'+fase.nome+'</div>'
+      +'<div style="font-size:10px;color:#6B8BB0">'+fase.desc+'</div></div>'
+      +'<div style="background:#6D4C41;color:#fff;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:800;flex-shrink:0">'+fase.punti+'pt</div>'
+      +'<span style="color:#BCAAA4;font-size:14px">▼</span></div>'
+      +'<div id="past-'+fase.id+'" style="display:none;padding:12px">'
+      +'<div style="font-size:12px;color:#333;line-height:1.5;margin-bottom:10px;padding:8px;background:#FBF8F5;border-radius:8px">'+fase.dettaglio+'</div>'
+      +'<div style="font-size:11px;font-weight:700;color:#6D4C41;margin-bottom:6px">💪 Allenamenti suggeriti</div>'
+      +fase.allenamenti.map(function(a){
+        return '<button onclick="avviaAllenamentoPastore(\''+a+'\')" style="display:block;width:100%;text-align:left;background:#EFEBE9;border:1px solid #D7CCC8;border-radius:8px;padding:8px 12px;margin-bottom:4px;font-size:12px;color:#6D4C41;font-weight:600;cursor:pointer">💪 '+a+'</button>';
+      }).join('')
+      +'</div></div>';
+  });
+
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;margin-bottom:14px">'
+    +'<button onclick="apriNuovaGaraSport(\'pastore\')" style="background:linear-gradient(135deg,#6D4C41,#4E342E);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">🏆 Registra prova</button>'
+    +'<button onclick="apriNuovoAllenamentoSport();setTimeout(function(){var s=document.getElementById(\'na-disc\');if(s)s.value=\'pastore\';},100)" style="background:#fff;color:#6D4C41;border:2px solid #BCAAA4;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">💪 Allenamento libero</button>'
+    +'</div>';
+
   container.innerHTML=html;
 }
 
+function avviaAllenamentoPastore(tipo){
+  apriNuovoAllenamentoSport();
+  setTimeout(function(){
+    var disc=document.getElementById('na-disc');
+    if(disc) disc.value='pastore';
+    var tip=document.getElementById('na-tipo');
+    if(tip) tip.value=tipo;
+  },150);
+}
+
 /* ══ CORSA ══ */
+var CORSA_CRITERI_FCI=[
+  {id:'velocita',nome:'Velocità',punti:30,ico:'⚡',desc:'Velocità e rapidità sul percorso, scatto iniziale, mantenimento velocità nelle curve',
+    allenamenti:['Sprint 50m','Sprint 100m con richiamo','Inseguimento lure corto','Scatto da fermo']},
+  {id:'entusiasmo',nome:'Entusiasmo',punti:20,ico:'🔥',desc:'Motivazione e voglia di inseguire il lure. Il cane deve dimostrare drive costante',
+    allenamenti:['Inseguimento gioco','Motivazione al lure','Lavoro sul drive','Sessione con pelle di lepre']},
+  {id:'agilita',nome:'Agilità',punti:20,ico:'🏃',desc:'Capacità di curvare e cambiare direzione a velocità, equilibrio nelle virate',
+    allenamenti:['Curve strette','Cambio direzione rapido','Virata a 90°','Slalom largo']},
+  {id:'resistenza',nome:'Resistenza',punti:20,ico:'💪',desc:'Mantenimento velocità fino alla fine del percorso, senza rallentamento evidente',
+    allenamenti:['Corsa lunga 400m','Corsa 800m','Recupero attivo','Interval training']},
+  {id:'follow',nome:'Follow',punti:10,ico:'🎯',desc:'Seguire il lure con precisione, senza tagliare o perdere la linea',
+    allenamenti:['Inseguimento lure con curve','Follow preciso','Lure con cambio velocità','Follow in coppia']}
+];
+
+var CORSA_TIPI=[
+  {id:'lure_coursing',nome:'Lure Coursing (FCI)',desc:'Inseguimento lure meccanico su campo aperto, 400-1000m, 2 cani alla volta',valutazione:'5 criteri × max punti, totale 100'},
+  {id:'straight_racing',nome:'Straight Racing',desc:'Sprint rettilineo 100-400m, gabbie di partenza, 4-6 cani per batteria',valutazione:'Tempo puro (secondi/centesimi)'},
+  {id:'coursing_500',nome:'Coursing 500m',desc:'Percorso con curve su 500 metri',valutazione:'Tempo + criteri'},
+  {id:'coursing_1000',nome:'Coursing 1000m',desc:'Percorso lungo con curve multiple',valutazione:'Tempo + criteri'},
+  {id:'speed_test',nome:'Speed Test',desc:'Test velocità su breve distanza',valutazione:'Velocità max (km/h)'}
+];
+
 function renderSportCorsa(container){
-  var html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+  var proveC=(_sportProve||[]).filter(function(p){return p.disciplina==='corsa';});
+  var allenC=(_sportAllenamenti||[]).filter(function(a){return a.disciplina==='corsa';});
+  var velMax=0;
+  proveC.forEach(function(p){var det=p.dettagli||{};if(det.velocita&&parseFloat(det.velocita)>velMax) velMax=parseFloat(det.velocita);});
+
+  var html=
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
     +'<button onclick="switchSportTab(\'sport-home\')" style="background:#FBE9E7;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#E65100;font-size:16px">‹</button>'
     +'<div style="flex:1"><div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#7B1FA2">🏃 Corsa</div>'
-    +'<div style="font-size:11px;color:#6B8BB0">Lure Coursing · Straight Racing</div></div></div>'
-    +'<div style="background:#fff;border:1.5px solid #CE93D8;border-radius:14px;padding:14px;margin-bottom:14px">'
-    +'<div style="font-size:13px;font-weight:700;color:#7B1FA2;margin-bottom:10px">📋 Lure Coursing FCI — Criteri valutazione</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
-  [{n:'Velocità',pt:30,ico:'⚡'},{n:'Entusiasmo',pt:20,ico:'🔥'},{n:'Agilità',pt:20,ico:'🏃'},
-   {n:'Resistenza',pt:20,ico:'💪'},{n:'Follow',pt:10,ico:'🎯'}
-  ].forEach(function(c){
-    html+='<div style="background:#F3E5F5;border-radius:10px;padding:10px;text-align:center">'
-      +'<div style="font-size:18px">'+c.ico+'</div>'
-      +'<div style="font-weight:700;font-size:12px;color:#7B1FA2">'+c.n+'</div>'
-      +'<div style="font-size:11px;color:#6B8BB0">'+c.pt+' punti</div></div>';
-  });
-  html+='</div>'
-    +'<div style="font-size:11px;color:#6B8BB0;margin-top:8px">Totale: 100 punti · Distanza: 400-1000m · Min 30m oltre traguardo</div>'
+    +'<div style="font-size:11px;color:#6B8BB0">Lure Coursing · Straight Racing · FCI</div></div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">'
+    +'<div style="background:#F3E5F5;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#7B1FA2">'+proveC.length+'</div><div style="font-size:10px;color:#6B8BB0">Gare</div></div>'
+    +'<div style="background:#F3E5F5;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#7B1FA2">'+allenC.length+'</div><div style="font-size:10px;color:#6B8BB0">Sessioni</div></div>'
+    +'<div style="background:#F3E5F5;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#7B1FA2">'+(velMax?velMax.toFixed(1):'—')+'</div><div style="font-size:10px;color:#6B8BB0">km/h max</div></div>'
     +'</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<div style="background:linear-gradient(135deg,#7B1FA2,#4A148C);border-radius:14px;padding:16px;margin-bottom:14px;color:#fff">'
+    +'<div style="font-size:14px;font-weight:700;margin-bottom:6px">📋 Lure Coursing FCI — 100 punti</div>'
+    +'<div style="font-size:11px;opacity:.8;line-height:1.5">Distanza 400-1000m · Minimo 30m oltre il traguardo per decelerazione · 2 cani alla volta · Solo razze levriere riconosciute FCI · 2 giudici valutano indipendentemente</div>'
+    +'</div>'
+    +'<div style="background:#fff;border:1.5px solid #CE93D8;border-radius:14px;overflow:hidden;margin-bottom:14px">'
+    +'<div style="background:#F3E5F5;padding:12px 16px;font-size:13px;font-weight:700;color:#7B1FA2">🎯 Criteri di valutazione</div>'
+    +'<div style="padding:8px">';
+  CORSA_CRITERI_FCI.forEach(function(c){
+    html+='<div style="margin-bottom:10px">'
+      +'<div onclick="var el=document.getElementById(\'corsa-'+c.id+'\');el.style.display=el.style.display===\'none\'?\'block\':\'none\'" style="display:flex;align-items:center;gap:10px;padding:10px;background:#F3E5F5;border-radius:10px;cursor:pointer">'
+      +'<div style="font-size:22px">'+c.ico+'</div>'
+      +'<div style="flex:1"><div style="font-weight:700;font-size:13px;color:#4A148C">'+c.nome+'</div>'
+      +'<div style="font-size:10px;color:#6B8BB0">'+c.desc.slice(0,60)+'...</div></div>'
+      +'<div style="background:#7B1FA2;color:#fff;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:800;flex-shrink:0">'+c.punti+'pt</div></div>'
+      +'<div id="corsa-'+c.id+'" style="display:none;padding:8px 12px">'
+      +'<div style="font-size:12px;color:#333;margin-bottom:8px;line-height:1.4">'+c.desc+'</div>'
+      +'<div style="font-size:11px;font-weight:700;color:#7B1FA2;margin-bottom:4px">💪 Allenamenti</div>'
+      +c.allenamenti.map(function(a){
+        return '<button onclick="avviaAllenamentoCorsa(\''+a+'\')" style="display:block;width:100%;text-align:left;background:#F3E5F5;border:1px solid #E1BEE7;border-radius:8px;padding:8px 12px;margin-bottom:4px;font-size:12px;color:#7B1FA2;font-weight:600;cursor:pointer">💪 '+a+'</button>';
+      }).join('')
+      +'</div></div>';
+  });
+  html+='</div></div>'
+    +'<div style="background:#fff;border:1.5px solid #CE93D8;border-radius:14px;overflow:hidden;margin-bottom:14px">'
+    +'<div onclick="var c=document.getElementById(\'corsa-tipi-body\');c.style.display=c.style.display===\'none\'?\'block\':\'none\'" style="background:#F3E5F5;padding:12px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="font-size:13px;font-weight:700;color:#7B1FA2">🏁 Tipologie gara</div>'
+    +'<span style="color:#7B1FA2">▼</span></div>'
+    +'<div id="corsa-tipi-body" style="display:none;padding:8px">';
+  CORSA_TIPI.forEach(function(t){
+    html+='<div style="padding:10px;border-bottom:1px solid #F3E5F5">'
+      +'<div style="font-weight:700;font-size:12px;color:#4A148C">'+t.nome+'</div>'
+      +'<div style="font-size:10px;color:#6B8BB0">'+t.desc+'</div>'
+      +'<div style="font-size:10px;color:#7B1FA2;margin-top:2px">Valutazione: '+t.valutazione+'</div></div>';
+  });
+  html+='</div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
     +'<button onclick="apriNuovaGaraSport(\'corsa\')" style="background:linear-gradient(135deg,#7B1FA2,#4A148C);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">🏆 Registra gara</button>'
     +'<button onclick="apriNuovoAllenamentoSport();setTimeout(function(){var s=document.getElementById(\'na-disc\');if(s)s.value=\'corsa\';},100)" style="background:#fff;color:#7B1FA2;border:2px solid #CE93D8;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">💪 Allenamento</button>'
     +'</div>';
+
+  if(proveC.length){
+    html+='<div style="font-size:13px;font-weight:700;color:#7B1FA2;margin-bottom:8px">🏆 Ultime gare ('+proveC.length+')</div>';
+    proveC.slice(0,5).forEach(function(p){
+      var det=p.dettagli||{};
+      html+='<div style="background:#fff;border-radius:10px;border:1px solid #CE93D8;padding:10px;margin-bottom:6px;font-size:12px">'
+        +'<div style="display:flex;justify-content:space-between"><strong>'+esc(p.tipo_prova)+'</strong>'
+        +(p.punteggio?'<span style="color:#7B1FA2;font-weight:700">'+esc(p.punteggio)+'</span>':'')+'</div>'
+        +'<div style="color:#6B8BB0;margin-top:2px">📅 '+esc(p.data||'')+(p.luogo?' · '+esc(p.luogo):'')
+        +(det.tempo?' · ⏱ '+det.tempo+'s':'')+(det.velocita?' · 🚀 '+det.velocita+' km/h':'')+'</div></div>';
+    });
+  }
+
   container.innerHTML=html;
+}
+
+function avviaAllenamentoCorsa(tipo){
+  apriNuovoAllenamentoSport();
+  setTimeout(function(){
+    var disc=document.getElementById('na-disc');
+    if(disc) disc.value='corsa';
+    var tip=document.getElementById('na-tipo');
+    if(tip) tip.value=tipo;
+  },150);
 }
 
 function apriDisciplinaSport(discId){
