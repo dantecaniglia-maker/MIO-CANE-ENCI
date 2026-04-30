@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.61';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.62';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -11870,31 +11870,322 @@ function _chiudiTimerAgility(){
   if(ov) ov.remove();
 }
 
+/* ══════════════════════════════════════
+   IGP — DATI ESERCIZI FCI COMPLETI
+══════════════════════════════════════ */
+
+var IGP_LIVELLI=[
+  {id:'bh',nome:'BH-VT',desc:'Begleithundprüfung — Test temperamento',colore:'#78909C',prerequisito:null,totale:null},
+  {id:'igp1',nome:'IGP-1',desc:'Primo titolo — 300 punti',colore:'#42A5F5',prerequisito:'BH',totale:300,manubrio:'650g'},
+  {id:'igp2',nome:'IGP-2',desc:'Secondo titolo — 300 punti',colore:'#1565C0',prerequisito:'IGP-1',totale:300,manubrio:'1 kg'},
+  {id:'igp3',nome:'IGP-3',desc:'Titolo massimo — 300 punti',colore:'#0D47A1',prerequisito:'IGP-2',totale:300,manubrio:'2 kg'}
+];
+
+var IGP_ESERCIZI={
+  bh:{
+    parte_a:{nome:'Obbedienza',esercizi:[
+      {id:'cond_guin',nome:'Condotta al guinzaglio',desc:'Cambi direzione, dietrofront, fermata, gruppo persone, sparo'},
+      {id:'cond_lib',nome:'Condotta libera',desc:'Stessi esercizi senza guinzaglio'},
+      {id:'sed_mov',nome:'Seduto in movimento',desc:'Seduto dalla condotta, conduttore prosegue'},
+      {id:'terra_rich',nome:'Terra in mov. + richiamo',desc:'Terra dalla condotta, poi richiamo'},
+      {id:'terra_distr',nome:'Terra sotto distrazione',desc:'Resta a terra mentre altro binomio lavora'}
+    ]},
+    parte_b:{nome:'Test temperamento',esercizi:[
+      {id:'cani_estr',nome:'Incontro cani estranei',desc:'Cammina rilassato vicino ad altri cani'},
+      {id:'persone',nome:'Avvicinamento persone',desc:'Estraneo si avvicina e tocca conduttore'},
+      {id:'traffico',nome:'Traffico e rumori',desc:'Auto, bici, jogger, rumori forti'},
+      {id:'folla',nome:'Attraversamento folla',desc:'Cammina tra gruppo di persone'}
+    ]}
+  },
+  igp1:{
+    sez_a:{nome:'Pista (Fährte)',punti:100,param:'300 passi · 2 curve · 2 oggetti · 20 min invecchiamento · Tracciatore: conduttore',
+      esercizi:[
+        {id:'traccia',nome:'Tracciamento pista',punti:80,desc:'Seguire traccia naso basso, passo costante, 300 passi, 2 angoli'},
+        {id:'oggetti',nome:'Segnalazione oggetti',punti:20,desc:'2 oggetti × 10pt, indicazione passiva (terra)'}
+      ]},
+    sez_b:{nome:'Obbedienza (Unterordnung)',punti:100,param:'Manubrio 650g · Salto 1m · Muro 1.8m',
+      esercizi:[
+        {id:'condotta',nome:'Condotta libera',punti:15,desc:'Senza guinzaglio, cambi direzione, gruppo, sparo'},
+        {id:'seduto',nome:'Seduto in movimento',punti:10,desc:'Dalla condotta, seduto, conduttore 30 passi'},
+        {id:'terra_rich',nome:'Terra in mov. + richiamo',punti:10,desc:'Terra dalla condotta, richiamo a 30 passi'},
+        {id:'rip_piano',nome:'Riporto in piano',punti:10,desc:'Manubrio 650g lanciato ~10m'},
+        {id:'rip_salto',nome:'Riporto con salto 1m',punti:15,desc:'Riporto con salto ostacolo 1m'},
+        {id:'rich_muro',nome:'Richiamo sopra muro 1.8m',punti:15,desc:'Richiamo con passaggio muro, SENZA manubrio (solo IGP1)'},
+        {id:'invio',nome:'Invio avanti con terra',punti:10,desc:'Inviato avanti ~30 passi, comando terra'},
+        {id:'terra_distr',nome:'Terra sotto distrazione',punti:15,desc:'Terra lunga mentre altro binomio lavora'}
+      ]},
+    sez_c:{nome:'Protezione (Schutzdienst)',punti:100,param:'Figurante con manica · 1 nascondiglio diretto',
+      esercizi:[
+        {id:'ricerca',nome:'Ricerca nascondiglio',punti:5,desc:'Invio diretto al nascondiglio 6 (no perlustrazioni)'},
+        {id:'abbaio',nome:'Abbaio e fermo',punti:10,desc:'Abbaia al figurante, fermo e attento'},
+        {id:'fuga',nome:'Tentativo di fuga',punti:10,desc:'Figurante tenta fuga, cane blocca'},
+        {id:'difesa_fermo',nome:'Difesa durante fermo',punti:20,desc:'Figurante attacca, cane difende con presa forte'},
+        {id:'trasporto',nome:'Trasporto posteriore',punti:5,desc:'Scorta figurante da dietro (guinzaglio ammesso in IGP1)'},
+        {id:'att_trasp',nome:'Attacco durante trasporto',punti:15,desc:'Figurante attacca durante trasporto'},
+        {id:'coraggio',nome:'Attacco da fermo (coraggio)',punti:20,desc:'Figurante a 30m, attacco frontale diretto'},
+        {id:'difesa_att',nome:'Difesa durante attacco',punti:15,desc:'Difesa dopo coraggio con pressione'}
+      ]}
+  },
+  igp2:{
+    sez_a:{nome:'Pista',punti:100,param:'400 passi · 3 curve · 2 oggetti · 30 min invecchiamento · Tracciatore: ESTRANEO',
+      esercizi:[
+        {id:'traccia',nome:'Tracciamento pista',punti:80,desc:'400 passi, 3 angoli, tracciatore estraneo'},
+        {id:'oggetti',nome:'Segnalazione oggetti',punti:20,desc:'2 oggetti × 10pt'}
+      ]},
+    sez_b:{nome:'Obbedienza',punti:100,param:'Manubrio 1kg · Salto 1m · Muro 1.8m',
+      esercizi:[
+        {id:'condotta',nome:'Condotta libera',punti:15,desc:'Come IGP1 ma maggiore precisione'},
+        {id:'seduto',nome:'Seduto in movimento',punti:10,desc:'Come IGP1'},
+        {id:'terra_rich',nome:'Terra in mov. + richiamo',punti:10,desc:'Come IGP1'},
+        {id:'fermo_mov',nome:'Fermo in piedi in mov.',punti:10,desc:'Il cane resta in piedi dalla condotta (NUOVO in IGP2)'},
+        {id:'rip_piano',nome:'Riporto in piano',punti:10,desc:'Manubrio 1kg'},
+        {id:'rip_salto',nome:'Riporto con salto 1m',punti:15,desc:'Come IGP1 ma manubrio 1kg'},
+        {id:'rip_muro',nome:'Riporto con muro 1.8m',punti:15,desc:'CON manubrio sopra il muro (differenza da IGP1)'},
+        {id:'invio',nome:'Invio avanti con terra',punti:10,desc:'Come IGP1'},
+        {id:'terra_distr',nome:'Terra sotto distrazione',punti:15,desc:'Come IGP1'}
+      ]},
+    sez_c:{nome:'Protezione',punti:100,param:'Tutto senza guinzaglio · Coraggio 40m',
+      esercizi:[
+        {id:'ricerca',nome:'Ricerca nascondiglio',punti:5,desc:'Come IGP1'},
+        {id:'abbaio',nome:'Abbaio e fermo',punti:10,desc:'Come IGP1'},
+        {id:'fuga',nome:'Tentativo di fuga',punti:10,desc:'Come IGP1'},
+        {id:'difesa_fermo',nome:'Difesa durante fermo',punti:20,desc:'Come IGP1'},
+        {id:'trasporto',nome:'Trasporto posteriore',punti:5,desc:'SENZA guinzaglio'},
+        {id:'coraggio',nome:'Attacco da fermo (coraggio)',punti:20,desc:'Figurante a 40m (non 30)'},
+        {id:'difesa_cor',nome:'Difesa dopo coraggio',punti:15,desc:'Difesa aggiuntiva SENZA colpi bastone (NUOVO)'},
+        {id:'difesa_att',nome:'Difesa finale',punti:15,desc:'Pressione massima'}
+      ]}
+  },
+  igp3:{
+    sez_a:{nome:'Pista',punti:100,param:'600 passi · 4 curve · 3 oggetti · 60 min invecchiamento · Tracciatore: ESTRANEO',
+      esercizi:[
+        {id:'traccia',nome:'Tracciamento pista',punti:70,desc:'600 passi, 4 angoli, 60 min invecchiamento'},
+        {id:'oggetti',nome:'Segnalazione oggetti',punti:30,desc:'3 oggetti × 10pt'}
+      ]},
+    sez_b:{nome:'Obbedienza',punti:100,param:'Manubrio 2kg · Salto 1m · A-frame 1.8m',
+      esercizi:[
+        {id:'condotta',nome:'Condotta libera',punti:15,desc:'Massima precisione, attitudine, velocità'},
+        {id:'seduto',nome:'Seduto in movimento',punti:5,desc:'Come IGP2'},
+        {id:'terra_rich',nome:'Terra in mov. + richiamo',punti:10,desc:'Come IGP2'},
+        {id:'fermo_mov',nome:'Fermo in piedi in mov.',punti:10,desc:'Come IGP2'},
+        {id:'rip_piano',nome:'Riporto in piano',punti:10,desc:'Manubrio 2kg'},
+        {id:'rip_salto',nome:'Riporto con salto 1m',punti:15,desc:'Manubrio 2kg'},
+        {id:'rip_aframe',nome:'Riporto con A-frame 1.8m',punti:15,desc:'CON manubrio sopra palizzata (solo IGP3)'},
+        {id:'invio',nome:'Invio avanti con terra',punti:10,desc:'Come IGP2'},
+        {id:'terra_distr',nome:'Terra sotto distrazione',punti:10,desc:'Come IGP2'}
+      ]},
+    sez_c:{nome:'Protezione',punti:100,param:'6 nascondigli · 2 colpi bastone · TSB valutazione',
+      esercizi:[
+        {id:'ricerca6',nome:'Perlustrazioni 6 nascondigli',punti:10,desc:'Ricerca COMPLETA tutti e 6 i nascondigli'},
+        {id:'abbaio',nome:'Abbaio e fermo',punti:10,desc:'Come IGP2'},
+        {id:'fuga',nome:'Tentativo di fuga',punti:10,desc:'Come IGP2'},
+        {id:'difesa_fermo',nome:'Difesa durante fermo',punti:20,desc:'Come IGP2'},
+        {id:'trasporto_post',nome:'Trasporto posteriore',punti:5,desc:'Come IGP2'},
+        {id:'att_trasp',nome:'Attacco dal trasporto',punti:15,desc:'Figurante attacca dal trasporto (RITORNA in IGP3)'},
+        {id:'coraggio',nome:'Attacco da fermo (coraggio)',punti:15,desc:'Con 2 colpi bastone padded'},
+        {id:'difesa_cor',nome:'Difesa dopo coraggio',punti:15,desc:'Pressione massima, valutazione TSB'}
+      ]}
+  }
+};
+
+var IGP_QUALIFICHE=[
+  {id:'V',nome:'Vorzüglich (Eccellente)',range:'96-100 pt/fase',colore:'#FFD700'},
+  {id:'SG',nome:'Sehr Gut (Molto Buono)',range:'90-95',colore:'#C0C0C0'},
+  {id:'G',nome:'Gut (Buono)',range:'80-89',colore:'#CD7F32'},
+  {id:'Bfr',nome:'Befriedigend (Sufficiente)',range:'70-79',colore:'#78909C'},
+  {id:'Mgh',nome:'Mangelhaft (Insufficiente)',range:'<70',colore:'#C62828'}
+];
+
 /* ══ GUARDIA/DIFESA ══ */
 function renderSportDifesa(container){
-  var html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+  var livello=window._igpLivello||'igp1';
+  var livObj=IGP_LIVELLI.find(function(l){return l.id===livello;})||IGP_LIVELLI[1];
+  var esercizi=IGP_ESERCIZI[livello];
+  var proveDifesa=(_sportProve||[]).filter(function(p){return p.disciplina==='difesa';});
+
+  var html=
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
     +'<button onclick="switchSportTab(\'sport-home\')" style="background:#FBE9E7;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;color:#E65100;font-size:16px">‹</button>'
     +'<div style="flex:1"><div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#1565C0">🛡️ Guardia / Difesa</div>'
-    +'<div style="font-size:11px;color:#6B8BB0">IGP · Mondioring · Ring</div></div></div>'
-    +'<div style="background:#fff;border:1.5px solid #90CAF9;border-radius:14px;padding:14px;margin-bottom:14px">'
-    +'<div style="font-size:13px;font-weight:700;color:#1565C0;margin-bottom:10px">📋 Percorso IGP</div>'
-    +'<div style="display:flex;gap:6px;margin-bottom:12px">'
-    +['BH','IGP-1','IGP-2','IGP-3'].map(function(l){
-      return '<button onclick="toast(\'🚧 Dettaglio '+l+' — Sessione B\')" style="flex:1;padding:10px;border-radius:10px;border:2px solid #90CAF9;background:#fff;font-size:12px;font-weight:700;color:#1565C0;cursor:pointer">'+l+'</button>';
-    }).join('')
-    +'</div>'
-    +'<div style="font-size:12px;color:#6B8BB0;line-height:1.6">'
-    +'<strong>Sezione A</strong> — Pista: tracciamento, oggetti, curve<br>'
-    +'<strong>Sezione B</strong> — Obbedienza: condotta, seduto/terra in mov., riporti, invio avanti<br>'
-    +'<strong>Sezione C</strong> — Protezione: ricerca, abbaio, fuga, attacchi, coraggio<br>'
-    +'<div style="margin-top:6px">Ogni sezione: 100 punti · Totale: 300 · Min per fase: 70</div>'
-    +'</div></div>'
+    +'<div style="font-size:11px;color:#6B8BB0">IGP · Mondioring · Ring Française</div></div></div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:14px">';
+  IGP_LIVELLI.forEach(function(l){
+    html+='<button onclick="window._igpLivello=\''+l.id+'\';apriDisciplinaSport(\'difesa\')" style="flex:1;padding:10px 4px;border-radius:10px;border:2px solid '+(livello===l.id?l.colore:'#eee')+';background:'+(livello===l.id?l.colore:'#fff')+';color:'+(livello===l.id?'#fff':'#333')+';font-size:11px;font-weight:700;cursor:pointer;text-align:center">'+l.nome+'</button>';
+  });
+  html+='</div>'
+    +'<div style="background:linear-gradient(135deg,'+livObj.colore+','+livObj.colore+'cc);border-radius:14px;padding:16px;margin-bottom:14px;color:#fff">'
+    +'<div style="font-size:16px;font-weight:800;margin-bottom:4px">'+livObj.nome+'</div>'
+    +'<div style="font-size:12px;opacity:.8;margin-bottom:6px">'+livObj.desc+'</div>'
+    +(livObj.totale?'<div style="display:flex;gap:16px;font-size:13px"><span>🏆 '+livObj.totale+' punti totali</span><span>✅ Min 70/fase</span>'+(livObj.manubrio?'<span>🏋️ '+livObj.manubrio+'</span>':'')+'</div>':'<div style="font-size:13px">Test pass/fail — prerequisito per IGP1</div>')
+    +'</div>';
+
+  if(livello==='bh'){
+    ['parte_a','parte_b'].forEach(function(pKey){
+      var parte=esercizi[pKey];
+      html+='<div style="background:#fff;border:1.5px solid #B0BEC5;border-radius:14px;overflow:hidden;margin-bottom:12px">'
+        +'<div style="background:#ECEFF1;padding:12px 16px;font-size:13px;font-weight:700;color:#455A64">'+parte.nome+'</div>'
+        +'<div style="padding:8px">';
+      parte.esercizi.forEach(function(e){
+        html+='<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid #F5F5F5">'
+          +'<div style="width:28px;height:28px;border-radius:8px;background:#ECEFF1;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">☐</div>'
+          +'<div><div style="font-weight:700;font-size:12px;color:#1a1a3a">'+e.nome+'</div>'
+          +'<div style="font-size:10px;color:#6B8BB0">'+e.desc+'</div></div></div>';
+      });
+      html+='</div></div>';
+    });
+  } else {
+    ['sez_a','sez_b','sez_c'].forEach(function(sKey){
+      var sez=esercizi[sKey];
+      if(!sez) return;
+      var sezColor=sKey==='sez_a'?'#558B2F':sKey==='sez_b'?'#1565C0':'#C62828';
+      var sezLabel=sKey==='sez_a'?'A':sKey==='sez_b'?'B':'C';
+      html+='<div style="background:#fff;border:1.5px solid '+sezColor+'40;border-radius:14px;overflow:hidden;margin-bottom:12px">'
+        +'<div onclick="var c=document.getElementById(\'igp-'+sKey+'\');c.style.display=c.style.display===\'none\'?\'block\':\'none\'" style="background:'+sezColor+'15;padding:12px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between">'
+        +'<div><span style="background:'+sezColor+';color:#fff;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:800;margin-right:8px">SEZ. '+sezLabel+'</span>'
+        +'<span style="font-size:13px;font-weight:700;color:'+sezColor+'">'+sez.nome+' — '+sez.punti+' pt</span></div>'
+        +'<span style="color:'+sezColor+'">▼</span></div>'
+        +'<div id="igp-'+sKey+'" style="padding:8px">'
+        +'<div style="font-size:10px;color:#6B8BB0;padding:4px 8px;margin-bottom:6px">'+sez.param+'</div>';
+      sez.esercizi.forEach(function(e){
+        html+='<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid #F5F5F5">'
+          +'<div style="min-width:40px;text-align:center"><div style="font-size:16px;font-weight:800;color:'+sezColor+'">'+e.punti+'</div><div style="font-size:8px;color:#9ab0cc">punti</div></div>'
+          +'<div style="flex:1"><div style="font-weight:700;font-size:12px;color:#1a1a3a">'+e.nome+'</div>'
+          +'<div style="font-size:10px;color:#6B8BB0">'+e.desc+'</div></div></div>';
+      });
+      html+='</div></div>';
+    });
+  }
+
+  html+='<div style="background:#fff;border:1.5px solid #90CAF9;border-radius:14px;overflow:hidden;margin-bottom:14px">'
+    +'<div onclick="var c=document.getElementById(\'igp-qual-body\');c.style.display=c.style.display===\'none\'?\'block\':\'none\'" style="background:#E3F2FD;padding:12px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="font-size:13px;font-weight:700;color:#1565C0">🏅 Qualifiche IGP</div><span style="color:#1565C0">▼</span></div>'
+    +'<div id="igp-qual-body" style="display:none;padding:8px">';
+  IGP_QUALIFICHE.forEach(function(q){
+    html+='<div style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid #F5F5F5">'
+      +'<div style="width:36px;height:36px;border-radius:8px;background:'+q.colore+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:800">'+q.id+'</div>'
+      +'<div><div style="font-weight:700;font-size:12px;color:#1a1a3a">'+q.nome+'</div>'
+      +'<div style="font-size:11px;color:#6B8BB0">'+q.range+' per fase</div></div></div>';
+  });
+  html+='</div></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
     +'<button onclick="apriNuovaGaraSport(\'difesa\')" style="background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">🏆 Registra prova</button>'
-    +'<button onclick="apriNuovoAllenamentoSport();setTimeout(function(){var s=document.getElementById(\'na-disc\');if(s)s.value=\'difesa\';},100)" style="background:#fff;color:#1565C0;border:2px solid #90CAF9;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">💪 Allenamento</button>'
+    +'<button onclick="apriAllenamentoIGP()" style="background:#fff;color:#1565C0;border:2px solid #90CAF9;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">💪 Allenamento</button>'
     +'</div>'
-    +'<div style="text-align:center;padding:20px;color:#9ab0cc;font-size:12px">📋 Checklist esercizi dettagliata — Sessione B</div>';
+    +'<div style="font-size:13px;font-weight:700;color:#1565C0;margin-bottom:8px">🏆 Ultime prove IGP ('+proveDifesa.length+')</div>';
+  if(proveDifesa.length){
+    proveDifesa.slice(0,5).forEach(function(p){
+      var det=p.dettagli||{};
+      html+='<div style="background:#fff;border-radius:10px;border:1px solid #90CAF9;padding:10px;margin-bottom:6px;font-size:12px">'
+        +'<div style="display:flex;justify-content:space-between"><strong>'+esc(p.tipo_prova)+'</strong>'
+        +(p.punteggio?'<span style="color:#1565C0;font-weight:700">'+esc(p.punteggio)+'</span>':'')+'</div>'
+        +'<div style="color:#6B8BB0;margin-top:2px">📅 '+esc(p.data||'')+(p.luogo?' · '+esc(p.luogo):'')
+        +(det.sezione_a?' · A:'+det.sezione_a:'')+(det.sezione_b?' B:'+det.sezione_b:'')+(det.sezione_c?' C:'+det.sezione_c:'')+'</div></div>';
+    });
+  } else {
+    html+='<div style="text-align:center;padding:16px;color:#9ab0cc;font-size:12px">Nessuna prova registrata</div>';
+  }
+
   container.innerHTML=html;
+}
+
+/* ══ ALLENAMENTO IGP SPECIFICO ══ */
+function apriAllenamentoIGP(){
+  var livello=window._igpLivello||'igp1';
+  var esercizi=IGP_ESERCIZI[livello];
+  if(!esercizi){apriNuovoAllenamentoSport();return;}
+
+  var sezioni=livello==='bh'
+    ?[{k:'parte_a',n:'Obbedienza'},{k:'parte_b',n:'Temperamento'}]
+    :[{k:'sez_a',n:'Sez. A — Pista'},{k:'sez_b',n:'Sez. B — Obbedienza'},{k:'sez_c',n:'Sez. C — Protezione'}];
+
+  var esOpts='';
+  sezioni.forEach(function(s){
+    var sez=esercizi[s.k];
+    if(!sez) return;
+    esOpts+='<optgroup label="'+s.n+'">';
+    sez.esercizi.forEach(function(e){
+      esOpts+='<option value="'+e.id+'">'+e.nome+(e.punti?' ('+e.punti+'pt)':'')+'</option>';
+    });
+    esOpts+='</optgroup>';
+  });
+
+  var ov=document.createElement('div');
+  ov.id='ov-allen-igp';
+  ov.style.cssText='position:fixed;inset:0;z-index:10100;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center';
+  ov.onclick=function(e){if(e.target===ov) ov.remove();};
+  ov.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;max-width:480px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;padding-bottom:40px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#1565C0">🛡️ Allenamento '+IGP_LIVELLI.find(function(l){return l.id===livello;}).nome+'</div>'
+    +'<button onclick="document.getElementById(\'ov-allen-igp\').remove()" style="background:#E3F2FD;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;color:#1565C0">✕</button></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#0D47A1;display:block;margin-bottom:4px">Esercizio *</label>'
+    +'<select id="ai-esercizio" style="width:100%;padding:10px;border:1.5px solid #90CAF9;border-radius:8px;font-size:14px">'+esOpts+'</select></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div><label style="font-size:11px;font-weight:700;color:#0D47A1;display:block;margin-bottom:4px">Data</label>'
+    +'<input id="ai-data" type="date" value="'+new Date().toISOString().slice(0,10)+'" style="width:100%;padding:10px;border:1.5px solid #90CAF9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
+    +'<div><label style="font-size:11px;font-weight:700;color:#0D47A1;display:block;margin-bottom:4px">Durata (min)</label>'
+    +'<input id="ai-durata" type="number" value="30" min="1" style="width:100%;padding:10px;border:1.5px solid #90CAF9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#0D47A1;display:block;margin-bottom:4px">Come è andata? (1-5)</label>'
+    +'<div id="ai-voto-stars" style="display:flex;gap:6px;font-size:28px;cursor:pointer">'
+    +'<span onclick="document.getElementById(\'ai-voto\').value=1;_aggStarsAI(1)" style="color:#ddd">★</span>'
+    +'<span onclick="document.getElementById(\'ai-voto\').value=2;_aggStarsAI(2)" style="color:#ddd">★</span>'
+    +'<span onclick="document.getElementById(\'ai-voto\').value=3;_aggStarsAI(3)" style="color:#42A5F5">★</span>'
+    +'<span onclick="document.getElementById(\'ai-voto\').value=4;_aggStarsAI(4)" style="color:#ddd">★</span>'
+    +'<span onclick="document.getElementById(\'ai-voto\').value=5;_aggStarsAI(5)" style="color:#ddd">★</span>'
+    +'</div><input type="hidden" id="ai-voto" value="3"/></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;color:#0D47A1;display:block;margin-bottom:4px">Note</label>'
+    +'<textarea id="ai-note" rows="2" placeholder="Note sulla sessione..." style="width:100%;padding:10px;border:1.5px solid #90CAF9;border-radius:8px;font-size:13px;resize:none;box-sizing:border-box"></textarea></div>'
+    +'<button onclick="salvaAllenamentoIGP(this)" style="width:100%;background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">✅ Registra</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+  _aggStarsAI(3);
+}
+
+function _aggStarsAI(n){
+  var cont=document.getElementById('ai-voto-stars');
+  if(!cont) return;
+  var spans=cont.querySelectorAll('span');
+  for(var i=0;i<spans.length;i++) spans[i].style.color=i<n?'#42A5F5':'#ddd';
+}
+
+function salvaAllenamentoIGP(btn){
+  var esercizio=(document.getElementById('ai-esercizio')||{}).value;
+  var data=(document.getElementById('ai-data')||{}).value;
+  if(!esercizio||!data){toast('Compila esercizio e data');return;}
+  if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
+  btn.disabled=true;btn.textContent='⏳';
+
+  var livello=window._igpLivello||'igp1';
+  var allen={
+    id:'tmp_allen_'+Date.now(),
+    user_id:_currentUser.id,
+    cane_id:null,cane_nome:'',
+    disciplina:'difesa',
+    tipo:livello+'_'+esercizio,
+    data:data,
+    durata_minuti:parseInt((document.getElementById('ai-durata')||{}).value)||30,
+    note:(document.getElementById('ai-note')||{}).value||'',
+    voto:parseInt((document.getElementById('ai-voto')||{}).value)||3,
+    created_at:new Date().toISOString()
+  };
+
+  _sportAllenamenti.unshift(allen);
+  _salvaSportLocale();
+  var ov=document.getElementById('ov-allen-igp');
+  if(ov) ov.remove();
+  toast('✅ Allenamento IGP registrato!');
+  apriDisciplinaSport('difesa');
+  _checkNuoviBadge();
+
+  var rec=Object.assign({},allen);
+  delete rec.id;
+  _supabase.from('sport_allenamenti').insert(rec).select().then(function(res){
+    if(res.error){console.warn('[sport] igp allen:',res.error.message);return;}
+    if(res.data&&res.data[0]){
+      var idx=_sportAllenamenti.findIndex(function(a){return a.id===allen.id;});
+      if(idx>=0) _sportAllenamenti[idx]=res.data[0];
+      _salvaSportLocale();
+    }
+  });
 }
 
 /* ══ SOCCORSO ══ */
