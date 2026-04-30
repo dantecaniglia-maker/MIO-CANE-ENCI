@@ -3011,7 +3011,7 @@ function callAIHybrid(b64, ocrText, onSuccess, onError){
   if(!hasAnyAIKey()){ onError(new Error('__NO_KEY__')); return; }
   if(!_aiKeys.gemini){ onError(new Error('Serve chiave Gemini')); return; }
 
-  var MODELS = ['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash'];
+  var MODELS = ['gemini-3-flash-preview'];
   var mi = 0;
 
   // Tronca testo OCR — se non disponibile usa stringa vuota
@@ -3111,7 +3111,7 @@ function callAIHybrid(b64, ocrText, onSuccess, onError){
 function callAIText(text, onSuccess, onError){
   if(!hasAnyAIKey()){ onError(new Error('__NO_KEY__')); return; }
   if(!_aiKeys.gemini){ onError(new Error('Serve chiave Gemini')); return; }
-  var MODELS = ['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash'];
+  var MODELS = ['gemini-3-flash-preview'];
   var mi = 0;
   function tryModel(){
     fetch('https://generativelanguage.googleapis.com/v1beta/models/'+MODELS[mi]+':generateContent?key='+_aiKeys.gemini,{
@@ -3147,7 +3147,7 @@ function leggiPedigreeOCR_AI(b64, mime, onProgress, onSuccess, onError){
     loadTesseract(function(worker){
       if(!worker){
         if(hasAnyAIKey()){
-          onProgress('🤖 Gemini 2.5-flash analizza…');
+          onProgress('🤖 Gemini 3-flash analizza…');
           callAIVision(b64E,'image/jpeg',PEDIGREE_PROMPT,function(r){onProgress('✅ Letto con Gemini — '+Object.keys(r.pedigree||{}).length+' antenati trovati');onSuccess(validaECorreggiRisultato(r));},onError);
         } else { onError(new Error('OCR non disponibile. Configura Gemini o inserisci manualmente.')); }
         return;
@@ -3163,7 +3163,7 @@ function leggiPedigreeOCR_AI(b64, mime, onProgress, onSuccess, onError){
         console.log('[OCR] Testo:\n',testo.substring(0,800));
         if(!testo||testo.trim().length<30){
           if(hasAnyAIKey()){
-            onProgress('🤖 Gemini 2.5-flash analizza…');
+            onProgress('🤖 Gemini 3-flash analizza…');
             callAIVision(b64E,'image/jpeg',PEDIGREE_PROMPT,function(r){onProgress('✅ Letto con Gemini — '+Object.keys(r.pedigree||{}).length+' antenati trovati');onSuccess(validaECorreggiRisultato(r));},onError);
           } else { onError(new Error('Immagine non leggibile. Riprova con foto più nitida.')); }
           return;
@@ -3176,7 +3176,7 @@ function leggiPedigreeOCR_AI(b64, mime, onProgress, onSuccess, onError){
           return;
         }
         if(hasAnyAIKey()){
-          onProgress('🤖 Gemini 2.5-flash analizza…');
+          onProgress('🤖 Gemini 3-flash analizza…');
           callAIHybrid(b64E,testo,function(aiRes){
             if(!aiRes.nome&&parsed.nome) aiRes.nome=parsed.nome;
             if(!aiRes.razza&&parsed.razza) aiRes.razza=parsed.razza;
@@ -3185,7 +3185,7 @@ function leggiPedigreeOCR_AI(b64, mime, onProgress, onSuccess, onError){
             onSuccess(validaECorreggiRisultato(aiRes));
           },function(err){
             console.log('[Hybrid] Fallback Vision:',err.message);
-            onProgress('🤖 Gemini 2.5-flash analizza…');
+            onProgress('🤖 Gemini 3-flash analizza…');
             callAIVision(b64E,'image/jpeg',PEDIGREE_PROMPT,function(r){
               onProgress('✅ Letto con Gemini — '+Object.keys(r.pedigree||{}).length+' antenati trovati');
               onSuccess(validaECorreggiRisultato(r));
@@ -3203,7 +3203,7 @@ function leggiPedigreeOCR_AI(b64, mime, onProgress, onSuccess, onError){
       }).catch(function(e){
         URL.revokeObjectURL(url);
         if(hasAnyAIKey()){
-          onProgress('🤖 Gemini 2.5-flash analizza…');
+          onProgress('🤖 Gemini 3-flash analizza…');
           callAIVision(b64E,'image/jpeg',PEDIGREE_PROMPT,function(r){onProgress('✅ Letto con Gemini — '+Object.keys(r.pedigree||{}).length+' antenati trovati');onSuccess(validaECorreggiRisultato(r));},onError);
         } else { onError(new Error('Errore lettura. Riprova con foto più nitida.')); }
       });
@@ -3312,7 +3312,7 @@ function callAIVision(b64, mime, prompt, onSuccess, onError){
     console.log('[AI] Provo:', provider);
 
     if(provider === 'gemini'){
-      var MODELS = ['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash'];
+      var MODELS = ['gemini-3-flash-preview'];
       var mi = 0;
       function tryGemini(){
         fetch('https://generativelanguage.googleapis.com/v1beta/models/'+MODELS[mi]+':generateContent?key='+_aiKeys.gemini,{
@@ -5150,7 +5150,7 @@ async function controlloAIAnnuncio(razza, descrizione, prezzo){
       +'Rispondi SOLO con JSON: {"ok":true} se va bene, '
       +'{"ok":false,"msg":"motivo breve"} se c\'è spam, prezzi assurdi '
       +'(sotto €100 o sopra €50000), parolacce o contenuti inappropriati.';
-    var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+_aiKeys.gemini,{
+    var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key='+_aiKeys.gemini,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({contents:[{parts:[{text:prompt}]}],
@@ -7428,7 +7428,7 @@ function testGeminiKey(){
   if(btn){ btn.textContent='⏳ Test in corso…'; btn.disabled=true; }
   
   // Test con testo semplice (niente immagine) per verificare la key
-  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+key, {
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key='+key, {
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
@@ -7572,7 +7572,7 @@ function onPdfPedigreeSelected(input){
       return;
     }
 
-    var MODELS = ['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash'];
+    var MODELS = ['gemini-3-flash-preview'];
     var mi = 0;
 
     function tryModel(){
@@ -14769,7 +14769,7 @@ async function _generaVoceCane(cane, logOggi, pastiOggi, usciteOggi, kmOggi, str
     +' NON iniziare con il tuo nome. NON usare asterischi. Max 40 parole.';
   try {
     var resp = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+_aiKeys.gemini,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key='+_aiKeys.gemini,
       { method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({contents:[{parts:[{text:prompt}]}],
           generationConfig:{maxOutputTokens:80,temperature:0.9}}) }
@@ -19661,7 +19661,7 @@ function sendChat(){
               parts:[{text:m.role==='user'?m.text:m.text.replace(/<[^>]+>/g,'')}]};
     });
 
-  var MODELS=['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash'];
+  var MODELS=['gemini-3-flash-preview'];
   var mi=0;
   function tryModel(){
     var controller=new AbortController();
