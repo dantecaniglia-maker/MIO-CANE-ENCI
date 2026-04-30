@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.63';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.64';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -222,7 +222,7 @@ label{font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;lett
 #footer span{color:#C9A961;font-weight:700}
 
 /* BOTTOM NAV */
-#bottom-nav{position:fixed;bottom:0;left:0;width:100%;height:60px;background:#fff;border-top:1.5px solid #DDEAFF;z-index:9990;display:none;align-items:stretch;box-shadow:0 -4px 18px rgba(21,101,192,.12)}
+#bottom-nav{position:fixed;bottom:0;left:0;width:100%;height:60px;background:#fff;border-top:2px solid #C9A961;z-index:9990;display:none;align-items:stretch;box-shadow:0 -4px 18px rgba(21,101,192,.12)}
 /* SEZIONE REGISTRO (non-overlay, sezione fissa tra header e bottom-nav) */
 #sec-registro{position:fixed;top:54px;left:0;right:0;bottom:0;background:#EEF3FB;overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:200;padding:20px 14px}
 .bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;cursor:pointer;color:#9ab0cc;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:.03em;padding:4px 2px;transition:color .2s;-webkit-tap-highlight-color:transparent}
@@ -1081,7 +1081,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
 <div id="app">
 
 <!-- ══ HEADER ══ -->
-<header style="flex-shrink:0;background:#fff;border-bottom:1px solid #DDEAFF;padding:0 12px;height:54px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 6px rgba(21,101,192,.07)">
+<header style="flex-shrink:0;background:linear-gradient(135deg,#0D47A1,#1a237e);border-bottom:1px solid #1a237e;padding:0 12px;height:54px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 6px rgba(13,71,161,.3)">
   <!-- SINISTRA: logo + titolo -->
   <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
     <button id="btn-home" class="hidden btn btn-ghost btn-sm no-print" onclick="goHome()" style="flex-shrink:0;padding:6px 8px;font-size:16px">🏠</button>
@@ -1089,11 +1089,11 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
       <img src="logo.jpeg" style="width:100%;height:100%;object-fit:cover"/>
     </div>
     <div style="min-width:0">
-      <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:#0D47A1;white-space:nowrap">Breed<span style="color:#C9A961">Ped</span></div>
-      <div class="hide-mobile" style="font-size:8px;color:#6B8BB0;letter-spacing:.1em;text-transform:uppercase">Il pedigree intelligente</div>
+      <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:#fff;white-space:nowrap">Breed<span style="color:#C9A961">Ped</span></div>
+      <div class="hide-mobile" style="font-size:8px;color:rgba(255,255,255,.6);letter-spacing:.1em;text-transform:uppercase">Il pedigree intelligente</div>
     </div>
     <div id="modalita-badge" onclick="g('modal-modalita').style.display='flex'"
-      style="display:none;font-size:10px;font-weight:700;color:#C9A961;cursor:pointer;background:rgba(201,169,97,.1);border:1px solid rgba(201,169,97,.3);border-radius:20px;padding:2px 8px;white-space:nowrap;flex-shrink:0;margin-left:6px">
+      style="display:none;font-size:10px;font-weight:700;color:#C9A961;cursor:pointer;background:rgba(201,169,97,.2);border:1px solid rgba(201,169,97,.5);border-radius:20px;padding:2px 8px;white-space:nowrap;flex-shrink:0;margin-left:6px">
       🏆 Allevatore
     </div>
   </div>
@@ -9355,7 +9355,7 @@ function applicaModalita(mod){
       var fbn = document.createElement('nav');
       fbn.id = 'fam-bottom-nav';
       fbn.style.cssText = 'position:fixed;bottom:0;left:0;width:100%;'
-        +'background:#fff;border-top:1px solid #EEF3FB;z-index:9985;'
+        +'background:#fff;border-top:2px solid #F48FB1;z-index:9985;'
         +'display:flex;align-items:stretch;padding:6px 8px;gap:4px;'
         +'box-shadow:0 -4px 20px rgba(13,71,161,.1)';
       fbn.innerHTML = [{tab:'home',ico:'🏠',label:'Home'},{tab:'diario',ico:'📖',label:'Diario'},{tab:'compiti',ico:'✅',label:'Compiti'},{tab:'percorsi',ico:'🗺️',label:'GPS'},{tab:'servizi',ico:'📍',label:'Servizi'},{tab:'famiglia',ico:'👨‍👩‍👧',label:'Branco'}]
@@ -9480,6 +9480,27 @@ function applicaModalita(mod){
     if(_cbn2) _cbn2.style.display='none';
   }
 
+  // Splash screen animato per cambio modalità
+  var _splashColors = {
+    allevatore: {bg:'linear-gradient(135deg,#0D47A1,#1a237e)',ico:'🏆',nome:'Allevatore'},
+    famiglia: {bg:'linear-gradient(135deg,#E91E63,#AD1457)',ico:'🏠',nome:'Famiglia'},
+    caccia: {bg:'linear-gradient(135deg,#2E7D32,#1B5E20)',ico:'🐕‍🦺',nome:'Caccia & Tartufo'},
+    sport: {bg:'linear-gradient(135deg,#E65100,#BF360C)',ico:'🏋️',nome:'Sport & Agility'}
+  };
+  var _splashConf = _splashColors[mod];
+  if(_splashConf){
+    var _splash = document.createElement('div');
+    _splash.style.cssText = 'position:fixed;inset:0;z-index:99999;background:'+_splashConf.bg+';display:flex;flex-direction:column;align-items:center;justify-content:center;animation:fadeIn .3s;transition:opacity .5s';
+    _splash.innerHTML = '<div style="font-size:72px;margin-bottom:16px;animation:bounce 1s">'+_splashConf.ico+'</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:28px;font-weight:700;color:#fff;margin-bottom:8px">'+_splashConf.nome+'</div>'
+      +'<div style="font-size:14px;color:rgba(255,255,255,.6)">Breed<span style="color:#C9A961">Ped</span></div>';
+    document.body.appendChild(_splash);
+    setTimeout(function(){
+      _splash.style.opacity = '0';
+      setTimeout(function(){ _splash.remove(); }, 500);
+    }, 1200);
+  }
+
   // ═══ MODULO SPORT & AGILITY ═══
   if(mod === 'sport'){
     var _oldHs = g('home-sport');
@@ -9550,6 +9571,10 @@ function applicaModalita(mod){
     var _sbn2 = g('sport-bottom-nav');
     if(_sbn2) _sbn2.style.display='none';
   }
+
+  // Titolo pagina dinamico
+  var _titoli = {allevatore:'BreedPed — Allevatore',famiglia:'BreedPed — Famiglia',caccia:'BreedPed — Caccia',sport:'BreedPed — Sport'};
+  document.title = _titoli[mod] || 'BreedPed';
 }
 
 async function caricaCaccia(){
@@ -19957,16 +19982,16 @@ function sendChat(){
       Scegli la tua modalità principale.<br>Potrai cambiarla in qualsiasi momento.
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
-      <div onclick="scegliModalita('allevatore')" style="border:2px solid #DDEAFF;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:#fff"
-        onmouseover="this.style.borderColor='#C9A961';this.style.background='#FFFBF0'"
-        onmouseout="this.style.borderColor='#DDEAFF';this.style.background='#fff'">
+      <div onclick="scegliModalita('allevatore')" style="border:2px solid #C9A961;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:linear-gradient(135deg,#FFFBF0,#FFF8E1)"
+        onmouseover="this.style.borderColor='#A88A41';this.style.background='linear-gradient(135deg,#FFF8E1,#FFF3CD)'"
+        onmouseout="this.style.borderColor='#C9A961';this.style.background='linear-gradient(135deg,#FFFBF0,#FFF8E1)'">
         <div style="font-size:36px;margin-bottom:10px">🏆</div>
         <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Allevatore</div>
         <div style="font-size:11px;color:#6B8BB0;line-height:1.4">Pedigree, cucciolate,<br>moduli ENCI, breeding</div>
       </div>
-      <div onclick="scegliModalita('famiglia')" style="border:2px solid #DDEAFF;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:#fff"
-        onmouseover="this.style.borderColor='#C9A961';this.style.background='#FFFBF0'"
-        onmouseout="this.style.borderColor='#DDEAFF';this.style.background='#fff'">
+      <div onclick="scegliModalita('famiglia')" style="border:2px solid #F48FB1;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:linear-gradient(135deg,#FFF0F5,#FCE4EC)"
+        onmouseover="this.style.borderColor='#E91E8C';this.style.background='linear-gradient(135deg,#FCE4EC,#F8BBD0)'"
+        onmouseout="this.style.borderColor='#F48FB1';this.style.background='linear-gradient(135deg,#FFF0F5,#FCE4EC)'">
         <div style="font-size:36px;margin-bottom:10px">🏠</div>
         <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Cane di Famiglia</div>
         <div style="font-size:11px;color:#6B8BB0;line-height:1.4">Diario, salute, famiglia<br>condivisa</div>
@@ -19978,9 +20003,9 @@ function sendChat(){
         <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Sport & Agility</div>
         <div style="font-size:11px;color:#6B8BB0;line-height:1.4">Obbedienza, difesa,<br>agility, soccorso</div>
       </div>
-      <div onclick="scegliModalita('caccia')" style="border:2px solid #C8E6C9;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:#F9FBE7"
-        onmouseover="this.style.borderColor='#2E7D32';this.style.background='#F1F8E9'"
-        onmouseout="this.style.borderColor='#C8E6C9';this.style.background='#F9FBE7'">
+      <div onclick="scegliModalita('caccia')" style="border:2px solid #81C784;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:linear-gradient(135deg,#F1F8E9,#E8F5E9)"
+        onmouseover="this.style.borderColor='#2E7D32';this.style.background='linear-gradient(135deg,#E8F5E9,#C8E6C9)'"
+        onmouseout="this.style.borderColor='#81C784';this.style.background='linear-gradient(135deg,#F1F8E9,#E8F5E9)'">
         <div style="font-size:36px;margin-bottom:10px">🐕‍🦺</div>
         <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Caccia & Tartufo</div>
         <div style="font-size:11px;color:#6B8BB0;line-height:1.4">GPS, diario, prove<br>FIDASC, zone segrete</div>
