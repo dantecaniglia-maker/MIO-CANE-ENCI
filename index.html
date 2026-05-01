@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.64';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.65';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4144,8 +4144,14 @@ function renderPalmares(){
     return;
   }
   var totCani=cani.length;
-  var maschi=cani.filter(function(d){return(d.sesso||'').toLowerCase()==='maschio';}).length;
-  var femmine=cani.filter(function(d){return(d.sesso||'').toLowerCase()==='femmina';}).length;
+  var maschi=cani.filter(function(d){
+    var s=(d.sesso||d.sex||'').toLowerCase();
+    return s==='maschio'||s==='m'||s==='male';
+  }).length;
+  var femmine=cani.filter(function(d){
+    var s=(d.sesso||d.sex||'').toLowerCase();
+    return s==='femmina'||s==='f'||s==='female';
+  }).length;
   var razze={};
   cani.forEach(function(d){if(d.razza) razze[d.razza]=(razze[d.razza]||0)+1;});
   var razzePrincipale=Object.keys(razze).sort(function(a,b){return razze[b]-razze[a];})[0]||'—';
@@ -5217,9 +5223,17 @@ function deleteCurrent(){
     selectedId=null;hide('detail');renderSidebar();
   } else {
     if(!confirm('Eliminare '+c.nome+'? Operazione irreversibile.'))return;
+    var caneDaEliminare=c;
     cani=cani.filter(function(x){return String(x.id)!==String(c.id);});
     salvaDB();
     selectedId=null;hide('detail');renderSidebar();
+    // DELETE su Supabase in background
+    if(_currentUser && caneDaEliminare && caneDaEliminare.id && (caneDaEliminare.id+'').indexOf('tmp_') < 0){
+      _supabase.from('cani').delete().eq('id', caneDaEliminare.id).eq('user_id', _currentUser.id).then(function(res){
+        if(res.error) console.warn('[allevatore] delete cane Supabase:', res.error.message);
+        else console.log('[allevatore] cane eliminato da Supabase:', caneDaEliminare.id);
+      });
+    }
   }
 }
 function switchTab(t){
