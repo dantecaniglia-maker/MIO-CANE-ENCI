@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.67';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.68';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -12242,6 +12242,7 @@ function apriCampoAgility2D(){
   window._campoOstacoli=window._campoOstacoli||[];
   window._campoNextNum=window._campoNextNum||(window._campoOstacoli.length+1);
   window._campoSelectedTool=null;
+  window._campoCheckpoints=window._campoCheckpoints||[];
 
   ov.innerHTML=
     '<div style="background:linear-gradient(135deg,#558B2F,#33691E);padding:14px 16px;display:flex;align-items:center;justify-content:space-between">'
@@ -12252,6 +12253,9 @@ function apriCampoAgility2D(){
     +'<button onclick="_svuotaCampo()" style="background:rgba(255,255,255,.15);border:none;border-radius:6px;padding:4px 8px;color:#fff;font-size:10px;cursor:pointer">🗑️</button>'
     +'<button onclick="_salvaCampoImg()" style="background:rgba(255,255,255,.15);border:none;border-radius:6px;padding:4px 8px;color:#fff;font-size:10px;cursor:pointer">📸</button>'
     +'<button onclick="_condividiCampo()" style="background:rgba(255,255,255,.15);border:none;border-radius:6px;padding:4px 8px;color:#fff;font-size:10px;cursor:pointer">📲</button>'
+    +'<button onclick="avviaGaraCampo()" style="background:#FF6F00;border:none;border-radius:6px;padding:4px 8px;color:#fff;font-size:10px;font-weight:700;cursor:pointer">▶ GARA</button>'
+    +'<button onclick="apriSalvaPercorso()" style="background:rgba(255,255,255,.15);border:none;border-radius:6px;padding:4px 8px;color:#fff;font-size:10px;cursor:pointer">💾</button>'
+    +'<button onclick="apriCaricaPercorso()" style="background:rgba(255,255,255,.15);border:none;border-radius:6px;padding:4px 8px;color:#fff;font-size:10px;cursor:pointer">📂</button>'
     +'</div></div>'
     +'<div style="background:#F1F8E9;padding:8px;overflow-x:auto;display:flex;gap:6px;-webkit-overflow-scrolling:touch" id="campo-toolbar">'
     +ostacoli.map(function(o){
@@ -12262,6 +12266,9 @@ function apriCampoAgility2D(){
     +'<button onclick="_selezionaOstacolo(null)" id="tool-move" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:6px 10px;border-radius:8px;border:2px solid #558B2F;background:#E8F5E9;cursor:pointer;min-width:48px">'
     +'<span style="font-size:16px">✋</span>'
     +'<span style="font-size:8px;font-weight:700;color:#333">Sposta</span></button>'
+    +'<button onclick="_selezionaCheckpoint()" id="tool-CP" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:6px 10px;border-radius:8px;border:2px solid #FF6F00;background:#FFF3E0;cursor:pointer;min-width:48px">'
+    +'<span style="font-size:16px">⏱️</span>'
+    +'<span style="font-size:8px;font-weight:700;color:#E65100">Timer</span></button>'
     +'<button onclick="_eliminaUltimo()" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:6px 10px;border-radius:8px;border:2px solid #C62828;background:#FFEBEE;cursor:pointer;min-width:48px">'
     +'<span style="font-size:16px">↩️</span>'
     +'<span style="font-size:8px;font-weight:700;color:#C62828">Annulla</span></button>'
@@ -12396,6 +12403,33 @@ function _disegnaCampo(){
     ctx.setLineDash([]);
   }
 
+  // Disegna checkpoint timer
+  (window._campoCheckpoints||[]).forEach(function(cp){
+    var r=scala*0.6;
+    ctx.beginPath();
+    ctx.moveTo(cp.x,cp.y-r);
+    ctx.lineTo(cp.x-r*0.8,cp.y+r*0.5);
+    ctx.lineTo(cp.x+r*0.8,cp.y+r*0.5);
+    ctx.closePath();
+    ctx.fillStyle='#FF6F00';
+    ctx.fill();
+    ctx.strokeStyle='#fff';
+    ctx.lineWidth=2;
+    ctx.stroke();
+    ctx.fillStyle='#fff';
+    ctx.font='bold '+Math.round(r*0.7)+'px sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText('T'+cp.num,cp.x,cp.y+r*0.1);
+    ctx.textAlign='start';
+    ctx.textBaseline='alphabetic';
+    ctx.fillStyle='#FF6F00';
+    ctx.font=Math.round(r*0.5)+'px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('CP'+cp.num,cp.x,cp.y+r+Math.round(r*0.6));
+    ctx.textAlign='start';
+  });
+
   var cnt=document.getElementById('campo-count');
   if(cnt) cnt.textContent='Ostacoli: '+(window._campoOstacoli||[]).length+'/22';
 }
@@ -12415,6 +12449,19 @@ function _selezionaOstacolo(tipo){
 
 function _campoClic(x,y){
   if(window._campoSelectedTool){
+    // Checkpoint timer
+    if(window._campoSelectedTool==='CP'){
+      window._campoCheckpoints=window._campoCheckpoints||[];
+      window._campoCheckpoints.push({
+        id:'cp_'+Date.now(),
+        x:x,
+        y:y,
+        num:window._campoCheckpoints.length+1
+      });
+      _disegnaCampo();
+      toast('⏱️ Checkpoint '+(window._campoCheckpoints.length)+' piazzato');
+      return;
+    }
     if((window._campoOstacoli||[]).length>=22){
       toast('⚠️ Massimo 22 ostacoli per percorso');
       return;
@@ -12449,6 +12496,19 @@ function _campoClic(x,y){
       _disegnaCampo();
       toast('🗑️ Ostacolo rimosso');
     }
+    // Controlla se ha cliccato su un checkpoint
+    if(trovato<0){
+      (window._campoCheckpoints||[]).forEach(function(cp,i){
+        var dist=Math.sqrt((x-cp.x)*(x-cp.x)+(y-cp.y)*(y-cp.y));
+        if(dist<scala*1){
+          window._campoCheckpoints.splice(i,1);
+          window._campoCheckpoints.forEach(function(c,j){c.num=j+1;});
+          _disegnaCampo();
+          toast('⏱️ Checkpoint rimosso');
+          trovato=999;
+        }
+      });
+    }
   }
 }
 
@@ -12462,6 +12522,7 @@ function _eliminaUltimo(){
 function _svuotaCampo(){
   if(!confirm('Svuotare il campo?')) return;
   window._campoOstacoli=[];
+  window._campoCheckpoints=[];
   window._campoNextNum=1;
   _disegnaCampo();
 }
@@ -12487,6 +12548,337 @@ function _condividiCampo(){
       _salvaCampoImg();
     }
   },'image/png');
+}
+
+/* ══ CHECKPOINT TIMER AGILITY ══ */
+
+function _selezionaCheckpoint(){
+  window._campoSelectedTool='CP';
+  var toolbar=document.getElementById('campo-toolbar');
+  if(!toolbar) return;
+  var btns=toolbar.querySelectorAll('button');
+  btns.forEach(function(b){b.style.borderColor='#ddd';b.style.background='#fff';});
+  var info=document.getElementById('campo-info');
+  if(info) info.textContent='⏱️ Tap sul campo per piazzare un checkpoint timer';
+}
+
+/* ══ MODALITÀ GARA CON SPLIT ══ */
+function avviaGaraCampo(){
+  var cps=window._campoCheckpoints||[];
+  if(cps.length<1){
+    toast('⚠️ Piazza almeno 1 checkpoint timer sul campo');
+    return;
+  }
+
+  var ov=document.createElement('div');
+  ov.id='ov-gara-campo';
+  ov.style.cssText='position:fixed;inset:0;z-index:10200;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px';
+
+  window._garaRunning=false;
+  window._garaStart=0;
+  window._garaSplits=[];
+  window._garaNextCP=0;
+  window._garaInterval=null;
+
+  var cpButtons='';
+  cps.forEach(function(cp,i){
+    cpButtons+='<button onclick="_garaSplit('+i+')" id="gara-cp-'+i+'" style="width:100%;padding:14px;border-radius:12px;border:none;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:6px;'
+      +'background:rgba(255,255,255,.1);color:rgba(255,255,255,.4);pointer-events:none">'
+      +'⏱️ CP'+(i+1)+' — —</button>';
+  });
+
+  ov.innerHTML='<div style="max-width:400px;width:100%;text-align:center">'
+    +'<div style="color:rgba(255,255,255,.5);font-size:12px;margin-bottom:8px">🏁 Modalità Gara — '+cps.length+' checkpoint</div>'
+    +'<div id="gara-timer-display" style="font-size:64px;font-weight:800;color:#fff;font-family:monospace;letter-spacing:3px;margin-bottom:16px">00.000</div>'
+    +'<button id="gara-btn-start" onclick="_garaToggle()" style="width:100%;padding:16px;border-radius:14px;border:none;font-size:20px;font-weight:800;cursor:pointer;background:#4CAF50;color:#fff;margin-bottom:16px">▶ START</button>'
+    +'<div id="gara-cp-container" style="margin-bottom:16px">'+cpButtons+'</div>'
+    +'<div id="gara-risultati" style="display:none"></div>'
+    +'<button onclick="_chiudiGaraCampo()" style="background:none;border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:10px 24px;color:rgba(255,255,255,.5);font-size:12px;cursor:pointer">✕ Chiudi</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+}
+
+function _garaToggle(){
+  var btn=document.getElementById('gara-btn-start');
+  if(!window._garaRunning){
+    window._garaRunning=true;
+    window._garaStart=Date.now();
+    window._garaSplits=[];
+    window._garaNextCP=0;
+    window._garaInterval=setInterval(function(){
+      var elapsed=(Date.now()-window._garaStart)/1000;
+      var el=document.getElementById('gara-timer-display');
+      if(el) el.textContent=elapsed.toFixed(3);
+    },10);
+    if(btn){btn.textContent='⏹ STOP';btn.style.background='#C62828';}
+    var cp0=document.getElementById('gara-cp-0');
+    if(cp0){cp0.style.background='#FF6F00';cp0.style.color='#fff';cp0.style.pointerEvents='auto';}
+  } else {
+    _garaStop();
+  }
+}
+
+function _garaSplit(idx){
+  if(!window._garaRunning) return;
+  if(idx!==window._garaNextCP) return;
+
+  var elapsed=(Date.now()-window._garaStart)/1000;
+  var prevTime=window._garaSplits.length>0?window._garaSplits[window._garaSplits.length-1].total:0;
+  var partial=elapsed-prevTime;
+
+  window._garaSplits.push({cp:idx+1,total:elapsed,partial:partial});
+
+  var cpBtn=document.getElementById('gara-cp-'+idx);
+  if(cpBtn){
+    cpBtn.style.background='#4CAF50';
+    cpBtn.style.pointerEvents='none';
+    cpBtn.innerHTML='✅ CP'+(idx+1)+' — <strong>'+elapsed.toFixed(3)+'s</strong> (parziale: '+partial.toFixed(3)+'s)';
+  }
+
+  window._garaNextCP=idx+1;
+  var nextBtn=document.getElementById('gara-cp-'+(idx+1));
+  if(nextBtn){
+    nextBtn.style.background='#FF6F00';
+    nextBtn.style.color='#fff';
+    nextBtn.style.pointerEvents='auto';
+  } else {
+    setTimeout(function(){_garaStop();},100);
+  }
+}
+
+function _garaStop(){
+  window._garaRunning=false;
+  clearInterval(window._garaInterval);
+  var btn=document.getElementById('gara-btn-start');
+  if(btn){btn.textContent='▶ RESTART';btn.style.background='#4CAF50';btn.onclick=function(){_garaReset();};}
+
+  var totale=(Date.now()-window._garaStart)/1000;
+
+  var ris=document.getElementById('gara-risultati');
+  if(!ris) return;
+  ris.style.display='block';
+
+  var h='<div style="background:rgba(255,255,255,.1);border-radius:14px;padding:16px;text-align:left;margin-bottom:12px">'
+    +'<div style="font-size:14px;font-weight:700;color:#FF6F00;margin-bottom:10px;text-align:center">📊 Risultati gara</div>'
+    +'<div style="text-align:center;margin-bottom:12px"><span style="font-size:28px;font-weight:800;color:#fff">'+totale.toFixed(3)+'s</span><br>'
+    +'<span style="font-size:11px;color:rgba(255,255,255,.5)">Tempo totale</span></div>';
+
+  if(window._garaSplits.length>0){
+    var maxPartial=Math.max.apply(null,window._garaSplits.map(function(s){return s.partial;}));
+    h+='<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.6);margin-bottom:6px">Tempi parziali</div>';
+    var prevLabel='Start';
+    window._garaSplits.forEach(function(s){
+      var perc=Math.round(s.partial/maxPartial*100);
+      var colore=perc>80?'#C62828':perc>50?'#FF6F00':'#4CAF50';
+      h+='<div style="margin-bottom:6px">'
+        +'<div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.7);margin-bottom:2px">'
+        +'<span>'+prevLabel+' → CP'+s.cp+'</span>'
+        +'<span style="font-weight:800;color:'+colore+'">'+s.partial.toFixed(3)+'s</span></div>'
+        +'<div style="background:rgba(255,255,255,.1);border-radius:4px;height:8px;overflow:hidden">'
+        +'<div style="background:'+colore+';height:100%;width:'+perc+'%;border-radius:4px"></div></div></div>';
+      prevLabel='CP'+s.cp;
+    });
+  }
+
+  h+='</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="_salvaGaraConSplit()" style="flex:1;background:#FF6F00;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">💾 Salva tempo</button>'
+    +'<button onclick="_garaReset()" style="flex:1;background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">🔄 Riprova</button>'
+    +'</div>';
+  ris.innerHTML=h;
+}
+
+function _garaReset(){
+  window._garaRunning=false;
+  clearInterval(window._garaInterval);
+  window._garaSplits=[];
+  window._garaNextCP=0;
+  var el=document.getElementById('gara-timer-display');
+  if(el) el.textContent='00.000';
+  var btn=document.getElementById('gara-btn-start');
+  if(btn){btn.textContent='▶ START';btn.style.background='#4CAF50';btn.onclick=function(){_garaToggle();};}
+  var ris=document.getElementById('gara-risultati');
+  if(ris) ris.style.display='none';
+  (window._campoCheckpoints||[]).forEach(function(cp,i){
+    var b=document.getElementById('gara-cp-'+i);
+    if(b){b.style.background='rgba(255,255,255,.1)';b.style.color='rgba(255,255,255,.4)';b.style.pointerEvents='none';b.innerHTML='⏱️ CP'+(i+1)+' — —';}
+  });
+}
+
+function _chiudiGaraCampo(){
+  window._garaRunning=false;
+  clearInterval(window._garaInterval);
+  var ov=document.getElementById('ov-gara-campo');
+  if(ov) ov.remove();
+}
+
+function _salvaGaraConSplit(){
+  if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
+  var totale=window._garaSplits.length>0?window._garaSplits[window._garaSplits.length-1].total:0;
+
+  var splitText=window._garaSplits.map(function(s,i){
+    return 'CP'+(i+1)+': '+s.total.toFixed(3)+'s (parz: '+s.partial.toFixed(3)+'s)';
+  }).join(' | ');
+
+  var allen={
+    id:'tmp_allen_'+Date.now(),
+    user_id:_currentUser.id,
+    cane_id:null,cane_nome:'',
+    disciplina:'agility',
+    tipo:'Gara campo 2D',
+    data:new Date().toISOString().slice(0,10),
+    durata_minuti:0,
+    note:'🏁 Tempo: '+totale.toFixed(3)+'s | '+splitText
+      +' | Ostacoli: '+(window._campoOstacoli||[]).length
+      +' | Checkpoint: '+(window._campoCheckpoints||[]).length,
+    voto:null,
+    created_at:new Date().toISOString()
+  };
+
+  _sportAllenamenti.unshift(allen);
+  _salvaSportLocale();
+  toast('✅ Gara salvata nel diario!');
+  _checkNuoviBadge();
+
+  // Salva tempo nel percorso se caricato
+  if(window._percorsoCaricatoIdx!==undefined&&window._percorsoCaricatoIdx!==null){
+    try{
+      var _percorsi=JSON.parse(localStorage.getItem('bp_agility_percorsi_v1')||'[]');
+      var _perc=_percorsi[window._percorsoCaricatoIdx];
+      if(_perc){
+        _perc.tempi=_perc.tempi||[];
+        _perc.tempi.push({
+          data:new Date().toISOString(),
+          totale:totale,
+          splits:JSON.parse(JSON.stringify(window._garaSplits))
+        });
+        localStorage.setItem('bp_agility_percorsi_v1',JSON.stringify(_percorsi));
+      }
+    }catch(e){}
+  }
+
+  var rec=Object.assign({},allen);
+  delete rec.id;
+  _supabase.from('sport_allenamenti').insert(rec).select().then(function(res){
+    if(res.error) console.warn('[sport] gara split save:',res.error.message);
+    if(res.data&&res.data[0]){
+      var idx=_sportAllenamenti.findIndex(function(a){return a.id===allen.id;});
+      if(idx>=0) _sportAllenamenti[idx]=res.data[0];
+      _salvaSportLocale();
+    }
+  });
+}
+
+/* ══ SALVA / CARICA PERCORSI ══ */
+function apriSalvaPercorso(){
+  if(!(window._campoOstacoli||[]).length){toast('⚠️ Piazza almeno un ostacolo');return;}
+  var nome=prompt('Nome del percorso (es. "Gara Verona 2026"):');
+  if(!nome||!nome.trim()) return;
+
+  var percorsi=[];
+  try{percorsi=JSON.parse(localStorage.getItem('bp_agility_percorsi_v1')||'[]');}catch(e){}
+
+  percorsi.push({
+    id:'perc_'+Date.now(),
+    nome:nome.trim(),
+    data:new Date().toISOString().slice(0,10),
+    taglia:window._agilityTaglia||'L',
+    ostacoli:JSON.parse(JSON.stringify(window._campoOstacoli||[])),
+    checkpoints:JSON.parse(JSON.stringify(window._campoCheckpoints||[])),
+    tempi:[]
+  });
+
+  try{localStorage.setItem('bp_agility_percorsi_v1',JSON.stringify(percorsi));}catch(e){}
+  toast('✅ Percorso "'+nome.trim()+'" salvato!');
+}
+
+function apriCaricaPercorso(){
+  var percorsi=[];
+  try{percorsi=JSON.parse(localStorage.getItem('bp_agility_percorsi_v1')||'[]');}catch(e){}
+
+  if(!percorsi.length){
+    toast('Nessun percorso salvato. Crea un percorso e premi 💾');
+    return;
+  }
+
+  var ov=document.createElement('div');
+  ov.id='ov-carica-percorso';
+  ov.style.cssText='position:fixed;inset:0;z-index:10200;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.onclick=function(e){if(e.target===ov) ov.remove();};
+
+  var lista='';
+  percorsi.forEach(function(p,i){
+    var tempiCount=(p.tempi||[]).length;
+    var bestTempo='';
+    if(tempiCount>0){
+      var best=Math.min.apply(null,p.tempi.map(function(t){return t.totale;}));
+      bestTempo=' · 🏆 Best: '+best.toFixed(3)+'s';
+    }
+    lista+='<div style="display:flex;align-items:center;gap:10px;padding:12px;background:#F1F8E9;border-radius:10px;margin-bottom:8px">'
+      +'<div style="flex:1;cursor:pointer" onclick="_caricaPercorso('+i+')">'
+      +'<div style="font-weight:700;font-size:13px;color:#2E7D32">'+esc(p.nome)+'</div>'
+      +'<div style="font-size:11px;color:#6B8BB0">📅 '+p.data+' · '+p.ostacoli.length+' ostacoli · '+(p.checkpoints||[]).length+' CP · Taglia '+p.taglia
+      +(tempiCount?' · '+tempiCount+' tentativi':'')
+      +bestTempo+'</div></div>'
+      +'<button onclick="_eliminaPercorso('+i+')" style="background:#FFEBEE;border:none;border-radius:8px;padding:6px;cursor:pointer;color:#C62828;font-size:14px">🗑️</button>'
+      +'</div>';
+  });
+
+  ov.innerHTML='<div style="background:#fff;border-radius:20px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto;padding:24px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32">📂 Percorsi salvati</div>'
+    +'<button onclick="document.getElementById(\'ov-carica-percorso\').remove()" style="background:#E8F5E9;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;color:#2E7D32">✕</button></div>'
+    +lista
+    +'</div>';
+  document.body.appendChild(ov);
+}
+
+function _caricaPercorso(idx){
+  var percorsi=[];
+  try{percorsi=JSON.parse(localStorage.getItem('bp_agility_percorsi_v1')||'[]');}catch(e){}
+  var p=percorsi[idx];
+  if(!p){toast('Percorso non trovato');return;}
+
+  window._campoOstacoli=JSON.parse(JSON.stringify(p.ostacoli));
+  window._campoCheckpoints=JSON.parse(JSON.stringify(p.checkpoints||[]));
+  window._campoNextNum=window._campoOstacoli.length+1;
+  window._agilityTaglia=p.taglia||'L';
+  window._percorsoCaricatoIdx=idx;
+
+  var ov=document.getElementById('ov-carica-percorso');
+  if(ov) ov.remove();
+
+  toast('✅ Percorso "'+p.nome+'" caricato!');
+  _disegnaCampo();
+
+  if(p.tempi&&p.tempi.length){
+    _mostraStoricoTempi(p);
+  }
+}
+
+function _eliminaPercorso(idx){
+  if(!confirm('Eliminare questo percorso?')) return;
+  var percorsi=[];
+  try{percorsi=JSON.parse(localStorage.getItem('bp_agility_percorsi_v1')||'[]');}catch(e){}
+  percorsi.splice(idx,1);
+  try{localStorage.setItem('bp_agility_percorsi_v1',JSON.stringify(percorsi));}catch(e){}
+  var ov=document.getElementById('ov-carica-percorso');
+  if(ov) ov.remove();
+  toast('🗑️ Percorso eliminato');
+  apriCaricaPercorso();
+}
+
+function _mostraStoricoTempi(percorso){
+  var info=document.getElementById('campo-info');
+  if(!info) return;
+  var tempi=percorso.tempi||[];
+  if(!tempi.length){
+    info.textContent='Percorso "'+percorso.nome+'" caricato. Nessun tempo registrato.';
+    return;
+  }
+  var best=Math.min.apply(null,tempi.map(function(t){return t.totale;}));
+  var ultimo=tempi[tempi.length-1];
+  info.innerHTML='📂 <strong>'+esc(percorso.nome)+'</strong> · 🏆 Best: <strong>'+best.toFixed(3)+'s</strong> · Ultimo: '+ultimo.totale.toFixed(3)+'s · '+tempi.length+' tentativi';
 }
 
 /* ══════════════════════════════════════
