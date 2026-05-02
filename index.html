@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.66';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.67';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -11733,10 +11733,11 @@ function renderSportAgility(container){
     +'<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800">170</div><div style="font-size:10px;opacity:.8">cm A-Frame apice</div></div>'
     +'</div></div>'
 
-    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:14px">'
     +'<button onclick="apriNuovaGaraSport(\'agility\')" style="background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">🏆 Registra gara</button>'
     +'<button onclick="apriTimerAgility()" style="background:#fff;color:#E65100;border:2px solid #FFCCBC;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">⏱️ Timer gara</button>'
     +'<button onclick="apriAnalisiVideoAgility()" style="background:#fff;color:#7B1FA2;border:2px solid #CE93D8;border-radius:12px;padding:14px;font-size:12px;font-weight:700;cursor:pointer">🎥 Analisi AI</button>'
+    +'<button onclick="apriCampoAgility2D()" style="background:#fff;color:#558B2F;border:2px solid #A5D6A7;border-radius:12px;padding:14px;font-size:12px;font-weight:700;cursor:pointer">🗺️ Campo 2D</button>'
     +'</div>'
 
     +'<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:14px;overflow:hidden;margin-bottom:14px">'
@@ -12214,6 +12215,278 @@ function salvaAnalisiAgilityCorrected(){
       _salvaSportLocale();
     }
   });
+}
+
+/* ══ CAMPO AGILITY 2D — GENERATORE PERCORSO ══ */
+function apriCampoAgility2D(){
+  var taglia=window._agilityTaglia||'L';
+  var tagliaObj=AGILITY_TAGLIE.find(function(t){return t.id===taglia;})||AGILITY_TAGLIE[3];
+
+  var ov=document.createElement('div');
+  ov.id='ov-campo-agility';
+  ov.style.cssText='position:fixed;inset:0;z-index:10100;background:#fff;overflow-y:auto';
+
+  var ostacoli=[
+    {id:'S',nome:'Salto',ico:'🏃',colore:'#1565C0',short:'S'},
+    {id:'D',nome:'Doppio',ico:'🏃',colore:'#0D47A1',short:'D'},
+    {id:'M',nome:'Muro',ico:'🧱',colore:'#795548',short:'M'},
+    {id:'P',nome:'Pneumatico',ico:'⭕',colore:'#E65100',short:'P'},
+    {id:'L',nome:'Lungo',ico:'↔️',colore:'#2E7D32',short:'L'},
+    {id:'A',nome:'A-Frame',ico:'⛰️',colore:'#C62828',short:'A'},
+    {id:'W',nome:'Passerella',ico:'🌉',colore:'#F57F17',short:'W'},
+    {id:'B',nome:'Bascula',ico:'⚖️',colore:'#6A1B9A',short:'B'},
+    {id:'SL',nome:'Slalom',ico:'🐍',colore:'#00695C',short:'SL'},
+    {id:'T',nome:'Tunnel',ico:'🕳️',colore:'#37474F',short:'T'}
+  ];
+
+  window._campoOstacoli=window._campoOstacoli||[];
+  window._campoNextNum=window._campoNextNum||(window._campoOstacoli.length+1);
+  window._campoSelectedTool=null;
+
+  ov.innerHTML=
+    '<div style="background:linear-gradient(135deg,#558B2F,#33691E);padding:14px 16px;display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="display:flex;align-items:center;gap:8px">'
+    +'<button onclick="document.getElementById(\'ov-campo-agility\').remove()" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;color:#fff;font-weight:700">‹</button>'
+    +'<div style="color:#fff;font-weight:700;font-size:14px">🗺️ Campo Agility — '+tagliaObj.nome+' ('+tagliaObj.id+')</div></div>'
+    +'<div style="display:flex;gap:6px">'
+    +'<button onclick="_svuotaCampo()" style="background:rgba(255,255,255,.15);border:none;border-radius:6px;padding:4px 8px;color:#fff;font-size:10px;cursor:pointer">🗑️</button>'
+    +'<button onclick="_salvaCampoImg()" style="background:rgba(255,255,255,.15);border:none;border-radius:6px;padding:4px 8px;color:#fff;font-size:10px;cursor:pointer">📸</button>'
+    +'<button onclick="_condividiCampo()" style="background:rgba(255,255,255,.15);border:none;border-radius:6px;padding:4px 8px;color:#fff;font-size:10px;cursor:pointer">📲</button>'
+    +'</div></div>'
+    +'<div style="background:#F1F8E9;padding:8px;overflow-x:auto;display:flex;gap:6px;-webkit-overflow-scrolling:touch" id="campo-toolbar">'
+    +ostacoli.map(function(o){
+      return '<button onclick="_selezionaOstacolo(\''+o.id+'\')" id="tool-'+o.id+'" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:6px 10px;border-radius:8px;border:2px solid #ddd;background:#fff;cursor:pointer;min-width:48px">'
+        +'<span style="font-size:16px">'+o.ico+'</span>'
+        +'<span style="font-size:8px;font-weight:700;color:#333">'+o.nome+'</span></button>';
+    }).join('')
+    +'<button onclick="_selezionaOstacolo(null)" id="tool-move" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:6px 10px;border-radius:8px;border:2px solid #558B2F;background:#E8F5E9;cursor:pointer;min-width:48px">'
+    +'<span style="font-size:16px">✋</span>'
+    +'<span style="font-size:8px;font-weight:700;color:#333">Sposta</span></button>'
+    +'<button onclick="_eliminaUltimo()" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:6px 10px;border-radius:8px;border:2px solid #C62828;background:#FFEBEE;cursor:pointer;min-width:48px">'
+    +'<span style="font-size:16px">↩️</span>'
+    +'<span style="font-size:8px;font-weight:700;color:#C62828">Annulla</span></button>'
+    +'</div>'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:#fff;border-bottom:1px solid #eee">'
+    +'<div style="font-size:10px;color:#6B8BB0" id="campo-info">Tap sul campo per piazzare ostacoli. Ring 20×40m.</div>'
+    +'<div style="font-size:10px;font-weight:700;color:#558B2F" id="campo-count">Ostacoli: 0</div>'
+    +'</div>'
+    +'<div style="position:relative;overflow:hidden;background:#E8F5E9" id="campo-container">'
+    +'<canvas id="campo-canvas" style="display:block;width:100%"></canvas>'
+    +'</div>'
+    +'<div style="padding:10px 12px;background:#F5F5F5;font-size:10px;color:#6B8BB0">'
+    +'<strong>Legenda:</strong> Tap = piazza · Tap su ostacolo = elimina · 📸 = salva screenshot · Ring: 20m×40m · Distanza min 5m'
+    +'</div>';
+
+  document.body.appendChild(ov);
+  _inizializzaCampo();
+}
+
+function _inizializzaCampo(){
+  var canvas=document.getElementById('campo-canvas');
+  var container=document.getElementById('campo-container');
+  if(!canvas||!container) return;
+
+  var w=container.offsetWidth;
+  var h=Math.round(w*2);
+  canvas.width=w;
+  canvas.height=h;
+  canvas.style.height=h+'px';
+
+  window._campoW=w;
+  window._campoH=h;
+  window._campoScala=w/20;
+
+  canvas.onclick=function(e){
+    var rect=canvas.getBoundingClientRect();
+    var x=e.clientX-rect.left;
+    var y=e.clientY-rect.top;
+    _campoClic(x,y);
+  };
+
+  _disegnaCampo();
+}
+
+function _disegnaCampo(){
+  var canvas=document.getElementById('campo-canvas');
+  if(!canvas) return;
+  var ctx=canvas.getContext('2d');
+  var w=canvas.width, h=canvas.height;
+  var scala=window._campoScala||1;
+
+  ctx.fillStyle='#C8E6C9';
+  ctx.fillRect(0,0,w,h);
+
+  ctx.strokeStyle='#A5D6A740';
+  ctx.lineWidth=0.5;
+  for(var gx=0;gx<w;gx+=scala){
+    ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,h);ctx.stroke();
+  }
+  for(var gy=0;gy<h;gy+=scala){
+    ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(w,gy);ctx.stroke();
+  }
+
+  ctx.strokeStyle='#81C78460';
+  ctx.lineWidth=1;
+  for(var gx5=0;gx5<w;gx5+=scala*5){
+    ctx.beginPath();ctx.moveTo(gx5,0);ctx.lineTo(gx5,h);ctx.stroke();
+  }
+  for(var gy5=0;gy5<h;gy5+=scala*5){
+    ctx.beginPath();ctx.moveTo(0,gy5);ctx.lineTo(w,gy5);ctx.stroke();
+  }
+
+  ctx.strokeStyle='#2E7D32';
+  ctx.lineWidth=3;
+  ctx.strokeRect(2,2,w-4,h-4);
+
+  ctx.fillStyle='#2E7D32';
+  ctx.font='bold '+Math.round(scala*0.4)+'px sans-serif';
+  for(var mx=5;mx<20;mx+=5){
+    ctx.fillText(mx+'m',mx*scala+2,12);
+  }
+  for(var my=5;my<40;my+=5){
+    ctx.fillText(my+'m',4,my*scala+12);
+  }
+
+  ctx.fillStyle='#2E7D32';
+  ctx.font='bold '+Math.round(scala*0.55)+'px sans-serif';
+  ctx.fillText('START ▶',scala*1,scala*1.5);
+  ctx.fillText('◀ FINISH',scala*12,h-scala*0.5);
+
+  var ostDati={
+    S:{colore:'#1565C0',nome:'Salto'},D:{colore:'#0D47A1',nome:'Doppio'},
+    M:{colore:'#795548',nome:'Muro'},P:{colore:'#E65100',nome:'Pneum.'},
+    L:{colore:'#2E7D32',nome:'Lungo'},A:{colore:'#C62828',nome:'A-Frame'},
+    W:{colore:'#F57F17',nome:'Passerella'},B:{colore:'#6A1B9A',nome:'Bascula'},
+    SL:{colore:'#00695C',nome:'Slalom'},T:{colore:'#37474F',nome:'Tunnel'}
+  };
+
+  (window._campoOstacoli||[]).forEach(function(o){
+    var info=ostDati[o.tipo]||{colore:'#333',nome:'?'};
+    var r=scala*0.8;
+
+    ctx.beginPath();
+    ctx.arc(o.x,o.y,r,0,Math.PI*2);
+    ctx.fillStyle=info.colore;
+    ctx.fill();
+
+    ctx.fillStyle='#fff';
+    ctx.font='bold '+Math.round(r*0.9)+'px sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(o.num,o.x,o.y);
+
+    ctx.fillStyle=info.colore;
+    ctx.font=Math.round(r*0.5)+'px sans-serif';
+    ctx.fillText(info.nome,o.x,o.y+r+Math.round(r*0.5));
+
+    ctx.textAlign='start';
+    ctx.textBaseline='alphabetic';
+  });
+
+  if(window._campoOstacoli&&window._campoOstacoli.length>1){
+    ctx.beginPath();
+    ctx.strokeStyle='#FF980080';
+    ctx.lineWidth=2;
+    ctx.setLineDash([6,4]);
+    window._campoOstacoli.forEach(function(o,i){
+      if(i===0) ctx.moveTo(o.x,o.y);
+      else ctx.lineTo(o.x,o.y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  var cnt=document.getElementById('campo-count');
+  if(cnt) cnt.textContent='Ostacoli: '+(window._campoOstacoli||[]).length+'/22';
+}
+
+function _selezionaOstacolo(tipo){
+  window._campoSelectedTool=tipo;
+  var toolbar=document.getElementById('campo-toolbar');
+  if(!toolbar) return;
+  var btns=toolbar.querySelectorAll('button');
+  btns.forEach(function(b){
+    b.style.borderColor=b.id==='tool-'+(tipo||'move')?'#558B2F':'#ddd';
+    b.style.background=b.id==='tool-'+(tipo||'move')?'#E8F5E9':'#fff';
+  });
+  var info=document.getElementById('campo-info');
+  if(info) info.textContent=tipo?'Tap sul campo per piazzare: '+tipo:'Modalità spostamento — tap su ostacolo per eliminare';
+}
+
+function _campoClic(x,y){
+  if(window._campoSelectedTool){
+    if((window._campoOstacoli||[]).length>=22){
+      toast('⚠️ Massimo 22 ostacoli per percorso');
+      return;
+    }
+    var tipo=window._campoSelectedTool;
+    var contaTipo=window._campoOstacoli.filter(function(o){return o.tipo===tipo;}).length;
+    if(tipo==='SL'&&contaTipo>=1){toast('⚠️ Max 1 slalom per percorso');return;}
+    if(tipo==='P'&&contaTipo>=1){toast('⚠️ Max 1 pneumatico per percorso');return;}
+    if(tipo==='M'&&contaTipo>=1){toast('⚠️ Max 1 muro per percorso');return;}
+    if(tipo==='T'&&contaTipo>=5){toast('⚠️ Max 5 tunnel per percorso');return;}
+
+    window._campoOstacoli.push({
+      tipo:tipo,
+      x:x,
+      y:y,
+      num:window._campoNextNum||1
+    });
+    window._campoNextNum=(window._campoNextNum||1)+1;
+    _disegnaCampo();
+  } else {
+    var scala=window._campoScala||1;
+    var r=scala*0.8;
+    var trovato=-1;
+    (window._campoOstacoli||[]).forEach(function(o,i){
+      var dist=Math.sqrt((x-o.x)*(x-o.x)+(y-o.y)*(y-o.y));
+      if(dist<r*1.5) trovato=i;
+    });
+    if(trovato>=0){
+      window._campoOstacoli.splice(trovato,1);
+      window._campoOstacoli.forEach(function(o,i){o.num=i+1;});
+      window._campoNextNum=window._campoOstacoli.length+1;
+      _disegnaCampo();
+      toast('🗑️ Ostacolo rimosso');
+    }
+  }
+}
+
+function _eliminaUltimo(){
+  if(!window._campoOstacoli||!window._campoOstacoli.length){toast('Nessun ostacolo da rimuovere');return;}
+  window._campoOstacoli.pop();
+  window._campoNextNum=window._campoOstacoli.length+1;
+  _disegnaCampo();
+}
+
+function _svuotaCampo(){
+  if(!confirm('Svuotare il campo?')) return;
+  window._campoOstacoli=[];
+  window._campoNextNum=1;
+  _disegnaCampo();
+}
+
+function _salvaCampoImg(){
+  var canvas=document.getElementById('campo-canvas');
+  if(!canvas){toast('Errore canvas');return;}
+  var a=document.createElement('a');
+  a.href=canvas.toDataURL('image/png');
+  a.download='percorso_agility_'+new Date().toISOString().slice(0,10)+'.png';
+  a.click();
+  toast('✅ Screenshot salvato!');
+}
+
+function _condividiCampo(){
+  var canvas=document.getElementById('campo-canvas');
+  if(!canvas) return;
+  canvas.toBlob(function(blob){
+    if(navigator.share&&blob){
+      var file=new File([blob],'percorso_agility.png',{type:'image/png'});
+      navigator.share({title:'Percorso Agility — BreedPed',text:'Percorso agility creato con BreedPed!',files:[file]}).catch(function(){});
+    } else {
+      _salvaCampoImg();
+    }
+  },'image/png');
 }
 
 /* ══════════════════════════════════════
