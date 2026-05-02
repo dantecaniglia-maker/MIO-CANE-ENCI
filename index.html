@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.65';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.66';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -386,6 +386,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
 #chat-fab.hidden{display:none!important}
 @keyframes scaleIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes bounce{0%,100%{transform:translateY(0)}25%{transform:translateY(-20px)}50%{transform:translateY(0)}75%{transform:translateY(-10px)}}
+@keyframes loading{0%{width:10%;margin-left:0}50%{width:40%;margin-left:30%}100%{width:10%;margin-left:90%}}
 </style>
 </head>
 <body>
@@ -11732,9 +11733,10 @@ function renderSportAgility(container){
     +'<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800">170</div><div style="font-size:10px;opacity:.8">cm A-Frame apice</div></div>'
     +'</div></div>'
 
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">'
     +'<button onclick="apriNuovaGaraSport(\'agility\')" style="background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">🏆 Registra gara</button>'
     +'<button onclick="apriTimerAgility()" style="background:#fff;color:#E65100;border:2px solid #FFCCBC;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">⏱️ Timer gara</button>'
+    +'<button onclick="apriAnalisiVideoAgility()" style="background:#fff;color:#7B1FA2;border:2px solid #CE93D8;border-radius:12px;padding:14px;font-size:12px;font-weight:700;cursor:pointer">🎥 Analisi AI</button>'
     +'</div>'
 
     +'<div style="background:#fff;border:1.5px solid #FFCCBC;border-radius:14px;overflow:hidden;margin-bottom:14px">'
@@ -11907,6 +11909,311 @@ function _chiudiTimerAgility(){
   clearInterval(window._agiTimerInterval);
   var ov=document.getElementById('ov-timer-agility');
   if(ov) ov.remove();
+}
+
+/* ══ ANALISI VIDEO AGILITY CON GEMINI ══ */
+function apriAnalisiVideoAgility(){
+  if(!_aiKeys||!_aiKeys.gemini){
+    toast('⚠️ Inserisci la tua API key Gemini nelle impostazioni');
+    return;
+  }
+  var taglia=window._agilityTaglia||'L';
+  var tagliaObj=AGILITY_TAGLIE.find(function(t){return t.id===taglia;})||AGILITY_TAGLIE[3];
+
+  var ov=document.createElement('div');
+  ov.id='ov-analisi-agility';
+  ov.style.cssText='position:fixed;inset:0;z-index:10100;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center';
+  ov.onclick=function(e){if(e.target===ov) ov.remove();};
+  ov.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;padding-bottom:40px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#7B1FA2">🎥 Analisi AI del percorso</div>'
+    +'<button onclick="document.getElementById(\'ov-analisi-agility\').remove()" style="background:#F3E5F5;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;color:#7B1FA2">✕</button></div>'
+    +'<div style="background:#F3E5F5;border-radius:12px;padding:12px;margin-bottom:14px;font-size:12px;color:#4A148C;line-height:1.5">'
+    +'<strong>Come funziona:</strong><br>'
+    +'1. Registra un video del percorso agility col telefono<br>'
+    +'2. Caricalo qui — Gemini AI analizzerà traiettoria, velocità e errori<br>'
+    +'3. Correggi manualmente se l\'AI sbaglia qualcosa<br>'
+    +'4. Salva tutto nel diario allenamenti<br>'
+    +'<div style="margin-top:6px;font-size:11px;color:#7B1FA2">📏 Taglia: <strong>'+tagliaObj.nome+' ('+tagliaObj.id+')</strong> — Salti: '+tagliaObj.salto.min+'-'+tagliaObj.salto.max+'cm</div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
+    +'<button onclick="document.getElementById(\'agi-video-input\').click()" style="background:linear-gradient(135deg,#7B1FA2,#4A148C);color:#fff;border:none;border-radius:12px;padding:16px;cursor:pointer;text-align:center">'
+    +'<div style="font-size:24px;margin-bottom:4px">📹</div>'
+    +'<div style="font-size:12px;font-weight:700">Registra video</div>'
+    +'<div style="font-size:10px;opacity:.7">Apri fotocamera</div></button>'
+    +'<button onclick="document.getElementById(\'agi-video-file\').click()" style="background:#fff;color:#7B1FA2;border:2px solid #CE93D8;border-radius:12px;padding:16px;cursor:pointer;text-align:center">'
+    +'<div style="font-size:24px;margin-bottom:4px">📂</div>'
+    +'<div style="font-size:12px;font-weight:700">Carica video</div>'
+    +'<div style="font-size:10px;color:#6B8BB0">Dalla galleria</div></button>'
+    +'</div>'
+    +'<input type="file" id="agi-video-input" accept="video/*" capture="environment" style="display:none" onchange="processaVideoAgility(this)"/>'
+    +'<input type="file" id="agi-video-file" accept="video/*" style="display:none" onchange="processaVideoAgility(this)"/>'
+    +'<div id="agi-analisi-risultato"></div>'
+    +'</div>';
+  document.body.appendChild(ov);
+}
+
+function processaVideoAgility(input){
+  if(!input.files||!input.files[0]) return;
+  var file=input.files[0];
+  if(file.size>20*1024*1024){
+    toast('⚠️ Video troppo grande (max 20MB). Prova a ridurre la durata.');
+    return;
+  }
+  var risultato=document.getElementById('agi-analisi-risultato');
+  if(!risultato) return;
+  risultato.innerHTML='<div style="text-align:center;padding:20px">'
+    +'<div style="font-size:32px;margin-bottom:8px;animation:bounce 1s infinite">🔍</div>'
+    +'<div id="agi-stato-analisi" style="font-size:14px;font-weight:700;color:#7B1FA2;margin-bottom:4px">Estrazione frame...</div>'
+    +'<div style="font-size:11px;color:#6B8BB0">Gemini sta analizzando il tuo percorso</div>'
+    +'<div style="margin-top:12px;background:#F3E5F5;border-radius:8px;height:6px;overflow:hidden">'
+    +'<div style="background:linear-gradient(90deg,#7B1FA2,#CE93D8);height:100%;width:30%;border-radius:6px;animation:loading 2s infinite"></div></div>'
+    +'</div>';
+
+  _estraiFrameVideo(file, function(frames){
+    if(!frames||!frames.length){
+      risultato.innerHTML='<div style="text-align:center;padding:16px;color:#C62828">❌ Impossibile estrarre frame dal video</div>';
+      return;
+    }
+    var stato=document.getElementById('agi-stato-analisi');
+    if(stato) stato.textContent='Invio a Gemini ('+frames.length+' frame)...';
+    _analizzaFrameAgility(frames);
+  });
+}
+
+function _estraiFrameVideo(file, callback){
+  var video=document.createElement('video');
+  video.preload='metadata';
+  video.muted=true;
+  video.playsInline=true;
+  var url=URL.createObjectURL(file);
+  video.src=url;
+
+  video.onloadedmetadata=function(){
+    var durata=video.duration;
+    if(durata>120){
+      toast('⚠️ Video troppo lungo (max 2 min)');
+      URL.revokeObjectURL(url);
+      callback(null);
+      return;
+    }
+    var numFrame=8;
+    var intervallo=durata/numFrame;
+    var frames=[];
+    var idx=0;
+
+    video.onseeked=function(){
+      var canvas=document.createElement('canvas');
+      canvas.width=Math.min(video.videoWidth,640);
+      canvas.height=Math.round(canvas.width*(video.videoHeight/video.videoWidth));
+      var ctx=canvas.getContext('2d');
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      var b64=canvas.toDataURL('image/jpeg',0.7).split(',')[1];
+      frames.push({time:Math.round(video.currentTime*10)/10, data:b64});
+      idx++;
+      if(idx<numFrame){
+        video.currentTime=intervallo*idx;
+      } else {
+        URL.revokeObjectURL(url);
+        callback(frames);
+      }
+    };
+    video.currentTime=intervallo*0.5;
+  };
+  video.onerror=function(){
+    URL.revokeObjectURL(url);
+    callback(null);
+  };
+}
+
+function _analizzaFrameAgility(frames){
+  var taglia=window._agilityTaglia||'L';
+  var tagliaObj=AGILITY_TAGLIE.find(function(t){return t.id===taglia;})||AGILITY_TAGLIE[3];
+
+  var prompt='Sei un giudice e istruttore di Agility FCI esperto. '
+    +'Analizza questi '+frames.length+' fotogrammi estratti da un video di un percorso agility. '
+    +'Il cane è di taglia '+tagliaObj.nome+' ('+tagliaObj.id+', altezza al garrese '+tagliaObj.altezza+'). '
+    +'Altezza salti regolamentare: '+tagliaObj.salto.min+'-'+tagliaObj.salto.max+' cm.\n\n'
+    +'Per ogni frame analizza:\n'
+    +'1. Quale ostacolo sta affrontando il cane\n'
+    +'2. La traiettoria del cane (efficiente o con deviazioni)\n'
+    +'3. Contatti zone (A-frame, passerella, bascula) se visibili\n'
+    +'4. Postura del cane (bilanciata, sbilanciata, esitante)\n'
+    +'5. Posizione del conduttore rispetto al cane\n\n'
+    +'Poi dai un RIEPILOGO GENERALE con:\n'
+    +'- Valutazione complessiva (1-10)\n'
+    +'- Punti di forza\n'
+    +'- Errori o problemi rilevati\n'
+    +'- 3 suggerimenti specifici di miglioramento\n'
+    +'- Penalità probabili (abbattimenti, contatti mancati, rifiuti)\n\n'
+    +'Rispondi in ITALIANO. Sii specifico e tecnico.';
+
+  var parts=[];
+  frames.forEach(function(f,i){
+    parts.push({inline_data:{mime_type:'image/jpeg',data:f.data}});
+    parts.push({text:'[Frame '+(i+1)+' — Tempo: '+f.time+'s]'});
+  });
+  parts.push({text:prompt});
+
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key='+_aiKeys.gemini,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      contents:[{parts:parts}],
+      generationConfig:{maxOutputTokens:4000,temperature:0.3}
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    var risultato=document.getElementById('agi-analisi-risultato');
+    if(!risultato) return;
+    if(data.error){
+      risultato.innerHTML='<div style="background:#FFEBEE;border-radius:12px;padding:14px;color:#C62828;font-size:12px">'
+        +'<strong>❌ Errore Gemini:</strong> '+esc(data.error.message||'Errore sconosciuto')
+        +'<div style="margin-top:8px;font-size:11px;color:#999">Verifica la tua API key nelle impostazioni</div></div>';
+      return;
+    }
+    var testo='';
+    try{testo=data.candidates[0].content.parts[0].text;}catch(e){testo='Nessuna risposta ricevuta';}
+
+    var htmlRis=testo
+      .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+      .replace(/\n/g,'<br>')
+      .replace(/#{1,3}\s(.*?)(<br>)/g,'<div style="font-weight:700;color:#7B1FA2;margin-top:10px;font-size:14px">$1</div>');
+
+    var votoButtons='';
+    for(var _v=1;_v<=10;_v++){
+      votoButtons+='<button onclick="_setVotoCorrezione('+_v+')" id="corr-voto-'+_v+'" style="flex:1;padding:8px 0;border-radius:8px;border:1.5px solid #E1BEE7;background:#fff;font-size:12px;font-weight:700;color:#7B1FA2;cursor:pointer">'+_v+'</button>';
+    }
+
+    risultato.innerHTML='<div style="background:#F3E5F5;border-radius:14px;padding:16px;margin-top:14px">'
+      +'<div style="font-size:14px;font-weight:700;color:#7B1FA2;margin-bottom:10px">📊 Analisi del percorso</div>'
+      +'<div style="font-size:12px;color:#333;line-height:1.6">'+htmlRis+'</div>'
+      +'<div style="display:flex;gap:8px;margin-top:14px">'
+      +'<button onclick="var m=encodeURIComponent(\'🎥 Analisi AI percorso agility su BreedPed!\\nApp: mio-cane-enci.vercel.app\');window.open(\'https://wa.me/?text=\'+m)" style="flex:1;background:#25D366;color:#fff;border:none;border-radius:8px;padding:10px;font-size:12px;font-weight:600;cursor:pointer">📲 Condividi</button>'
+      +'<button onclick="document.getElementById(\'ov-analisi-agility\').remove()" style="flex:1;background:#7B1FA2;color:#fff;border:none;border-radius:8px;padding:10px;font-size:12px;font-weight:600;cursor:pointer">✅ Chiudi</button>'
+      +'</div>'
+      +'<div style="margin-top:14px;border-top:2px solid #E1BEE7;padding-top:14px">'
+      +'<div style="font-size:13px;font-weight:700;color:#7B1FA2;margin-bottom:10px">✏️ Correzione manuale</div>'
+      +'<div style="font-size:11px;font-weight:600;color:#4A148C;margin-bottom:6px">Penalità osservate (correggi se l\'AI ha sbagliato)</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">'
+      +'<div style="background:#fff;border:1.5px solid #E1BEE7;border-radius:10px;padding:10px;display:flex;align-items:center;justify-content:space-between">'
+        +'<span style="font-size:11px;color:#333">Abbattimenti</span>'
+        +'<div style="display:flex;align-items:center;gap:6px">'
+        +'<button onclick="var e=document.getElementById(\'corr-abb\');e.value=Math.max(0,parseInt(e.value)-1)" style="width:24px;height:24px;border-radius:6px;background:#F3E5F5;border:none;font-weight:800;color:#7B1FA2;cursor:pointer">−</button>'
+        +'<input id="corr-abb" type="number" value="0" min="0" max="20" style="width:32px;text-align:center;border:none;font-size:14px;font-weight:800;color:#7B1FA2"/>'
+        +'<button onclick="var e=document.getElementById(\'corr-abb\');e.value=parseInt(e.value)+1" style="width:24px;height:24px;border-radius:6px;background:#F3E5F5;border:none;font-weight:800;color:#7B1FA2;cursor:pointer">+</button>'
+        +'</div></div>'
+      +'<div style="background:#fff;border:1.5px solid #E1BEE7;border-radius:10px;padding:10px;display:flex;align-items:center;justify-content:space-between">'
+        +'<span style="font-size:11px;color:#333">Rifiuti</span>'
+        +'<div style="display:flex;align-items:center;gap:6px">'
+        +'<button onclick="var e=document.getElementById(\'corr-rif\');e.value=Math.max(0,parseInt(e.value)-1)" style="width:24px;height:24px;border-radius:6px;background:#F3E5F5;border:none;font-weight:800;color:#7B1FA2;cursor:pointer">−</button>'
+        +'<input id="corr-rif" type="number" value="0" min="0" max="20" style="width:32px;text-align:center;border:none;font-size:14px;font-weight:800;color:#7B1FA2"/>'
+        +'<button onclick="var e=document.getElementById(\'corr-rif\');e.value=parseInt(e.value)+1" style="width:24px;height:24px;border-radius:6px;background:#F3E5F5;border:none;font-weight:800;color:#7B1FA2;cursor:pointer">+</button>'
+        +'</div></div>'
+      +'<div style="background:#fff;border:1.5px solid #E1BEE7;border-radius:10px;padding:10px;display:flex;align-items:center;justify-content:space-between">'
+        +'<span style="font-size:11px;color:#333">Contatti mancati</span>'
+        +'<div style="display:flex;align-items:center;gap:6px">'
+        +'<button onclick="var e=document.getElementById(\'corr-con\');e.value=Math.max(0,parseInt(e.value)-1)" style="width:24px;height:24px;border-radius:6px;background:#F3E5F5;border:none;font-weight:800;color:#7B1FA2;cursor:pointer">−</button>'
+        +'<input id="corr-con" type="number" value="0" min="0" max="20" style="width:32px;text-align:center;border:none;font-size:14px;font-weight:800;color:#7B1FA2"/>'
+        +'<button onclick="var e=document.getElementById(\'corr-con\');e.value=parseInt(e.value)+1" style="width:24px;height:24px;border-radius:6px;background:#F3E5F5;border:none;font-weight:800;color:#7B1FA2;cursor:pointer">+</button>'
+        +'</div></div>'
+      +'<div style="background:#fff;border:1.5px solid #E1BEE7;border-radius:10px;padding:10px;display:flex;align-items:center;justify-content:space-between">'
+        +'<span style="font-size:11px;color:#333">Eliminato</span>'
+        +'<div><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="corr-elim" style="width:18px;height:18px;accent-color:#C62828"/><span style="font-size:12px;font-weight:700;color:#C62828">Sì</span></label></div>'
+        +'</div></div>'
+      +'<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:#4A148C;margin-bottom:4px">Il tuo voto (1-10)</div>'
+      +'<div style="display:flex;gap:4px" id="corr-voto-container">'+votoButtons+'</div>'
+      +'<input type="hidden" id="corr-voto" value=""/></div>'
+      +'<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:#4A148C;margin-bottom:4px">Note aggiuntive</div>'
+      +'<textarea id="corr-note" rows="2" placeholder="Es. L\'AI non ha visto che ha saltato il tunnel 3, il contatto al dog walk era buono..." style="width:100%;padding:10px;border:1.5px solid #E1BEE7;border-radius:8px;font-size:12px;resize:none;box-sizing:border-box"></textarea></div>'
+      +'<button onclick="_scaricaVideoAgility()" id="btn-download-video-agi" style="width:100%;background:#fff;color:#7B1FA2;border:1.5px solid #CE93D8;border-radius:10px;padding:10px;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:8px">📥 Salva video nella galleria</button>'
+      +'<button onclick="salvaAnalisiAgilityCorrected()" style="width:100%;background:linear-gradient(135deg,#7B1FA2,#4A148C);color:#fff;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">💾 Salva analisi corretta nel diario</button>'
+      +'</div>'
+      +'</div>';
+  })
+  .catch(function(err){
+    var risultato=document.getElementById('agi-analisi-risultato');
+    if(risultato) risultato.innerHTML='<div style="background:#FFEBEE;border-radius:12px;padding:14px;color:#C62828;font-size:12px">'
+      +'<strong>❌ Errore:</strong> '+esc(err.message||'Connessione fallita')+'</div>';
+  });
+}
+
+function _setVotoCorrezione(n){
+  document.getElementById('corr-voto').value=n;
+  for(var i=1;i<=10;i++){
+    var b=document.getElementById('corr-voto-'+i);
+    if(b){
+      b.style.background=i<=n?'#7B1FA2':'#fff';
+      b.style.color=i<=n?'#fff':'#7B1FA2';
+    }
+  }
+}
+
+function _scaricaVideoAgility(){
+  var input=document.getElementById('agi-video-input');
+  var input2=document.getElementById('agi-video-file');
+  var file=(input&&input.files&&input.files[0])||(input2&&input2.files&&input2.files[0]);
+  if(!file){toast('⚠️ Nessun video da salvare');return;}
+  var url=URL.createObjectURL(file);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='agility_'+new Date().toISOString().slice(0,10)+'_'+Date.now()+'.mp4';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✅ Video salvato!');
+  var btn=document.getElementById('btn-download-video-agi');
+  if(btn){btn.textContent='✅ Salvato!';btn.disabled=true;}
+}
+
+function salvaAnalisiAgilityCorrected(){
+  if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
+  var abb=parseInt((document.getElementById('corr-abb')||{}).value)||0;
+  var rif=parseInt((document.getElementById('corr-rif')||{}).value)||0;
+  var con=parseInt((document.getElementById('corr-con')||{}).value)||0;
+  var elim=(document.getElementById('corr-elim')||{}).checked;
+  var voto=parseInt((document.getElementById('corr-voto')||{}).value)||0;
+  var note=(document.getElementById('corr-note')||{}).value||'';
+  var penTot=(abb*5)+(rif*5)+(con*5);
+
+  var allen={
+    id:'tmp_allen_'+Date.now(),
+    user_id:_currentUser.id,
+    cane_id:null,cane_nome:'',
+    disciplina:'agility',
+    tipo:'Analisi AI percorso',
+    data:new Date().toISOString().slice(0,10),
+    durata_minuti:0,
+    note:'🎥 Analisi AI'
+      +(abb?' | Abbattimenti: '+abb:'')
+      +(rif?' | Rifiuti: '+rif:'')
+      +(con?' | Contatti mancati: '+con:'')
+      +(elim?' | ❌ ELIMINATO':'')
+      +(penTot?' | Penalità totali: '+penTot:'')
+      +(voto?' | Voto: '+voto+'/10':'')
+      +(note?' | Note: '+note:''),
+    voto:voto||null,
+    created_at:new Date().toISOString()
+  };
+
+  _sportAllenamenti.unshift(allen);
+  _salvaSportLocale();
+  toast('✅ Analisi salvata nel diario!');
+  _checkNuoviBadge();
+
+  var ov=document.getElementById('ov-analisi-agility');
+  if(ov) ov.remove();
+
+  var rec=Object.assign({},allen);
+  delete rec.id;
+  _supabase.from('sport_allenamenti').insert(rec).select().then(function(res){
+    if(res.error) console.warn('[sport] analisi save:',res.error.message);
+    if(res.data&&res.data[0]){
+      var idx=_sportAllenamenti.findIndex(function(a){return a.id===allen.id;});
+      if(idx>=0) _sportAllenamenti[idx]=res.data[0];
+      _salvaSportLocale();
+    }
+  });
 }
 
 /* ══════════════════════════════════════
