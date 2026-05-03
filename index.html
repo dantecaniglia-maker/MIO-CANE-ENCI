@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.68';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.69';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1348,6 +1348,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
       <button class="tab-btn" id="tab-pedigree"       onclick="switchTab('pedigree')">🌳 Pedigree</button>
       <button class="tab-btn" id="tab-riproduzione"   onclick="switchTab('riproduzione')" style="display:none">🌸 Riprod.</button>
       <button class="tab-btn" id="tab-prole"          onclick="switchTab('prole')">🐾 Prole</button>
+      <button class="tab-btn" id="tab-biometria"     onclick="switchTab('biometria')">📐 Biometria</button>
     </div>
 
     <!-- INFO -->
@@ -1626,6 +1627,9 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
         <div id="prole-list"></div>
       </div>
     </div>
+
+    <!-- BIOMETRIA -->
+    <div id="panel-biometria" class="hidden"></div>
   </main>
 </div>
 
@@ -5238,13 +5242,14 @@ function deleteCurrent(){
   }
 }
 function switchTab(t){
-  ['info','salute','campionati','pedigree','riproduzione','prole'].forEach(function(x){
+  ['info','salute','campionati','pedigree','riproduzione','prole','biometria'].forEach(function(x){
     var btn=g('tab-'+x),panel=g('panel-'+x);if(!btn||!panel)return;
     if(x===t){btn.classList.add('tab-active');panel.classList.remove('hidden');}
     else{btn.classList.remove('tab-active');panel.classList.add('hidden');}
   });
   if(t==='riproduzione') renderRiproduzione();
   if(t==='prole') renderProle();
+  if(t==='biometria') renderBiometria();
 }
 
 function renderProle(){
@@ -9234,6 +9239,393 @@ function importaBackup(input){
 var _notifDef={vaccini:true,trattamenti:true,esposizioni:true,anticipo:14};
 /* ── MODALITÀ UTENTE ── */
 var _modalitaKey = 'breedped_modalita_v1';
+
+/* ── STATO BIOMETRIA ── */
+var _biometriaMisurazioni = [];
+var _BIOMETRIA_KEY = 'bp_biometria_v1';
+
+function _salvaBiometriaLocale(){
+  try{localStorage.setItem(_BIOMETRIA_KEY,JSON.stringify({uid:_currentUser?_currentUser.id:null,dati:_biometriaMisurazioni,ts:Date.now()}));}catch(e){}
+}
+function _caricaBiometriaLocale(){
+  try{
+    var raw=localStorage.getItem(_BIOMETRIA_KEY);
+    if(!raw) return false;
+    var d=JSON.parse(raw);
+    if(!d||!d.dati) return false;
+    if(_currentUser&&d.uid&&d.uid!==_currentUser.id) return false;
+    _biometriaMisurazioni=d.dati||[];
+    return true;
+  }catch(e){return false;}
+}
+
+function renderBiometria(){
+  var container=document.getElementById('panel-biometria');
+  if(!container) return;
+
+  _caricaBiometriaLocale();
+
+  var caneId=window._currentDogId||selectedId||null;
+  var misureCane=_biometriaMisurazioni.filter(function(m){return m.cane_id===caneId;});
+  var ultima=misureCane.length?misureCane[misureCane.length-1]:null;
+
+  var biometriaTab=window._biometriaTab||'misure';
+
+  var html='<div style="padding:16px">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#0D47A1;margin-bottom:4px">📐 Biometria</div>'
+    +'<div style="font-size:12px;color:#6B8BB0;margin-bottom:14px">Misurazioni, indici morfologici e angolazioni</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:16px">';
+  [{id:'misure',ico:'📏',label:'Misure'},{id:'indici',ico:'📊',label:'Indici'},{id:'angoli',ico:'📐',label:'Angoli'},{id:'storico',ico:'📈',label:'Storico'}].forEach(function(t){
+    html+='<button onclick="window._biometriaTab=\''+t.id+'\';renderBiometria()" style="flex:1;padding:8px 4px;border-radius:10px;border:1.5px solid '+(biometriaTab===t.id?'#0D47A1':'#BBDEFB')+';background:'+(biometriaTab===t.id?'#0D47A1':'#fff')+';color:'+(biometriaTab===t.id?'#fff':'#0D47A1')+';font-size:11px;font-weight:700;cursor:pointer">'+t.ico+' '+t.label+'</button>';
+  });
+  html+='</div>';
+
+  if(biometriaTab==='misure') html+=_renderBiometriaMisure(ultima);
+  else if(biometriaTab==='indici') html+=_renderBiometriaIndici(ultima);
+  else if(biometriaTab==='angoli') html+=_renderBiometriaAngoli(ultima);
+  else if(biometriaTab==='storico') html+=_renderBiometriaStorico(misureCane);
+
+  html+='</div>';
+  container.innerHTML=html;
+}
+
+function _renderBiometriaMisure(ultima){
+  var gruppi=[
+    {nome:'🐕 Testa',campi:[
+      {id:'lunghezza_testa',nome:'Lunghezza totale testa',guida:'Dalla protuberanza occipitale alla punta del tartufo',unita:'cm'},
+      {id:'larghezza_testa',nome:'Larghezza testa',guida:'Punto più largo del cranio, tra gli archi zigomatici',unita:'cm'},
+      {id:'lunghezza_cranio',nome:'Lunghezza cranio',guida:'Dalla protuberanza occipitale allo stop',unita:'cm'},
+      {id:'lunghezza_muso',nome:'Lunghezza muso',guida:'Dallo stop alla punta del tartufo',unita:'cm'}
+    ]},
+    {nome:'📏 Tronco',campi:[
+      {id:'altezza_garrese',nome:'Altezza al garrese',guida:'Dal garrese al suolo, cane in stazione su superficie piana',unita:'cm'},
+      {id:'lunghezza_tronco',nome:'Lunghezza tronco',guida:'Dalla punta della spalla alla punta della natica',unita:'cm'},
+      {id:'perimetro_toracico',nome:'Perimetro toracico',guida:'Circonferenza del torace dietro i gomiti, al punto di massima espansione',unita:'cm'},
+      {id:'altezza_torace',nome:'Altezza torace',guida:'Dal garrese allo sterno, in verticale',unita:'cm'},
+      {id:'larghezza_torace',nome:'Larghezza torace',guida:'Diametro trasversale del torace nel punto più largo',unita:'cm'}
+    ]},
+    {nome:'🦴 Arti',campi:[
+      {id:'distanza_gomito_suolo',nome:'Distanza gomito-suolo',guida:'Dalla punta del gomito al suolo, cane in stazione',unita:'cm'},
+      {id:'circonferenza_stinco',nome:'Circonferenza stinco',guida:'Circonferenza dello stinco anteriore nel punto più stretto',unita:'cm'}
+    ]},
+    {nome:'⚖️ Peso',campi:[
+      {id:'peso',nome:'Peso',guida:'Peso attuale, possibilmente a digiuno',unita:'kg'}
+    ]}
+  ];
+
+  var h='';
+  gruppi.forEach(function(g){
+    h+='<div style="background:#fff;border:1.5px solid #BBDEFB;border-radius:14px;padding:14px;margin-bottom:12px">'
+      +'<div style="font-size:13px;font-weight:700;color:#0D47A1;margin-bottom:10px">'+g.nome+'</div>';
+    g.campi.forEach(function(c){
+      var val=ultima?ultima[c.id]||'':'';
+      h+='<div style="margin-bottom:10px">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
+        +'<label style="font-size:11px;font-weight:600;color:#1565C0">'+c.nome+' ('+c.unita+')</label>'
+        +'<span onclick="toast(\''+c.guida.replace(/'/g,"\\'")+'\')" style="font-size:11px;color:#90CAF9;cursor:pointer">ℹ️</span></div>'
+        +'<input id="bio-'+c.id+'" type="number" step="0.1" value="'+val+'" placeholder="'+c.guida.slice(0,40)+'..." style="width:100%;padding:9px;border:1.5px solid #BBDEFB;border-radius:8px;font-size:14px;box-sizing:border-box"/>'
+        +'</div>';
+    });
+    h+='</div>';
+  });
+
+  h+='<button onclick="salvaBiometriaMisure(this)" style="width:100%;background:linear-gradient(135deg,#0D47A1,#1a237e);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">📐 Calcola indici e salva</button>';
+
+  return h;
+}
+
+function salvaBiometriaMisure(btn){
+  if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
+  btn.disabled=true;btn.textContent='⏳';
+
+  var caneId=window._currentDogId||selectedId||'no_id';
+  var m={};
+  ['lunghezza_testa','larghezza_testa','lunghezza_cranio','lunghezza_muso',
+   'altezza_garrese','lunghezza_tronco','perimetro_toracico','altezza_torace','larghezza_torace',
+   'distanza_gomito_suolo','circonferenza_stinco','peso'].forEach(function(campo){
+    var el=document.getElementById('bio-'+campo);
+    if(el&&el.value) m[campo]=parseFloat(el.value);
+  });
+
+  if(m.larghezza_testa&&m.lunghezza_testa) m.indice_cefalico=parseFloat(((m.larghezza_testa*100)/m.lunghezza_testa).toFixed(2));
+  if(m.lunghezza_tronco&&m.perimetro_toracico) m.indice_corporale=parseFloat(((m.lunghezza_tronco*100)/m.perimetro_toracico).toFixed(2));
+  if(m.larghezza_torace&&m.altezza_torace) m.indice_toracico=parseFloat(((m.larghezza_torace*100)/m.altezza_torace).toFixed(2));
+  if(m.lunghezza_muso&&m.lunghezza_cranio) m.rapporto_cranio_facciale=parseFloat(((m.lunghezza_muso*100)/m.lunghezza_cranio).toFixed(2));
+  if(m.peso&&m.altezza_garrese) m.indice_ponderale=parseFloat(((m.peso*100)/m.altezza_garrese).toFixed(2));
+  if(m.distanza_gomito_suolo&&m.altezza_garrese) m.indice_proporzione_arti=parseFloat(((m.distanza_gomito_suolo*100)/m.altezza_garrese).toFixed(2));
+  if(m.circonferenza_stinco&&m.altezza_garrese) m.indice_ossatura=parseFloat(((m.circonferenza_stinco*100)/m.altezza_garrese).toFixed(2));
+
+  var etaMesi=null;
+  var dogRef=window._currentDog||cur();
+  if(dogRef&&dogRef.data_nascita){
+    try{
+      var dn=new Date(dogRef.data_nascita);
+      etaMesi=Math.round((Date.now()-dn.getTime())/2592000000);
+    }catch(e){}
+  }
+
+  var record={
+    id:'tmp_bio_'+Date.now(),
+    user_id:_currentUser.id,
+    cane_id:caneId,
+    data:new Date().toISOString().slice(0,10),
+    eta_mesi:etaMesi
+  };
+  Object.keys(m).forEach(function(k){record[k]=m[k];});
+
+  _biometriaMisurazioni.push(record);
+  _salvaBiometriaLocale();
+  toast('✅ Misurazioni salvate! Vai su "Indici" per vedere i risultati.');
+  window._biometriaTab='indici';
+  renderBiometria();
+
+  var rec=Object.assign({},record);
+  delete rec.id;
+  _supabase.from('biometria_misurazioni').insert(rec).select().then(function(res){
+    if(res.error) console.warn('[bio] save:',res.error.message);
+    if(res.data&&res.data[0]){
+      var idx=_biometriaMisurazioni.findIndex(function(b){return b.id===record.id;});
+      if(idx>=0) _biometriaMisurazioni[idx]=res.data[0];
+      _salvaBiometriaLocale();
+    }
+  });
+}
+
+function _renderBiometriaIndici(ultima){
+  if(!ultima||!ultima.indice_cefalico){
+    return '<div style="text-align:center;padding:30px"><div style="font-size:40px;margin-bottom:8px">📊</div>'
+      +'<div style="font-size:14px;color:#6B8BB0;margin-bottom:8px">Nessun indice calcolato</div>'
+      +'<div style="font-size:12px;color:#9ab0cc">Inserisci le misure nel tab "Misure" per calcolare gli indici automaticamente</div></div>';
+  }
+
+  var indici=[
+    {id:'ict',nome:'Indice Cefalico Totale',autore:'Solaro',val:ultima.indice_cefalico,
+      formula:'(Larghezza testa × 100) / Lunghezza testa',
+      classi:[
+        {min:0,max:45.99,tipo:'Iperdolicocefalo',colore:'#0D47A1',es:'Borzoi, Collie, Levriero Afghano'},
+        {min:46,max:49.99,tipo:'Dolicocefalo',colore:'#42A5F5',es:'Pointer, Setter, Segugi, Dobermann'},
+        {min:50,max:52,tipo:'Mesocefalo',colore:'#4CAF50',es:'Pastore Tedesco, Labrador, Beagle'},
+        {min:52.01,max:58,tipo:'Brachicefalo',colore:'#FF9800',es:'Boxer, Mastino, Cane Corso'},
+        {min:58.01,max:999,tipo:'Iperbrachicefalo',colore:'#C62828',es:'Bulldog, Carlino, Pechinese'}
+      ]},
+    {id:'ic',nome:'Indice Corporale',autore:'Barbieri/Cornevin',val:ultima.indice_corporale,
+      formula:'(Lunghezza tronco × 100) / Perimetro toracico',
+      classi:[
+        {min:0,max:69.99,tipo:'Brachimorfo (brevilineo)',colore:'#FF9800',es:'Bulldog, Mastino'},
+        {min:70,max:84.99,tipo:'Mesomorfo (mediolineo)',colore:'#4CAF50',es:'Pointer, Pastore Tedesco, Cane Corso'},
+        {min:85,max:999,tipo:'Dolicomorfo (longilineo)',colore:'#1565C0',es:'Levriero, Whippet, Saluki'}
+      ]},
+    {id:'it',nome:'Indice Toracico',autore:'Zoognostica',val:ultima.indice_toracico,
+      formula:'(Larghezza torace × 100) / Altezza torace',
+      classi:[
+        {min:0,max:59.99,tipo:'Dolicomorfo',colore:'#1565C0',es:'Levrieri'},
+        {min:60,max:89.99,tipo:'Mesomorfo',colore:'#4CAF50',es:'Pastore Tedesco, Labrador'},
+        {min:90,max:999,tipo:'Brachimorfo',colore:'#FF9800',es:'Bulldog, Mastino'}
+      ]},
+    {id:'rcf',nome:'Rapporto Cranio-Facciale',autore:'Standard FCI',val:ultima.rapporto_cranio_facciale,
+      formula:'(Lunghezza muso × 100) / Lunghezza cranio',
+      classi:[
+        {min:0,max:69.99,tipo:'Muso molto corto',colore:'#C62828',es:'Bulldog, Carlino'},
+        {min:70,max:89.99,tipo:'Muso più corto del cranio',colore:'#FF9800',es:'Boxer, Cane Corso'},
+        {min:90,max:110,tipo:'Cranio e muso equilibrati',colore:'#4CAF50',es:'Pastore Tedesco'},
+        {min:110.01,max:999,tipo:'Muso più lungo del cranio',colore:'#1565C0',es:'Collie, Borzoi'}
+      ]},
+    {id:'ip',nome:'Indice Ponderale',autore:'Zootecnia',val:ultima.indice_ponderale,
+      formula:'(Peso kg × 100) / Altezza garrese cm',
+      classi:[
+        {min:0,max:29.99,tipo:'Molto leggero',colore:'#29B6F6',es:'Levrieri, Whippet'},
+        {min:30,max:49.99,tipo:'Leggero',colore:'#4CAF50',es:'Setter, Border Collie'},
+        {min:50,max:69.99,tipo:'Medio',colore:'#FFC107',es:'Pastore Tedesco, Labrador'},
+        {min:70,max:89.99,tipo:'Pesante',colore:'#FF9800',es:'Rottweiler, Cane Corso'},
+        {min:90,max:999,tipo:'Molto pesante',colore:'#C62828',es:'Mastino, San Bernardo'}
+      ]},
+    {id:'ipa',nome:'Indice Proporzione Arti',autore:'Cinognostica',val:ultima.indice_proporzione_arti,
+      formula:'(Gomito-suolo × 100) / Altezza garrese',
+      classi:[
+        {min:0,max:44.99,tipo:'Arti corti',colore:'#FF9800',es:'Bassotto, Corgi'},
+        {min:45,max:49.99,tipo:'Arti medio-corti',colore:'#FFC107',es:'Bulldog, Shar-Pei'},
+        {min:50,max:55,tipo:'Arti proporzionati',colore:'#4CAF50',es:'Pastore Tedesco, Labrador'},
+        {min:55.01,max:999,tipo:'Arti lunghi',colore:'#1565C0',es:'Levriero, Dobermann'}
+      ]},
+    {id:'io',nome:'Indice di Ossatura',autore:'Zoognostica',val:ultima.indice_ossatura,
+      formula:'(Circ. stinco × 100) / Altezza garrese',
+      classi:[
+        {min:0,max:11.99,tipo:'Ossatura leggera',colore:'#29B6F6',es:'Levrieri, Whippet'},
+        {min:12,max:14.99,tipo:'Ossatura media',colore:'#4CAF50',es:'Pastore Tedesco, Labrador'},
+        {min:15,max:17.99,tipo:'Ossatura forte',colore:'#FF9800',es:'Rottweiler, Cane Corso'},
+        {min:18,max:999,tipo:'Ossatura molto forte',colore:'#C62828',es:'Mastino, San Bernardo'}
+      ]}
+  ];
+
+  var h='<div style="font-size:12px;color:#6B8BB0;margin-bottom:12px">📅 Misurazione del '+esc(ultima.data||'')+(ultima.eta_mesi?' · Età: '+ultima.eta_mesi+' mesi':'')+'</div>';
+
+  var megnin=_classificaMegnin(ultima);
+  if(megnin){
+    h+='<div style="background:linear-gradient(135deg,#0D47A1,#1a237e);border-radius:14px;padding:16px;margin-bottom:14px;color:#fff">'
+      +'<div style="font-size:12px;opacity:.7;margin-bottom:4px">Classificazione Megnin (1897)</div>'
+      +'<div style="font-size:22px;font-weight:800;margin-bottom:2px">'+megnin.icona+' '+megnin.nome+'</div>'
+      +'<div style="font-size:12px;opacity:.8">'+megnin.desc+'</div>'
+      +'<div style="font-size:11px;opacity:.6;margin-top:4px">Esempi: '+megnin.esempi+'</div>'
+      +'</div>';
+  }
+
+  indici.forEach(function(ind){
+    if(!ind.val&&ind.val!==0) return;
+    var classe=null;
+    ind.classi.forEach(function(c){
+      if(ind.val>=c.min&&ind.val<=c.max) classe=c;
+    });
+    if(!classe) classe={tipo:'Non classificato',colore:'#999',es:''};
+
+    h+='<div style="background:#fff;border:1.5px solid #BBDEFB;border-radius:14px;padding:14px;margin-bottom:10px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+      +'<div><div style="font-weight:700;font-size:13px;color:#0D47A1">'+ind.nome+'</div>'
+      +'<div style="font-size:10px;color:#6B8BB0">'+ind.autore+' · '+ind.formula+'</div></div>'
+      +'<div style="text-align:right"><div style="font-size:24px;font-weight:800;color:'+classe.colore+'">'+ind.val.toFixed(1)+'</div></div></div>'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+      +'<div style="background:'+classe.colore+';color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700">'+classe.tipo+'</div>'
+      +'<div style="font-size:10px;color:#6B8BB0">'+classe.es+'</div></div>'
+      +'<div style="background:#EEF3FB;border-radius:6px;height:8px;overflow:hidden;margin-top:6px;position:relative">';
+    var scalaMin=ind.classi[0].min,scalaMax=ind.classi[ind.classi.length-1].max;
+    if(scalaMax>200) scalaMax=120;
+    var percVal=Math.min(100,Math.max(0,((ind.val-scalaMin)/(scalaMax-scalaMin))*100));
+    h+='<div style="position:absolute;left:'+percVal+'%;top:-2px;width:4px;height:12px;background:#0D47A1;border-radius:2px"></div>';
+    ind.classi.forEach(function(c){
+      var cMax=Math.min(c.max,scalaMax);
+      var w=((cMax-c.min)/(scalaMax-scalaMin))*100;
+      h+='<div style="display:inline-block;height:100%;width:'+w+'%;background:'+c.colore+'30"></div>';
+    });
+    h+='</div></div>';
+  });
+
+  return h;
+}
+
+function _classificaMegnin(m){
+  if(!m) return null;
+  var ic=m.indice_cefalico;
+  var icorp=m.indice_corporale;
+  if(!ic&&!icorp) return null;
+
+  if(icorp&&icorp>=85&&ic&&ic<50) return {nome:'Graioide',icona:'🏃',desc:'Corpo slanciato, testa allungata, arti lunghi',esempi:'Levriero, Whippet, Borzoi, Saluki'};
+  if(ic&&ic>52&&icorp&&icorp<70) return {nome:'Molossoide',icona:'🐕‍🦺',desc:'Testa voluminosa, corpo massiccio, muso corto',esempi:'Mastino, Bulldog, Boxer, San Bernardo, Cane Corso'};
+  if(ic&&ic<50) return {nome:'Braccoide',icona:'🐕',desc:'Testa prismatica, orecchie pendenti, muso allungato',esempi:'Bracco, Setter, Pointer, Cocker, Labrador'};
+  return {nome:'Lupoide',icona:'🐺',desc:'Testa piramidale, corpo asciutto e muscoloso',esempi:'Pastore Tedesco, Husky, Akita, Malinois'};
+}
+
+function _renderBiometriaAngoli(ultima){
+  var angoli=[
+    {id:'inclinazione_scapola',nome:'Inclinazione Scapola',zona:'Anteriore',
+      guida:'Angolo della spina scapolare rispetto al piano orizzontale',
+      ideale:{min:45,max:55},impatto:'Ampiezza del passo anteriore e assorbimento urti'},
+    {id:'angolo_scapolo_omerale',nome:'Angolo Scapolo-Omerale',zona:'Anteriore',
+      guida:'Angolo tra scapola e omero alla punta della spalla',
+      ideale:{min:100,max:120},impatto:'Lunghezza del passo e portata dell\'anteriore'},
+    {id:'inclinazione_groppa',nome:'Inclinazione Groppa',zona:'Posteriore',
+      guida:'Angolo del bacino rispetto al piano orizzontale',
+      ideale:{min:20,max:35},impatto:'Spinta posteriore e trasmissione del movimento'},
+    {id:'angolo_ginocchio',nome:'Angolo Ginocchio (Femoro-Tibiale)',zona:'Posteriore',
+      guida:'Angolo tra femore e tibia al ginocchio, cane in stazione',
+      ideale:{min:110,max:135},impatto:'Flessibilità e potenza della spinta posteriore'},
+    {id:'angolo_garretto',nome:'Angolo Garretto (Tibio-Metatarsico)',zona:'Posteriore',
+      guida:'Angolo di apertura del garretto',
+      ideale:{min:135,max:155},impatto:'Ammortizzamento e resistenza al movimento prolungato'}
+  ];
+
+  var h='';
+  angoli.forEach(function(a){
+    var val=ultima?ultima[a.id]||'':'';
+    var numVal=parseFloat(val);
+    var stato='';
+    if(numVal&&a.ideale){
+      if(numVal>=a.ideale.min&&numVal<=a.ideale.max) stato='<span style="color:#4CAF50;font-weight:700">✅ Nel range ideale</span>';
+      else if(numVal<a.ideale.min) stato='<span style="color:#FF9800;font-weight:700">⚠️ Sotto il range (ideale '+a.ideale.min+'-'+a.ideale.max+'°)</span>';
+      else stato='<span style="color:#FF9800;font-weight:700">⚠️ Sopra il range (ideale '+a.ideale.min+'-'+a.ideale.max+'°)</span>';
+    }
+
+    h+='<div style="background:#fff;border:1.5px solid #BBDEFB;border-radius:12px;padding:12px;margin-bottom:10px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+      +'<div><div style="font-weight:700;font-size:12px;color:#0D47A1">'+a.nome+'</div>'
+      +'<div style="font-size:10px;color:#6B8BB0">'+a.zona+' · Ideale: '+a.ideale.min+'-'+a.ideale.max+'°</div></div>'
+      +'<span onclick="toast(\''+a.guida.replace(/'/g,"\\'")+'\\n\\nImpatto: '+a.impatto.replace(/'/g,"\\'")+'\')" style="font-size:11px;color:#90CAF9;cursor:pointer">ℹ️</span></div>'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+      +'<input id="bio-'+a.id+'" type="number" step="0.5" value="'+val+'" placeholder="°" style="flex:1;padding:9px;border:1.5px solid #BBDEFB;border-radius:8px;font-size:14px;box-sizing:border-box"/>'
+      +'<span style="font-size:14px;color:#6B8BB0">°</span></div>'
+      +(stato?'<div style="font-size:11px;margin-top:4px">'+stato+'</div>':'')
+      +'</div>';
+  });
+
+  h+='<button onclick="salvaAngolazioni(this)" style="width:100%;background:linear-gradient(135deg,#0D47A1,#1a237e);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">📐 Salva angolazioni</button>';
+
+  return h;
+}
+
+function salvaAngolazioni(btn){
+  if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
+  var caneId=window._currentDogId||selectedId||'no_id';
+  var misureCane=_biometriaMisurazioni.filter(function(m){return m.cane_id===caneId;});
+  var ultima=misureCane.length?misureCane[misureCane.length-1]:null;
+
+  if(!ultima){toast('⚠️ Inserisci prima le misure base nel tab Misure');return;}
+  btn.disabled=true;btn.textContent='⏳';
+
+  ['inclinazione_scapola','angolo_scapolo_omerale','inclinazione_groppa','angolo_ginocchio','angolo_garretto'].forEach(function(campo){
+    var el=document.getElementById('bio-'+campo);
+    if(el&&el.value) ultima[campo]=parseFloat(el.value);
+  });
+
+  _salvaBiometriaLocale();
+  toast('✅ Angolazioni salvate!');
+  btn.disabled=false;btn.textContent='📐 Salva angolazioni';
+
+  if(ultima.id&&(ultima.id+'').indexOf('tmp_')<0){
+    var upd={};
+    ['inclinazione_scapola','angolo_scapolo_omerale','inclinazione_groppa','angolo_ginocchio','angolo_garretto'].forEach(function(c){
+      if(ultima[c]) upd[c]=ultima[c];
+    });
+    _supabase.from('biometria_misurazioni').update(upd).eq('id',ultima.id).then(function(){});
+  }
+}
+
+function _renderBiometriaStorico(misureCane){
+  if(!misureCane||!misureCane.length){
+    return '<div style="text-align:center;padding:30px"><div style="font-size:40px;margin-bottom:8px">📈</div>'
+      +'<div style="font-size:14px;color:#6B8BB0">Nessuna misurazione storica</div>'
+      +'<div style="font-size:12px;color:#9ab0cc">Inserisci misure nel tempo per vedere l\'evoluzione</div></div>';
+  }
+
+  var h='<div style="font-size:13px;font-weight:700;color:#0D47A1;margin-bottom:10px">📈 Storico misurazioni ('+misureCane.length+')</div>';
+
+  misureCane.slice().reverse().forEach(function(m,i){
+    h+='<div style="background:#fff;border:1.5px solid #BBDEFB;border-radius:12px;padding:12px;margin-bottom:8px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+      +'<div style="font-weight:700;font-size:12px;color:#0D47A1">📅 '+esc(m.data||'')+(m.eta_mesi?' · '+m.eta_mesi+' mesi':'')+'</div>'
+      +'<button onclick="_eliminaBiometria(\''+m.id+'\')" style="background:#FFEBEE;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;color:#C62828;font-size:11px">🗑️</button></div>'
+      +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:6px;font-size:11px">';
+    var campiShow=[
+      {k:'altezza_garrese',l:'Garrese'},{k:'lunghezza_tronco',l:'Tronco'},{k:'perimetro_toracico',l:'Torace'},
+      {k:'peso',l:'Peso'},{k:'indice_cefalico',l:'IC'},{k:'indice_corporale',l:'ICorp'}
+    ];
+    campiShow.forEach(function(c){
+      if(m[c.k]) h+='<div style="background:#EEF3FB;border-radius:6px;padding:4px;text-align:center">'
+        +'<div style="font-weight:800;color:#0D47A1">'+m[c.k]+'</div><div style="color:#6B8BB0;font-size:9px">'+c.l+'</div></div>';
+    });
+    h+='</div></div>';
+  });
+
+  return h;
+}
+
+function _eliminaBiometria(id){
+  if(!confirm('Eliminare questa misurazione?')) return;
+  _biometriaMisurazioni=_biometriaMisurazioni.filter(function(m){return m.id!==id;});
+  _salvaBiometriaLocale();
+  toast('🗑️ Misurazione eliminata');
+  renderBiometria();
+  if(id&&(id+'').indexOf('tmp_')<0&&_currentUser){
+    _supabase.from('biometria_misurazioni').delete().eq('id',id).eq('user_id',_currentUser.id).then(function(){});
+  }
+}
 
 /* ── STATO MODULO FAMIGLIA ── */
 /* ── STATO MODULO SPORT ── */
