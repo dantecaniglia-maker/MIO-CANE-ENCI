@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.69';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.70';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -11760,8 +11760,15 @@ function apriNuovoAllenamentoSport(){
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
     +'<div><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Data</label>'
     +'<input id="na-data" type="date" value="'+new Date().toISOString().slice(0,10)+'" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
-    +'<div><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Durata (min)</label>'
-    +'<input id="na-durata" type="number" value="30" min="1" style="width:100%;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px;box-sizing:border-box"/></div></div>'
+    +'<div><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Durata</label>'
+    +'<div style="display:flex;align-items:center;gap:6px">'
+    +'<input id="na-durata" type="number" value="" min="1" placeholder="min" style="flex:1;padding:10px;border:1.5px solid #FFCCBC;border-radius:8px;font-size:14px;box-sizing:border-box"/>'
+    +'<button onclick="_toggleCronoAllen()" id="na-crono-btn" style="background:#4CAF50;color:#fff;border:none;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">▶ Crono</button>'
+    +'</div>'
+    +'<div id="na-crono-display" style="display:none;text-align:center;margin-top:6px">'
+    +'<div id="na-crono-time" style="font-size:28px;font-weight:800;color:#E65100;font-family:monospace">00:00</div>'
+    +'<div style="font-size:10px;color:#6B8BB0">Il tempo verrà auto-compilato quando fermi il crono</div>'
+    +'</div></div>'
     +'<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#BF360C;display:block;margin-bottom:4px">Come è andata? (1-5)</label>'
     +'<div id="na-voto-stars" style="display:flex;gap:6px;font-size:28px;cursor:pointer">'
     +'<span onclick="document.getElementById(\'na-voto\').value=1;_aggStarsNA(1)" style="color:#ddd">★</span>'
@@ -11838,6 +11845,42 @@ function eliminaAllenamentoSport(allenId){
   switchSportTab('sport-diario');
   if(allenId&&allenId.indexOf('tmp_')<0&&_currentUser){
     _supabase.from('sport_allenamenti').delete().eq('id',allenId).eq('user_id',_currentUser.id).then(function(){});
+  }
+}
+
+/* ══ CRONOMETRO UNIVERSALE ALLENAMENTO ══ */
+window._cronoAllenRunning=false;
+window._cronoAllenStart=0;
+window._cronoAllenInterval=null;
+
+function _toggleCronoAllen(){
+  var btn=document.getElementById('na-crono-btn');
+  var display=document.getElementById('na-crono-display');
+  var timeEl=document.getElementById('na-crono-time');
+  if(!btn) return;
+
+  if(!window._cronoAllenRunning){
+    window._cronoAllenRunning=true;
+    window._cronoAllenStart=Date.now();
+    if(display) display.style.display='block';
+    btn.textContent='⏹ Stop';
+    btn.style.background='#C62828';
+    window._cronoAllenInterval=setInterval(function(){
+      var elapsed=Math.floor((Date.now()-window._cronoAllenStart)/1000);
+      var min=Math.floor(elapsed/60);
+      var sec=elapsed%60;
+      if(timeEl) timeEl.textContent=(min<10?'0':'')+min+':'+(sec<10?'0':'')+sec;
+    },1000);
+  } else {
+    window._cronoAllenRunning=false;
+    clearInterval(window._cronoAllenInterval);
+    var elapsed=Math.round((Date.now()-window._cronoAllenStart)/60000);
+    if(elapsed<1) elapsed=1;
+    var durInput=document.getElementById('na-durata');
+    if(durInput) durInput.value=elapsed;
+    btn.textContent='▶ Crono';
+    btn.style.background='#4CAF50';
+    toast('⏱️ '+elapsed+' minuti registrati');
   }
 }
 
@@ -13525,8 +13568,14 @@ function apriAllenamentoIGP(){
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
     +'<div><label style="font-size:11px;font-weight:700;color:#0D47A1;display:block;margin-bottom:4px">Data</label>'
     +'<input id="ai-data" type="date" value="'+new Date().toISOString().slice(0,10)+'" style="width:100%;padding:10px;border:1.5px solid #90CAF9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
-    +'<div><label style="font-size:11px;font-weight:700;color:#0D47A1;display:block;margin-bottom:4px">Durata (min)</label>'
-    +'<input id="ai-durata" type="number" value="30" min="1" style="width:100%;padding:10px;border:1.5px solid #90CAF9;border-radius:8px;font-size:14px;box-sizing:border-box"/></div></div>'
+    +'<div><label style="font-size:11px;font-weight:700;color:#0D47A1;display:block;margin-bottom:4px">Durata</label>'
+    +'<div style="display:flex;align-items:center;gap:6px">'
+    +'<input id="ai-durata" type="number" value="" min="1" placeholder="min" style="flex:1;padding:10px;border:1.5px solid #90CAF9;border-radius:8px;font-size:14px;box-sizing:border-box"/>'
+    +'<button onclick="_toggleCronoIGP()" id="ai-crono-btn" style="background:#4CAF50;color:#fff;border:none;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">▶ Crono</button>'
+    +'</div>'
+    +'<div id="ai-crono-display" style="display:none;text-align:center;margin-top:6px">'
+    +'<div id="ai-crono-time" style="font-size:28px;font-weight:800;color:#1565C0;font-family:monospace">00:00</div>'
+    +'</div></div>'
     +'<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#0D47A1;display:block;margin-bottom:4px">Come è andata? (1-5)</label>'
     +'<div id="ai-voto-stars" style="display:flex;gap:6px;font-size:28px;cursor:pointer">'
     +'<span onclick="document.getElementById(\'ai-voto\').value=1;_aggStarsAI(1)" style="color:#ddd">★</span>'
@@ -13589,6 +13638,36 @@ function salvaAllenamentoIGP(btn){
       _salvaSportLocale();
     }
   });
+}
+
+window._cronoIGPRunning=false;
+window._cronoIGPStart=0;
+window._cronoIGPInterval=null;
+
+function _toggleCronoIGP(){
+  var btn=document.getElementById('ai-crono-btn');
+  var display=document.getElementById('ai-crono-display');
+  var timeEl=document.getElementById('ai-crono-time');
+  if(!btn) return;
+  if(!window._cronoIGPRunning){
+    window._cronoIGPRunning=true;
+    window._cronoIGPStart=Date.now();
+    if(display) display.style.display='block';
+    btn.textContent='⏹ Stop';btn.style.background='#C62828';
+    window._cronoIGPInterval=setInterval(function(){
+      var el=Math.floor((Date.now()-window._cronoIGPStart)/1000);
+      if(timeEl) timeEl.textContent=(Math.floor(el/60)<10?'0':'')+Math.floor(el/60)+':'+(el%60<10?'0':'')+(el%60);
+    },1000);
+  } else {
+    window._cronoIGPRunning=false;
+    clearInterval(window._cronoIGPInterval);
+    var el2=Math.round((Date.now()-window._cronoIGPStart)/60000);
+    if(el2<1) el2=1;
+    var inp=document.getElementById('ai-durata');
+    if(inp) inp.value=el2;
+    btn.textContent='▶ Crono';btn.style.background='#4CAF50';
+    toast('⏱️ '+el2+' minuti registrati');
+  }
 }
 
 /* ══ SOCCORSO ══ */
@@ -13826,9 +13905,10 @@ function renderSportCorsa(container){
       +'<div style="font-size:10px;color:#7B1FA2;margin-top:2px">Valutazione: '+t.valutazione+'</div></div>';
   });
   html+='</div></div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:14px">'
     +'<button onclick="apriNuovaGaraSport(\'corsa\')" style="background:linear-gradient(135deg,#7B1FA2,#4A148C);color:#fff;border:none;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">🏆 Registra gara</button>'
     +'<button onclick="apriNuovoAllenamentoSport();setTimeout(function(){var s=document.getElementById(\'na-disc\');if(s)s.value=\'corsa\';},100)" style="background:#fff;color:#7B1FA2;border:2px solid #CE93D8;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer">💪 Allenamento</button>'
+    +'<button onclick="apriTimerCorsa()" style="background:#fff;color:#7B1FA2;border:2px solid #CE93D8;border-radius:12px;padding:14px;font-size:12px;font-weight:700;cursor:pointer">⏱️ Sprint</button>'
     +'</div>';
 
   if(proveC.length){
@@ -13854,6 +13934,147 @@ function avviaAllenamentoCorsa(tipo){
     var tip=document.getElementById('na-tipo');
     if(tip) tip.value=tipo;
   },150);
+}
+
+/* ══ TIMER CORSA / SPRINT ══ */
+function apriTimerCorsa(){
+  var ov=document.createElement('div');
+  ov.id='ov-timer-corsa';
+  ov.style.cssText='position:fixed;inset:0;z-index:10100;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;padding:16px';
+
+  window._corsaRunning=false;
+  window._corsaStart=0;
+  window._corsaElapsed=0;
+  window._corsaInterval=null;
+  window._corsaLaps=[];
+
+  ov.innerHTML='<div style="max-width:400px;width:100%;text-align:center">'
+    +'<div style="color:rgba(255,255,255,.5);font-size:12px;margin-bottom:12px">🏃 Timer Sprint / Corsa</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:16px;justify-content:center">'
+    +['100','200','400','500','1000'].map(function(d){
+      return '<button onclick="document.getElementById(\'corsa-dist\').value=\''+d+'\';var bs=document.querySelectorAll(\'#corsa-dist-btns button\');bs.forEach(function(b){b.style.background=\'rgba(255,255,255,.1)\';b.style.color=\'rgba(255,255,255,.5)\'});this.style.background=\'#7B1FA2\';this.style.color=\'#fff\'" style="padding:8px 12px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.1);color:rgba(255,255,255,.5)">'+d+'m</button>';
+    }).join('')
+    +'</div>'
+    +'<input type="hidden" id="corsa-dist" value="100"/>'
+    +'<div id="corsa-dist-btns" style="display:none"></div>'
+    +'<div id="corsa-timer-display" style="font-size:72px;font-weight:800;color:#fff;font-family:monospace;letter-spacing:4px;margin-bottom:8px">00.000</div>'
+    +'<div id="corsa-vel-display" style="font-size:18px;color:#CE93D8;margin-bottom:20px;display:none">'
+    +'🚀 <span id="corsa-vel-val">0.0</span> km/h</div>'
+    +'<div style="display:flex;gap:12px;margin-bottom:16px">'
+    +'<button id="corsa-btn-start" onclick="_toggleTimerCorsa()" style="flex:1;padding:18px;border-radius:14px;border:none;font-size:20px;font-weight:800;cursor:pointer;background:#4CAF50;color:#fff">▶ START</button>'
+    +'<button onclick="_lapCorsa()" style="padding:18px 20px;border-radius:14px;border:none;font-size:16px;cursor:pointer;background:rgba(255,255,255,.1);color:#fff">🏁 LAP</button>'
+    +'<button onclick="_resetTimerCorsa()" style="padding:18px 20px;border-radius:14px;border:none;font-size:16px;cursor:pointer;background:rgba(255,255,255,.1);color:#fff">↺</button>'
+    +'</div>'
+    +'<div id="corsa-laps-container" style="max-height:200px;overflow-y:auto;margin-bottom:16px"></div>'
+    +'<div id="corsa-save-container" style="display:none">'
+    +'<button onclick="_salvaTimerCorsa()" style="width:100%;background:#7B1FA2;color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px">💾 Salva nel diario</button>'
+    +'</div>'
+    +'<button onclick="_chiudiTimerCorsa()" style="background:none;border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:10px 24px;color:rgba(255,255,255,.5);font-size:12px;cursor:pointer">✕ Chiudi</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+}
+
+function _toggleTimerCorsa(){
+  var btn=document.getElementById('corsa-btn-start');
+  if(!window._corsaRunning){
+    window._corsaRunning=true;
+    window._corsaStart=Date.now()-window._corsaElapsed;
+    window._corsaInterval=setInterval(function(){
+      window._corsaElapsed=Date.now()-window._corsaStart;
+      var el=document.getElementById('corsa-timer-display');
+      if(el) el.textContent=(window._corsaElapsed/1000).toFixed(3);
+    },10);
+    if(btn){btn.textContent='⏹ STOP';btn.style.background='#C62828';}
+    document.getElementById('corsa-vel-display').style.display='none';
+    document.getElementById('corsa-save-container').style.display='none';
+  } else {
+    window._corsaRunning=false;
+    clearInterval(window._corsaInterval);
+    if(btn){btn.textContent='▶ START';btn.style.background='#4CAF50';}
+    var dist=parseInt(document.getElementById('corsa-dist').value)||100;
+    var tempoSec=window._corsaElapsed/1000;
+    var velKmh=tempoSec>0?((dist/tempoSec)*3.6):0;
+    var velDisplay=document.getElementById('corsa-vel-display');
+    var velVal=document.getElementById('corsa-vel-val');
+    if(velDisplay) velDisplay.style.display='block';
+    if(velVal) velVal.textContent=velKmh.toFixed(1);
+    document.getElementById('corsa-save-container').style.display='block';
+  }
+}
+
+function _lapCorsa(){
+  if(!window._corsaRunning) return;
+  var elapsed=window._corsaElapsed/1000;
+  var prevTime=window._corsaLaps.length>0?window._corsaLaps[window._corsaLaps.length-1].total:0;
+  var partial=elapsed-prevTime;
+  window._corsaLaps.push({num:window._corsaLaps.length+1,total:elapsed,partial:partial});
+
+  var cont=document.getElementById('corsa-laps-container');
+  if(!cont) return;
+  var h='';
+  window._corsaLaps.forEach(function(l){
+    h+='<div style="display:flex;justify-content:space-between;padding:6px 12px;background:rgba(255,255,255,.05);border-radius:6px;margin-bottom:4px;font-size:13px">'
+      +'<span style="color:rgba(255,255,255,.6)">Lap '+l.num+'</span>'
+      +'<span style="color:#CE93D8;font-weight:700">'+l.total.toFixed(3)+'s</span>'
+      +'<span style="color:rgba(255,255,255,.4)">+'+l.partial.toFixed(3)+'s</span></div>';
+  });
+  cont.innerHTML=h;
+}
+
+function _resetTimerCorsa(){
+  window._corsaRunning=false;
+  clearInterval(window._corsaInterval);
+  window._corsaElapsed=0;
+  window._corsaLaps=[];
+  var el=document.getElementById('corsa-timer-display');if(el) el.textContent='00.000';
+  var btn=document.getElementById('corsa-btn-start');if(btn){btn.textContent='▶ START';btn.style.background='#4CAF50';}
+  document.getElementById('corsa-vel-display').style.display='none';
+  document.getElementById('corsa-save-container').style.display='none';
+  document.getElementById('corsa-laps-container').innerHTML='';
+}
+
+function _chiudiTimerCorsa(){
+  window._corsaRunning=false;clearInterval(window._corsaInterval);
+  var ov=document.getElementById('ov-timer-corsa');if(ov) ov.remove();
+}
+
+function _salvaTimerCorsa(){
+  if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
+  var dist=parseInt(document.getElementById('corsa-dist').value)||100;
+  var tempoSec=window._corsaElapsed/1000;
+  var velKmh=tempoSec>0?((dist/tempoSec)*3.6):0;
+
+  var lapsText=window._corsaLaps.map(function(l){return 'Lap'+l.num+': '+l.total.toFixed(3)+'s (+'+l.partial.toFixed(3)+')';}).join(' | ');
+
+  var allen={
+    id:'tmp_allen_'+Date.now(),
+    user_id:_currentUser.id,
+    cane_id:null,cane_nome:'',
+    disciplina:'corsa',
+    tipo:'Sprint '+dist+'m',
+    data:new Date().toISOString().slice(0,10),
+    durata_minuti:Math.max(1,Math.round(tempoSec/60)),
+    note:'🏃 '+dist+'m in '+tempoSec.toFixed(3)+'s · 🚀 '+velKmh.toFixed(1)+' km/h'
+      +(lapsText?' | '+lapsText:''),
+    voto:null,
+    created_at:new Date().toISOString()
+  };
+
+  _sportAllenamenti.unshift(allen);
+  _salvaSportLocale();
+  toast('✅ Sprint salvato! '+velKmh.toFixed(1)+' km/h');
+  _checkNuoviBadge();
+  _chiudiTimerCorsa();
+
+  var rec=Object.assign({},allen);delete rec.id;
+  _supabase.from('sport_allenamenti').insert(rec).select().then(function(res){
+    if(res.error) console.warn('[sport] corsa save:',res.error.message);
+    if(res.data&&res.data[0]){
+      var idx=_sportAllenamenti.findIndex(function(a){return a.id===allen.id;});
+      if(idx>=0) _sportAllenamenti[idx]=res.data[0];
+      _salvaSportLocale();
+    }
+  });
 }
 
 function apriDisciplinaSport(discId){
