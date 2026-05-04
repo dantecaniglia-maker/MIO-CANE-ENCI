@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.70';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.72';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1220,6 +1220,11 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
               <div><div style="font-weight:700;font-size:14px;color:#1a1a3a">Calendario Esposizioni</div><div style="font-size:12px;color:#6B8BB0">Show, raduni, CAC</div></div>
               <span style="margin-left:auto;color:#BFCFE8;font-size:18px">›</span>
             </div>
+            <div onclick="apriStrumentoBiometria()" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;cursor:pointer;transition:background .15s;margin-top:6px;border:1.5px solid #E8D5F5" onmouseover="this.style.background='#F9F0FF'" onmouseout="this.style.background='#fff'">
+              <div style="width:38px;height:38px;background:#EEF3FB;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📐</div>
+              <div><div style="font-weight:700;font-size:14px;color:#1a1a3a">Biometria</div><div style="font-size:12px;color:#6B8BB0">Misurazioni, indici e angolazioni</div></div>
+              <span style="margin-left:auto;color:#BFCFE8;font-size:18px">›</span>
+            </div>
           </div>
         </div>
 
@@ -1341,7 +1346,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
     <div id="reminder-alerts"></div>
 
     <!-- Tabs -->
-    <div class="no-print" style="display:flex;gap:3px;margin-bottom:20px;background:#fff;border-radius:11px;padding:4px;box-shadow:0 2px 8px rgba(21,101,192,.08);border:1.5px solid #DDEAFF">
+    <div id="det-tabs" class="no-print" style="display:flex;gap:3px;margin-bottom:20px;background:#fff;border-radius:11px;padding:4px;box-shadow:0 2px 8px rgba(21,101,192,.08);border:1.5px solid #DDEAFF">
       <button class="tab-btn" id="tab-info"           onclick="switchTab('info')">📋 Info</button>
       <button class="tab-btn" id="tab-salute"         onclick="switchTab('salute')">❤️ Salute</button>
       <button class="tab-btn" id="tab-campionati"     onclick="switchTab('campionati')">🏆 Titoli</button>
@@ -9260,7 +9265,7 @@ function _caricaBiometriaLocale(){
 }
 
 function renderBiometria(){
-  var container=document.getElementById('panel-biometria');
+  var container=document.getElementById('panel-biometria-strumento')||document.getElementById('panel-biometria');
   if(!container) return;
 
   _caricaBiometriaLocale();
@@ -9287,6 +9292,72 @@ function renderBiometria(){
 
   html+='</div>';
   container.innerHTML=html;
+}
+
+function apriStrumentoBiometria(){
+  var existing=document.getElementById('ov-strumento-biometria');
+  if(existing) existing.remove();
+
+  var ov=document.createElement('div');
+  ov.id='ov-strumento-biometria';
+  ov.style.cssText='position:fixed;inset:0;z-index:10100;background:#F4F7FE;overflow-y:auto;display:flex;flex-direction:column';
+
+  var listaHtml='<div style="padding:16px">'
+    +'<button onclick="_selezionaCanePerBiometria(null)" style="width:100%;background:#fff;border:2px dashed #BBDEFB;border-radius:14px;padding:14px;font-size:13px;font-weight:700;color:#1565C0;cursor:pointer;margin-bottom:14px">📏 Misura al volo (senza cane)</button>';
+
+  var elenco=cani||[];
+  if(elenco.length){
+    listaHtml+='<div style="font-size:11px;font-weight:700;color:#6B8BB0;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">I tuoi cani</div>';
+    elenco.forEach(function(c){
+      var av=c.foto?'<img src="'+c.foto+'" style="width:100%;height:100%;object-fit:cover;border-radius:11px" onerror="this.style.display=\'none\'"/>':'<span style="font-size:22px">🐕</span>';
+      listaHtml+='<div onclick="_selezionaCanePerBiometria(\''+c.id+'\')" style="display:flex;align-items:center;gap:12px;padding:12px;background:#fff;border-radius:12px;border:1.5px solid #BBDEFB;margin-bottom:8px;cursor:pointer">'
+        +'<div style="width:44px;height:44px;border-radius:12px;background:#EEF3FB;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">'+av+'</div>'
+        +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px;color:#1a1a3a">'+esc(c.nome||'Senza nome')+'</div>'
+        +'<div style="font-size:11px;color:#6B8BB0">'+esc(c.razza||'')+'</div></div>'
+        +'<span style="color:#BFCFE8;font-size:18px">›</span></div>';
+    });
+  } else {
+    listaHtml+='<div style="text-align:center;padding:30px;color:#6B8BB0;font-size:13px">Nessun cane registrato</div>';
+  }
+  listaHtml+='</div>';
+
+  ov.innerHTML=
+    // Header
+    '<div style="background:linear-gradient(135deg,#0D47A1,#1a237e);padding:16px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0">'
+      +'<button onclick="document.getElementById(\'ov-strumento-biometria\').remove()" style="background:rgba(255,255,255,.15);border:none;border-radius:10px;padding:8px 12px;color:#fff;font-size:18px;font-weight:700;cursor:pointer">‹</button>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#fff">📐 Biometria professionale</div>'
+    +'</div>'
+    // Lista cani
+    +'<div id="bio-strumento-lista">'+listaHtml+'</div>'
+    // Sezione biometria (header back + container render)
+    +'<div id="bio-strumento-bio" style="display:none;flex:1;display:none">'
+      +'<div style="padding:10px 16px;background:#fff;border-bottom:1px solid #DDEAFF;display:flex;align-items:center;gap:8px;flex-shrink:0">'
+        +'<button onclick="document.getElementById(\'bio-strumento-lista\').style.display=\'block\';document.getElementById(\'bio-strumento-bio\').style.display=\'none\'" style="background:#EEF3FB;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#0D47A1;cursor:pointer">‹ Cani</button>'
+        +'<span id="bio-strumento-nome" style="font-size:13px;font-weight:700;color:#1565C0"></span>'
+      +'</div>'
+      +'<div id="panel-biometria-strumento"></div>'
+    +'</div>';
+
+  document.body.appendChild(ov);
+}
+
+function _selezionaCanePerBiometria(caneId){
+  window._currentDogId=caneId||null;
+  window._biometriaTab='misure';
+  var lista=document.getElementById('bio-strumento-lista');
+  var bio=document.getElementById('bio-strumento-bio');
+  var nomeEl=document.getElementById('bio-strumento-nome');
+  if(lista) lista.style.display='none';
+  if(bio) bio.style.display='flex';
+  if(nomeEl){
+    if(caneId){
+      var c=(cani||[]).find(function(x){return String(x.id)===String(caneId);});
+      nomeEl.textContent=c?esc(c.nome||'Cane'):'';
+    } else {
+      nomeEl.textContent='Misura al volo';
+    }
+  }
+  renderBiometria();
 }
 
 function _renderBiometriaMisure(ultima){
@@ -9652,6 +9723,7 @@ var _famigliaPercorsi = [];
 var _dogScoreOggi = 0;
 var _dogScoreMese = 0;
 var _pollingInterval = null;
+var _pollingInProgress = false;
 var _famigliaLogTutti = [];
 var _posizioneUtente = null;
 var _gpsAttivo=false, _gpsWatchId=null, _gpsPunti=[];
@@ -9703,6 +9775,11 @@ function scegliModalita(mod){
   if(_currentUser){
     _supabase.from('profili').update({modalita: mod}).eq('id', _currentUser.id).then(function(){});
   }
+  // Rimuovi overlay fantasma
+  ['ov-campo-agility','ov-gara-campo','ov-carica-percorso','ov-analisi-video',
+   'ov-timer-allenamento','ov-timer-corsa','ov-timer-soccorso','ov-timer-pastore'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.remove();
+  });
   applicaModalita(mod);
   var nomi={allevatore:'Allevatore',famiglia:'Famiglia',caccia:'Caccia & Tartufo',sport:'Sport & Agility'};
   toast('✅ Modalità ' + (nomi[mod]||mod) + ' attivata!');
@@ -9718,6 +9795,17 @@ function applicaModalita(mod){
   // Nascondi sempre il vecchio coming-soon
   var oldBanner = g('famiglia-coming-soon');
   if(oldBanner) oldBanner.style.display = 'none';
+
+  if(mod==='allevatore'){
+    var _hf=g('home-famiglia'); if(_hf) _hf.style.display='none';
+    var _hc=g('home-caccia'); if(_hc) _hc.style.display='none';
+    var _hs=g('home-sport'); if(_hs) _hs.style.display='none';
+    var _fbn=g('fam-bottom-nav'); if(_fbn) _fbn.style.display='none';
+    var _cbn=g('caccia-bottom-nav'); if(_cbn) _cbn.style.display='none';
+    var _sbn=g('sport-bottom-nav'); if(_sbn) _sbn.style.display='none';
+    if(g('bottom-nav')) g('bottom-nav').classList.remove('fam-hidden');
+    if(_pollingInterval){clearInterval(_pollingInterval);_pollingInterval=null;}
+  }
 
   if(mod === 'famiglia'){
     // Ricrea sempre home famiglia (struttura sempre aggiornata)
@@ -9786,27 +9874,33 @@ function applicaModalita(mod){
     if(_pollingInterval) clearInterval(_pollingInterval);
     _pollingInterval = setInterval(async function(){
       if(!_famigliaDati || !_famigliaCaneSelezionato) return;
-      await caricaCompitisFamiglia();
-      await caricaLogFamiglia();
-      // Aggiorna percorsi per ring km
-      var _resP = await _supabase.from('famiglia_percorsi')
-        .select('*').eq('famiglia_id',_famigliaDati.id)
-        .order('created_at',{ascending:false}).limit(20);
-      if(_resP.data) _famigliaPercorsi = _resP.data;
-      // Aggiorna sempre la home (ring) anche se non è la tab attiva
-      // così i dati sono freschi al ritorno
-      var _tc = g('fam-tab-content');
-      if(_tc){
-        if(_famTabAttiva==='home') renderHealthDashboard(_tc);
-        else if(_famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
-        else if(_famTabAttiva==='diario') renderDiarioFamiglia(_tc);
+      if(_pollingInProgress) return;
+      _pollingInProgress = true;
+      try {
+        await caricaCompitisFamiglia();
+        await caricaLogFamiglia();
+        // Aggiorna percorsi per ring km
+        var _resP = await _supabase.from('famiglia_percorsi')
+          .select('*').eq('famiglia_id',_famigliaDati.id)
+          .order('created_at',{ascending:false}).limit(20);
+        if(_resP.data) _famigliaPercorsi = _resP.data;
+        // Aggiorna sempre la home (ring) anche se non è la tab attiva
+        // così i dati sono freschi al ritorno
+        var _tc = g('fam-tab-content');
+        if(_tc){
+          if(_famTabAttiva==='home') renderHealthDashboard(_tc);
+          else if(_famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
+          else if(_famTabAttiva==='diario') renderDiarioFamiglia(_tc);
+        }
+        // Aggiorna anche _famigliaLogTutti per Dog Score
+        var _rTutti = await _supabase.from('famiglia_log')
+          .select('*').eq('famiglia_id',_famigliaDati.id)
+          .order('created_at',{ascending:false}).limit(200);
+        if(_rTutti.data) _famigliaLogTutti = _rTutti.data;
+        console.log('[Famiglia] polling logTutti:', _famigliaLogTutti.length);
+      } finally {
+        _pollingInProgress = false;
       }
-      // Aggiorna anche _famigliaLogTutti per Dog Score
-      var _rTutti = await _supabase.from('famiglia_log')
-        .select('*').eq('famiglia_id',_famigliaDati.id)
-        .order('created_at',{ascending:false}).limit(200);
-      if(_rTutti.data) _famigliaLogTutti = _rTutti.data;
-      console.log('[Famiglia] polling logTutti:', _famigliaLogTutti.length);
     }, 30000);
   } else {
     var hf2 = g('home-famiglia');
@@ -9854,7 +9948,7 @@ function applicaModalita(mod){
       var cbn = document.createElement('nav');
       cbn.id = 'caccia-bottom-nav';
       cbn.style.cssText = 'position:fixed;bottom:0;left:0;width:100%;'
-        +'background:#fff;border-top:1px solid #C8E6C9;z-index:9985;'
+        +'background:#fff;border-top:2px solid #C8E6C9;z-index:9985;'
         +'display:flex;align-items:stretch;padding:6px 8px;gap:4px;'
         +'box-shadow:0 -4px 20px rgba(46,125,50,.1)';
       cbn.innerHTML = [
@@ -10086,7 +10180,7 @@ function switchCacciaTab(tab){
   else if(tab==='caccia-altro')    renderCacciaAltro(content);
 }
 
-async function renderCacciaHome(container){
+function renderCacciaHome(container){
   if(!window._cacciGruppo){
     try{
       var _gcr=JSON.parse(localStorage.getItem('bp_caccia_gruppo_v1')||'null');
@@ -12652,7 +12746,21 @@ function salvaAnalisiAgilityCorrected(){
   });
 }
 
-/* ══ CAMPO AGILITY 2D — GENERATORE PERCORSO ══ */
+/* ══ CAMPO AGILITY 2D v2 — FORME REALI + DRAG & DROP + SNAP ══ */
+
+var _CAMPO_OST_DEFS=[
+  {id:'S',nome:'Salto',ico:'🏃',colore:'#1565C0'},
+  {id:'D',nome:'Doppio',ico:'🏃🏃',colore:'#0D47A1'},
+  {id:'M',nome:'Muro',ico:'🧱',colore:'#795548'},
+  {id:'P',nome:'Pneumatico',ico:'⭕',colore:'#E65100'},
+  {id:'L',nome:'Lungo',ico:'↔️',colore:'#2E7D32'},
+  {id:'A',nome:'A-Frame',ico:'⛰️',colore:'#C62828'},
+  {id:'W',nome:'Passerella',ico:'🌉',colore:'#F57F17'},
+  {id:'B',nome:'Bascula',ico:'⚖️',colore:'#6A1B9A'},
+  {id:'SL',nome:'Slalom',ico:'🐍',colore:'#00695C'},
+  {id:'T',nome:'Tunnel',ico:'🕳️',colore:'#37474F'}
+];
+
 function apriCampoAgility2D(){
   var taglia=window._agilityTaglia||'L';
   var tagliaObj=AGILITY_TAGLIE.find(function(t){return t.id===taglia;})||AGILITY_TAGLIE[3];
@@ -12661,29 +12769,19 @@ function apriCampoAgility2D(){
   ov.id='ov-campo-agility';
   ov.style.cssText='position:fixed;inset:0;z-index:10100;background:#fff;overflow-y:auto';
 
-  var ostacoli=[
-    {id:'S',nome:'Salto',ico:'🏃',colore:'#1565C0',short:'S'},
-    {id:'D',nome:'Doppio',ico:'🏃',colore:'#0D47A1',short:'D'},
-    {id:'M',nome:'Muro',ico:'🧱',colore:'#795548',short:'M'},
-    {id:'P',nome:'Pneumatico',ico:'⭕',colore:'#E65100',short:'P'},
-    {id:'L',nome:'Lungo',ico:'↔️',colore:'#2E7D32',short:'L'},
-    {id:'A',nome:'A-Frame',ico:'⛰️',colore:'#C62828',short:'A'},
-    {id:'W',nome:'Passerella',ico:'🌉',colore:'#F57F17',short:'W'},
-    {id:'B',nome:'Bascula',ico:'⚖️',colore:'#6A1B9A',short:'B'},
-    {id:'SL',nome:'Slalom',ico:'🐍',colore:'#00695C',short:'SL'},
-    {id:'T',nome:'Tunnel',ico:'🕳️',colore:'#37474F',short:'T'}
-  ];
-
   window._campoOstacoli=window._campoOstacoli||[];
   window._campoNextNum=window._campoNextNum||(window._campoOstacoli.length+1);
   window._campoSelectedTool=null;
   window._campoCheckpoints=window._campoCheckpoints||[];
+  window._campoDragIdx=-1;
+  window._campoDragCpIdx=-1;
+  window._campoDragging=false;
 
   ov.innerHTML=
     '<div style="background:linear-gradient(135deg,#558B2F,#33691E);padding:14px 16px;display:flex;align-items:center;justify-content:space-between">'
     +'<div style="display:flex;align-items:center;gap:8px">'
     +'<button onclick="document.getElementById(\'ov-campo-agility\').remove()" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;color:#fff;font-weight:700">‹</button>'
-    +'<div style="color:#fff;font-weight:700;font-size:14px">🗺️ Campo Agility — '+tagliaObj.nome+' ('+tagliaObj.id+')</div></div>'
+    +'<div style="color:#fff;font-weight:700;font-size:14px">🗺️ Campo — '+tagliaObj.nome+' ('+tagliaObj.id+')</div></div>'
     +'<div style="display:flex;gap:6px">'
     +'<button onclick="_svuotaCampo()" style="background:rgba(255,255,255,.15);border:none;border-radius:6px;padding:4px 8px;color:#fff;font-size:10px;cursor:pointer">🗑️</button>'
     +'<button onclick="_salvaCampoImg()" style="background:rgba(255,255,255,.15);border:none;border-radius:6px;padding:4px 8px;color:#fff;font-size:10px;cursor:pointer">📸</button>'
@@ -12692,8 +12790,9 @@ function apriCampoAgility2D(){
     +'<button onclick="apriSalvaPercorso()" style="background:rgba(255,255,255,.15);border:none;border-radius:6px;padding:4px 8px;color:#fff;font-size:10px;cursor:pointer">💾</button>'
     +'<button onclick="apriCaricaPercorso()" style="background:rgba(255,255,255,.15);border:none;border-radius:6px;padding:4px 8px;color:#fff;font-size:10px;cursor:pointer">📂</button>'
     +'</div></div>'
+    // ── Toolbar ostacoli ──
     +'<div style="background:#F1F8E9;padding:8px;overflow-x:auto;display:flex;gap:6px;-webkit-overflow-scrolling:touch" id="campo-toolbar">'
-    +ostacoli.map(function(o){
+    +_CAMPO_OST_DEFS.map(function(o){
       return '<button onclick="_selezionaOstacolo(\''+o.id+'\')" id="tool-'+o.id+'" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:6px 10px;border-radius:8px;border:2px solid #ddd;background:#fff;cursor:pointer;min-width:48px">'
         +'<span style="font-size:16px">'+o.ico+'</span>'
         +'<span style="font-size:8px;font-weight:700;color:#333">'+o.nome+'</span></button>';
@@ -12709,14 +12808,14 @@ function apriCampoAgility2D(){
     +'<span style="font-size:8px;font-weight:700;color:#C62828">Annulla</span></button>'
     +'</div>'
     +'<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:#fff;border-bottom:1px solid #eee">'
-    +'<div style="font-size:10px;color:#6B8BB0" id="campo-info">Tap sul campo per piazzare ostacoli. Ring 20×40m.</div>'
+    +'<div style="font-size:10px;color:#6B8BB0" id="campo-info">Piazza ostacoli · Trascina per spostare · Doppio tap per ruotare</div>'
     +'<div style="font-size:10px;font-weight:700;color:#558B2F" id="campo-count">Ostacoli: 0</div>'
     +'</div>'
-    +'<div style="position:relative;overflow:hidden;background:#E8F5E9" id="campo-container">'
-    +'<canvas id="campo-canvas" style="display:block;width:100%"></canvas>'
+    +'<div style="position:relative;overflow:hidden;background:#E8F5E9;touch-action:none" id="campo-container">'
+    +'<canvas id="campo-canvas" style="display:block;width:100%;touch-action:none"></canvas>'
     +'</div>'
     +'<div style="padding:10px 12px;background:#F5F5F5;font-size:10px;color:#6B8BB0">'
-    +'<strong>Legenda:</strong> Tap = piazza · Tap su ostacolo = elimina · 📸 = salva screenshot · Ring: 20m×40m · Distanza min 5m'
+    +'<strong>Legenda:</strong> Tap = piazza · Trascina = sposta · Doppio tap = ruota 90° · Ring: 20m×40m'
     +'</div>';
 
   document.body.appendChild(ov);
@@ -12730,117 +12829,416 @@ function _inizializzaCampo(){
 
   var w=container.offsetWidth;
   var h=Math.round(w*2);
-  canvas.width=w;
-  canvas.height=h;
+  canvas.width=w*2;  // retina
+  canvas.height=h*2;
+  canvas.style.width=w+'px';
   canvas.style.height=h+'px';
 
   window._campoW=w;
   window._campoH=h;
-  window._campoScala=w/20;
+  window._campoScala=w/20; // 1 metro in px (CSS)
+  window._campoRetina=2;
 
-  canvas.onclick=function(e){
+  // ── Coordinate helper ──
+  function _campoXY(e){
     var rect=canvas.getBoundingClientRect();
-    var x=e.clientX-rect.left;
-    var y=e.clientY-rect.top;
-    _campoClic(x,y);
-  };
+    var touch=e.touches?e.touches[0]:(e.changedTouches?e.changedTouches[0]:e);
+    return {x:touch.clientX-rect.left, y:touch.clientY-rect.top};
+  }
+
+  // ── Snap a griglia 1m ──
+  function _snap(v){
+    var s=window._campoScala;
+    return Math.round(v/s)*s;
+  }
+
+  // ── Hit test: trova ostacolo/checkpoint sotto (x,y) ──
+  function _hitOstacolo(x,y){
+    var s=window._campoScala, r=s*1.0;
+    for(var i=(window._campoOstacoli||[]).length-1;i>=0;i--){
+      var o=window._campoOstacoli[i];
+      if(Math.abs(x-o.x)<r&&Math.abs(y-o.y)<r) return {type:'ost',idx:i};
+    }
+    for(var j=(window._campoCheckpoints||[]).length-1;j>=0;j--){
+      var cp=window._campoCheckpoints[j];
+      if(Math.abs(x-cp.x)<s*0.8&&Math.abs(y-cp.y)<s*0.8) return {type:'cp',idx:j};
+    }
+    return null;
+  }
+
+  // ── POINTER DOWN ──
+  var _lastTapTime=0;
+  function _onDown(e){
+    e.preventDefault();
+    var p=_campoXY(e);
+    var hit=_hitOstacolo(p.x,p.y);
+    var now=Date.now();
+
+    // Doppio tap per ruotare
+    if(hit&&hit.type==='ost'&&(now-_lastTapTime)<350){
+      var ost=window._campoOstacoli[hit.idx];
+      ost.rot=((ost.rot||0)+90)%360;
+      _disegnaCampo();
+      _lastTapTime=0;
+      return;
+    }
+    _lastTapTime=now;
+
+    if(hit){
+      // Inizia drag
+      if(hit.type==='ost'){
+        window._campoDragIdx=hit.idx;
+        window._campoDragCpIdx=-1;
+      } else {
+        window._campoDragCpIdx=hit.idx;
+        window._campoDragIdx=-1;
+      }
+      window._campoDragging=false;
+      window._campoDragStart={x:p.x,y:p.y};
+    } else if(window._campoSelectedTool){
+      // Piazza nuovo ostacolo/checkpoint
+      _piazzaNuovo(_snap(p.x),_snap(p.y));
+    }
+  }
+
+  // ── POINTER MOVE ──
+  function _onMove(e){
+    e.preventDefault();
+    if(window._campoDragIdx<0&&window._campoDragCpIdx<0) return;
+    var p=_campoXY(e);
+    // Soglia minima per distinguere tap da drag
+    if(!window._campoDragging){
+      var ds=window._campoDragStart||{x:0,y:0};
+      if(Math.abs(p.x-ds.x)+Math.abs(p.y-ds.y)<5) return;
+      window._campoDragging=true;
+    }
+    if(window._campoDragIdx>=0){
+      var o=window._campoOstacoli[window._campoDragIdx];
+      if(o){o.x=p.x;o.y=p.y;}
+    } else if(window._campoDragCpIdx>=0){
+      var cp=window._campoCheckpoints[window._campoDragCpIdx];
+      if(cp){cp.x=p.x;cp.y=p.y;}
+    }
+    _disegnaCampo();
+  }
+
+  // ── POINTER UP ──
+  function _onUp(e){
+    e.preventDefault();
+    if(window._campoDragIdx>=0){
+      if(window._campoDragging){
+        // Snap alla griglia
+        var o=window._campoOstacoli[window._campoDragIdx];
+        if(o){o.x=_snap(o.x);o.y=_snap(o.y);}
+        _disegnaCampo();
+      } else {
+        // Era un tap senza drag → se tool null, elimina
+        if(!window._campoSelectedTool){
+          var p2=_campoXY(e);
+          // tap singolo su ostacolo senza drag: mostra info / non fare niente (drag & drop è il modo di muoverli)
+        }
+      }
+    }
+    if(window._campoDragCpIdx>=0&&window._campoDragging){
+      var cp2=window._campoCheckpoints[window._campoDragCpIdx];
+      if(cp2){cp2.x=_snap(cp2.x);cp2.y=_snap(cp2.y);}
+      _disegnaCampo();
+    }
+    window._campoDragIdx=-1;
+    window._campoDragCpIdx=-1;
+    window._campoDragging=false;
+  }
+
+  canvas.addEventListener('pointerdown',_onDown,{passive:false});
+  canvas.addEventListener('pointermove',_onMove,{passive:false});
+  canvas.addEventListener('pointerup',_onUp,{passive:false});
+  canvas.addEventListener('pointercancel',_onUp,{passive:false});
 
   _disegnaCampo();
 }
 
+// ── Piazza nuovo ostacolo o checkpoint ──
+function _piazzaNuovo(x,y){
+  if(window._campoSelectedTool==='CP'){
+    window._campoCheckpoints=window._campoCheckpoints||[];
+    window._campoCheckpoints.push({id:'cp_'+Date.now(),x:x,y:y,num:window._campoCheckpoints.length+1});
+    _disegnaCampo();
+    toast('⏱️ Checkpoint '+(window._campoCheckpoints.length)+' piazzato');
+    return;
+  }
+  if((window._campoOstacoli||[]).length>=22){toast('⚠️ Massimo 22 ostacoli');return;}
+  var tipo=window._campoSelectedTool;
+  var cnt=window._campoOstacoli.filter(function(o){return o.tipo===tipo;}).length;
+  if(tipo==='SL'&&cnt>=1){toast('⚠️ Max 1 slalom');return;}
+  if(tipo==='P'&&cnt>=1){toast('⚠️ Max 1 pneumatico');return;}
+  if(tipo==='M'&&cnt>=1){toast('⚠️ Max 1 muro');return;}
+  if(tipo==='T'&&cnt>=5){toast('⚠️ Max 5 tunnel');return;}
+
+  window._campoOstacoli.push({tipo:tipo,x:x,y:y,num:window._campoNextNum||1,rot:0});
+  window._campoNextNum=(window._campoNextNum||1)+1;
+  _disegnaCampo();
+}
+
+// ══ DISEGNA CAMPO CON FORME REALI ══
 function _disegnaCampo(){
   var canvas=document.getElementById('campo-canvas');
   if(!canvas) return;
   var ctx=canvas.getContext('2d');
-  var w=canvas.width, h=canvas.height;
-  var scala=window._campoScala||1;
+  var R=window._campoRetina||2;
+  var w=window._campoW, h=window._campoH;
+  var s=window._campoScala||1;
 
+  ctx.save();
+  ctx.scale(R,R);
+
+  // ── Sfondo erba ──
   ctx.fillStyle='#C8E6C9';
   ctx.fillRect(0,0,w,h);
 
-  ctx.strokeStyle='#A5D6A740';
+  // ── Griglia 1m (sottile) ──
+  ctx.strokeStyle='rgba(165,214,167,.25)';
   ctx.lineWidth=0.5;
-  for(var gx=0;gx<w;gx+=scala){
-    ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,h);ctx.stroke();
-  }
-  for(var gy=0;gy<h;gy+=scala){
-    ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(w,gy);ctx.stroke();
-  }
+  for(var gx=s;gx<w;gx+=s){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,h);ctx.stroke();}
+  for(var gy=s;gy<h;gy+=s){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(w,gy);ctx.stroke();}
 
-  ctx.strokeStyle='#81C78460';
+  // ── Griglia 5m (marcata) ──
+  ctx.strokeStyle='rgba(129,199,132,.35)';
   ctx.lineWidth=1;
-  for(var gx5=0;gx5<w;gx5+=scala*5){
-    ctx.beginPath();ctx.moveTo(gx5,0);ctx.lineTo(gx5,h);ctx.stroke();
-  }
-  for(var gy5=0;gy5<h;gy5+=scala*5){
-    ctx.beginPath();ctx.moveTo(0,gy5);ctx.lineTo(w,gy5);ctx.stroke();
-  }
+  for(var gx5=s*5;gx5<w;gx5+=s*5){ctx.beginPath();ctx.moveTo(gx5,0);ctx.lineTo(gx5,h);ctx.stroke();}
+  for(var gy5=s*5;gy5<h;gy5+=s*5){ctx.beginPath();ctx.moveTo(0,gy5);ctx.lineTo(w,gy5);ctx.stroke();}
 
+  // ── Bordo ring ──
   ctx.strokeStyle='#2E7D32';
   ctx.lineWidth=3;
   ctx.strokeRect(2,2,w-4,h-4);
 
+  // ── Misure sui bordi ──
+  ctx.fillStyle='#2E7D3280';
+  ctx.font='bold '+Math.max(9,Math.round(s*0.4))+'px DM Sans,sans-serif';
+  ctx.textBaseline='top';
+  for(var mx=5;mx<20;mx+=5) ctx.fillText(mx+'m',mx*s+2,4);
+  ctx.textBaseline='alphabetic';
+  for(var my=5;my<40;my+=5) ctx.fillText(my+'m',4,my*s-2);
+
+  // ── START / FINISH ──
+  ctx.font='bold '+Math.round(s*0.55)+'px DM Sans,sans-serif';
   ctx.fillStyle='#2E7D32';
-  ctx.font='bold '+Math.round(scala*0.4)+'px sans-serif';
-  for(var mx=5;mx<20;mx+=5){
-    ctx.fillText(mx+'m',mx*scala+2,12);
-  }
-  for(var my=5;my<40;my+=5){
-    ctx.fillText(my+'m',4,my*scala+12);
-  }
+  ctx.fillText('START ▶',s*1,s*1.5);
+  ctx.fillText('◀ FINISH',s*12,h-s*0.5);
 
-  ctx.fillStyle='#2E7D32';
-  ctx.font='bold '+Math.round(scala*0.55)+'px sans-serif';
-  ctx.fillText('START ▶',scala*1,scala*1.5);
-  ctx.fillText('◀ FINISH',scala*12,h-scala*0.5);
-
-  var ostDati={
-    S:{colore:'#1565C0',nome:'Salto'},D:{colore:'#0D47A1',nome:'Doppio'},
-    M:{colore:'#795548',nome:'Muro'},P:{colore:'#E65100',nome:'Pneum.'},
-    L:{colore:'#2E7D32',nome:'Lungo'},A:{colore:'#C62828',nome:'A-Frame'},
-    W:{colore:'#F57F17',nome:'Passerella'},B:{colore:'#6A1B9A',nome:'Bascula'},
-    SL:{colore:'#00695C',nome:'Slalom'},T:{colore:'#37474F',nome:'Tunnel'}
-  };
-
-  (window._campoOstacoli||[]).forEach(function(o){
-    var info=ostDati[o.tipo]||{colore:'#333',nome:'?'};
-    var r=scala*0.8;
-
+  // ── Percorso tratteggiato ──
+  var ost=window._campoOstacoli||[];
+  if(ost.length>1){
     ctx.beginPath();
-    ctx.arc(o.x,o.y,r,0,Math.PI*2);
-    ctx.fillStyle=info.colore;
-    ctx.fill();
-
-    ctx.fillStyle='#fff';
-    ctx.font='bold '+Math.round(r*0.9)+'px sans-serif';
-    ctx.textAlign='center';
-    ctx.textBaseline='middle';
-    ctx.fillText(o.num,o.x,o.y);
-
-    ctx.fillStyle=info.colore;
-    ctx.font=Math.round(r*0.5)+'px sans-serif';
-    ctx.fillText(info.nome,o.x,o.y+r+Math.round(r*0.5));
-
-    ctx.textAlign='start';
-    ctx.textBaseline='alphabetic';
-  });
-
-  if(window._campoOstacoli&&window._campoOstacoli.length>1){
-    ctx.beginPath();
-    ctx.strokeStyle='#FF980080';
+    ctx.strokeStyle='rgba(255,152,0,.45)';
     ctx.lineWidth=2;
-    ctx.setLineDash([6,4]);
-    window._campoOstacoli.forEach(function(o,i){
-      if(i===0) ctx.moveTo(o.x,o.y);
-      else ctx.lineTo(o.x,o.y);
-    });
+    ctx.setLineDash([8,5]);
+    ost.forEach(function(o,i){if(i===0)ctx.moveTo(o.x,o.y);else ctx.lineTo(o.x,o.y);});
     ctx.stroke();
     ctx.setLineDash([]);
   }
 
-  // Disegna checkpoint timer
+  // ── Distanze tra ostacoli consecutivi ──
+  if(ost.length>1){
+    ctx.font=Math.max(8,Math.round(s*0.35))+'px DM Sans,sans-serif';
+    ctx.fillStyle='#FF6F00';
+    ctx.textAlign='center';
+    for(var di=1;di<ost.length;di++){
+      var o1=ost[di-1],o2=ost[di];
+      var distM=Math.sqrt(Math.pow((o2.x-o1.x)/s,2)+Math.pow((o2.y-o1.y)/s,2));
+      var mx2=(o1.x+o2.x)/2, my2=(o1.y+o2.y)/2;
+      ctx.fillText(distM.toFixed(1)+'m',mx2,my2-4);
+    }
+    ctx.textAlign='start';
+  }
+
+  // ── DISEGNA OSTACOLI con forme reali ──
+  ost.forEach(function(o){
+    var def=_CAMPO_OST_DEFS.find(function(d){return d.id===o.tipo;})||{colore:'#333'};
+    var rot=(o.rot||0)*Math.PI/180;
+
+    ctx.save();
+    ctx.translate(o.x,o.y);
+    ctx.rotate(rot);
+
+    switch(o.tipo){
+      case 'S': // Salto singolo: barra orizzontale + 2 montanti
+        ctx.fillStyle=def.colore;
+        ctx.fillRect(-s*0.65,-s*0.06,s*1.3,s*0.12); // barra
+        ctx.fillRect(-s*0.65,-s*0.35,s*0.08,s*0.7);  // palo sx
+        ctx.fillRect(s*0.57,-s*0.35,s*0.08,s*0.7);   // palo dx
+        break;
+
+      case 'D': // Doppio: 2 barre parallele
+        ctx.fillStyle=def.colore;
+        ctx.fillRect(-s*0.65,-s*0.2,s*1.3,s*0.1);  // barra alta
+        ctx.fillRect(-s*0.65,s*0.1,s*1.3,s*0.1);    // barra bassa
+        ctx.fillRect(-s*0.65,-s*0.35,s*0.07,s*0.7);
+        ctx.fillRect(s*0.58,-s*0.35,s*0.07,s*0.7);
+        break;
+
+      case 'M': // Muro: rettangolo pieno
+        ctx.fillStyle=def.colore;
+        ctx.fillRect(-s*0.55,-s*0.3,s*1.1,s*0.6);
+        ctx.strokeStyle='#4E342E';
+        ctx.lineWidth=1;
+        ctx.strokeRect(-s*0.55,-s*0.3,s*1.1,s*0.6);
+        // Righe mattone
+        ctx.strokeStyle='#5D4037';
+        ctx.lineWidth=0.5;
+        for(var mr=-0.2;mr<0.3;mr+=0.15){
+          ctx.beginPath();ctx.moveTo(-s*0.55,s*mr);ctx.lineTo(s*0.55,s*mr);ctx.stroke();
+        }
+        break;
+
+      case 'P': // Pneumatico: cerchio con foro
+        ctx.beginPath();
+        ctx.arc(0,0,s*0.4,0,Math.PI*2);
+        ctx.fillStyle=def.colore;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0,0,s*0.22,0,Math.PI*2);
+        ctx.fillStyle='#C8E6C9';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0,0,s*0.4,0,Math.PI*2);
+        ctx.strokeStyle='#BF360C';
+        ctx.lineWidth=2;
+        ctx.stroke();
+        break;
+
+      case 'L': // Lungo: rettangolo basso e largo
+        ctx.fillStyle=def.colore;
+        ctx.fillRect(-s*0.7,-s*0.15,s*1.4,s*0.3);
+        ctx.strokeStyle='#1B5E20';
+        ctx.lineWidth=1;
+        ctx.strokeRect(-s*0.7,-s*0.15,s*1.4,s*0.3);
+        // Segmenti interni
+        var pz=4;
+        for(var lp=1;lp<pz;lp++){
+          var lx=-s*0.7+lp*(s*1.4/pz);
+          ctx.beginPath();ctx.moveTo(lx,-s*0.15);ctx.lineTo(lx,s*0.15);ctx.stroke();
+        }
+        break;
+
+      case 'A': // A-Frame: triangolo/tenda
+        ctx.beginPath();
+        ctx.moveTo(-s*0.6,s*0.35);
+        ctx.lineTo(0,-s*0.4);
+        ctx.lineTo(s*0.6,s*0.35);
+        ctx.closePath();
+        ctx.fillStyle=def.colore;
+        ctx.fill();
+        ctx.strokeStyle='#B71C1C';
+        ctx.lineWidth=1.5;
+        ctx.stroke();
+        // Zone contatto gialle
+        ctx.fillStyle='#FFEB3B';
+        ctx.fillRect(-s*0.6,s*0.2,s*0.25,s*0.15);
+        ctx.fillRect(s*0.35,s*0.2,s*0.25,s*0.15);
+        break;
+
+      case 'W': // Passerella: rettangolo lungo e stretto
+        ctx.fillStyle=def.colore;
+        ctx.fillRect(-s*1.0,-s*0.12,s*2.0,s*0.24);
+        ctx.strokeStyle='#E65100';
+        ctx.lineWidth=1;
+        ctx.strokeRect(-s*1.0,-s*0.12,s*2.0,s*0.24);
+        // Zone contatto
+        ctx.fillStyle='#FFEB3B';
+        ctx.fillRect(-s*1.0,-s*0.12,s*0.35,s*0.24);
+        ctx.fillRect(s*0.65,-s*0.12,s*0.35,s*0.24);
+        break;
+
+      case 'B': // Bascula: asse con perno
+        ctx.fillStyle=def.colore;
+        ctx.fillRect(-s*0.8,-s*0.08,s*1.6,s*0.16);
+        // Perno triangolo sotto
+        ctx.beginPath();
+        ctx.moveTo(-s*0.12,s*0.08);
+        ctx.lineTo(s*0.12,s*0.08);
+        ctx.lineTo(0,s*0.3);
+        ctx.closePath();
+        ctx.fillStyle='#4A148C';
+        ctx.fill();
+        break;
+
+      case 'SL': // Slalom: 6 pali in fila (scala ridotta per stare in griglia)
+        var pali=6;
+        var pDist=s*0.22;
+        var pStart=-(pali-1)*pDist/2;
+        for(var sp=0;sp<pali;sp++){
+          var px=pStart+sp*pDist;
+          ctx.beginPath();
+          ctx.arc(px,0,s*0.06,0,Math.PI*2);
+          ctx.fillStyle=sp%2===0?def.colore:'#AED581';
+          ctx.fill();
+          ctx.strokeStyle='#1B5E20';
+          ctx.lineWidth=0.5;
+          ctx.stroke();
+        }
+        // Linea zig-zag sopra
+        ctx.beginPath();
+        ctx.strokeStyle=def.colore+'80';
+        ctx.lineWidth=1;
+        for(var sz=0;sz<pali;sz++){
+          var szx=pStart+sz*pDist;
+          var szy=(sz%2===0)?-s*0.15:s*0.15;
+          if(sz===0) ctx.moveTo(szx,szy);
+          else ctx.lineTo(szx,szy);
+        }
+        ctx.stroke();
+        break;
+
+      case 'T': // Tunnel: arco curvo
+        ctx.beginPath();
+        ctx.arc(0,0,s*0.5,Math.PI,0,false);
+        ctx.strokeStyle=def.colore;
+        ctx.lineWidth=s*0.25;
+        ctx.stroke();
+        // Bordi chiari
+        ctx.beginPath();
+        ctx.arc(0,0,s*0.5,Math.PI,0,false);
+        ctx.strokeStyle='#78909C';
+        ctx.lineWidth=1;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0,0,s*0.5,Math.PI,0,false);
+        var rInt=s*0.5-s*0.12;
+        ctx.beginPath();
+        ctx.arc(0,0,s*0.38,Math.PI,0,false);
+        ctx.strokeStyle='#B0BEC5';
+        ctx.lineWidth=1;
+        ctx.stroke();
+        break;
+    }
+
+    ctx.restore();
+
+    // ── Numero ostacolo ──
+    ctx.fillStyle='#fff';
+    ctx.strokeStyle='rgba(0,0,0,.6)';
+    ctx.lineWidth=3;
+    ctx.font='bold '+Math.max(10,Math.round(s*0.45))+'px DM Sans,sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.strokeText(o.num,o.x,o.y);
+    ctx.fillText(o.num,o.x,o.y);
+
+    // ── Etichetta sotto ──
+    var defN=_CAMPO_OST_DEFS.find(function(d){return d.id===o.tipo;});
+    if(defN){
+      ctx.fillStyle=defN.colore;
+      ctx.font=Math.max(7,Math.round(s*0.3))+'px DM Sans,sans-serif';
+      ctx.fillText(defN.nome,o.x,o.y+s*0.55);
+    }
+    ctx.textAlign='start';
+    ctx.textBaseline='alphabetic';
+  });
+
+  // ── Checkpoint timer ──
   (window._campoCheckpoints||[]).forEach(function(cp){
-    var r=scala*0.6;
+    var r=s*0.5;
     ctx.beginPath();
     ctx.moveTo(cp.x,cp.y-r);
     ctx.lineTo(cp.x-r*0.8,cp.y+r*0.5);
@@ -12852,21 +13250,19 @@ function _disegnaCampo(){
     ctx.lineWidth=2;
     ctx.stroke();
     ctx.fillStyle='#fff';
-    ctx.font='bold '+Math.round(r*0.7)+'px sans-serif';
+    ctx.font='bold '+Math.max(8,Math.round(r*0.65))+'px DM Sans,sans-serif';
     ctx.textAlign='center';
     ctx.textBaseline='middle';
     ctx.fillText('T'+cp.num,cp.x,cp.y+r*0.1);
     ctx.textAlign='start';
     ctx.textBaseline='alphabetic';
-    ctx.fillStyle='#FF6F00';
-    ctx.font=Math.round(r*0.5)+'px sans-serif';
-    ctx.textAlign='center';
-    ctx.fillText('CP'+cp.num,cp.x,cp.y+r+Math.round(r*0.6));
-    ctx.textAlign='start';
   });
 
+  ctx.restore();
+
+  // ── Contatore ──
   var cnt=document.getElementById('campo-count');
-  if(cnt) cnt.textContent='Ostacoli: '+(window._campoOstacoli||[]).length+'/22';
+  if(cnt) cnt.textContent='Ostacoli: '+ost.length+'/22';
 }
 
 function _selezionaOstacolo(tipo){
@@ -12875,80 +13271,18 @@ function _selezionaOstacolo(tipo){
   if(!toolbar) return;
   var btns=toolbar.querySelectorAll('button');
   btns.forEach(function(b){
-    b.style.borderColor=b.id==='tool-'+(tipo||'move')?'#558B2F':'#ddd';
-    b.style.background=b.id==='tool-'+(tipo||'move')?'#E8F5E9':'#fff';
+    var active=(tipo===null&&b.id==='tool-move')||(tipo&&b.id==='tool-'+tipo);
+    b.style.borderColor=active?'#558B2F':'#ddd';
+    b.style.background=active?'#E8F5E9':'#fff';
   });
   var info=document.getElementById('campo-info');
-  if(info) info.textContent=tipo?'Tap sul campo per piazzare: '+tipo:'Modalità spostamento — tap su ostacolo per eliminare';
-}
-
-function _campoClic(x,y){
-  if(window._campoSelectedTool){
-    // Checkpoint timer
-    if(window._campoSelectedTool==='CP'){
-      window._campoCheckpoints=window._campoCheckpoints||[];
-      window._campoCheckpoints.push({
-        id:'cp_'+Date.now(),
-        x:x,
-        y:y,
-        num:window._campoCheckpoints.length+1
-      });
-      _disegnaCampo();
-      toast('⏱️ Checkpoint '+(window._campoCheckpoints.length)+' piazzato');
-      return;
-    }
-    if((window._campoOstacoli||[]).length>=22){
-      toast('⚠️ Massimo 22 ostacoli per percorso');
-      return;
-    }
-    var tipo=window._campoSelectedTool;
-    var contaTipo=window._campoOstacoli.filter(function(o){return o.tipo===tipo;}).length;
-    if(tipo==='SL'&&contaTipo>=1){toast('⚠️ Max 1 slalom per percorso');return;}
-    if(tipo==='P'&&contaTipo>=1){toast('⚠️ Max 1 pneumatico per percorso');return;}
-    if(tipo==='M'&&contaTipo>=1){toast('⚠️ Max 1 muro per percorso');return;}
-    if(tipo==='T'&&contaTipo>=5){toast('⚠️ Max 5 tunnel per percorso');return;}
-
-    window._campoOstacoli.push({
-      tipo:tipo,
-      x:x,
-      y:y,
-      num:window._campoNextNum||1
-    });
-    window._campoNextNum=(window._campoNextNum||1)+1;
-    _disegnaCampo();
-  } else {
-    var scala=window._campoScala||1;
-    var r=scala*0.8;
-    var trovato=-1;
-    (window._campoOstacoli||[]).forEach(function(o,i){
-      var dist=Math.sqrt((x-o.x)*(x-o.x)+(y-o.y)*(y-o.y));
-      if(dist<r*1.5) trovato=i;
-    });
-    if(trovato>=0){
-      window._campoOstacoli.splice(trovato,1);
-      window._campoOstacoli.forEach(function(o,i){o.num=i+1;});
-      window._campoNextNum=window._campoOstacoli.length+1;
-      _disegnaCampo();
-      toast('🗑️ Ostacolo rimosso');
-    }
-    // Controlla se ha cliccato su un checkpoint
-    if(trovato<0){
-      (window._campoCheckpoints||[]).forEach(function(cp,i){
-        var dist=Math.sqrt((x-cp.x)*(x-cp.x)+(y-cp.y)*(y-cp.y));
-        if(dist<scala*1){
-          window._campoCheckpoints.splice(i,1);
-          window._campoCheckpoints.forEach(function(c,j){c.num=j+1;});
-          _disegnaCampo();
-          toast('⏱️ Checkpoint rimosso');
-          trovato=999;
-        }
-      });
-    }
-  }
+  if(info) info.textContent=tipo
+    ?'Tap per piazzare: '+tipo+' · Trascina per spostare'
+    :'Trascina ostacoli per spostare · Doppio tap = ruota';
 }
 
 function _eliminaUltimo(){
-  if(!window._campoOstacoli||!window._campoOstacoli.length){toast('Nessun ostacolo da rimuovere');return;}
+  if(!window._campoOstacoli||!window._campoOstacoli.length){toast('Nessun ostacolo');return;}
   window._campoOstacoli.pop();
   window._campoNextNum=window._campoOstacoli.length+1;
   _disegnaCampo();
@@ -14579,7 +14913,7 @@ async function salvaFineESalvaApriCarniere(btn){
   }, 600);
 }
 
-async function renderCacciaCarniere(container){
+function renderCacciaCarniere(container){
   container.innerHTML =
     '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(201,169,97,.1)">'
     +'<div style="display:flex;align-items:center;justify-content:space-between">'
@@ -14622,24 +14956,8 @@ async function renderCacciaCarniere(container){
   if(!_currentUser) return;
 
   try {
-    // Usa cache se già caricata (evita ri-query ad ogni tab switch)
-    var _lista;
-    if(_carniereListaGlobale && _carniereListaGlobale.length > 0){
-      _lista = _carniereListaGlobale;
-    } else {
-      // Prima volta: carica da Supabase
-      _lista = [];
-      var res = await _supabase.from('caccia_carniere')
-        .select('*').eq('user_id',_currentUser.id)
-        .order('data',{ascending:false});
-      if(res.error){
-        toast('⚠️ Errore carniere: '+res.error.message);
-      } else {
-        _lista = res.data || [];
-      }
-      window._cacciaCarniereList = _lista;
-      _carniereListaGlobale = _lista;
-    }
+    var _lista = window._cacciaCarniereList || [];
+    _carniereListaGlobale = _lista;
     _carniereFiltoAttivo = 'Tutte';
 
     // Aggiorna stats totali
@@ -15108,7 +15426,7 @@ async function apriMappaSalvata(uscitaId){
   _mostraMappa();
 }
 
-async function renderCacciaDiario(container){
+function renderCacciaDiario(container){
   container.innerHTML =
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#2E7D32">📖 Diario</div>'
@@ -15171,7 +15489,7 @@ async function renderCacciaDiario(container){
   }
 }
 
-async function renderCacciaCani(container){
+function renderCacciaCani(container){
   container.innerHTML =
     '<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(46,125,50,.08)">'
     +'<div style="display:flex;align-items:center;justify-content:space-between">'
@@ -15393,7 +15711,7 @@ async function aggiornaCaneC(id, btn){
   }).catch(function(e){ console.warn('[caccia-cani]',e.message); });
 }
 
-async function renderCacciaProve(container){
+function renderCacciaProve(container){
   var _caniList = [];
   var _opzioniCani = '<option value="">— nessun cane registrato —</option>';
 
@@ -21571,7 +21889,7 @@ function sendChat(){
 </div>
 
 <!-- ══ MODAL SELEZIONE MODALITÀ ══ -->
-<div id="modal-modalita" class="overlay" style="display:none;z-index:9996">
+<div id="modal-modalita" class="overlay" style="display:none;z-index:10500">
   <div class="modal" style="max-width:420px;padding:32px 24px;text-align:center">
     <img src="logo.jpeg" style="width:80px;height:80px;border-radius:20px;object-fit:cover;box-shadow:0 8px 24px rgba(201,169,97,.4);margin-bottom:20px" onerror="this.style.display='none'"/>
     <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#0D47A1;margin-bottom:8px">
