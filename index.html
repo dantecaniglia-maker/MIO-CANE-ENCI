@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.74';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.75';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1245,6 +1245,16 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
             <div style="text-align:center;padding:20px;color:#9ab0cc;font-size:13px">Caricamento palmarès...</div>
           </div>
         </div>
+      </div>
+
+      <!-- PONTI MODALITÀ -->
+      <div onclick="scegliModalita('sport')" style="margin:0 0 12px;padding:16px;background:linear-gradient(135deg,#558B2F,#33691E);border-radius:16px;cursor:pointer">
+        <div style="color:#fff;font-weight:700;font-size:15px">🏋️ Sport & Agility</div>
+        <div style="color:rgba(255,255,255,.8);font-size:12px;margin-top:4px">I tuoi cani da show possono eccellere anche in agility, IGP e obedience!</div>
+      </div>
+      <div onclick="scegliModalita('caccia')" style="margin:0 0 16px;padding:16px;background:linear-gradient(135deg,#2E7D32,#1B5E20);border-radius:16px;cursor:pointer">
+        <div style="color:#fff;font-weight:700;font-size:15px">🐕‍🦺 Caccia & Tartufo</div>
+        <div style="color:rgba(255,255,255,.8);font-size:12px;margin-top:4px">Gestisci uscite GPS, carniere e prove di lavoro per i tuoi cani da caccia</div>
       </div>
 
       <!-- Riga info / quick stats -->
@@ -5241,8 +5251,10 @@ function deleteCurrent(){
     selectedId=null;hide('detail');renderSidebar();
     // DELETE su Supabase in background
     if(_currentUser && caneDaEliminare && caneDaEliminare.id && (caneDaEliminare.id+'').indexOf('tmp_') < 0){
+      console.log('[AUDIT] DELETE cani', caneDaEliminare.id);
       _supabase.from('cani').delete().eq('id', caneDaEliminare.id).eq('user_id', _currentUser.id).then(function(res){
         if(res.error) console.warn('[allevatore] delete cane Supabase:', res.error.message);
+        else console.log('[AUDIT] DELETE cani OK');
         else console.log('[allevatore] cane eliminato da Supabase:', caneDaEliminare.id);
       });
     }
@@ -9402,6 +9414,7 @@ function salvaBiometriaMisure(btn){
 
   var caneId=window._currentDogId||selectedId||null;
   if(!caneId) caneId='al_volo_'+Date.now();
+  console.log('[AUDIT] salvaBiometriaMisure START, caneId:', caneId);
   var m={};
   ['lunghezza_testa','larghezza_testa','lunghezza_cranio','lunghezza_muso',
    'altezza_garrese','lunghezza_tronco','perimetro_toracico','altezza_torace','larghezza_torace',
@@ -9437,6 +9450,7 @@ function salvaBiometriaMisure(btn){
   Object.keys(m).forEach(function(k){record[k]=m[k];});
 
   _biometriaMisurazioni.push(record);
+  console.log('[AUDIT] salvaBiometriaMisure OK, tot:', _biometriaMisurazioni.length);
   _salvaBiometriaLocale();
   toast('✅ Misurazioni salvate! Vai su "Indici" per vedere i risultati.');
   window._biometriaTab='indici';
@@ -9689,7 +9703,8 @@ function _eliminaBiometria(id){
   var _inStr=!!document.getElementById('panel-biometria-strumento');
   renderBiometria(_inStr?'panel-biometria-strumento':'panel-biometria');
   if(id&&(id+'').indexOf('tmp_')<0&&_currentUser){
-    _supabase.from('biometria_misurazioni').delete().eq('id',id).eq('user_id',_currentUser.id).then(function(){});
+    console.log('[AUDIT] DELETE biometria_misurazioni', id);
+    _supabase.from('biometria_misurazioni').delete().eq('id',id).eq('user_id',_currentUser.id).then(function(){console.log('[AUDIT] DELETE biometria_misurazioni OK');});
   }
 }
 
@@ -10019,6 +10034,10 @@ function applicaModalita(mod){
         +'</div>'
       +'</div>'
       +'<div id="sport-tab-content" style="padding:16px"></div>'
+      +'<div onclick="scegliModalita(\'allevatore\')" style="margin:16px;padding:16px;background:linear-gradient(135deg,#0D47A1,#1565C0);border-radius:16px;cursor:pointer">'
+        +'<div style="color:#fff;font-weight:700;font-size:15px">🏆 Allevatore</div>'
+        +'<div style="color:rgba(255,255,255,.8);font-size:12px;margin-top:4px">Gestisci pedigree, breeding planner e palmarès del tuo allevamento</div>'
+      +'</div>'
       +'<div style="text-align:center;padding:12px 16px 20px;font-size:10px;color:#BF360C">'
       +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong>'
       +' · Breed<span style="color:#C9A961">Ped</span> v'+APP_VERSION
@@ -10395,7 +10414,11 @@ function renderCacciaHome(container){
     }
 
     container.innerHTML += '<div style="text-align:center;padding:20px 0 8px;font-size:10px;color:#9ab0cc">'
-    +'<img src="logo.jpeg" style="width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:4px" onerror="this.style.display=\'none\'"/>Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>';
+    +'<img src="logo.jpeg" style="width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:4px" onerror="this.style.display=\'none\'"/>Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>'
+    +'<div onclick="scegliModalita(\'famiglia\')" style="margin:16px;padding:16px;background:linear-gradient(135deg,#1565C0,#42A5F5);border-radius:16px;cursor:pointer">'
+      +'<div style="color:#fff;font-weight:700;font-size:15px">🏠 Famiglia</div>'
+      +'<div style="color:rgba(255,255,255,.8);font-size:12px;margin-top:4px">Gestisci salute quotidiana, passeggiate e diario del tuo cane</div>'
+    +'</div>';
 
   // Mostra subito da localStorage
   var _stagione = new Date().getFullYear();
@@ -11741,7 +11764,8 @@ function eliminaGaraSport(provaId){
   switchSportTab('sport-gare');
   // Supabase background
   if(provaId&&provaId.indexOf('tmp_')<0&&_currentUser){
-    _supabase.from('sport_prove').delete().eq('id',provaId).eq('user_id',_currentUser.id).then(function(){});
+    console.log('[AUDIT] DELETE sport_prove', provaId);
+    _supabase.from('sport_prove').delete().eq('id',provaId).eq('user_id',_currentUser.id).then(function(){console.log('[AUDIT] DELETE sport_prove OK');});
   }
 }
 
@@ -11894,6 +11918,7 @@ function salvaAllenamentoSport(btn){
   if(!disc||!data){toast('Compila disciplina e data');return;}
   if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
   btn.disabled=true;btn.textContent='⏳';
+  console.log('[AUDIT] salvaSportAllenamento START');
 
   var caneId=(document.getElementById('na-cane')||{}).value||null;
   var caneNome='';
@@ -11915,6 +11940,7 @@ function salvaAllenamentoSport(btn){
 
   _sportAllenamenti.unshift(allen);
   _salvaSportLocale();
+  console.log('[AUDIT] salvaSportAllenamento OK');
   var ov=document.getElementById('ov-nuovo-allen-sport');
   if(ov) ov.remove();
   toast('✅ Allenamento registrato!');
@@ -11940,7 +11966,8 @@ function eliminaAllenamentoSport(allenId){
   toast('🗑️ Allenamento eliminato');
   switchSportTab('sport-diario');
   if(allenId&&allenId.indexOf('tmp_')<0&&_currentUser){
-    _supabase.from('sport_allenamenti').delete().eq('id',allenId).eq('user_id',_currentUser.id).then(function(){});
+    console.log('[AUDIT] DELETE sport_allenamenti', allenId);
+    _supabase.from('sport_allenamenti').delete().eq('id',allenId).eq('user_id',_currentUser.id).then(function(){console.log('[AUDIT] DELETE sport_allenamenti OK');});
   }
 }
 
@@ -12763,7 +12790,15 @@ var _CAMPO_OST_DEFS=[
   {id:'T',nome:'Tunnel',ico:'🕳️',colore:'#37474F'}
 ];
 
+function caricaStoricoTempi(){
+  try{
+    var raw=localStorage.getItem('bp_agility_storico_tempi');
+    window._campoStoricoTempi=raw?JSON.parse(raw):[];
+  }catch(e){window._campoStoricoTempi=[];}
+}
+
 function apriCampoAgility2D(){
+  caricaStoricoTempi();
   var taglia=window._agilityTaglia||'L';
   var tagliaObj=AGILITY_TAGLIE.find(function(t){return t.id===taglia;})||AGILITY_TAGLIE[3];
 
@@ -13461,6 +13496,10 @@ function _garaStop(){
   }
 
   h+='</div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+    +'<label style="color:rgba(255,255,255,.6);font-size:12px;white-space:nowrap">Penalità (s):</label>'
+    +'<input id="gara-penalita" type="number" min="0" step="0.5" value="0" placeholder="0" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:14px;text-align:center;background:rgba(255,255,255,.15);color:#fff"/>'
+    +'</div>'
     +'<div style="display:flex;gap:8px">'
     +'<button onclick="_salvaGaraConSplit()" style="flex:1;background:#FF6F00;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">💾 Salva tempo</button>'
     +'<button onclick="_garaReset()" style="flex:1;background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">🔄 Riprova</button>'
@@ -13494,8 +13533,40 @@ function _chiudiGaraCampo(){
 
 function _salvaGaraConSplit(){
   if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
+  console.log('[AUDIT] salvaGara START');
   var totale=window._garaSplits.length>0?window._garaSplits[window._garaSplits.length-1].total:0;
+  var penalita=parseFloat((document.getElementById('gara-penalita')||{}).value)||0;
+  var tempoNetto=parseFloat((totale+penalita).toFixed(3));
 
+  // Percorso caricato
+  var percorsoNome='';
+  var sct=null;
+  if(window._percorsoCaricatoIdx!==undefined&&window._percorsoCaricatoIdx!==null){
+    try{
+      var _percorsiTmp=JSON.parse(localStorage.getItem('bp_agility_percorsi_v1')||'[]');
+      var _percTmp=_percorsiTmp[window._percorsoCaricatoIdx];
+      if(_percTmp){percorsoNome=_percTmp.nome||'';sct=_percTmp.sct||null;}
+    }catch(e){}
+  }
+
+  // Record strutturato per storico tempi
+  var recordStorico={
+    data:new Date().toISOString().slice(0,10),
+    tempo_totale:parseFloat(totale.toFixed(3)),
+    penalita:penalita,
+    tempo_netto:tempoNetto,
+    split:window._garaSplits.map(function(s,i){return {checkpoint:i+1,tempo:parseFloat(s.total.toFixed(3))};}),
+    percorso_nome:percorsoNome,
+    taglia:window._agilityTaglia||'L',
+    sct:sct
+  };
+
+  // Salva in window._campoStoricoTempi e localStorage
+  window._campoStoricoTempi=window._campoStoricoTempi||[];
+  window._campoStoricoTempi.push(recordStorico);
+  try{localStorage.setItem('bp_agility_storico_tempi',JSON.stringify(window._campoStoricoTempi));}catch(e){}
+
+  // Record per diario sport (testo leggibile)
   var splitText=window._garaSplits.map(function(s,i){
     return 'CP'+(i+1)+': '+s.total.toFixed(3)+'s (parz: '+s.partial.toFixed(3)+'s)';
   }).join(' | ');
@@ -13505,34 +13576,38 @@ function _salvaGaraConSplit(){
     user_id:_currentUser.id,
     cane_id:null,cane_nome:'',
     disciplina:'agility',
-    tipo:'Gara campo 2D',
-    data:new Date().toISOString().slice(0,10),
+    tipo:'Gara campo 2D'+(percorsoNome?' — '+percorsoNome:''),
+    data:recordStorico.data,
     durata_minuti:0,
-    note:'🏁 Tempo: '+totale.toFixed(3)+'s | '+splitText
-      +' | Ostacoli: '+(window._campoOstacoli||[]).length
-      +' | Checkpoint: '+(window._campoCheckpoints||[]).length,
+    note:'🏁 Tempo: '+totale.toFixed(3)+'s | Pen: '+penalita+'s | Netto: '+tempoNetto+'s'
+      +(sct?' | SCT: '+sct+'s':'')
+      +' | '+splitText
+      +' | Ostacoli: '+(window._campoOstacoli||[]).length,
     voto:null,
     created_at:new Date().toISOString()
   };
 
   _sportAllenamenti.unshift(allen);
   _salvaSportLocale();
-  toast('✅ Gara salvata nel diario!');
+  console.log('[AUDIT] salvaGara OK');
+  toast('✅ Gara salvata! Tempo netto: '+tempoNetto+'s'+(sct?(tempoNetto<=sct?' 🟢 Pulita!':' 🔴 Fuori SCT'):''));
   _checkNuoviBadge();
 
-  // Salva tempo nel percorso se caricato
+  // Salva tempo strutturato nel percorso (compatibilità storica)
   if(window._percorsoCaricatoIdx!==undefined&&window._percorsoCaricatoIdx!==null){
     try{
-      var _percorsi=JSON.parse(localStorage.getItem('bp_agility_percorsi_v1')||'[]');
-      var _perc=_percorsi[window._percorsoCaricatoIdx];
-      if(_perc){
-        _perc.tempi=_perc.tempi||[];
-        _perc.tempi.push({
+      var _percorsi2=JSON.parse(localStorage.getItem('bp_agility_percorsi_v1')||'[]');
+      var _perc2=_percorsi2[window._percorsoCaricatoIdx];
+      if(_perc2){
+        _perc2.tempi=_perc2.tempi||[];
+        _perc2.tempi.push({
           data:new Date().toISOString(),
           totale:totale,
+          penalita:penalita,
+          tempo_netto:tempoNetto,
           splits:JSON.parse(JSON.stringify(window._garaSplits))
         });
-        localStorage.setItem('bp_agility_percorsi_v1',JSON.stringify(_percorsi));
+        localStorage.setItem('bp_agility_percorsi_v1',JSON.stringify(_percorsi2));
       }
     }catch(e){}
   }
@@ -13651,14 +13726,76 @@ function _eliminaPercorso(idx){
 function _mostraStoricoTempi(percorso){
   var info=document.getElementById('campo-info');
   if(!info) return;
-  var tempi=percorso.tempi||[];
-  if(!tempi.length){
-    info.textContent='Percorso "'+percorso.nome+'" caricato. Nessun tempo registrato.';
+
+  // Usa _campoStoricoTempi filtrato per percorso (se ha nome), altrimenti usa percorso.tempi legacy
+  var tempiStorico=(window._campoStoricoTempi||[]).filter(function(t){
+    return percorso.nome?t.percorso_nome===percorso.nome:true;
+  });
+  var tempiLegacy=(percorso.tempi||[]).map(function(t){
+    return {data:t.data?t.data.slice(0,10):'',tempo_totale:t.totale||0,penalita:t.penalita||0,
+      tempo_netto:t.tempo_netto||(t.totale||0),sct:percorso.sct||null};
+  });
+  // Unifica preferendo strutturato
+  var tutti=tempiStorico.length?tempiStorico:tempiLegacy;
+  // Ordina dal più recente
+  tutti=tutti.slice().sort(function(a,b){return (b.data||'').localeCompare(a.data||'');});
+
+  if(!tutti.length){
+    info.innerHTML='📂 <strong>'+esc(percorso.nome||'Percorso')+'</strong> caricato. Nessun tempo registrato.';
     return;
   }
-  var best=Math.min.apply(null,tempi.map(function(t){return t.totale;}));
-  var ultimo=tempi[tempi.length-1];
-  info.innerHTML='📂 <strong>'+esc(percorso.nome)+'</strong> · 🏆 Best: <strong>'+best.toFixed(3)+'s</strong> · Ultimo: '+ultimo.totale.toFixed(3)+'s · '+tempi.length+' tentativi';
+
+  var netti=tutti.map(function(t){return t.tempo_netto||t.tempo_totale;});
+  var best=Math.min.apply(null,netti);
+  var media=netti.reduce(function(a,b){return a+b;},0)/netti.length;
+  var trend='';
+  if(tutti.length>=2){
+    var ultimi=netti.slice(0,Math.min(3,netti.length));
+    var primiN=netti.slice(Math.max(0,netti.length-3));
+    var mediaUltimi=ultimi.reduce(function(a,b){return a+b;},0)/ultimi.length;
+    var mediaPrimi=primiN.reduce(function(a,b){return a+b;},0)/primiN.length;
+    trend=mediaUltimi<mediaPrimi?'📈 In miglioramento':'📉 In peggioramento';
+  }
+
+  var h='<div style="padding:12px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+    +'<div style="font-weight:700;font-size:14px;color:#1a1a3a">📂 '+esc(percorso.nome||'Storico')+'</div>'
+    +(trend?'<div style="font-size:11px;color:#6B8BB0">'+trend+'</div>':'')
+    +'</div>';
+
+  if(tutti.length>=2){
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">'
+      +'<div style="background:#E8F5E9;border-radius:8px;padding:8px;text-align:center">'
+      +'<div style="font-size:16px;font-weight:800;color:#2E7D32">'+best.toFixed(3)+'s</div>'
+      +'<div style="font-size:9px;color:#6B8BB0">Best</div></div>'
+      +'<div style="background:#EEF3FB;border-radius:8px;padding:8px;text-align:center">'
+      +'<div style="font-size:16px;font-weight:800;color:#1565C0">'+media.toFixed(3)+'s</div>'
+      +'<div style="font-size:9px;color:#6B8BB0">Media</div></div>'
+      +'<div style="background:#FFF8E1;border-radius:8px;padding:8px;text-align:center">'
+      +'<div style="font-size:16px;font-weight:800;color:#F57F17">'+tutti.length+'</div>'
+      +'<div style="font-size:9px;color:#6B8BB0">Tentativi</div></div>'
+      +'</div>';
+  }
+
+  h+='<div style="max-height:220px;overflow-y:auto">';
+  tutti.forEach(function(t,i){
+    var netto=t.tempo_netto||t.tempo_totale;
+    var sct=t.sct||percorso.sct||null;
+    var sottSCT=sct&&netto<=sct;
+    var diffSCT=sct?(netto-sct):null;
+    var isBest=Math.abs(netto-best)<0.001;
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;margin-bottom:4px;background:'+(isBest?'#E8F5E9':'#F8FAFF')+';border:1px solid '+(isBest?'#A5D6A7':'#DDEAFF')+'">'
+      +'<div style="font-size:11px;color:#9ab0cc;flex-shrink:0;min-width:70px">'+esc(t.data||'')+(isBest?' 🏆':'')+'</div>'
+      +'<div style="flex:1">'
+      +'<span style="font-weight:800;font-size:14px;color:'+(sottSCT?'#2E7D32':'#C62828')+'">'+netto.toFixed(3)+'s</span>'
+      +(t.penalita?'<span style="font-size:10px;color:#FF9800;margin-left:4px">+'+t.penalita+'s pen</span>':'')
+      +'</div>'
+      +(diffSCT!==null?'<div style="font-size:10px;font-weight:700;color:'+(diffSCT<=0?'#2E7D32':'#C62828')+'">'+(diffSCT<=0?'-'+Math.abs(diffSCT).toFixed(1):'+'+diffSCT.toFixed(1))+'s SCT</div>':'')
+      +'</div>';
+  });
+  h+='</div></div>';
+
+  info.innerHTML=h;
 }
 
 /* ══════════════════════════════════════
@@ -15202,7 +15339,7 @@ async function eliminaCarniere(id){
   _carniereListaGlobale = _carniereListaGlobale.filter(function(r){ return r.id !== id; });
   window._cacciaCarniereList = _carniereListaGlobale;
   _salvaCacciaLocale();
-  if(_currentUser) _supabase.from('caccia_carniere').delete().eq('id',id).then(function(){}).catch(function(){});
+  if(_currentUser){console.log('[AUDIT] DELETE caccia_carniere', id);_supabase.from('caccia_carniere').delete().eq('id',id).then(function(){console.log('[AUDIT] DELETE caccia_carniere OK');}).catch(function(){});}
   toast('🗑️ Eliminato');
   var _tc = document.getElementById('caccia-tab-content');
   if(_tc) renderCacciaCarniere(_tc);
@@ -15629,7 +15766,7 @@ async function salvaCaneC(btn){
 
 async function eliminaCaneC(id){
   if(!confirm('Eliminare questo cane? Anche le prove associate verranno scollegate.')) return;
-  if(_currentUser) _supabase.from('caccia_cani').delete().eq('id',id).then(function(){}).catch(function(){});
+  if(_currentUser){console.log('[AUDIT] DELETE caccia_cani', id);_supabase.from('caccia_cani').delete().eq('id',id).then(function(){console.log('[AUDIT] DELETE caccia_cani OK');}).catch(function(){});}
   toast('🗑️ Cane eliminato');
   var _tc=document.getElementById('caccia-tab-content');
   if(_tc) renderCacciaCani(_tc);
@@ -16036,7 +16173,7 @@ async function salvaProva(btn){
 
 async function eliminaProva(id){
   if(!confirm('Eliminare questa prova?')) return;
-  if(_currentUser) _supabase.from('caccia_prove').delete().eq('id',id).then(function(){}).catch(function(){});
+  if(_currentUser){console.log('[AUDIT] DELETE caccia_prove', id);_supabase.from('caccia_prove').delete().eq('id',id).then(function(){console.log('[AUDIT] DELETE caccia_prove OK');}).catch(function(){});}
   window._cacciaProveList = (window._cacciaProveList || []).filter(function(p){return p.id!==id;});
   _salvaCacciaLocale();
   toast('🗑️ Prova eliminata');
@@ -18009,8 +18146,10 @@ async function eliminaCompitoAdmin(compitoId, btn){
   btn.closest('[style*=fixed]').remove();
   switchFamTab('compiti');
   toast('🗑 Compito eliminato');
+  console.log('[AUDIT] DELETE famiglia_compiti', compitoId);
   _supabase.from('famiglia_compiti').delete().eq('id', compitoId).then(function(_del){
     if(_del.error) toast('⚠️ Sync: '+_del.error.message);
+    else console.log('[AUDIT] DELETE famiglia_compiti OK');
   }).catch(function(e){ console.warn('[compiti]',e.message); });
 }
 
