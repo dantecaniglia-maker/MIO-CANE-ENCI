@@ -9264,6 +9264,60 @@ function _caricaBiometriaLocale(){
   }catch(e){return false;}
 }
 
+/* ══ BIOMETRIA DA STRUMENTI PROFESSIONALI ══ */
+function apriStrumentoBiometria(){
+  var ov=document.createElement('div');
+  ov.id='ov-biometria-strumento';
+  ov.style.cssText='position:fixed;inset:0;z-index:10100;background:#F4F7FE;overflow-y:auto';
+
+  var listaCani=cani||[];
+  var listaHtml='';
+  listaCani.forEach(function(c){
+    var nome=c.nome||c.dati&&c.dati.nome||'Senza nome';
+    var razza=c.razza||c.dati&&c.dati.razza||'';
+    var sesso=c.sesso||c.dati&&c.dati.sesso||'';
+    var sessoIco=sesso==='M'?'♂':'♀';
+    listaHtml+='<div onclick="window._currentDogId=\''+c.id+'\';window._biometriaTab=\'misure\';_mostraBiometriaStrumento()" '
+      +'style="display:flex;align-items:center;gap:12px;padding:14px;background:#fff;border-radius:12px;margin-bottom:8px;cursor:pointer;border:1.5px solid #DDEAFF;transition:all .15s" '
+      +'onmouseover="this.style.borderColor=\'#1565C0\'" onmouseout="this.style.borderColor=\'#DDEAFF\'">'
+      +'<div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#1565C0,#0D47A1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;flex-shrink:0">'+sessoIco+'</div>'
+      +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px;color:#1a1a3a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(nome)+'</div>'
+      +'<div style="font-size:12px;color:#6B8BB0">'+esc(razza)+'</div></div>'
+      +'<span style="color:#BFCFE8;font-size:18px">›</span></div>';
+  });
+
+  ov.innerHTML=
+    '<div style="background:linear-gradient(135deg,#0D47A1,#1565C0);padding:16px;display:flex;align-items:center;gap:10px">'
+    +'<button onclick="document.getElementById(\'ov-biometria-strumento\').remove()" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;color:#fff;font-weight:700;font-size:16px">‹</button>'
+    +'<div style="color:#fff;font-weight:700;font-size:16px">📐 Biometria professionale</div></div>'
+    +'<div style="padding:16px">'
+    +'<div style="font-size:13px;color:#6B8BB0;margin-bottom:14px">Seleziona un cane per le misurazioni oppure misura al volo.</div>'
+    +'<div onclick="window._currentDogId=null;window._biometriaTab=\'misure\';_mostraBiometriaStrumento()" '
+    +'style="display:flex;align-items:center;gap:12px;padding:14px;background:linear-gradient(135deg,#FFF3E0,#FBE9E7);border-radius:12px;margin-bottom:14px;cursor:pointer;border:2px solid #FFCCBC">'
+    +'<div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#E65100,#BF360C);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0">📏</div>'
+    +'<div><div style="font-weight:700;font-size:14px;color:#E65100">Misura al volo</div>'
+    +'<div style="font-size:12px;color:#6B8BB0">Senza cane associato — registra dopo</div></div></div>'
+    +(listaCani.length
+      ?'<div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">I tuoi cani ('+listaCani.length+')</div>'+listaHtml
+      :'<div style="text-align:center;padding:20px;color:#9ab0cc;font-size:13px">Nessun cane registrato. Usa "Misura al volo".</div>')
+    +'</div>';
+
+  document.body.appendChild(ov);
+}
+
+function _mostraBiometriaStrumento(){
+  var ov=document.getElementById('ov-biometria-strumento');
+  if(!ov) return;
+  // Sostituisci il contenuto con header + pannello biometria
+  ov.innerHTML=
+    '<div style="background:linear-gradient(135deg,#0D47A1,#1565C0);padding:16px;display:flex;align-items:center;gap:10px">'
+    +'<button onclick="document.getElementById(\'ov-biometria-strumento\').remove();apriStrumentoBiometria()" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;color:#fff;font-weight:700;font-size:16px">‹</button>'
+    +'<div style="color:#fff;font-weight:700;font-size:16px">📐 '+(window._currentDogId?'Biometria cane':'Misura al volo')+'</div></div>'
+    +'<div id="panel-biometria-strumento"></div>';
+  _caricaBiometriaLocale();
+  renderBiometria();
+}
+
 function renderBiometria(){
   var container=document.getElementById('panel-biometria-strumento')||document.getElementById('panel-biometria');
   if(!container) return;
@@ -9292,72 +9346,6 @@ function renderBiometria(){
 
   html+='</div>';
   container.innerHTML=html;
-}
-
-function apriStrumentoBiometria(){
-  var existing=document.getElementById('ov-strumento-biometria');
-  if(existing) existing.remove();
-
-  var ov=document.createElement('div');
-  ov.id='ov-strumento-biometria';
-  ov.style.cssText='position:fixed;inset:0;z-index:10100;background:#F4F7FE;overflow-y:auto;display:flex;flex-direction:column';
-
-  var listaHtml='<div style="padding:16px">'
-    +'<button onclick="_selezionaCanePerBiometria(null)" style="width:100%;background:#fff;border:2px dashed #BBDEFB;border-radius:14px;padding:14px;font-size:13px;font-weight:700;color:#1565C0;cursor:pointer;margin-bottom:14px">📏 Misura al volo (senza cane)</button>';
-
-  var elenco=cani||[];
-  if(elenco.length){
-    listaHtml+='<div style="font-size:11px;font-weight:700;color:#6B8BB0;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">I tuoi cani</div>';
-    elenco.forEach(function(c){
-      var av=c.foto?'<img src="'+c.foto+'" style="width:100%;height:100%;object-fit:cover;border-radius:11px" onerror="this.style.display=\'none\'"/>':'<span style="font-size:22px">🐕</span>';
-      listaHtml+='<div onclick="_selezionaCanePerBiometria(\''+c.id+'\')" style="display:flex;align-items:center;gap:12px;padding:12px;background:#fff;border-radius:12px;border:1.5px solid #BBDEFB;margin-bottom:8px;cursor:pointer">'
-        +'<div style="width:44px;height:44px;border-radius:12px;background:#EEF3FB;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">'+av+'</div>'
-        +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px;color:#1a1a3a">'+esc(c.nome||'Senza nome')+'</div>'
-        +'<div style="font-size:11px;color:#6B8BB0">'+esc(c.razza||'')+'</div></div>'
-        +'<span style="color:#BFCFE8;font-size:18px">›</span></div>';
-    });
-  } else {
-    listaHtml+='<div style="text-align:center;padding:30px;color:#6B8BB0;font-size:13px">Nessun cane registrato</div>';
-  }
-  listaHtml+='</div>';
-
-  ov.innerHTML=
-    // Header
-    '<div style="background:linear-gradient(135deg,#0D47A1,#1a237e);padding:16px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0">'
-      +'<button onclick="document.getElementById(\'ov-strumento-biometria\').remove()" style="background:rgba(255,255,255,.15);border:none;border-radius:10px;padding:8px 12px;color:#fff;font-size:18px;font-weight:700;cursor:pointer">‹</button>'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#fff">📐 Biometria professionale</div>'
-    +'</div>'
-    // Lista cani
-    +'<div id="bio-strumento-lista">'+listaHtml+'</div>'
-    // Sezione biometria (header back + container render)
-    +'<div id="bio-strumento-bio" style="display:none;flex:1;display:none">'
-      +'<div style="padding:10px 16px;background:#fff;border-bottom:1px solid #DDEAFF;display:flex;align-items:center;gap:8px;flex-shrink:0">'
-        +'<button onclick="document.getElementById(\'bio-strumento-lista\').style.display=\'block\';document.getElementById(\'bio-strumento-bio\').style.display=\'none\'" style="background:#EEF3FB;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#0D47A1;cursor:pointer">‹ Cani</button>'
-        +'<span id="bio-strumento-nome" style="font-size:13px;font-weight:700;color:#1565C0"></span>'
-      +'</div>'
-      +'<div id="panel-biometria-strumento"></div>'
-    +'</div>';
-
-  document.body.appendChild(ov);
-}
-
-function _selezionaCanePerBiometria(caneId){
-  window._currentDogId=caneId||null;
-  window._biometriaTab='misure';
-  var lista=document.getElementById('bio-strumento-lista');
-  var bio=document.getElementById('bio-strumento-bio');
-  var nomeEl=document.getElementById('bio-strumento-nome');
-  if(lista) lista.style.display='none';
-  if(bio) bio.style.display='flex';
-  if(nomeEl){
-    if(caneId){
-      var c=(cani||[]).find(function(x){return String(x.id)===String(caneId);});
-      nomeEl.textContent=c?esc(c.nome||'Cane'):'';
-    } else {
-      nomeEl.textContent='Misura al volo';
-    }
-  }
-  renderBiometria();
 }
 
 function _renderBiometriaMisure(ultima){
@@ -9772,14 +9760,15 @@ function getModalita(){
 function scegliModalita(mod){
   localStorage.setItem(_modalitaKey, mod);
   g('modal-modalita').style.display = 'none';
+  // Pulizia overlay fantasma prima di cambiare modalità
+  ['ov-campo-agility','ov-gara-campo','ov-carica-percorso','ov-analisi-video',
+   'ov-timer-allenamento','ov-timer-corsa','ov-timer-soccorso','ov-timer-pastore',
+   'ov-biometria-strumento'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.remove();
+  });
   if(_currentUser){
     _supabase.from('profili').update({modalita: mod}).eq('id', _currentUser.id).then(function(){});
   }
-  // Rimuovi overlay fantasma
-  ['ov-campo-agility','ov-gara-campo','ov-carica-percorso','ov-analisi-video',
-   'ov-timer-allenamento','ov-timer-corsa','ov-timer-soccorso','ov-timer-pastore'].forEach(function(id){
-    var el=document.getElementById(id); if(el) el.remove();
-  });
   applicaModalita(mod);
   var nomi={allevatore:'Allevatore',famiglia:'Famiglia',caccia:'Caccia & Tartufo',sport:'Sport & Agility'};
   toast('✅ Modalità ' + (nomi[mod]||mod) + ' attivata!');
@@ -9796,15 +9785,17 @@ function applicaModalita(mod){
   var oldBanner = g('famiglia-coming-soon');
   if(oldBanner) oldBanner.style.display = 'none';
 
-  if(mod==='allevatore'){
-    var _hf=g('home-famiglia'); if(_hf) _hf.style.display='none';
-    var _hc=g('home-caccia'); if(_hc) _hc.style.display='none';
-    var _hs=g('home-sport'); if(_hs) _hs.style.display='none';
-    var _fbn=g('fam-bottom-nav'); if(_fbn) _fbn.style.display='none';
-    var _cbn=g('caccia-bottom-nav'); if(_cbn) _cbn.style.display='none';
-    var _sbn=g('sport-bottom-nav'); if(_sbn) _sbn.style.display='none';
+  // ── Caso ALLEVATORE esplicito ──
+  if(mod === 'allevatore'){
+    var _hf0=g('home-famiglia'); if(_hf0) _hf0.style.display='none';
+    var _hc0=g('home-caccia'); if(_hc0) _hc0.style.display='none';
+    var _hs0=g('home-sport'); if(_hs0) _hs0.style.display='none';
+    var _fbn0=g('fam-bottom-nav'); if(_fbn0) _fbn0.style.display='none';
+    var _cbn0=g('caccia-bottom-nav'); if(_cbn0) _cbn0.style.display='none';
+    var _sbn0=g('sport-bottom-nav'); if(_sbn0) _sbn0.style.display='none';
     if(g('bottom-nav')) g('bottom-nav').classList.remove('fam-hidden');
-    if(_pollingInterval){clearInterval(_pollingInterval);_pollingInterval=null;}
+    if(typeof _pollingInterval!=='undefined'&&_pollingInterval){clearInterval(_pollingInterval);_pollingInterval=null;}
+    var _fab0=g('chat-fab'); if(_fab0){_fab0.style.zIndex='9988';_fab0.style.bottom='72px';}
   }
 
   if(mod === 'famiglia'){
@@ -9873,34 +9864,31 @@ function applicaModalita(mod){
     // Polling ogni 30s per compiti e log
     if(_pollingInterval) clearInterval(_pollingInterval);
     _pollingInterval = setInterval(async function(){
-      if(!_famigliaDati || !_famigliaCaneSelezionato) return;
       if(_pollingInProgress) return;
+      if(!_famigliaDati || !_famigliaCaneSelezionato) return;
       _pollingInProgress = true;
       try {
-        await caricaCompitisFamiglia();
-        await caricaLogFamiglia();
-        // Aggiorna percorsi per ring km
-        var _resP = await _supabase.from('famiglia_percorsi')
-          .select('*').eq('famiglia_id',_famigliaDati.id)
-          .order('created_at',{ascending:false}).limit(20);
-        if(_resP.data) _famigliaPercorsi = _resP.data;
-        // Aggiorna sempre la home (ring) anche se non è la tab attiva
-        // così i dati sono freschi al ritorno
-        var _tc = g('fam-tab-content');
-        if(_tc){
-          if(_famTabAttiva==='home') renderHealthDashboard(_tc);
-          else if(_famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
-          else if(_famTabAttiva==='diario') renderDiarioFamiglia(_tc);
-        }
-        // Aggiorna anche _famigliaLogTutti per Dog Score
-        var _rTutti = await _supabase.from('famiglia_log')
-          .select('*').eq('famiglia_id',_famigliaDati.id)
-          .order('created_at',{ascending:false}).limit(200);
-        if(_rTutti.data) _famigliaLogTutti = _rTutti.data;
-        console.log('[Famiglia] polling logTutti:', _famigliaLogTutti.length);
-      } finally {
-        _pollingInProgress = false;
+      await caricaCompitisFamiglia();
+      await caricaLogFamiglia();
+      // Aggiorna percorsi per ring km
+      var _resP = await _supabase.from('famiglia_percorsi')
+        .select('*').eq('famiglia_id',_famigliaDati.id)
+        .order('created_at',{ascending:false}).limit(20);
+      if(_resP.data) _famigliaPercorsi = _resP.data;
+      // Aggiorna sempre la home (ring) anche se non è la tab attiva
+      // così i dati sono freschi al ritorno
+      var _tc = g('fam-tab-content');
+      if(_tc){
+        if(_famTabAttiva==='home') renderHealthDashboard(_tc);
+        else if(_famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
+        else if(_famTabAttiva==='diario') renderDiarioFamiglia(_tc);
       }
+      // Aggiorna anche _famigliaLogTutti per Dog Score
+      var _rTutti = await _supabase.from('famiglia_log')
+        .select('*').eq('famiglia_id',_famigliaDati.id)
+        .order('created_at',{ascending:false}).limit(200);
+      if(_rTutti.data) _famigliaLogTutti = _rTutti.data;
+      } finally { _pollingInProgress = false; }
     }, 30000);
   } else {
     var hf2 = g('home-famiglia');
@@ -14955,9 +14943,8 @@ function renderCacciaCarniere(container){
 
   if(!_currentUser) return;
 
-  try {
-    var _lista = window._cacciaCarniereList || [];
-    _carniereListaGlobale = _lista;
+  {
+    var _lista = _carniereListaGlobale || window._cacciaCarniereList || [];
     _carniereFiltoAttivo = 'Tutte';
 
     // Aggiorna stats totali
@@ -14988,10 +14975,6 @@ function renderCacciaCarniere(container){
 
     _renderCarniereList(_lista);
 
-  } catch(e){
-    console.warn('[carniere]',e.message);
-    var listaElE=document.getElementById('carniere-lista');
-    if(listaElE) listaElE.innerHTML='<div style="text-align:center;padding:20px;color:#C0534A">Errore: '+e.message+'</div>';
   }
 }
 
