@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.73';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.74';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9317,11 +9317,11 @@ function _mostraBiometriaStrumento(){
     +'<div style="color:#fff;font-weight:700;font-size:16px">📐 '+(window._currentDogId?'Biometria cane':'Misura al volo')+'</div></div>'
     +'<div id="panel-biometria-strumento"></div>';
   _caricaBiometriaLocale();
-  renderBiometria();
+  renderBiometria('panel-biometria-strumento');
 }
 
-function renderBiometria(){
-  var container=document.getElementById('panel-biometria-strumento')||document.getElementById('panel-biometria');
+function renderBiometria(containerId){
+  var container=document.getElementById(containerId||'panel-biometria-strumento')||document.getElementById('panel-biometria');
   if(!container) return;
 
   _caricaBiometriaLocale();
@@ -9331,13 +9331,14 @@ function renderBiometria(){
   var ultima=misureCane.length?misureCane[misureCane.length-1]:null;
 
   var biometriaTab=window._biometriaTab||'misure';
+  var cid=container.id;
 
   var html='<div style="padding:16px">'
     +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#0D47A1;margin-bottom:4px">📐 Biometria</div>'
     +'<div style="font-size:12px;color:#6B8BB0;margin-bottom:14px">Misurazioni, indici morfologici e angolazioni</div>'
     +'<div style="display:flex;gap:6px;margin-bottom:16px">';
   [{id:'misure',ico:'📏',label:'Misure'},{id:'indici',ico:'📊',label:'Indici'},{id:'angoli',ico:'📐',label:'Angoli'},{id:'storico',ico:'📈',label:'Storico'}].forEach(function(t){
-    html+='<button onclick="window._biometriaTab=\''+t.id+'\';renderBiometria()" style="flex:1;padding:8px 4px;border-radius:10px;border:1.5px solid '+(biometriaTab===t.id?'#0D47A1':'#BBDEFB')+';background:'+(biometriaTab===t.id?'#0D47A1':'#fff')+';color:'+(biometriaTab===t.id?'#fff':'#0D47A1')+';font-size:11px;font-weight:700;cursor:pointer">'+t.ico+' '+t.label+'</button>';
+    html+='<button onclick="window._biometriaTab=\''+t.id+'\';renderBiometria(\''+cid+'\')" style="flex:1;padding:8px 4px;border-radius:10px;border:1.5px solid '+(biometriaTab===t.id?'#0D47A1':'#BBDEFB')+';background:'+(biometriaTab===t.id?'#0D47A1':'#fff')+';color:'+(biometriaTab===t.id?'#fff':'#0D47A1')+';font-size:11px;font-weight:700;cursor:pointer">'+t.ico+' '+t.label+'</button>';
   });
   html+='</div>';
 
@@ -9399,7 +9400,8 @@ function salvaBiometriaMisure(btn){
   if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
   btn.disabled=true;btn.textContent='⏳';
 
-  var caneId=window._currentDogId||selectedId||'no_id';
+  var caneId=window._currentDogId||selectedId||null;
+  if(!caneId) caneId='al_volo_'+Date.now();
   var m={};
   ['lunghezza_testa','larghezza_testa','lunghezza_cranio','lunghezza_muso',
    'altezza_garrese','lunghezza_tronco','perimetro_toracico','altezza_torace','larghezza_torace',
@@ -9438,7 +9440,8 @@ function salvaBiometriaMisure(btn){
   _salvaBiometriaLocale();
   toast('✅ Misurazioni salvate! Vai su "Indici" per vedere i risultati.');
   window._biometriaTab='indici';
-  renderBiometria();
+  var _inStrumento=!!document.getElementById('panel-biometria-strumento');
+  renderBiometria(_inStrumento?'panel-biometria-strumento':'panel-biometria');
 
   var rec=Object.assign({},record);
   delete rec.id;
@@ -9623,7 +9626,8 @@ function _renderBiometriaAngoli(ultima){
 
 function salvaAngolazioni(btn){
   if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
-  var caneId=window._currentDogId||selectedId||'no_id';
+  var caneId=window._currentDogId||selectedId||null;
+  if(!caneId) caneId='al_volo_';
   var misureCane=_biometriaMisurazioni.filter(function(m){return m.cane_id===caneId;});
   var ultima=misureCane.length?misureCane[misureCane.length-1]:null;
 
@@ -9682,7 +9686,8 @@ function _eliminaBiometria(id){
   _biometriaMisurazioni=_biometriaMisurazioni.filter(function(m){return m.id!==id;});
   _salvaBiometriaLocale();
   toast('🗑️ Misurazione eliminata');
-  renderBiometria();
+  var _inStr=!!document.getElementById('panel-biometria-strumento');
+  renderBiometria(_inStr?'panel-biometria-strumento':'panel-biometria');
   if(id&&(id+'').indexOf('tmp_')<0&&_currentUser){
     _supabase.from('biometria_misurazioni').delete().eq('id',id).eq('user_id',_currentUser.id).then(function(){});
   }
