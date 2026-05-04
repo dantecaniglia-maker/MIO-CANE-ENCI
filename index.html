@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.75';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.76';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -5251,10 +5251,8 @@ function deleteCurrent(){
     selectedId=null;hide('detail');renderSidebar();
     // DELETE su Supabase in background
     if(_currentUser && caneDaEliminare && caneDaEliminare.id && (caneDaEliminare.id+'').indexOf('tmp_') < 0){
-      console.log('[AUDIT] DELETE cani', caneDaEliminare.id);
       _supabase.from('cani').delete().eq('id', caneDaEliminare.id).eq('user_id', _currentUser.id).then(function(res){
         if(res.error) console.warn('[allevatore] delete cane Supabase:', res.error.message);
-        else console.log('[AUDIT] DELETE cani OK');
         else console.log('[allevatore] cane eliminato da Supabase:', caneDaEliminare.id);
       });
     }
@@ -9414,7 +9412,6 @@ function salvaBiometriaMisure(btn){
 
   var caneId=window._currentDogId||selectedId||null;
   if(!caneId) caneId='al_volo_'+Date.now();
-  console.log('[AUDIT] salvaBiometriaMisure START, caneId:', caneId);
   var m={};
   ['lunghezza_testa','larghezza_testa','lunghezza_cranio','lunghezza_muso',
    'altezza_garrese','lunghezza_tronco','perimetro_toracico','altezza_torace','larghezza_torace',
@@ -9450,7 +9447,6 @@ function salvaBiometriaMisure(btn){
   Object.keys(m).forEach(function(k){record[k]=m[k];});
 
   _biometriaMisurazioni.push(record);
-  console.log('[AUDIT] salvaBiometriaMisure OK, tot:', _biometriaMisurazioni.length);
   _salvaBiometriaLocale();
   toast('✅ Misurazioni salvate! Vai su "Indici" per vedere i risultati.');
   window._biometriaTab='indici';
@@ -9703,8 +9699,7 @@ function _eliminaBiometria(id){
   var _inStr=!!document.getElementById('panel-biometria-strumento');
   renderBiometria(_inStr?'panel-biometria-strumento':'panel-biometria');
   if(id&&(id+'').indexOf('tmp_')<0&&_currentUser){
-    console.log('[AUDIT] DELETE biometria_misurazioni', id);
-    _supabase.from('biometria_misurazioni').delete().eq('id',id).eq('user_id',_currentUser.id).then(function(){console.log('[AUDIT] DELETE biometria_misurazioni OK');});
+    _supabase.from('biometria_misurazioni').delete().eq('id',id).eq('user_id',_currentUser.id).then(function(){});
   }
 }
 
@@ -11764,8 +11759,7 @@ function eliminaGaraSport(provaId){
   switchSportTab('sport-gare');
   // Supabase background
   if(provaId&&provaId.indexOf('tmp_')<0&&_currentUser){
-    console.log('[AUDIT] DELETE sport_prove', provaId);
-    _supabase.from('sport_prove').delete().eq('id',provaId).eq('user_id',_currentUser.id).then(function(){console.log('[AUDIT] DELETE sport_prove OK');});
+    _supabase.from('sport_prove').delete().eq('id',provaId).eq('user_id',_currentUser.id).then(function(){});
   }
 }
 
@@ -11918,7 +11912,6 @@ function salvaAllenamentoSport(btn){
   if(!disc||!data){toast('Compila disciplina e data');return;}
   if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
   btn.disabled=true;btn.textContent='⏳';
-  console.log('[AUDIT] salvaSportAllenamento START');
 
   var caneId=(document.getElementById('na-cane')||{}).value||null;
   var caneNome='';
@@ -11940,7 +11933,6 @@ function salvaAllenamentoSport(btn){
 
   _sportAllenamenti.unshift(allen);
   _salvaSportLocale();
-  console.log('[AUDIT] salvaSportAllenamento OK');
   var ov=document.getElementById('ov-nuovo-allen-sport');
   if(ov) ov.remove();
   toast('✅ Allenamento registrato!');
@@ -11966,8 +11958,7 @@ function eliminaAllenamentoSport(allenId){
   toast('🗑️ Allenamento eliminato');
   switchSportTab('sport-diario');
   if(allenId&&allenId.indexOf('tmp_')<0&&_currentUser){
-    console.log('[AUDIT] DELETE sport_allenamenti', allenId);
-    _supabase.from('sport_allenamenti').delete().eq('id',allenId).eq('user_id',_currentUser.id).then(function(){console.log('[AUDIT] DELETE sport_allenamenti OK');});
+    _supabase.from('sport_allenamenti').delete().eq('id',allenId).eq('user_id',_currentUser.id).then(function(){});
   }
 }
 
@@ -12912,10 +12903,6 @@ function _inizializzaCampo(){
     // Previeni default (e blocca scroll) SOLO se stiamo interagendo con un elemento
     if(hit!==null||window._campoSelectedTool) e.preventDefault();
 
-    var _dbgRect=canvas.getBoundingClientRect();
-    console.log('[campo] tap CSS:', p.x.toFixed(0), p.y.toFixed(0),
-      'canvas:', canvas.width, canvas.height,
-      'rect:', _dbgRect.width.toFixed(0), _dbgRect.height.toFixed(0));
 
     var now=Date.now();
 
@@ -13533,7 +13520,6 @@ function _chiudiGaraCampo(){
 
 function _salvaGaraConSplit(){
   if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
-  console.log('[AUDIT] salvaGara START');
   var totale=window._garaSplits.length>0?window._garaSplits[window._garaSplits.length-1].total:0;
   var penalita=parseFloat((document.getElementById('gara-penalita')||{}).value)||0;
   var tempoNetto=parseFloat((totale+penalita).toFixed(3));
@@ -13589,7 +13575,6 @@ function _salvaGaraConSplit(){
 
   _sportAllenamenti.unshift(allen);
   _salvaSportLocale();
-  console.log('[AUDIT] salvaGara OK');
   toast('✅ Gara salvata! Tempo netto: '+tempoNetto+'s'+(sct?(tempoNetto<=sct?' 🟢 Pulita!':' 🔴 Fuori SCT'):''));
   _checkNuoviBadge();
 
@@ -13727,7 +13712,6 @@ function _mostraStoricoTempi(percorso){
   var info=document.getElementById('campo-info');
   if(!info) return;
 
-  // Usa _campoStoricoTempi filtrato per percorso (se ha nome), altrimenti usa percorso.tempi legacy
   var tempiStorico=(window._campoStoricoTempi||[]).filter(function(t){
     return percorso.nome?t.percorso_nome===percorso.nome:true;
   });
@@ -13735,9 +13719,7 @@ function _mostraStoricoTempi(percorso){
     return {data:t.data?t.data.slice(0,10):'',tempo_totale:t.totale||0,penalita:t.penalita||0,
       tempo_netto:t.tempo_netto||(t.totale||0),sct:percorso.sct||null};
   });
-  // Unifica preferendo strutturato
   var tutti=tempiStorico.length?tempiStorico:tempiLegacy;
-  // Ordina dal più recente
   tutti=tutti.slice().sort(function(a,b){return (b.data||'').localeCompare(a.data||'');});
 
   if(!tutti.length){
@@ -13747,55 +13729,183 @@ function _mostraStoricoTempi(percorso){
 
   var netti=tutti.map(function(t){return t.tempo_netto||t.tempo_totale;});
   var best=Math.min.apply(null,netti);
+  var worst=Math.max.apply(null,netti);
   var media=netti.reduce(function(a,b){return a+b;},0)/netti.length;
-  var trend='';
+  var sctGlobal=tutti.find(function(t){return t.sct;})?tutti.find(function(t){return t.sct;}).sct:(percorso.sct||null);
+  var trend='', trendIcon='';
   if(tutti.length>=2){
     var ultimi=netti.slice(0,Math.min(3,netti.length));
     var primiN=netti.slice(Math.max(0,netti.length-3));
     var mediaUltimi=ultimi.reduce(function(a,b){return a+b;},0)/ultimi.length;
     var mediaPrimi=primiN.reduce(function(a,b){return a+b;},0)/primiN.length;
-    trend=mediaUltimi<mediaPrimi?'📈 In miglioramento':'📉 In peggioramento';
+    var migliora=mediaUltimi<mediaPrimi;
+    trend=migliora?'In miglioramento':'In peggioramento';
+    trendIcon=migliora?'↗️':'↘️';
   }
 
   var h='<div style="padding:12px">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
     +'<div style="font-weight:700;font-size:14px;color:#1a1a3a">📂 '+esc(percorso.nome||'Storico')+'</div>'
-    +(trend?'<div style="font-size:11px;color:#6B8BB0">'+trend+'</div>':'')
+    +(trend?'<div style="font-size:11px;color:#6B8BB0">'+trendIcon+' '+trend+'</div>':'')
     +'</div>';
 
-  if(tutti.length>=2){
-    h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">'
-      +'<div style="background:#E8F5E9;border-radius:8px;padding:8px;text-align:center">'
-      +'<div style="font-size:16px;font-weight:800;color:#2E7D32">'+best.toFixed(3)+'s</div>'
-      +'<div style="font-size:9px;color:#6B8BB0">Best</div></div>'
-      +'<div style="background:#EEF3FB;border-radius:8px;padding:8px;text-align:center">'
-      +'<div style="font-size:16px;font-weight:800;color:#1565C0">'+media.toFixed(3)+'s</div>'
-      +'<div style="font-size:9px;color:#6B8BB0">Media</div></div>'
-      +'<div style="background:#FFF8E1;border-radius:8px;padding:8px;text-align:center">'
-      +'<div style="font-size:16px;font-weight:800;color:#F57F17">'+tutti.length+'</div>'
-      +'<div style="font-size:9px;color:#6B8BB0">Tentativi</div></div>'
-      +'</div>';
-  }
-
-  h+='<div style="max-height:220px;overflow-y:auto">';
-  tutti.forEach(function(t,i){
+  // Lista tempi
+  h+='<div style="max-height:180px;overflow-y:auto;margin-bottom:10px">';
+  tutti.forEach(function(t){
     var netto=t.tempo_netto||t.tempo_totale;
     var sct=t.sct||percorso.sct||null;
     var sottSCT=sct&&netto<=sct;
     var diffSCT=sct?(netto-sct):null;
     var isBest=Math.abs(netto-best)<0.001;
-    h+='<div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;margin-bottom:4px;background:'+(isBest?'#E8F5E9':'#F8FAFF')+';border:1px solid '+(isBest?'#A5D6A7':'#DDEAFF')+'">'
-      +'<div style="font-size:11px;color:#9ab0cc;flex-shrink:0;min-width:70px">'+esc(t.data||'')+(isBest?' 🏆':'')+'</div>'
-      +'<div style="flex:1">'
-      +'<span style="font-weight:800;font-size:14px;color:'+(sottSCT?'#2E7D32':'#C62828')+'">'+netto.toFixed(3)+'s</span>'
-      +(t.penalita?'<span style="font-size:10px;color:#FF9800;margin-left:4px">+'+t.penalita+'s pen</span>':'')
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:7px;border-radius:8px;margin-bottom:3px;background:'+(isBest?'#E8F5E9':'#F8FAFF')+';border:1px solid '+(isBest?'#A5D6A7':'#DDEAFF')+'">'
+      +'<div style="font-size:10px;color:#9ab0cc;flex-shrink:0;min-width:62px">'+esc(t.data||'')+(isBest?' 🏆':'')+'</div>'
+      +'<div style="flex:1"><span style="font-weight:800;font-size:13px;color:'+(sottSCT?'#2E7D32':'#C62828')+'">'+netto.toFixed(3)+'s</span>'
+      +(t.penalita?'<span style="font-size:10px;color:#FF9800;margin-left:4px">+'+t.penalita+'s</span>':'')
       +'</div>'
-      +(diffSCT!==null?'<div style="font-size:10px;font-weight:700;color:'+(diffSCT<=0?'#2E7D32':'#C62828')+'">'+(diffSCT<=0?'-'+Math.abs(diffSCT).toFixed(1):'+'+diffSCT.toFixed(1))+'s SCT</div>':'')
+      +(diffSCT!==null?'<div style="font-size:10px;font-weight:700;color:'+(diffSCT<=0?'#2E7D32':'#C62828')+'">'+(diffSCT<=0?'':'+')+(diffSCT.toFixed(1))+'s</div>':'')
       +'</div>';
   });
-  h+='</div></div>';
+  h+='</div>';
+
+  // Canvas grafico
+  if(tutti.length>=2){
+    h+='<canvas id="chart-tempi-agility" style="width:100%;height:200px;display:block;border-radius:8px;border:1px solid #DDEAFF;margin-bottom:10px"></canvas>';
+  } else {
+    h+='<div style="text-align:center;padding:12px;color:#9ab0cc;font-size:12px;border:1px dashed #DDEAFF;border-radius:8px;margin-bottom:10px">Serve almeno 2 gare per il grafico</div>';
+  }
+
+  // Statistiche
+  var sottoSCT=sctGlobal?netti.filter(function(n){return n<=sctGlobal;}).length:null;
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:11px">'
+    +'<div style="background:#F8FAFF;border-radius:8px;padding:7px"><span style="color:#6B8BB0">Miglior:</span> <strong style="color:#2E7D32">'+best.toFixed(3)+'s</strong></div>'
+    +'<div style="background:#F8FAFF;border-radius:8px;padding:7px"><span style="color:#6B8BB0">Peggiore:</span> <strong style="color:#C62828">'+worst.toFixed(3)+'s</strong></div>'
+    +'<div style="background:#F8FAFF;border-radius:8px;padding:7px"><span style="color:#6B8BB0">Media:</span> <strong style="color:#1565C0">'+media.toFixed(3)+'s</strong></div>'
+    +(trend?'<div style="background:#F8FAFF;border-radius:8px;padding:7px"><span style="color:#6B8BB0">Trend:</span> <strong>'+trendIcon+' '+trend+'</strong></div>':'')
+    +(sottoSCT!==null?'<div style="background:#F8FAFF;border-radius:8px;padding:7px;grid-column:span 2"><span style="color:#6B8BB0">Gare sotto SCT:</span> <strong style="color:'+(sottoSCT>0?'#2E7D32':'#C62828')+'">'+sottoSCT+'/'+netti.length+' ('+Math.round(sottoSCT/netti.length*100)+'%)</strong></div>':'')
+    +'</div>'
+    +'</div>';
 
   info.innerHTML=h;
+
+  if(tutti.length>=2){
+    setTimeout(function(){_disegnaGraficoTempi(tutti,percorso.sct||null);},30);
+  }
+}
+
+function _disegnaGraficoTempi(tutti,sctDefault){
+  var canvas=document.getElementById('chart-tempi-agility');
+  if(!canvas||!canvas.getContext) return;
+
+  // Ultimi 10 in ordine cronologico (dal più vecchio al più recente)
+  var dati=tutti.slice().reverse().slice(-10);
+
+  var R=window.devicePixelRatio||1;
+  var cssW=canvas.offsetWidth||300;
+  var cssH=200;
+  canvas.width=Math.round(cssW*R);
+  canvas.height=Math.round(cssH*R);
+  canvas.style.height=cssH+'px';
+
+  var ctx=canvas.getContext('2d');
+  ctx.scale(R,R);
+
+  var pad={top:24,right:16,bottom:36,left:44};
+  var W=cssW-pad.left-pad.right;
+  var H=cssH-pad.top-pad.bottom;
+
+  var netti=dati.map(function(t){return t.tempo_netto||t.tempo_totale;});
+  var totali=dati.map(function(t){return t.tempo_totale||0;});
+  var scts=dati.map(function(t){return t.sct||sctDefault||null;});
+  var hasSCT=scts.some(function(s){return s!==null;});
+
+  var allVals=netti.concat(totali);
+  if(hasSCT) allVals=allVals.concat(scts.filter(Boolean));
+  var yMin=Math.max(0,Math.min.apply(null,allVals)-2);
+  var yMax=Math.max.apply(null,allVals)+2;
+  var yRange=yMax-yMin||1;
+  var n=dati.length;
+
+  function xP(i){return pad.left+(n>1?i*(W/(n-1)):W/2);}
+  function yP(v){return pad.top+H-((v-yMin)/yRange)*H;}
+
+  // Sfondo
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,cssW,cssH);
+
+  // Griglie orizzontali
+  for(var g=0;g<=4;g++){
+    var gy=pad.top+g*(H/4);
+    var gv=yMax-g*(yRange/4);
+    ctx.strokeStyle='#EEF3FB';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pad.left,gy);ctx.lineTo(pad.left+W,gy);ctx.stroke();
+    ctx.fillStyle='#9ab0cc';ctx.font='9px DM Sans,sans-serif';
+    ctx.textAlign='right';ctx.textBaseline='middle';
+    ctx.fillText(gv.toFixed(1),pad.left-4,gy);
+  }
+
+  // Etichette X + griglie verticali
+  ctx.fillStyle='#9ab0cc';ctx.font='9px DM Sans,sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+  dati.forEach(function(t,i){
+    ctx.strokeStyle='#F4F7FF';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(xP(i),pad.top);ctx.lineTo(xP(i),pad.top+H);ctx.stroke();
+    ctx.fillStyle='#9ab0cc';
+    ctx.fillText((t.data||'').slice(5),xP(i),pad.top+H+6);
+  });
+
+  // Helper: disegna linea
+  function drawLine(vals,color,dash,lw){
+    ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=lw||2;
+    ctx.setLineDash(dash||[]);ctx.lineJoin='round';
+    var started=false;
+    vals.forEach(function(v,i){
+      if(v==null) return;
+      if(!started){ctx.moveTo(xP(i),yP(v));started=true;}
+      else ctx.lineTo(xP(i),yP(v));
+    });
+    ctx.stroke();ctx.setLineDash([]);
+  }
+
+  // Helper: disegna punti con etichette opzionali
+  function drawDots(vals,color,labels){
+    vals.forEach(function(v,i){
+      if(v==null) return;
+      ctx.beginPath();ctx.arc(xP(i),yP(v),4,0,Math.PI*2);
+      ctx.fillStyle='#fff';ctx.fill();
+      ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();
+      if(labels){
+        ctx.fillStyle=color;ctx.font='bold 9px DM Sans,sans-serif';
+        ctx.textAlign='center';ctx.textBaseline='bottom';
+        ctx.fillText(v.toFixed(1),xP(i),yP(v)-6);
+      }
+    });
+  }
+
+  // SCT (rosso tratteggiato)
+  if(hasSCT){
+    var sctLine=scts.map(function(s){return s||sctDefault;});
+    drawLine(sctLine,'#E53935',[5,4],1.5);
+  }
+
+  // Tempo totale (blu sottile)
+  drawLine(totali,'#64B5F6',[],1.5);
+  drawDots(totali,'#64B5F6',false);
+
+  // Tempo netto (verde principale)
+  drawLine(netti,'#2E7D32',[],2.5);
+  drawDots(netti,'#2E7D32',true);
+
+  // Legenda
+  var items=[{c:'#2E7D32',l:'Netto'},{c:'#64B5F6',l:'Totale'}];
+  if(hasSCT) items.push({c:'#E53935',l:'SCT',d:true});
+  items.forEach(function(item,i){
+    var lx=pad.left+i*58;
+    ctx.strokeStyle=item.c;ctx.lineWidth=2;
+    ctx.setLineDash(item.d?[4,3]:[]);
+    ctx.beginPath();ctx.moveTo(lx,pad.top-10);ctx.lineTo(lx+12,pad.top-10);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#4A6080';ctx.font='9px DM Sans,sans-serif';
+    ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText(item.l,lx+15,pad.top-10);
+  });
 }
 
 /* ══════════════════════════════════════
@@ -15339,7 +15449,7 @@ async function eliminaCarniere(id){
   _carniereListaGlobale = _carniereListaGlobale.filter(function(r){ return r.id !== id; });
   window._cacciaCarniereList = _carniereListaGlobale;
   _salvaCacciaLocale();
-  if(_currentUser){console.log('[AUDIT] DELETE caccia_carniere', id);_supabase.from('caccia_carniere').delete().eq('id',id).then(function(){console.log('[AUDIT] DELETE caccia_carniere OK');}).catch(function(){});}
+  if(_currentUser) _supabase.from('caccia_carniere').delete().eq('id',id).then(function(){}).catch(function(){});
   toast('🗑️ Eliminato');
   var _tc = document.getElementById('caccia-tab-content');
   if(_tc) renderCacciaCarniere(_tc);
@@ -15766,7 +15876,7 @@ async function salvaCaneC(btn){
 
 async function eliminaCaneC(id){
   if(!confirm('Eliminare questo cane? Anche le prove associate verranno scollegate.')) return;
-  if(_currentUser){console.log('[AUDIT] DELETE caccia_cani', id);_supabase.from('caccia_cani').delete().eq('id',id).then(function(){console.log('[AUDIT] DELETE caccia_cani OK');}).catch(function(){});}
+  if(_currentUser) _supabase.from('caccia_cani').delete().eq('id',id).then(function(){}).catch(function(){});
   toast('🗑️ Cane eliminato');
   var _tc=document.getElementById('caccia-tab-content');
   if(_tc) renderCacciaCani(_tc);
@@ -16173,7 +16283,7 @@ async function salvaProva(btn){
 
 async function eliminaProva(id){
   if(!confirm('Eliminare questa prova?')) return;
-  if(_currentUser){console.log('[AUDIT] DELETE caccia_prove', id);_supabase.from('caccia_prove').delete().eq('id',id).then(function(){console.log('[AUDIT] DELETE caccia_prove OK');}).catch(function(){});}
+  if(_currentUser) _supabase.from('caccia_prove').delete().eq('id',id).then(function(){}).catch(function(){});
   window._cacciaProveList = (window._cacciaProveList || []).filter(function(p){return p.id!==id;});
   _salvaCacciaLocale();
   toast('🗑️ Prova eliminata');
@@ -18146,10 +18256,8 @@ async function eliminaCompitoAdmin(compitoId, btn){
   btn.closest('[style*=fixed]').remove();
   switchFamTab('compiti');
   toast('🗑 Compito eliminato');
-  console.log('[AUDIT] DELETE famiglia_compiti', compitoId);
   _supabase.from('famiglia_compiti').delete().eq('id', compitoId).then(function(_del){
     if(_del.error) toast('⚠️ Sync: '+_del.error.message);
-    else console.log('[AUDIT] DELETE famiglia_compiti OK');
   }).catch(function(e){ console.warn('[compiti]',e.message); });
 }
 
