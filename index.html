@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.77';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.78';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9353,12 +9353,83 @@ function renderBiometria(containerId){
   html+='</div>';
 
   if(biometriaTab==='misure') html+=_renderBiometriaMisure(ultima);
-  else if(biometriaTab==='indici') html+=_renderBiometriaIndici(ultima);
+  else if(biometriaTab==='indici'){
+    html+=_renderBiometriaIndici(ultima);
+    if(ultima) html+='<button onclick="esportaBiometriaPDF()" style="width:100%;margin-top:16px;background:linear-gradient(135deg,#C62828,#B71C1C);color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer">📄 Esporta PDF Biometria</button>';
+  }
   else if(biometriaTab==='angoli') html+=_renderBiometriaAngoli(ultima);
   else if(biometriaTab==='storico') html+=_renderBiometriaStorico(misureCane);
 
   html+='</div>';
   container.innerHTML=html;
+}
+
+function esportaBiometriaPDF(){
+  var caneId=window._currentDogId==='__AL_VOLO__'?'__AL_VOLO__':(window._currentDogId||selectedId||null);
+  var misureCane=_biometriaMisurazioni.filter(function(m){return m.cane_id===caneId;});
+  var ultima=misureCane.length?misureCane[misureCane.length-1]:null;
+  if(!ultima){toast('⚠️ Nessuna misurazione da esportare');return;}
+
+  var nomeCane='Cane sconosciuto';
+  var razzaCane='';
+  if(caneId&&caneId!=='__AL_VOLO__'){
+    var caneRef=(cani||[]).find(function(c){return String(c.id)===String(caneId);});
+    if(caneRef){
+      nomeCane=caneRef.nome||(caneRef.dati&&caneRef.dati.nome)||nomeCane;
+      razzaCane=caneRef.razza||(caneRef.dati&&caneRef.dati.razza)||'';
+    }
+  } else {
+    nomeCane='Misura al volo';
+  }
+
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8">'
+    +'<title>Biometria - '+nomeCane+'</title>'
+    +'<style>body{font-family:sans-serif;padding:20px;max-width:700px;margin:0 auto}'
+    +'h1{color:#0D47A1;border-bottom:2px solid #0D47A1;padding-bottom:8px}'
+    +'h2{color:#1565C0;margin-top:20px}'
+    +'.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}'
+    +'.item{background:#F5F7FF;padding:10px;border-radius:8px}'
+    +'.label{font-size:11px;color:#6B8BB0}'
+    +'.value{font-size:18px;font-weight:700;color:#0D47A1}'
+    +'.footer{margin-top:30px;border-top:1px solid #ddd;padding-top:10px;font-size:10px;color:#999}'
+    +'@media print{body{padding:0}}</style></head><body>'
+    +'<h1>📐 Scheda Biometrica</h1>'
+    +'<p><strong>'+nomeCane+'</strong>'+(razzaCane?' — '+razzaCane:'')+'</p>'
+    +'<p>Data misurazione: '+ultima.data+'</p>';
+
+  html+='<h2>Misurazioni</h2><div class="grid">';
+  var campiNomi={lunghezza_testa:'Lungh. testa',larghezza_testa:'Largh. testa',
+    lunghezza_cranio:'Lungh. cranio',lunghezza_muso:'Lungh. muso',
+    altezza_garrese:'Alt. garrese',lunghezza_tronco:'Lungh. tronco',
+    perimetro_toracico:'Perim. toracico',altezza_torace:'Alt. torace',
+    larghezza_torace:'Largh. torace',distanza_gomito_suolo:'Gomito-suolo',
+    circonferenza_stinco:'Circ. stinco',peso:'Peso'};
+  Object.keys(campiNomi).forEach(function(k){
+    if(ultima[k]) html+='<div class="item"><div class="label">'+campiNomi[k]+'</div><div class="value">'+ultima[k]+(k==='peso'?' kg':' cm')+'</div></div>';
+  });
+  html+='</div>';
+
+  html+='<h2>Indici Morfologici</h2><div class="grid">';
+  var indiciNomi={indice_cefalico:'Indice Cefalico',indice_corporale:'Indice Corporale',
+    indice_toracico:'Indice Toracico',rapporto_cranio_facciale:'Rapporto Cranio-Facciale',
+    indice_ponderale:'Indice Ponderale',indice_proporzione_arti:'Proporzione Arti',
+    indice_ossatura:'Indice Ossatura'};
+  Object.keys(indiciNomi).forEach(function(k){
+    if(ultima[k]) html+='<div class="item"><div class="label">'+indiciNomi[k]+'</div><div class="value">'+ultima[k].toFixed(2)+'</div></div>';
+  });
+  html+='</div>';
+
+  html+='<div class="footer">Generato da BreedPed v'+APP_VERSION+' — '+new Date().toLocaleDateString('it-IT')+'</div>'
+    +'</body></html>';
+
+  var win=window.open('','_blank');
+  if(win){
+    win.document.write(html);
+    win.document.close();
+    setTimeout(function(){win.print();},500);
+  } else {
+    toast('⚠️ Sblocca i popup per stampare');
+  }
 }
 
 function _renderBiometriaMisure(ultima){
@@ -9990,23 +10061,42 @@ function applicaModalita(mod){
 
   // Splash screen animato per cambio modalità
   var _splashColors = {
-    allevatore: {bg:'linear-gradient(135deg,#0D47A1,#1a237e)',ico:'🏆',nome:'Allevatore'},
-    famiglia: {bg:'linear-gradient(135deg,#E91E63,#AD1457)',ico:'🏠',nome:'Famiglia'},
-    caccia: {bg:'linear-gradient(135deg,#2E7D32,#1B5E20)',ico:'🐕‍🦺',nome:'Caccia & Tartufo'},
-    sport: {bg:'linear-gradient(135deg,#E65100,#BF360C)',ico:'🏋️',nome:'Sport & Agility'}
+    allevatore: {bg:'linear-gradient(135deg,#0D47A1,#1a237e)',ico:'🏆',nome:'Modalità Allevatore'},
+    famiglia:   {bg:'linear-gradient(135deg,#1565C0,#0D47A1)',ico:'🏠',nome:'Modalità Famiglia'},
+    caccia:     {bg:'linear-gradient(135deg,#2E7D32,#1B5E20)',ico:'🐕‍🦺',nome:'Modalità Caccia & Tartufo'},
+    sport:      {bg:'linear-gradient(135deg,#E65100,#BF360C)',ico:'🏋️',nome:'Modalità Sport & Agility'}
   };
   var _splashConf = _splashColors[mod];
   if(_splashConf){
     var _splash = document.createElement('div');
-    _splash.style.cssText = 'position:fixed;inset:0;z-index:99999;background:'+_splashConf.bg+';display:flex;flex-direction:column;align-items:center;justify-content:center;animation:fadeIn .3s;transition:opacity .5s';
-    _splash.innerHTML = '<div style="font-size:72px;margin-bottom:16px;animation:bounce 1s">'+_splashConf.ico+'</div>'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:28px;font-weight:700;color:#fff;margin-bottom:8px">'+_splashConf.nome+'</div>'
-      +'<div style="font-size:14px;color:rgba(255,255,255,.6)">Breed<span style="color:#C9A961">Ped</span></div>';
+    _splash.id='splash-screen';
+    _splash.style.cssText = 'position:fixed;inset:0;z-index:99999;background:'+_splashConf.bg
+      +';display:flex;flex-direction:column;align-items:center;justify-content:center;animation:fadeIn .4s;transition:opacity .5s';
+    _splash.innerHTML =
+      // Logo
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">'
+        +'<img src="logo.jpeg" style="width:56px;height:56px;border-radius:14px;object-fit:cover;border:2px solid rgba(201,169,97,.5)" onerror="this.style.display=\'none\'"/>'
+        +'<div><div style="font-family:\'Playfair Display\',serif;font-size:28px;font-weight:700;color:#fff;line-height:1">Breed<span style="color:#C9A961">Ped</span></div>'
+        +'<div style="font-size:11px;color:rgba(255,255,255,.6);letter-spacing:.08em">IL PEDIGREE INTELLIGENTE</div></div>'
+      +'</div>'
+      // Icona + nome modalità
+      +'<div style="font-size:56px;margin-bottom:12px;animation:bounce .8s">'+_splashConf.ico+'</div>'
+      +'<div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:32px;letter-spacing:.04em">'+_splashConf.nome+'</div>'
+      // Barra di progresso
+      +'<div style="width:200px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden">'
+        +'<div id="splash-bar" style="height:100%;width:0%;background:#C9A961;border-radius:2px;transition:width 1.4s linear"></div>'
+      +'</div>';
     document.body.appendChild(_splash);
+    // Avvia barra
+    requestAnimationFrame(function(){
+      var bar=document.getElementById('splash-bar');
+      if(bar) bar.style.width='100%';
+    });
+    // Fade-out dopo 1.5s, rimozione dopo ulteriori 0.5s (totale 2s)
     setTimeout(function(){
-      _splash.style.opacity = '0';
-      setTimeout(function(){ _splash.remove(); }, 500);
-    }, 1200);
+      _splash.style.opacity='0';
+      setTimeout(function(){ if(_splash.parentNode) _splash.remove(); }, 500);
+    }, 1500);
   }
 
   // ═══ MODULO SPORT & AGILITY ═══
@@ -17198,6 +17288,25 @@ function _getTamagotchiMsg(cane, pastiOggi, usciteOggi, logOggi, streak){
   return msgs;
 }
 
+function controllaScadenze(){
+  var log=_famigliaLogTutti||[];
+  var oggi=Date.now();
+  var tipi=[
+    {tipo:'vaccino',       label:'Vaccino',         giorni:365},
+    {tipo:'antiparassitario',label:'Antiparassitario',giorni:30},
+    {tipo:'vermifugo',     label:'Vermifugo',        giorni:90},
+    {tipo:'visita_veterinaria',label:'Visita veterinaria',giorni:180}
+  ];
+  return tipi.map(function(t){
+    var eventi=log.filter(function(l){return l.tipo===t.tipo;});
+    if(!eventi.length) return {tipo:t.label,ultimaData:null,giorniPassati:null,scaduto:true,giorniAlScadenza:0,maiRegistrato:true};
+    var ultData=eventi.reduce(function(best,l){return l.created_at>best?l.created_at:best;},eventi[0].created_at);
+    var giorniPassati=Math.floor((oggi-new Date(ultData).getTime())/86400000);
+    var scaduto=giorniPassati>t.giorni;
+    return {tipo:t.label,ultimaData:ultData?ultData.slice(0,10):null,giorniPassati:giorniPassati,scaduto:scaduto,giorniAlScadenza:t.giorni-giorniPassati,maiRegistrato:false};
+  });
+}
+
 function renderHealthDashboard(container){
   var cane = _famigliaCaneSelezionato;
   if(!cane){ container.innerHTML=''; return; }
@@ -17347,7 +17456,29 @@ function renderHealthDashboard(container){
   if(!_profCreato){try{localStorage.setItem('bp_famiglia_first_use',Date.now().toString());_profCreato=Date.now().toString();}catch(e){}}
   var _mostraPonte=!_ponteDismissed&&_caneEta>=0.5&&_famAttivita>=5;
 
-  container.innerHTML =
+  // ── Widget scadenze sanitarie ──
+  var _scadenze=controllaScadenze();
+  var _alertHtml='';
+  _scadenze.forEach(function(s){
+    if(!s.scaduto) return;
+    if(s.maiRegistrato){
+      _alertHtml+='<div style="background:#FFF8E1;border-left:4px solid #FFA000;border-radius:8px;padding:12px;margin-bottom:8px">'
+        +'<div style="font-weight:700;font-size:13px;color:#E65100">📋 '+s.tipo+' mai registrato</div>'
+        +'<div style="font-size:11px;color:#6B8BB0">Aggiungi il primo evento nel diario</div></div>';
+    } else {
+      _alertHtml+='<div style="background:#FFF3E0;border-left:4px solid #E65100;border-radius:8px;padding:12px;margin-bottom:8px">'
+        +'<div style="font-weight:700;font-size:13px;color:#E65100">⚠️ '+s.tipo+' scaduto!</div>'
+        +'<div style="font-size:11px;color:#6B8BB0">Ultimo: '+(s.ultimaData||'mai')+' — '+s.giorniPassati+' giorni fa</div></div>';
+    }
+  });
+  var _widgetScadenze=_alertHtml
+    ?'<div style="background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 12px rgba(13,71,161,.08);margin-bottom:12px;border:1.5px solid #FFE0B2">'
+      +'<div style="font-size:12px;font-weight:700;color:#E65100;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">🔔 Attenzione</div>'
+      +_alertHtml
+      +'</div>'
+    :'';
+
+  container.innerHTML = _widgetScadenze +
 
   // ── BLOCCO 2: Saluto + Streak ──
   '<div style="background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 12px rgba(13,71,161,.08);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px">'
