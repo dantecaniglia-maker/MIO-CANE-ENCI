@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.76';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.77';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -9304,7 +9304,7 @@ function apriStrumentoBiometria(){
     +'<div style="color:#fff;font-weight:700;font-size:16px">📐 Biometria professionale</div></div>'
     +'<div style="padding:16px">'
     +'<div style="font-size:13px;color:#6B8BB0;margin-bottom:14px">Seleziona un cane per le misurazioni oppure misura al volo.</div>'
-    +'<div onclick="window._currentDogId=null;window._biometriaTab=\'misure\';_mostraBiometriaStrumento()" '
+    +'<div onclick="window._currentDogId=\'__AL_VOLO__\';window._biometriaTab=\'misure\';_mostraBiometriaStrumento()" '
     +'style="display:flex;align-items:center;gap:12px;padding:14px;background:linear-gradient(135deg,#FFF3E0,#FBE9E7);border-radius:12px;margin-bottom:14px;cursor:pointer;border:2px solid #FFCCBC">'
     +'<div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#E65100,#BF360C);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0">📏</div>'
     +'<div><div style="font-weight:700;font-size:14px;color:#E65100">Misura al volo</div>'
@@ -9336,7 +9336,7 @@ function renderBiometria(containerId){
 
   _caricaBiometriaLocale();
 
-  var caneId=window._currentDogId||selectedId||null;
+  var caneId=window._currentDogId==='__AL_VOLO__'?'__AL_VOLO__':(window._currentDogId||selectedId||null);
   var misureCane=_biometriaMisurazioni.filter(function(m){return m.cane_id===caneId;});
   var ultima=misureCane.length?misureCane[misureCane.length-1]:null;
 
@@ -9410,7 +9410,7 @@ function salvaBiometriaMisure(btn){
   if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
   btn.disabled=true;btn.textContent='⏳';
 
-  var caneId=window._currentDogId||selectedId||null;
+  var caneId=window._currentDogId==='__AL_VOLO__'?'al_volo_'+Date.now():(window._currentDogId||selectedId||null);
   if(!caneId) caneId='al_volo_'+Date.now();
   var m={};
   ['lunghezza_testa','larghezza_testa','lunghezza_cranio','lunghezza_muso',
@@ -9636,7 +9636,7 @@ function _renderBiometriaAngoli(ultima){
 
 function salvaAngolazioni(btn){
   if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
-  var caneId=window._currentDogId||selectedId||null;
+  var caneId=window._currentDogId==='__AL_VOLO__'?'__AL_VOLO__':(window._currentDogId||selectedId||null);
   if(!caneId) caneId='al_volo_';
   var misureCane=_biometriaMisurazioni.filter(function(m){return m.cane_id===caneId;});
   var ultima=misureCane.length?misureCane[misureCane.length-1]:null;
@@ -12862,6 +12862,7 @@ function _inizializzaCampo(){
   canvas.style.width=w+'px';
   canvas.style.height=h+'px';
   container.style.height=h+'px';
+  container.style.minHeight=h+'px';
 
   window._campoW=w;
   window._campoH=h;
@@ -13374,7 +13375,7 @@ function avviaGaraCampo(){
 
   var ov=document.createElement('div');
   ov.id='ov-gara-campo';
-  ov.style.cssText='position:fixed;inset:0;z-index:10200;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px';
+  ov.style.cssText='position:fixed;inset:0;z-index:10200;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px;overflow-y:auto;padding-top:60px';
 
   window._garaRunning=false;
   window._garaStart=0;
@@ -13389,7 +13390,8 @@ function avviaGaraCampo(){
       +'⏱️ CP'+(i+1)+' — —</button>';
   });
 
-  ov.innerHTML='<div style="max-width:400px;width:100%;text-align:center">'
+  ov.innerHTML='<button onclick="_chiudiGaraCampo()" style="position:fixed;top:12px;right:12px;z-index:10201;background:rgba(255,255,255,.15);border:none;border-radius:50%;width:40px;height:40px;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>'
+    +'<div style="max-width:400px;width:100%;text-align:center">'
     +'<div style="color:rgba(255,255,255,.5);font-size:12px;margin-bottom:8px">🏁 Modalità Gara — '+cps.length+' checkpoint</div>'
     +'<div id="gara-timer-display" style="font-size:64px;font-weight:800;color:#fff;font-family:monospace;letter-spacing:3px;margin-bottom:16px">00.000</div>'
     +'<button id="gara-btn-start" onclick="_garaToggle()" style="width:100%;padding:16px;border-radius:14px;border:none;font-size:20px;font-weight:800;cursor:pointer;background:#4CAF50;color:#fff;margin-bottom:16px">▶ START</button>'
@@ -13492,6 +13494,7 @@ function _garaStop(){
     +'<button onclick="_garaReset()" style="flex:1;background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">🔄 Riprova</button>'
     +'</div>';
   ris.innerHTML=h;
+  setTimeout(function(){ris.scrollIntoView({behavior:'smooth'});},100);
 }
 
 function _garaReset(){
