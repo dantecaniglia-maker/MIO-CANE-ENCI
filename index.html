@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.78';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.79';</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -4458,6 +4458,24 @@ async function onUserSignedIn(user){
     applicaModalita(modSalvata);
   }
   checkNotificheAlAvvio();
+
+  // Check percorso condiviso via URL
+  try{
+    var _urlParams=new URLSearchParams(location.search);
+    var _percorsoParam=_urlParams.get('percorso');
+    if(_percorsoParam){
+      var _pData=JSON.parse(decodeURIComponent(escape(atob(_percorsoParam))));
+      window._campoOstacoli=_pData.ostacoli||[];
+      window._campoCheckpoints=_pData.checkpoints||[];
+      window._campoNextNum=window._campoOstacoli.length+1;
+      window._agilityTaglia=_pData.taglia||'L';
+      history.replaceState(null,'',location.pathname);
+      setTimeout(function(){
+        apriCampoAgility2D();
+        toast('📥 Percorso "'+(_pData.nome||'')+ '" caricato!');
+      },2000);
+    }
+  }catch(_pe){console.warn('[percorso] parse error',_pe);}
 }
 
 function onUserSignedOut(){
@@ -12933,7 +12951,7 @@ function apriCampoAgility2D(){
     +'<canvas id="campo-canvas" style="display:block;width:100%;touch-action:none"></canvas>'
     +'</div>'
     +'<div style="padding:10px 12px;background:#F5F5F5;font-size:10px;color:#6B8BB0">'
-    +'<strong>Legenda:</strong> Tap = piazza · Trascina = sposta · Doppio tap = ruota 90° · Ring: 20m×40m'
+    +'<strong>Legenda:</strong> Tap = piazza · Trascina = sposta · Doppio tap = ruota · Tieni premuto = elimina · 20×40m'
     +'</div>';
 
   document.body.appendChild(ov);
@@ -12988,17 +13006,18 @@ function _inizializzaCampo(){
 
   // ── POINTER DOWN ──
   var _lastTapTime=0;
+  var _longPressTimer=null;
   function _onDown(e){
     var p=_campoXY(e);
     var hit=_hitOstacolo(p.x,p.y);
     // Previeni default (e blocca scroll) SOLO se stiamo interagendo con un elemento
     if(hit!==null||window._campoSelectedTool) e.preventDefault();
 
-
     var now=Date.now();
 
     // Doppio tap per ruotare
     if(hit&&hit.type==='ost'&&(now-_lastTapTime)<350){
+      if(_longPressTimer){clearTimeout(_longPressTimer);_longPressTimer=null;}
       var ost=window._campoOstacoli[hit.idx];
       ost.rot=((ost.rot||0)+90)%360;
       _disegnaCampo();
@@ -13012,9 +13031,40 @@ function _inizializzaCampo(){
       if(hit.type==='ost'){
         window._campoDragIdx=hit.idx;
         window._campoDragCpIdx=-1;
+        // Long press → elimina ostacolo
+        var _hitIdx=hit.idx;
+        _longPressTimer=setTimeout(function(){
+          if(!window._campoDragging){
+            if(_longPressTimer){clearTimeout(_longPressTimer);_longPressTimer=null;}
+            var ost=window._campoOstacoli[_hitIdx];
+            if(ost&&confirm('Eliminare ostacolo #'+ost.num+'?')){
+              window._campoOstacoli.splice(_hitIdx,1);
+              window._campoOstacoli.forEach(function(o,i){o.num=i+1;});
+              window._campoNextNum=window._campoOstacoli.length+1;
+              window._campoDragIdx=-1;
+              _disegnaCampo();
+              toast('🗑️ Ostacolo rimosso');
+            }
+          }
+        },600);
       } else {
         window._campoDragCpIdx=hit.idx;
         window._campoDragIdx=-1;
+        // Long press → elimina checkpoint
+        var _cpIdx=hit.idx;
+        _longPressTimer=setTimeout(function(){
+          if(!window._campoDragging){
+            if(_longPressTimer){clearTimeout(_longPressTimer);_longPressTimer=null;}
+            var cp=window._campoCheckpoints[_cpIdx];
+            if(cp&&confirm('Eliminare checkpoint CP'+cp.num+'?')){
+              window._campoCheckpoints.splice(_cpIdx,1);
+              window._campoCheckpoints.forEach(function(c,i){c.num=i+1;});
+              window._campoDragCpIdx=-1;
+              _disegnaCampo();
+              toast('🗑️ Checkpoint rimosso');
+            }
+          }
+        },600);
       }
       window._campoDragging=false;
       window._campoDragStart={x:p.x,y:p.y};
@@ -13035,6 +13085,8 @@ function _inizializzaCampo(){
       var ds=window._campoDragStart||{x:0,y:0};
       if(Math.abs(p.x-ds.x)+Math.abs(p.y-ds.y)<5) return;
       window._campoDragging=true;
+      // Drag iniziato — annulla long press
+      if(_longPressTimer){clearTimeout(_longPressTimer);_longPressTimer=null;}
     }
     if(window._campoDragIdx>=0){
       var o=window._campoOstacoli[window._campoDragIdx];
@@ -13048,6 +13100,8 @@ function _inizializzaCampo(){
 
   // ── POINTER UP ──
   function _onUp(e){
+    // Annulla sempre long press al rilascio
+    if(_longPressTimer){clearTimeout(_longPressTimer);_longPressTimer=null;}
     if(window._campoDragging) e.preventDefault();
     if(window._campoDragIdx>=0){
       if(window._campoDragging){
@@ -13055,12 +13109,6 @@ function _inizializzaCampo(){
         var o=window._campoOstacoli[window._campoDragIdx];
         if(o){o.x=_snap(o.x);o.y=_snap(o.y);}
         _disegnaCampo();
-      } else {
-        // Era un tap senza drag → se tool null, elimina
-        if(!window._campoSelectedTool){
-          var p2=_campoXY(e);
-          // tap singolo su ostacolo senza drag: mostra info / non fare niente (drag & drop è il modo di muoverli)
-        }
       }
     }
     if(window._campoDragCpIdx>=0&&window._campoDragging){
@@ -13723,6 +13771,47 @@ function apriSalvaPercorso(){
 
   try{localStorage.setItem('bp_agility_percorsi_v1',JSON.stringify(percorsi));}catch(e){}
   toast('✅ Percorso "'+nome.trim()+'" salvato!');
+  _mostraCondividiPercorso(nome.trim());
+}
+
+function _mostraCondividiPercorso(nomePercorso){
+  var ov=document.createElement('div');
+  ov.id='ov-condividi-percorso';
+  ov.style.cssText='position:fixed;inset:0;z-index:10300;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.onclick=function(e){if(e.target===ov) ov.remove();};
+  ov.innerHTML='<div style="background:#fff;border-radius:20px;padding:24px;max-width:360px;width:100%;text-align:center">'
+    +'<div style="font-size:32px;margin-bottom:8px">📲</div>'
+    +'<div style="font-weight:700;font-size:16px;color:#1a1a3a;margin-bottom:4px">Condividi percorso</div>'
+    +'<div style="font-size:12px;color:#6B8BB0;margin-bottom:20px">Invia "'+esc(nomePercorso)+'" ad un altro allenatore — basta un link!</div>'
+    +'<button onclick="_eseguiCondivisionePercorso(\''+nomePercorso.replace(/'/g,"\\'")+'\')" style="width:100%;background:linear-gradient(135deg,#558B2F,#33691E);color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px">📲 Condividi percorso</button>'
+    +'<button onclick="document.getElementById(\'ov-condividi-percorso\').remove()" style="width:100%;background:#F5F5F5;color:#6B8BB0;border:none;border-radius:12px;padding:10px;font-size:13px;cursor:pointer">No grazie</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+}
+
+function _eseguiCondivisionePercorso(nomePercorso){
+  var percorsoJSON=JSON.stringify({
+    nome:nomePercorso,
+    taglia:window._agilityTaglia||'L',
+    ostacoli:window._campoOstacoli||[],
+    checkpoints:window._campoCheckpoints||[],
+    v:APP_VERSION
+  });
+  var encoded=btoa(unescape(encodeURIComponent(percorsoJSON)));
+  var url=location.origin+location.pathname+'?percorso='+encoded;
+  var ov=document.getElementById('ov-condividi-percorso');
+  if(navigator.share){
+    navigator.share({title:'Percorso Agility: '+nomePercorso,url:url})
+      .then(function(){if(ov) ov.remove();})
+      .catch(function(){});
+  } else {
+    navigator.clipboard.writeText(url).then(function(){
+      toast('📋 Link percorso copiato!');
+      if(ov) ov.remove();
+    }).catch(function(){
+      toast('⚠️ Copia manuale: '+url.slice(0,60)+'...');
+    });
+  }
 }
 
 function apriCaricaPercorso(){
