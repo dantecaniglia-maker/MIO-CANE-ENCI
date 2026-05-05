@@ -1,5 +1,40 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.80';</script>
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.81';
+var _LANG = localStorage.getItem('bp_lang') || 'it';
+var _T = {
+  it: {
+    home:'Home', settings:'Impostazioni', mode:'Modalità', services:'Servizi',
+    save:'Salva', delete:'Elimina', cancel:'Annulla', close:'Chiudi',
+    search:'Cerca', share:'Condividi', export_pdf:'Esporta PDF',
+    dog:'Cane', dogs:'Cani', breed:'Razza', name:'Nome', age:'Età',
+    health:'Salute', titles:'Titoli', pedigree:'Pedigree', reproduction:'Riproduzione',
+    offspring:'Prole', biometry:'Biometria', diary:'Diario',
+    training:'Allenamento', race:'Gara', course:'Percorso', obstacles:'Ostacoli',
+    timer:'Cronometro', start:'Avvia', stop:'Stop', reset:'Reset',
+    hunting:'Caccia', outing:'Uscita', bag:'Carniere', trials:'Prove',
+    family:'Famiglia', breeder:'Allevatore', sport:'Sport',
+    saved:'Salvato!', error:'Errore', confirm_delete:'Confermi eliminazione?',
+    no_data:'Nessun dato', loading:'Caricamento...',
+    login:'Accedi', logout:'Esci', register:'Registrati'
+  },
+  en: {
+    home:'Home', settings:'Settings', mode:'Mode', services:'Services',
+    save:'Save', delete:'Delete', cancel:'Cancel', close:'Close',
+    search:'Search', share:'Share', export_pdf:'Export PDF',
+    dog:'Dog', dogs:'Dogs', breed:'Breed', name:'Name', age:'Age',
+    health:'Health', titles:'Titles', pedigree:'Pedigree', reproduction:'Reproduction',
+    offspring:'Offspring', biometry:'Biometry', diary:'Diary',
+    training:'Training', race:'Race', course:'Course', obstacles:'Obstacles',
+    timer:'Timer', start:'Start', stop:'Stop', reset:'Reset',
+    hunting:'Hunting', outing:'Outing', bag:'Game Bag', trials:'Trials',
+    family:'Family', breeder:'Breeder', sport:'Sport',
+    saved:'Saved!', error:'Error', confirm_delete:'Confirm deletion?',
+    no_data:'No data', loading:'Loading...',
+    login:'Sign in', logout:'Sign out', register:'Sign up'
+  }
+};
+function t(key){ return (_T[_LANG]||_T.it)[key] || (_T.it)[key] || key; }
+</script>
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
@@ -1231,6 +1266,11 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
               <div><div style="font-weight:700;font-size:14px;color:#1a1a3a">Giudice Ring</div><div style="font-size:12px;color:#6B8BB0">Valutazione rapida cani in ring</div></div>
               <span style="margin-left:auto;color:#BFCFE8;font-size:18px">›</span>
             </div>
+            <div onclick="apriCalendarioEventi()" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;cursor:pointer;transition:background .15s;margin-top:6px;border:1.5px solid #DDEAFF" onmouseover="this.style.background='#EEF3FB'" onmouseout="this.style.background='#fff'">
+              <div style="width:38px;height:38px;background:#E3F2FD;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📅</div>
+              <div><div style="font-weight:700;font-size:14px;color:#1a1a3a">Calendario Eventi</div><div style="font-size:12px;color:#6B8BB0">Vaccinazioni, gare, esposizioni</div></div>
+              <span style="margin-left:auto;color:#BFCFE8;font-size:18px">›</span>
+            </div>
           </div>
         </div>
 
@@ -1811,6 +1851,13 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
           </div>
         </div>
         <div id="notif-test-wrap"></div>
+      </div>
+
+      <!-- Lingua -->
+      <div style="font-size:10px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.12em;margin:14px 0 6px;padding-left:4px">Lingua / Language</div>
+      <div style="display:flex;gap:8px;margin-bottom:4px">
+        <button onclick="_setLang('it')" id="lang-btn-it" style="flex:1;padding:12px;border-radius:10px;border:2px solid #ddd;background:#fff;font-size:14px;cursor:pointer">🇮🇹 Italiano</button>
+        <button onclick="_setLang('en')" id="lang-btn-en" style="flex:1;padding:12px;border-radius:10px;border:2px solid #ddd;background:#fff;font-size:14px;cursor:pointer">🇬🇧 English</button>
       </div>
 
       <!-- Account -->
@@ -9183,6 +9230,13 @@ function acceptGDPR(){
 /* ══════════════════════════════════════
    IMPOSTAZIONI
 ══════════════════════════════════════ */
+function _setLang(lang){
+  _LANG=lang;
+  localStorage.setItem('bp_lang',lang);
+  toast(_LANG==='en'?'🇬🇧 Language set to English':'🇮🇹 Lingua impostata su Italiano');
+  location.reload();
+}
+
 function openImpostazioni(){
   // Versione
   var v=APP_VERSION||'';
@@ -9192,6 +9246,10 @@ function openImpostazioni(){
   _updateTemaUI();
   // Modalità ENCI/FCI
   _updateEnciFciUI();
+  // Lingua: evidenzia bottone attivo
+  var btnIt=g('lang-btn-it'), btnEn=g('lang-btn-en');
+  if(btnIt){btnIt.style.borderColor=_LANG==='it'?'#0D47A1':'#ddd';btnIt.style.background=_LANG==='it'?'#E3F2FD':'#fff';}
+  if(btnEn){btnEn.style.borderColor=_LANG==='en'?'#0D47A1':'#ddd';btnEn.style.background=_LANG==='en'?'#E3F2FD':'#fff';}
   show('modal-impostazioni');
 }
 function toggleThema(el){
@@ -9297,6 +9355,167 @@ function _caricaBiometriaLocale(){
     _biometriaMisurazioni=d.dati||[];
     return true;
   }catch(e){return false;}
+}
+
+/* ══ CALENDARIO EVENTI ══ */
+function apriCalendarioEventi(){
+  var existing=document.getElementById('ov-calendario-eventi');
+  if(existing) existing.remove();
+  var oggi=new Date();
+  window._calMese=window._calMese!==undefined?window._calMese:oggi.getMonth();
+  window._calAnno=window._calAnno!==undefined?window._calAnno:oggi.getFullYear();
+
+  var ov=document.createElement('div');
+  ov.id='ov-calendario-eventi';
+  ov.style.cssText='position:fixed;inset:0;z-index:10100;background:#F4F7FE;overflow-y:auto;display:flex;flex-direction:column';
+  ov.innerHTML=
+    '<div style="background:linear-gradient(135deg,#0D47A1,#1a237e);padding:16px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0">'
+      +'<button onclick="document.getElementById(\'ov-calendario-eventi\').remove();window._calMese=undefined;window._calAnno=undefined" style="background:rgba(255,255,255,.15);border:none;border-radius:10px;padding:8px 12px;color:#fff;font-size:18px;font-weight:700;cursor:pointer">‹</button>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#fff">📅 Calendario Eventi</div>'
+    +'</div>'
+    +'<div id="cal-body" style="padding:16px;flex:1"></div>';
+  document.body.appendChild(ov);
+  _renderCalendario();
+}
+
+function _calNavi(delta){
+  window._calMese+=delta;
+  if(window._calMese>11){window._calMese=0;window._calAnno++;}
+  if(window._calMese<0){window._calMese=11;window._calAnno--;}
+  _renderCalendario();
+}
+
+function _raccogliEventiCalendario(){
+  var eventi={};
+  function aggiungi(ds,tipo,ico,testo){
+    if(!ds||ds.length<10) return;
+    var k=ds.slice(0,10);
+    if(!eventi[k]) eventi[k]=[];
+    eventi[k].push({tipo:tipo,ico:ico,testo:testo});
+  }
+
+  // Famiglia log (salute, diario)
+  (_famigliaLogTutti||[]).forEach(function(l){
+    if(!l.created_at) return;
+    var d=l.created_at.slice(0,10);
+    var ico=l.tipo==='vaccino'?'🔵':l.tipo==='farmaco'?'🔵':l.tipo==='visita'?'🔵':'🔵';
+    aggiungi(d,'salute',ico,l.testo||l.tipo||'');
+  });
+
+  // Sport allenamenti e gare
+  (_sportAllenamenti||[]).forEach(function(a){
+    aggiungi(a.data,'sport','🟠',(a.disciplina||'')+(a.tipo?' — '+a.tipo:''));
+  });
+  (_sportProve||[]).forEach(function(p){
+    aggiungi(p.data,'sport','🟠 🏆',(p.disciplina||'')+(p.tipo_prova?' — '+p.tipo_prova:''));
+  });
+
+  // Caccia uscite
+  (_cacciaUsciteList||[]).forEach(function(u){
+    aggiungi(u.data,'caccia','🟢',(u.zona||'Uscita')+(u.km?' — '+u.km+'km':''));
+  });
+
+  // Esposizioni
+  (esposizioni||[]).forEach(function(e){
+    aggiungi(e.data||e.dataEsposizione,'esposizione','🟣',(e.nome||e.titolo||'Esposizione'));
+  });
+
+  // Scadenze da controllaScadenze()
+  try{
+    var sc=controllaScadenze();
+    sc.forEach(function(s){
+      if(s.prossimaData){
+        aggiungi(s.prossimaData,'scadenza','⚠️',s.tipo+(s.urgenza==='scaduto'?' (scaduto)':''));
+      }
+    });
+  }catch(e){}
+
+  return eventi;
+}
+
+function _renderCalendario(){
+  var body=document.getElementById('cal-body');
+  if(!body) return;
+
+  var mese=window._calMese, anno=window._calAnno;
+  var oggi=new Date();
+  var oggiStr=oggi.getFullYear()+'-'+String(oggi.getMonth()+1).padStart(2,'0')+'-'+String(oggi.getDate()).padStart(2,'0');
+
+  var nomiMesi=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  var eventi=_raccogliEventiCalendario();
+
+  // Primo giorno del mese (0=Dom,1=Lun…)
+  var primoGiorno=new Date(anno,mese,1).getDay();
+  var offsetLun=(primoGiorno===0?6:primoGiorno-1); // Lun=0
+  var giorniMese=new Date(anno,mese+1,0).getDate();
+
+  var html=
+    // Header navigazione
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+      +'<button onclick="_calNavi(-1)" style="background:#EEF3FB;border:none;border-radius:10px;padding:10px 16px;font-size:18px;cursor:pointer;color:#0D47A1">‹</button>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#0D47A1">'+nomiMesi[mese]+' '+anno+'</div>'
+      +'<button onclick="_calNavi(1)" style="background:#EEF3FB;border:none;border-radius:10px;padding:10px 16px;font-size:18px;cursor:pointer;color:#0D47A1">›</button>'
+    +'</div>'
+    // Legenda
+    +'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;font-size:11px">'
+    +[['🔵','Salute/Diario'],['🟠','Sport'],['🟢','Caccia'],['🟣','Esposizione'],['⚠️','Scadenza']].map(function(l){
+      return '<span style="display:flex;align-items:center;gap:4px;background:#fff;border-radius:6px;padding:4px 8px;border:1px solid #DDEAFF">'+l[0]+' <span style="color:#6B8BB0">'+l[1]+'</span></span>';
+    }).join('')
+    +'</div>'
+    // Griglia intestazione giorni
+    +'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">'
+    +['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(function(g,i){
+      return '<div style="text-align:center;font-size:10px;font-weight:700;color:'+(i>=5?'#C62828':'#6B8BB0')+'">'+g+'</div>';
+    }).join('')
+    +'</div>'
+    // Griglia giorni
+    +'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">';
+
+  // Celle vuote prima del primo giorno
+  for(var i=0;i<offsetLun;i++){
+    html+='<div style="min-height:40px;border-radius:8px;background:transparent"></div>';
+  }
+
+  for(var g=1;g<=giorniMese;g++){
+    var ds=anno+'-'+String(mese+1).padStart(2,'0')+'-'+String(g).padStart(2,'0');
+    var evGiorno=eventi[ds]||[];
+    var isOggi=ds===oggiStr;
+    var dotIcons=evGiorno.slice(0,4).map(function(e){return e.ico;}).join('');
+    var haEventi=evGiorno.length>0;
+    html+='<div onclick="_calMostraGiorno(\''+ds+'\')" style="min-height:40px;border-radius:8px;padding:4px;cursor:'+(haEventi?'pointer':'default')+';background:'+(isOggi?'#E3F2FD':'#fff')+';border:1.5px solid '+(isOggi?'#1565C0':'#DDEAFF')+';transition:all .15s" onmouseover="if(this.style.cursor!==\'default\') this.style.background=\''+(isOggi?'#BBDEFB':'#F0F7FF')+'\'" onmouseout="this.style.background=\''+(isOggi?'#E3F2FD':'#fff')+'\'">'
+      +'<div style="font-size:11px;font-weight:'+(isOggi?'800':'600')+';color:'+(isOggi?'#0D47A1':'#1a1a3a')+'">'+g+'</div>'
+      +(dotIcons?'<div style="font-size:10px;line-height:1.2;margin-top:2px">'+dotIcons+'</div>':'')
+      +(evGiorno.length>4?'<div style="font-size:9px;color:#9ab0cc">+'+( evGiorno.length-4)+'</div>':'')
+      +'</div>';
+  }
+
+  html+='</div>'
+    // Dettaglio giorno selezionato
+    +'<div id="cal-dettaglio" style="margin-top:16px"></div>';
+
+  body.innerHTML=html;
+}
+
+function _calMostraGiorno(ds){
+  var det=document.getElementById('cal-dettaglio');
+  if(!det) return;
+  var eventi=_raccogliEventiCalendario();
+  var evGiorno=eventi[ds]||[];
+  if(!evGiorno.length){det.innerHTML='<div style="text-align:center;padding:12px;color:#9ab0cc;font-size:13px">Nessun evento il '+ds+'</div>';return;}
+
+  var colori={salute:'#E3F2FD',sport:'#FFF3E0',caccia:'#E8F5E9',esposizione:'#F3E5F5',scadenza:'#FFF8E1'};
+  var h='<div style="background:#fff;border-radius:14px;padding:14px;border:1.5px solid #DDEAFF">'
+    +'<div style="font-weight:700;font-size:13px;color:#0D47A1;margin-bottom:10px">📋 '+ds+'</div>';
+  evGiorno.forEach(function(e){
+    var bg=colori[e.tipo]||'#F8FAFF';
+    h+='<div style="background:'+bg+';border-radius:8px;padding:8px 10px;margin-bottom:6px;display:flex;align-items:center;gap:8px">'
+      +'<span style="font-size:16px">'+e.ico+'</span>'
+      +'<span style="font-size:12px;color:#1a1a3a">'+esc(e.testo||e.tipo)+'</span>'
+      +'</div>';
+  });
+  h+='</div>';
+  det.innerHTML=h;
+  det.scrollIntoView({behavior:'smooth'});
 }
 
 /* ══ GIUDICE RING ══ */
@@ -17696,20 +17915,53 @@ function _getTamagotchiMsg(cane, pastiOggi, usciteOggi, logOggi, streak){
 function controllaScadenze(){
   var log=_famigliaLogTutti||[];
   var oggi=Date.now();
+  var MS=86400000;
   var tipi=[
-    {tipo:'vaccino',       label:'Vaccino',         giorni:365},
-    {tipo:'antiparassitario',label:'Antiparassitario',giorni:30},
-    {tipo:'vermifugo',     label:'Vermifugo',        giorni:90},
-    {tipo:'visita_veterinaria',label:'Visita veterinaria',giorni:180}
+    {tipo:'vaccino',            label:'Vaccino',          giorni:365},
+    {tipo:'antiparassitario',   label:'Antiparassitario', giorni:30},
+    {tipo:'vermifugo',          label:'Vermifugo',        giorni:90},
+    {tipo:'visita_veterinaria', label:'Visita veterinaria',giorni:180}
   ];
-  return tipi.map(function(t){
+
+  var risultati=tipi.map(function(t){
     var eventi=log.filter(function(l){return l.tipo===t.tipo;});
-    if(!eventi.length) return {tipo:t.label,ultimaData:null,giorniPassati:null,scaduto:true,giorniAlScadenza:0,maiRegistrato:true};
-    var ultData=eventi.reduce(function(best,l){return l.created_at>best?l.created_at:best;},eventi[0].created_at);
-    var giorniPassati=Math.floor((oggi-new Date(ultData).getTime())/86400000);
-    var scaduto=giorniPassati>t.giorni;
-    return {tipo:t.label,ultimaData:ultData?ultData.slice(0,10):null,giorniPassati:giorniPassati,scaduto:scaduto,giorniAlScadenza:t.giorni-giorniPassati,maiRegistrato:false};
+    if(!eventi.length){
+      return {tipo:t.label,ultimaData:null,giorniPassati:null,scaduto:true,
+        giorniAlScadenza:0,maiRegistrato:true,
+        prossimaData:null,giorniAlProssimo:-9999,urgenza:'scaduto'};
+    }
+    var ultData=eventi.reduce(function(b,l){return l.created_at>b?l.created_at:b;},eventi[0].created_at);
+    var giorniPassati=Math.floor((oggi-new Date(ultData).getTime())/MS);
+    var giorniAlProssimo=t.giorni-giorniPassati;
+    var scaduto=giorniAlProssimo<=0;
+    var prossimaMs=new Date(ultData).getTime()+t.giorni*MS;
+    var prossimaData=new Date(prossimaMs).toISOString().slice(0,10);
+    var urgenza=scaduto?'scaduto':(giorniAlProssimo<=30?'attenzione':'ok');
+    return {tipo:t.label,ultimaData:ultData.slice(0,10),giorniPassati:giorniPassati,
+      scaduto:scaduto,giorniAlScadenza:giorniAlProssimo,maiRegistrato:false,
+      prossimaData:prossimaData,giorniAlProssimo:giorniAlProssimo,urgenza:urgenza};
   });
+
+  // Compleanno
+  var cane=_famigliaCaneSelezionato;
+  if(cane&&cane.data_nascita){
+    try{
+      var dn=new Date(cane.data_nascita);
+      var ora=new Date();
+      var pc=new Date(ora.getFullYear(),dn.getMonth(),dn.getDate());
+      if(pc.getTime()<=oggi) pc=new Date(ora.getFullYear()+1,dn.getMonth(),dn.getDate());
+      var giorniComp=Math.ceil((pc.getTime()-oggi)/MS);
+      risultati.push({tipo:'🎂 Compleanno di '+(cane.nome||''),ultimaData:cane.data_nascita.slice(0,10),
+        giorniPassati:null,scaduto:false,giorniAlScadenza:giorniComp,maiRegistrato:false,
+        prossimaData:pc.toISOString().slice(0,10),giorniAlProssimo:giorniComp,
+        urgenza:giorniComp<=7?'attenzione':'ok',isCompleanno:true});
+    }catch(e){}
+  }
+
+  // Ordina: scaduto → attenzione → ok
+  var ord={scaduto:0,attenzione:1,ok:2};
+  risultati.sort(function(a,b){return ord[a.urgenza]-ord[b.urgenza];});
+  return risultati;
 }
 
 function renderHealthDashboard(container){
@@ -17863,25 +18115,39 @@ function renderHealthDashboard(container){
 
   // ── Widget scadenze sanitarie ──
   var _scadenze=controllaScadenze();
+  var _cfg={
+    scaduto: {bg:'#FFEBEE',border:'#C62828',ico:'❌',tc:'#C62828'},
+    attenzione:{bg:'#FFF3E0',border:'#E65100',ico:'⚠️',tc:'#E65100'},
+    ok:        {bg:'#E8F5E9',border:'#2E7D32',ico:'✅',tc:'#2E7D32'}
+  };
   var _alertHtml='';
   _scadenze.forEach(function(s){
-    if(!s.scaduto) return;
+    var cfg=_cfg[s.urgenza]||_cfg.ok;
+    var countdown='';
     if(s.maiRegistrato){
-      _alertHtml+='<div style="background:#FFF8E1;border-left:4px solid #FFA000;border-radius:8px;padding:12px;margin-bottom:8px">'
-        +'<div style="font-weight:700;font-size:13px;color:#E65100">📋 '+s.tipo+' mai registrato</div>'
-        +'<div style="font-size:11px;color:#6B8BB0">Aggiungi il primo evento nel diario</div></div>';
+      countdown='Mai registrato — aggiungi il primo evento nel diario';
+    } else if(s.isCompleanno){
+      countdown='Prossimo: '+s.prossimaData+' (tra '+s.giorniAlProssimo+' giorni)';
+    } else if(s.scaduto){
+      countdown='Scaduto da '+Math.abs(s.giorniAlProssimo)+' giorni'+(s.ultimaData?' — ultimo: '+s.ultimaData:'');
     } else {
-      _alertHtml+='<div style="background:#FFF3E0;border-left:4px solid #E65100;border-radius:8px;padding:12px;margin-bottom:8px">'
-        +'<div style="font-weight:700;font-size:13px;color:#E65100">⚠️ '+s.tipo+' scaduto!</div>'
-        +'<div style="font-size:11px;color:#6B8BB0">Ultimo: '+(s.ultimaData||'mai')+' — '+s.giorniPassati+' giorni fa</div></div>';
+      countdown='Prossimo: '+s.prossimaData+' (tra '+s.giorniAlProssimo+' giorni)'+(s.ultimaData?' — ultimo: '+s.ultimaData:'');
     }
+    _alertHtml+='<div style="background:'+cfg.bg+';border-left:4px solid '+cfg.border+';border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:flex-start;gap:8px">'
+      +'<span style="font-size:16px;flex-shrink:0;line-height:1.4">'+cfg.ico+'</span>'
+      +'<div><div style="font-weight:700;font-size:13px;color:'+cfg.tc+'">'+s.tipo+'</div>'
+      +'<div style="font-size:11px;color:#6B8BB0;margin-top:1px">'+countdown+'</div></div>'
+      +'</div>';
   });
-  var _widgetScadenze=_alertHtml
-    ?'<div style="background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 12px rgba(13,71,161,.08);margin-bottom:12px;border:1.5px solid #FFE0B2">'
-      +'<div style="font-size:12px;font-weight:700;color:#E65100;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">🔔 Attenzione</div>'
-      +_alertHtml
-      +'</div>'
-    :'';
+  // Titolo dinamico
+  var _haScaduti=_scadenze.some(function(s){return s.urgenza==='scaduto';});
+  var _haAttenzione=_scadenze.some(function(s){return s.urgenza==='attenzione';});
+  var _titoloWidget=_haScaduti?'❌ Scadenze':(_haAttenzione?'⚠️ In scadenza':'✅ Tutto in regola');
+  var _borderWidget=_haScaduti?'#FFCDD2':(_haAttenzione?'#FFE0B2':'#C8E6C9');
+  var _widgetScadenze='<div style="background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 12px rgba(13,71,161,.08);margin-bottom:12px;border:1.5px solid '+_borderWidget+'">'
+    +'<div style="font-size:12px;font-weight:700;color:#0D47A1;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">'+_titoloWidget+'</div>'
+    +_alertHtml
+    +'</div>';
 
   container.innerHTML = _widgetScadenze +
 
