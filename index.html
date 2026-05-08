@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.81';
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.82';
 var _LANG = localStorage.getItem('bp_lang') || 'it';
 var _T = {
   it: {
@@ -421,6 +421,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
 #chat-fab.hidden{display:none!important}
 @keyframes scaleIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes bounce{0%,100%{transform:translateY(0)}25%{transform:translateY(-20px)}50%{transform:translateY(0)}75%{transform:translateY(-10px)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes loading{0%{width:10%;margin-left:0}50%{width:40%;margin-left:30%}100%{width:10%;margin-left:90%}}
 </style>
 </head>
@@ -13483,7 +13484,7 @@ function apriCampoAgility2D(){
     +'<div style="font-size:10px;font-weight:700;color:#558B2F" id="campo-count">Ostacoli: 0</div>'
     +'</div>'
     +'<div style="position:relative;overflow:visible;background:#E8F5E9" id="campo-container">'
-    +'<canvas id="campo-canvas" style="display:block;width:100%;touch-action:none"></canvas>'
+    +'<canvas id="campo-canvas" style="display:block;touch-action:none"></canvas>'
     +'</div>'
     +'<div style="padding:10px 12px;background:#F5F5F5;font-size:10px;color:#6B8BB0">'
     +'<strong>Legenda:</strong> Tap = piazza · Trascina = sposta · Doppio tap = ruota · Tieni premuto = elimina · 20×40m'
