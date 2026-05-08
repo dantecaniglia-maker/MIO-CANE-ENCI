@@ -17510,6 +17510,10 @@ async function _syncFamigliaBackground(mostraWizardSeVuoto){
 }
 
 function renderHomeFamiglia(){
+  if(!_famigliaCaneSelezionato){
+    if(_famigliaCani && _famigliaCani.length > 0) _famigliaCaneSelezionato = _famigliaCani[0];
+    else return;
+  }
   var hero = g('fam-cane-hero');
   if(!hero) return;
   var nomeFam = g('fam-nome-famiglia');
