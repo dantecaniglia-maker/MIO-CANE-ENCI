@@ -13477,7 +13477,7 @@ function apriCampoAgility2D(){
     +'<div style="font-size:10px;color:#6B8BB0" id="campo-info">Piazza ostacoli · Trascina per spostare · Doppio tap per ruotare</div>'
     +'<div style="font-size:10px;font-weight:700;color:#558B2F" id="campo-count">Ostacoli: 0</div>'
     +'</div>'
-    +'<div style="position:relative;overflow:visible;background:#E8F5E9" id="campo-container">'
+    +'<div style="position:relative;overflow:visible;background:#E8F5E9;width:100%" id="campo-container">'
     +'<canvas id="campo-canvas" style="display:block;touch-action:none"></canvas>'
     +'</div>'
     +'<div style="padding:10px 12px;background:#F5F5F5;font-size:10px;color:#6B8BB0">'
@@ -13485,7 +13485,11 @@ function apriCampoAgility2D(){
     +'</div>';
 
   document.body.appendChild(ov);
-  _inizializzaCampo();
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      _inizializzaCampo();
+    });
+  });
 }
 
 function _inizializzaCampo(){
