@@ -17518,9 +17518,8 @@ async function _syncFamigliaBackground(mostraWizardSeVuoto){
 
 function renderHomeFamiglia(){
   console.log('[DEBUG] renderHomeFamiglia: start, cane=', !!_famigliaCaneSelezionato, 'cani=', (_famigliaCani||[]).length);
-  if(!_famigliaCaneSelezionato){
-    if(_famigliaCani && _famigliaCani.length > 0) _famigliaCaneSelezionato = _famigliaCani[0];
-    else return;
+  if(!_famigliaCaneSelezionato && _famigliaCani && _famigliaCani.length > 0){
+    _famigliaCaneSelezionato = _famigliaCani[0];
   }
   var hero = g('fam-cane-hero');
   if(!hero) return;
