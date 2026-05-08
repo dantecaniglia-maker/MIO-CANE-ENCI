@@ -9928,7 +9928,7 @@ function salvaBiometriaMisure(btn){
   if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
   btn.disabled=true;btn.textContent='⏳';
 
-  var caneId=window._currentDogId==='__AL_VOLO__'?'al_volo_'+Date.now():(window._currentDogId||selectedId||null);
+  var caneId=window._currentDogId==='__AL_VOLO__'?'__AL_VOLO__':(window._currentDogId||selectedId||null);
   if(!caneId) caneId='al_volo_'+Date.now();
   var m={};
   ['lunghezza_testa','larghezza_testa','lunghezza_cranio','lunghezza_muso',
