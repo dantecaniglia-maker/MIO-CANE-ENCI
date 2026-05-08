@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.81';
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.85';
 var _LANG = localStorage.getItem('bp_lang') || 'it';
 var _T = {
   it: {
@@ -10334,7 +10334,6 @@ function applicaModalita(mod){
   }
 
   if(mod === 'famiglia'){
-    console.log('[DEBUG] famiglia: inizio');
     var _hc=g('home-caccia'); if(_hc) _hc.style.display='none';
     var _cbn=g('caccia-bottom-nav'); if(_cbn) _cbn.style.display='none';
     // Ricrea sempre home famiglia (struttura sempre aggiornata)
@@ -10368,7 +10367,6 @@ function applicaModalita(mod){
       document.body.appendChild(hf);
     }
     g('home-famiglia').style.display = 'block';
-    console.log('[DEBUG] famiglia: display block OK');
     var _hs4 = g('home-sport'); if(_hs4) _hs4.style.display='none';
     var _sbn4 = g('sport-bottom-nav'); if(_sbn4) _sbn4.style.display='none';
     if(g('bottom-nav')) g('bottom-nav').classList.add('fam-hidden');
@@ -10396,7 +10394,6 @@ function applicaModalita(mod){
       g('fam-bottom-nav').style.display = 'flex';
     }
     var _fab = g('chat-fab'); if(_fab){ _fab.style.zIndex='9988'; _fab.style.bottom='72px'; }
-    console.log('[DEBUG] famiglia: caricaFamiglia chiamata');
     caricaFamiglia();
     // Polling ogni 30s per compiti e log
     if(_pollingInterval) clearInterval(_pollingInterval);
@@ -17410,7 +17407,6 @@ async function salvaUscitaCaccia(btn){
 ════════════════════════════════════════ */
 
 async function caricaFamiglia(){
-  console.log('[DEBUG] caricaFamiglia: start, user=', !!_currentUser);
   if(!_currentUser) return;
 
   if(!localStorage.getItem('bp_famiglia_first_use')){
@@ -17517,7 +17513,6 @@ async function _syncFamigliaBackground(mostraWizardSeVuoto){
 }
 
 function renderHomeFamiglia(){
-  console.log('[DEBUG] renderHomeFamiglia: start, cane=', !!_famigliaCaneSelezionato, 'cani=', (_famigliaCani||[]).length);
   if(!_famigliaCaneSelezionato && _famigliaCani && _famigliaCani.length > 0){
     _famigliaCaneSelezionato = _famigliaCani[0];
   }
