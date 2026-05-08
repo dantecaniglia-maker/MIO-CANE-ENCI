@@ -13494,9 +13494,10 @@ function _inizializzaCampo(){
   if(!canvas||!container) return;
 
   var w=container.offsetWidth;
+  if(w < 100) w = window.innerWidth || 360;
   var h=Math.round(w*2);
-  canvas.width=w*2;  // retina
-  canvas.height=h*2;
+  canvas.width=w;
+  canvas.height=h;
   canvas.style.width=w+'px';
   canvas.style.height=h+'px';
   container.style.height=h+'px';
@@ -13504,8 +13505,8 @@ function _inizializzaCampo(){
 
   window._campoW=w;
   window._campoH=h;
-  window._campoScala=w/20; // 1 metro in px (CSS)
-  window._campoRetina=2;
+  window._campoScala=w/20;
+  window._campoRetina=1;
 
   // ── Coordinate helper ──
   function _campoXY(e){
@@ -13691,7 +13692,7 @@ function _disegnaCampo(){
   var s=window._campoScala||1;
 
   ctx.save();
-  ctx.scale(R,R);
+  if(R>1) ctx.scale(R,R);
 
   // ── Sfondo erba ──
   ctx.fillStyle='#C8E6C9';
