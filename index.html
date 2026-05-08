@@ -13497,8 +13497,7 @@ function _inizializzaCampo(){
   var container=document.getElementById('campo-container');
   if(!canvas||!container) return;
 
-  var w=container.offsetWidth;
-  if(w < 100) w = window.innerWidth || 360;
+  var w=container.offsetWidth||window.innerWidth||360;
   var h=Math.round(w*2);
   canvas.width=w;
   canvas.height=h;
