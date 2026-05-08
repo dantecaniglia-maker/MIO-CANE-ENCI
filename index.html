@@ -10492,6 +10492,7 @@ function applicaModalita(mod){
   };
   var _splashConf = _splashColors[mod];
   if(_splashConf){
+    var _oldSplash=document.getElementById('splash-screen');if(_oldSplash)_oldSplash.remove();
     var _splash = document.createElement('div');
     _splash.id='splash-screen';
     _splash.style.cssText = 'position:fixed;inset:0;z-index:99999;background:'+_splashConf.bg
@@ -19572,7 +19573,7 @@ function renderServiziFamiglia(container){
 
 function mostraServizi(){
   var existing=document.getElementById('ov-servizi');
-  if(existing){existing.style.display='flex';return;}
+  if(existing) existing.remove();
   var ov=document.createElement('div');
   ov.id='ov-servizi';
   ov.style.cssText='position:fixed;inset:0;z-index:10200;background:#F4F7FE;display:flex;flex-direction:column;overflow-y:auto';
