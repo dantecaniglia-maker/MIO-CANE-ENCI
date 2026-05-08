@@ -17512,6 +17512,7 @@ async function _syncFamigliaBackground(mostraWizardSeVuoto){
   } catch(e){
     console.error('[Famiglia] sync error:', e);
     if(mostraWizardSeVuoto && !_famigliaDati) mostraWizardFamiglia();
+    else try { renderHomeFamiglia(); switchFamTab('home'); } catch(e2){}
   }
 }
 
@@ -17585,6 +17586,7 @@ function renderHomeFamiglia(){
     : 'Nessuna attività recente';
 
   // Solo hero cane — la dashboard va nel tab-content tramite switchFamTab
+  try {
   hero.innerHTML = selettore
   +'<div style="background:linear-gradient(135deg,#0D47A1,#1565C0);border-radius:20px;padding:20px;margin-bottom:14px;position:relative;overflow:hidden">'
   +'<div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;border-radius:50%;background:rgba(201,169,97,.1)"></div>'
@@ -17604,6 +17606,10 @@ function renderHomeFamiglia(){
   +'border-radius:8px;padding:5px 12px;color:#fff;font-size:11px;font-weight:600;cursor:pointer">'
   +'📋 Scheda Salute</button>'
   +'</div></div></div>';
+  } catch(e){
+    console.error('[renderHomeFamiglia] render error:', e);
+    hero.innerHTML = '<div style="text-align:center;padding:40px 20px"><div style="font-size:40px;margin-bottom:12px">🐾</div><div style="font-size:14px;color:#E53935;margin-bottom:16px">Errore visualizzazione</div><button onclick="renderHomeFamiglia()" style="background:#0D47A1;color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer">Riprova</button></div>';
+  }
 
   switchFamTab('home');
 }
