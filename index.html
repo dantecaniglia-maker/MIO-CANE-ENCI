@@ -91,11 +91,6 @@ if('serviceWorker' in navigator && window.location.hostname !== 'www.claudeuserc
       });
     });
   }).catch(function(){});
-  // Ricarica automatica quando il SW diventa controller
-  var _refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', function(){
-    if(!_refreshing){ _refreshing=true; window.location.reload(); }
-  });
   // Controlla versione anche quando la pagina torna in focus (tab switch / resume)
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState==='visible'){
