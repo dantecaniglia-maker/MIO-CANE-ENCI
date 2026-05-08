@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.81';
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.82';
 var _LANG = localStorage.getItem('bp_lang') || 'it';
 var _T = {
   it: {
@@ -9932,7 +9932,7 @@ function salvaBiometriaMisure(btn){
   if(!_currentUser){toast('⚠️ Devi essere loggato');return;}
   btn.disabled=true;btn.textContent='⏳';
 
-  var caneId=window._currentDogId==='__AL_VOLO__'?'al_volo_'+Date.now():(window._currentDogId||selectedId||null);
+  var caneId=window._currentDogId==='__AL_VOLO__'?'__AL_VOLO__':(window._currentDogId||selectedId||null);
   if(!caneId) caneId='al_volo_'+Date.now();
   var m={};
   ['lunghezza_testa','larghezza_testa','lunghezza_cranio','lunghezza_muso',
@@ -10478,6 +10478,7 @@ function applicaModalita(mod){
         {tab:'caccia-gps',      ico:'🗺️', label:'GPS'},
         {tab:'caccia-diario',   ico:'📖', label:'Diario'},
         {tab:'caccia-carniere', ico:'🏹', label:'Carniere'},
+        {tab:'caccia-prove',    ico:'🏆', label:'Prove'},
         {tab:'caccia-altro',    ico:'☰',  label:'Altro'}
       ].map(function(t,i){
         var att = i===0;
@@ -13490,7 +13491,11 @@ function apriCampoAgility2D(){
     +'</div>';
 
   document.body.appendChild(ov);
-  _inizializzaCampo();
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      _inizializzaCampo();
+    });
+  });
 }
 
 function _inizializzaCampo(){
@@ -13499,6 +13504,7 @@ function _inizializzaCampo(){
   if(!canvas||!container) return;
 
   var w=container.offsetWidth;
+  if(w < 100) w = window.innerWidth || 360;
   var h=Math.round(w*2);
   canvas.width=w*2;  // retina
   canvas.height=h*2;
@@ -14042,7 +14048,14 @@ function _selezionaCheckpoint(){
 function avviaGaraCampo(){
   var cps=window._campoCheckpoints||[];
   if(cps.length<1){
-    toast('⚠️ Piazza almeno 1 checkpoint timer sul campo');
+    if(confirm('Nessun checkpoint piazzato. Vuoi piazzare START e FINISH automatici?')){
+      var s=window._campoScala||20;
+      window._campoCheckpoints=[
+        {id:'cp_auto_1',x:s*2,y:s*2,num:1},
+        {id:'cp_auto_2',x:s*18,y:s*38,num:2}
+      ];
+      _disegnaCampo();
+    }
     return;
   }
 
@@ -14189,7 +14202,7 @@ function _garaReset(){
 
 function _chiudiGaraCampo(){
   window._garaRunning=false;
-  clearInterval(window._garaInterval);
+  if(window._garaInterval){clearInterval(window._garaInterval);window._garaInterval=null;}
   var ov=document.getElementById('ov-gara-campo');
   if(ov) ov.remove();
 }
@@ -17510,6 +17523,7 @@ async function _syncFamigliaBackground(mostraWizardSeVuoto){
 }
 
 function renderHomeFamiglia(){
+  if(!_famigliaCaneSelezionato) return;
   var hero = g('fam-cane-hero');
   if(!hero) return;
   var nomeFam = g('fam-nome-famiglia');
@@ -19586,13 +19600,13 @@ function renderServiziFamiglia(container){
 
 function mostraServizi(){
   var existing=document.getElementById('ov-servizi');
-  if(existing){existing.style.display='flex';return;}
+  if(existing) existing.remove();
   var ov=document.createElement('div');
   ov.id='ov-servizi';
   ov.style.cssText='position:fixed;inset:0;z-index:10200;background:#F4F7FE;display:flex;flex-direction:column;overflow-y:auto';
   ov.innerHTML=
     '<div style="background:linear-gradient(135deg,#0D47A1,#1a237e);padding:16px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0">'
-      +'<button onclick="document.getElementById(\'ov-servizi\').style.display=\'none\'" style="background:rgba(255,255,255,.15);border:none;border-radius:10px;padding:8px 12px;color:#fff;font-size:18px;font-weight:700;cursor:pointer">‹</button>'
+      +'<button onclick="document.getElementById(\'ov-servizi\').remove()" style="background:rgba(255,255,255,.15);border:none;border-radius:10px;padding:8px 12px;color:#fff;font-size:18px;font-weight:700;cursor:pointer">‹</button>'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#fff">🛎️ Servizi</div>'
     +'</div>'
     +'<div id="servizi-overlay-content" style="padding:16px;flex:1"></div>';
@@ -20096,13 +20110,21 @@ function selezionaCaneFamiglia(id){
   var cane = _famigliaCani.find(function(c){return c.id===id;});
   if(!cane) return;
   _famigliaCaneSelezionato = cane;
-  // Mostra loading nell'hero
   var hero = g('fam-cane-hero');
   if(hero) hero.style.opacity='0.5';
-  caricaLogFamiglia().then(function(){
+  try {
+    caricaLogFamiglia().then(function(){
+      if(hero) hero.style.opacity='1';
+      try { renderHomeFamiglia(); } catch(e){ console.warn('[famiglia] render error dopo cambio cane:', e); if(hero) hero.style.opacity='1'; }
+    }).catch(function(e){
+      console.warn('[famiglia] caricaLog error:', e);
+      if(hero) hero.style.opacity='1';
+      try { renderHomeFamiglia(); } catch(e2){ console.warn('[famiglia] render fallback error:', e2); }
+    });
+  } catch(e){
+    console.warn('[famiglia] selezionaCane error:', e);
     if(hero) hero.style.opacity='1';
-    renderHomeFamiglia();
-  });
+  }
 }
 
 function _diarioFotoBlock(){
