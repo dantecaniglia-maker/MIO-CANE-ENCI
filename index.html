@@ -91,12 +91,6 @@ if('serviceWorker' in navigator && window.location.hostname !== 'www.claudeuserc
       });
     });
   }).catch(function(){});
-  navigator.serviceWorker.addEventListener('controllerchange', function(){
-    if(!sessionStorage.getItem('bp_sw_refreshed')){
-      sessionStorage.setItem('bp_sw_refreshed','1');
-      window.location.reload();
-    }
-  });
   // Controlla versione anche quando la pagina torna in focus (tab switch / resume)
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState==='visible'){
