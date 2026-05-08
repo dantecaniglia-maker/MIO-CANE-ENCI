@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<script>var DEBUG_MODE = false; var APP_VERSION = '12.83';
+<script>var DEBUG_MODE = false; var APP_VERSION = '12.84';
 var _LANG = localStorage.getItem('bp_lang') || 'it';
 var _T = {
   it: {
@@ -421,6 +421,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
 #chat-fab.hidden{display:none!important}
 @keyframes scaleIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes bounce{0%,100%{transform:translateY(0)}25%{transform:translateY(-20px)}50%{transform:translateY(0)}75%{transform:translateY(-10px)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes loading{0%{width:10%;margin-left:0}50%{width:40%;margin-left:30%}100%{width:10%;margin-left:90%}}
 </style>
 </head>
@@ -10528,6 +10529,8 @@ function applicaModalita(mod){
   };
   var _splashConf = _splashColors[mod];
   if(_splashConf){
+    var _oldSplash = document.getElementById('splash-screen');
+    if(_oldSplash) _oldSplash.remove();
     var _splash = document.createElement('div');
     _splash.id='splash-screen';
     _splash.style.cssText = 'position:fixed;inset:0;z-index:99999;background:'+_splashConf.bg
@@ -10799,7 +10802,7 @@ function renderCacciaHome(container){
     +'<div style="font-size:11px;font-weight:700;color:#2E7D32">Prove</div>'
     +'</div>'
     +'</div>'
-    +'<div style="background:#fff;border:2px solid #A5D6A7;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(46,125,50,.08);margin-bottom:16px">'
+    +'<div style="margin-top:16px;background:#fff;border:2px solid #A5D6A7;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(46,125,50,.08);margin-bottom:16px">'
     +'<div style="background:linear-gradient(135deg,#2E7D32,#388E3C);padding:14px 18px;display:flex;align-items:center;gap:10px">'
     +'<div style="font-size:22px">🫂</div>'
     +'<div><div style="font-weight:700;font-size:15px;color:#fff">Gruppo di Caccia</div>'
@@ -10821,7 +10824,7 @@ function renderCacciaHome(container){
         +'<button onclick="uniscitiGruppoCaccia()" style="flex:1;background:#F1F8E9;color:#2E7D32;border:1.5px solid #A5D6A7;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">🔗 Ho un codice</button>'
         +'</div></div>')
     +'</div></div>'
-    +'<div style="background:#fff;border:2px solid #90CAF9;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(21,101,192,.08);margin-bottom:16px">'
+    +'<div style="margin-top:16px;background:#fff;border:2px solid #90CAF9;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(21,101,192,.08);margin-bottom:16px">'
     +'<div style="background:linear-gradient(135deg,#1565C0,#0D47A1);padding:14px 18px;display:flex;align-items:center;gap:10px">'
     +'<div style="font-size:22px">📡</div>'
     +'<div><div style="font-weight:700;font-size:15px;color:#fff">Cacciatori Vicini</div>'
@@ -13496,7 +13499,7 @@ function apriCampoAgility2D(){
     +'<div style="font-size:10px;font-weight:700;color:#558B2F" id="campo-count">Ostacoli: 0</div>'
     +'</div>'
     +'<div style="position:relative;overflow:visible;background:#E8F5E9" id="campo-container">'
-    +'<canvas id="campo-canvas" style="display:block;width:100%;touch-action:none"></canvas>'
+    +'<canvas id="campo-canvas" style="display:block;touch-action:none"></canvas>'
     +'</div>'
     +'<div style="padding:10px 12px;background:#F5F5F5;font-size:10px;color:#6B8BB0">'
     +'<strong>Legenda:</strong> Tap = piazza · Trascina = sposta · Doppio tap = ruota · Tieni premuto = elimina · 20×40m'
@@ -13520,8 +13523,11 @@ function _inizializzaCampo(){
   var h=Math.round(w*2);
   canvas.width=w*2;  // retina
   canvas.height=h*2;
+  canvas.setAttribute('width', w*2);
+  canvas.setAttribute('height', h*2);
   canvas.style.width=w+'px';
   canvas.style.height=h+'px';
+  console.log('[campo] init w='+w+' h='+h+' containerW='+container.offsetWidth+' innerW='+window.innerWidth);
   container.style.height=h+'px';
   container.style.minHeight=h+'px';
 
@@ -17535,7 +17541,20 @@ async function _syncFamigliaBackground(mostraWizardSeVuoto){
 }
 
 function renderHomeFamiglia(){
-  if(!_famigliaCaneSelezionato) return;
+  if(!_famigliaCaneSelezionato){
+    if(_famigliaCani && _famigliaCani.length > 0){
+      _famigliaCaneSelezionato = _famigliaCani[0];
+    } else {
+      var hero = g('fam-cane-hero');
+      if(hero) hero.innerHTML = '<div style="text-align:center;padding:40px 20px">'
+        +'<div style="font-size:48px;margin-bottom:12px">🐾</div>'
+        +'<div style="font-size:16px;font-weight:700;color:#1a1a3a;margin-bottom:8px">Nessun cane registrato</div>'
+        +'<div style="font-size:13px;color:#6B8BB0;margin-bottom:16px">Aggiungi il tuo primo cane per iniziare</div>'
+        +'<button onclick="mostraWizardAggiuntaCane()" style="background:linear-gradient(135deg,#E91E63,#AD1457);color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer">+ Aggiungi cane</button>'
+        +'</div>';
+      return;
+    }
+  }
   var hero = g('fam-cane-hero');
   if(!hero) return;
   var nomeFam = g('fam-nome-famiglia');
