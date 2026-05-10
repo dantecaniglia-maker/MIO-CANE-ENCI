@@ -1919,6 +1919,16 @@ html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] t
         <button onclick="_setLang('en')" id="lang-btn-en" style="flex:1;padding:12px;border-radius:10px;border:2px solid #ddd;background:#fff;font-size:14px;cursor:pointer">🇬🇧 English</button>
       </div>
 
+      <!-- Backup Dati -->
+      <div style="margin-top:16px">
+        <div style="font-weight:700;font-size:13px;color:#0D47A1;margin-bottom:8px">💾 Backup Dati</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="_esportaBackup()" style="flex:1;padding:12px;border-radius:10px;border:2px solid #2E7D32;background:#E8F5E9;font-size:13px;font-weight:600;cursor:pointer">📤 Esporta</button>
+          <button onclick="_importaBackup()" style="flex:1;padding:12px;border-radius:10px;border:2px solid #E65100;background:#FFF3E0;font-size:13px;font-weight:600;cursor:pointer">📥 Importa</button>
+        </div>
+        <div style="font-size:10px;color:#6B8BB0;margin-top:6px">Salva una copia dei tuoi dati sul telefono</div>
+      </div>
+
       <!-- Account -->
       <div style="font-size:10px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.12em;margin:14px 0 6px;padding-left:4px">Account</div>
       <div id="user-info-bar" style="background:#EEF3FB;border-radius:10px;padding:12px;margin-bottom:8px;font-size:13px;display:none">
@@ -9454,6 +9464,64 @@ function _updateTemaUI(){
   if(lbl) lbl.textContent=isDark?'Tema chiaro':'Tema scuro';
   if(sub) sub.textContent=isDark?'Attiva modalità giorno':'Attiva modalità notte';
 }
+function _esportaBackup(){
+  var backup={
+    version:APP_VERSION,
+    date:new Date().toISOString(),
+    cani:cani||[],
+    famigliaCani:_famigliaCani||[],
+    famigliaDati:_famigliaDati||null,
+    sportAllenamenti:window._sportAllenamenti||[],
+    sportBadges:window._sportBadges||[],
+    biometria:_biometriaMisurazioni||[],
+    storicoTempi:window._campoStoricoTempi||[],
+    giudice:window._giudiceValutazioni||[],
+    settings:{
+      lang:_LANG,
+      theme:localStorage.getItem('bp_theme')||'light',
+      modalita:localStorage.getItem(localStorage.getItem('bp_modalita_key')||'bp_modalita')||'allevatore'
+    }
+  };
+  var json=JSON.stringify(backup,null,2);
+  var blob=new Blob([json],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='breedped_backup_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('📤 Backup esportato!');
+}
+
+function _importaBackup(){
+  var input=document.createElement('input');
+  input.type='file';
+  input.accept='.json';
+  input.onchange=function(){
+    if(!input.files||!input.files[0]) return;
+    var reader=new FileReader();
+    reader.onload=function(e){
+      try{
+        var data=JSON.parse(e.target.result);
+        if(!data.version){toast('⚠️ File non valido');return;}
+        if(!confirm('Importare il backup del '+data.date+'? I dati attuali verranno sovrascritti.')){return;}
+        if(data.cani) cani=data.cani;
+        if(data.sportAllenamenti) window._sportAllenamenti=data.sportAllenamenti;
+        if(data.biometria) _biometriaMisurazioni=data.biometria;
+        if(data.storicoTempi) window._campoStoricoTempi=data.storicoTempi;
+        if(data.giudice) window._giudiceValutazioni=data.giudice;
+        if(data.settings){
+          if(data.settings.lang) _setLang(data.settings.lang);
+        }
+        toast('📥 Backup importato! Ricarica l\'app.');
+        setTimeout(function(){location.reload();},1500);
+      }catch(err){toast('⚠️ Errore: '+err.message);}
+    };
+    reader.readAsText(input.files[0]);
+  };
+  input.click();
+}
+
 function toggleEnciFci(el){
   var isFci=localStorage.getItem('miocane_mode')==='fci';
   localStorage.setItem('miocane_mode', isFci?'enci':'fci');
