@@ -10947,13 +10947,14 @@ function applicaModalita(mod){
   var _splashConf = _splashColors[mod];
   if(_splashConf){
     var _oldSplash=document.getElementById('splash-screen');if(_oldSplash)_oldSplash.remove();
+    var _splashIcon={allevatore:'icon-allevatore.png',famiglia:'icon-famiglia.png',caccia:'icon-caccia.png',sport:'icon-sport.png'};
+    var _iconSrc=_splashIcon[mod]||'logo.jpeg';
     var _splash = document.createElement('div');
     _splash.id='splash-screen';
     _splash.style.cssText = 'position:fixed;inset:0;z-index:99999;background:'+_splashConf.bg
       +';display:flex;flex-direction:column;align-items:center;justify-content:center;animation:fadeIn .4s;transition:opacity .5s';
     _splash.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%">'
-      +'<div style="width:80px;height:80px;border-radius:20px;background:rgba(255,255,255,.12);border:2px solid rgba(201,169,97,.5);display:flex;align-items:center;justify-content:center;animation:fadeIn .5s,splashPulse 1.5s ease-in-out infinite">'
-      +'<span style="font-family:Fraunces,serif;font-style:italic;font-size:40px;font-weight:600;color:#C9A961">P</span></div>'
+      +'<img src="'+_iconSrc+'" style="width:80px;height:80px;border-radius:20px;animation:fadeIn .5s,splashPulse 1.5s ease-in-out infinite"/>'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:28px;font-weight:600;color:#fff;margin-top:16px;letter-spacing:-.02em">Breed<span style="color:#C9A961">Ped</span></div>'
       +'<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:6px;letter-spacing:.08em">'+(_splashConf.sublabel||'')+'</div>'
       +'<div style="width:120px;height:3px;background:rgba(255,255,255,.1);border-radius:3px;margin-top:24px;overflow:hidden">'
@@ -23546,23 +23547,23 @@ function sendChat(){
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div onclick="scegliModalita('allevatore');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(13,71,161,.25),rgba(13,71,161,.1));border:1.5px solid rgba(13,71,161,.3);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
-        <div style="font-size:32px;margin-bottom:8px">🏆</div>
+        <img src="icon-allevatore.png" style="width:64px;height:64px;border-radius:12px;margin-bottom:8px"/>
         <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:#F2EEE7">Allevatore</div>
         <div style="font-size:10px;color:rgba(242,238,231,.5);margin-top:4px">Pedigree · ENCI · Show</div>
       </div>
       <div onclick="scegliModalita('famiglia');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(233,30,99,.25),rgba(233,30,99,.1));border:1.5px solid rgba(233,30,99,.3);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
-        <div style="font-size:32px;margin-bottom:8px">🏠</div>
+        <img src="icon-famiglia.png" style="width:64px;height:64px;border-radius:12px;margin-bottom:8px"/>
         <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:#F2EEE7">Famiglia</div>
         <div style="font-size:10px;color:rgba(242,238,231,.5);margin-top:4px">Salute · Diario · Score</div>
       </div>
       <div onclick="scegliModalita('caccia');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(46,125,50,.25),rgba(46,125,50,.1));border:1.5px solid rgba(46,125,50,.3);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
-        <div style="font-size:32px;margin-bottom:8px">🐕‍🦺</div>
+        <img src="icon-caccia.png" style="width:64px;height:64px;border-radius:12px;margin-bottom:8px"/>
         <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:#F2EEE7">Caccia</div>
         <div style="font-size:10px;color:rgba(242,238,231,.5);margin-top:4px">GPS · Carniere · Tartufo</div>
       </div>
       <div onclick="scegliModalita('sport');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(230,81,0,.25),rgba(230,81,0,.1));border:1.5px solid rgba(230,81,0,.3);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
-        <div style="font-size:32px;margin-bottom:8px">🏋️</div>
-        <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:#F2EEE7">Sport</div>
+        <img src="icon-sport.png" style="width:64px;height:64px;border-radius:12px;margin-bottom:8px"/>
+        <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:#F2EEE7">Sport & Agility</div>
         <div style="font-size:10px;color:rgba(242,238,231,.5);margin-top:4px">Agility · IGP · Obedience</div>
       </div>
     </div>
