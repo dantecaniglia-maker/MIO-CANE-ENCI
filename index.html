@@ -516,6 +516,9 @@ html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] t
 @keyframes scaleIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes bounce{0%,100%{transform:translateY(0)}25%{transform:translateY(-20px)}50%{transform:translateY(0)}75%{transform:translateY(-10px)}}
 @keyframes loading{0%{width:10%;margin-left:0}50%{width:40%;margin-left:30%}100%{width:10%;margin-left:90%}}
+@keyframes splashPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes splashProgress{0%{width:0}100%{width:100%}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 </style>
 </head>
 <body>
@@ -10886,10 +10889,10 @@ function applicaModalita(mod){
 
   // Splash screen animato per cambio modalità
   var _splashColors = {
-    allevatore: {bg:'linear-gradient(135deg,#0D47A1,#1a237e)',ico:'🏆',nome:'Modalità Allevatore'},
-    famiglia:   {bg:'linear-gradient(135deg,#1565C0,#0D47A1)',ico:'🏠',nome:'Modalità Famiglia'},
-    caccia:     {bg:'linear-gradient(135deg,#2E7D32,#1B5E20)',ico:'🐕‍🦺',nome:'Modalità Caccia & Tartufo'},
-    sport:      {bg:'linear-gradient(135deg,#E65100,#BF360C)',ico:'🏋️',nome:'Modalità Sport & Agility'}
+    allevatore: {bg:'linear-gradient(135deg,#0D47A1,#1a237e)',sublabel:'Allevamento & Show'},
+    famiglia:   {bg:'linear-gradient(135deg,#E91E63,#AD1457)',sublabel:'Cane di Famiglia'},
+    caccia:     {bg:'linear-gradient(135deg,#2E7D32,#1B5E20)',sublabel:'Caccia & Tartufo'},
+    sport:      {bg:'linear-gradient(135deg,#E65100,#BF360C)',sublabel:'Sport & Agility'}
   };
   var _splashConf = _splashColors[mod];
   if(_splashConf){
@@ -10898,26 +10901,15 @@ function applicaModalita(mod){
     _splash.id='splash-screen';
     _splash.style.cssText = 'position:fixed;inset:0;z-index:99999;background:'+_splashConf.bg
       +';display:flex;flex-direction:column;align-items:center;justify-content:center;animation:fadeIn .4s;transition:opacity .5s';
-    _splash.innerHTML =
-      // Logo
-      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">'
-        +'<img src="logo.jpeg" style="width:56px;height:56px;border-radius:14px;object-fit:cover;border:2px solid rgba(201,169,97,.5)" onerror="this.style.display=\'none\'"/>'
-        +'<div><div style="font-family:\'Playfair Display\',serif;font-size:28px;font-weight:700;color:#fff;line-height:1">Breed<span style="color:#C9A961">Ped</span></div>'
-        +'<div style="font-size:11px;color:rgba(255,255,255,.6);letter-spacing:.08em">IL PEDIGREE INTELLIGENTE</div></div>'
-      +'</div>'
-      // Icona + nome modalità
-      +'<div style="font-size:56px;margin-bottom:12px;animation:bounce .8s">'+_splashConf.ico+'</div>'
-      +'<div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:32px;letter-spacing:.04em">'+_splashConf.nome+'</div>'
-      // Barra di progresso
-      +'<div style="width:200px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden">'
-        +'<div id="splash-bar" style="height:100%;width:0%;background:#C9A961;border-radius:2px;transition:width 1.4s linear"></div>'
+    _splash.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%">'
+      +'<div style="width:80px;height:80px;border-radius:20px;background:rgba(255,255,255,.12);border:2px solid rgba(201,169,97,.5);display:flex;align-items:center;justify-content:center;animation:fadeIn .5s,splashPulse 1.5s ease-in-out infinite">'
+      +'<span style="font-family:Fraunces,serif;font-style:italic;font-size:40px;font-weight:600;color:#C9A961">P</span></div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:28px;font-weight:600;color:#fff;margin-top:16px;letter-spacing:-.02em">Breed<span style="color:#C9A961">Ped</span></div>'
+      +'<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:6px;letter-spacing:.08em">'+(_splashConf.sublabel||'')+'</div>'
+      +'<div style="width:120px;height:3px;background:rgba(255,255,255,.1);border-radius:3px;margin-top:24px;overflow:hidden">'
+      +'<div style="width:0;height:100%;background:#C9A961;border-radius:3px;animation:splashProgress 1.5s ease-out forwards"></div></div>'
       +'</div>';
     document.body.appendChild(_splash);
-    // Avvia barra
-    requestAnimationFrame(function(){
-      var bar=document.getElementById('splash-bar');
-      if(bar) bar.style.width='100%';
-    });
     // Fade-out dopo 1.5s, rimozione dopo ulteriori 0.5s (totale 2s)
     setTimeout(function(){
       _splash.style.opacity='0';
