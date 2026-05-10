@@ -1110,7 +1110,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
       <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:#fff;white-space:nowrap">Breed<span style="color:#C9A961">Ped</span></div>
       <div class="hide-mobile" style="font-size:8px;color:rgba(255,255,255,.6);letter-spacing:.1em;text-transform:uppercase">Il pedigree intelligente</div>
     </div>
-    <div id="modalita-badge" onclick="g('modal-modalita').style.display='flex'"
+    <div id="modalita-badge" onclick="show('modal-modalita')"
       style="display:none;font-size:10px;font-weight:700;color:#C9A961;cursor:pointer;background:rgba(201,169,97,.2);border:1px solid rgba(201,169,97,.5);border-radius:20px;padding:2px 8px;white-space:nowrap;flex-shrink:0;margin-left:6px">
       🏆 Allevatore
     </div>
@@ -1120,16 +1120,16 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
     <input id="import-input" type="file" accept=".enci,.json" onchange="importScheda(this)" style="display:none"/>
     <!-- Su mobile: icone; su desktop: testo completo -->
     <button id="btn-back" class="hidden btn btn-ghost btn-sm no-print" onclick="closeDetail()" style="white-space:nowrap;font-size:13px">← Cani</button>
-    <button class="btn btn-teal btn-sm no-print" onclick="triggerImport()" title="Importa scheda">
+    <button class="btn btn-teal btn-sm no-print hide-mobile" onclick="triggerImport()" title="Importa scheda">
       <span class="hide-mobile">📥 Importa</span>
       <span class="show-mobile">📥</span>
     </button>
     <button class="btn btn-gold no-print" onclick="openModal()" title="Aggiungi cane">
       <span class="hide-mobile">+ Aggiungi Cane</span>
-      <span class="show-mobile">+🐾</span>
+      <span class="show-mobile">+</span>
     </button>
     <button class="btn btn-ghost btn-sm no-print" onclick="openImpostazioni()" title="Impostazioni" style="padding:6px 9px;font-size:18px;flex-shrink:0">⚙️</button>
-    <button class="btn btn-ghost btn-sm no-print" onclick="g('modal-modalita').style.display='flex'" style="padding:6px 9px;font-size:11px;font-weight:600;flex-shrink:0;white-space:nowrap">🔄 Modalità</button>
+    <button class="btn btn-ghost btn-sm no-print" onclick="show('modal-modalita')" style="padding:6px 9px;font-size:11px;font-weight:600;flex-shrink:0;white-space:nowrap">🔄 Modalità</button>
   </div>
 </header>
 
@@ -1815,7 +1815,7 @@ html[data-theme=dark] div[style*="border: 1.5px solid #DDEAFF"]{border-color:#1E
         <div class="imp-text"><div>Notifiche</div><div class="imp-sub" id="notif-sub">Vaccini, trattamenti, esposizioni</div></div>
         <span id="notif-arr" style="color:#BFCFE8;font-size:18px;transition:transform .25s">›</span>
       </div>
-      <div class="imp-item" onclick="hide('modal-impostazioni');g('modal-modalita').style.display='flex'">
+      <div class="imp-item" onclick="hide('modal-impostazioni');show('modal-modalita')">
         <span class="imp-icon" style="background:#FFFBF0">🔄</span>
         <div class="imp-text"><div>Cambia modalità</div><div class="imp-sub">Allevatore · Famiglia · Agility · Caccia</div></div>
         <span class="imp-arr">›</span>
@@ -4487,7 +4487,7 @@ async function onUserSignedIn(user){
   toast('👋 Benvenuto! '+(user.email||''));
   var modSalvata = getModalita();
   if(!modSalvata){
-    g('modal-modalita').style.display = 'flex';
+    show('modal-modalita');
   } else {
     applicaModalita(modSalvata);
   }
