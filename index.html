@@ -5001,6 +5001,9 @@ function uploadFotoCane(){
   var c=cur(); if(!c||c._guest) return;
   g('det-foto-input').click();
 }
+function _caricaFotoCane(caneId){
+  uploadFotoCane();
+}
 
 function onDetFotoSelected(input){
   var file=input.files[0]; if(!file) return;
