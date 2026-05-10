@@ -14055,7 +14055,7 @@ function _eliminaUltimo(){
 }
 
 function _svuotaCampo(){
-  if(!confirm('Svuotare il campo?')) return;
+  if(!confirm(t('confirm_delete'))) return;
   window._campoOstacoli=[];
   window._campoCheckpoints=[];
   window._campoNextNum=1;
@@ -15976,7 +15976,7 @@ function renderCacciaCarniere(container){
     +'<div style="background:#fff;border-radius:14px;padding:14px;text-align:center;border:1.5px solid #F0E0A0"><div style="font-size:20px">⏳</div></div>'
     +'</div>'
     +'<div id="carniere-stagione-filtro"></div>'
-    +'<div id="carniere-lista"><div style="text-align:center;padding:20px;color:#9ab0cc;font-size:13px">⏳ Caricamento...</div></div>'
+    +'<div id="carniere-lista"><div style="text-align:center;padding:20px;color:#9ab0cc;font-size:13px">⏳ '+t('loading')+'</div></div>'
     +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc"><img src="logo.jpeg" style="width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:4px" onerror="this.style.display=\'none\'"/>Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>';
 
   // Mostra subito stats a zero
@@ -16465,7 +16465,7 @@ function renderCacciaDiario(container){
     +'border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Uscita</button>'
     +'</div>'
     +'<div id="caccia-diario-list">'
-    +'<div style="text-align:center;padding:20px;color:#9ab0cc">⏳ Caricamento...</div>'
+    +'<div style="text-align:center;padding:20px;color:#9ab0cc">⏳ '+t('loading')+'</div>'
     +'</div>';
 
   try {
@@ -16527,7 +16527,7 @@ function renderCacciaCani(container){
     +'<div style="font-size:12px;color:#6B8BB0">Profili cani per gare e prove</div></div>'
     +'<button onclick="apriNuovoCaneC()" style="background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer">+ Aggiungi</button>'
     +'</div></div>'
-    +'<div id="caccia-cani-lista"><div style="text-align:center;padding:20px;color:#9ab0cc;font-size:13px">⏳ Caricamento...</div></div>'
+    +'<div id="caccia-cani-lista"><div style="text-align:center;padding:20px;color:#9ab0cc;font-size:13px">⏳ '+t('loading')+'</div></div>'
     +'<div style="text-align:center;padding:16px 0 4px;font-size:10px;color:#9ab0cc"><img src="logo.jpeg" style="width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:4px" onerror="this.style.display=\'none\'"/>Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>';
 
   try {
@@ -19960,7 +19960,7 @@ async function apriClassificaNazionale(){
       +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1">🇮🇹 Classifica Nazionale</div>'
       +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ab0cc">✕</button>'
     +'</div>'
-    +'<div id="_class-naz-content" style="text-align:center;color:#9ab0cc;font-size:13px;padding:20px">⏳ Caricamento...</div>'
+    +'<div id="_class-naz-content" style="text-align:center;color:#9ab0cc;font-size:13px;padding:20px">⏳ '+t('loading')+'</div>'
     +'</div>';
   document.body.appendChild(overlay);
   var content = document.getElementById('_class-naz-content');
