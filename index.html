@@ -11368,9 +11368,7 @@ function renderCacciaHome(container){
         +'</div></div>';
     }
 
-    container.innerHTML += '<div style="text-align:center;padding:20px 0 8px;font-size:10px;color:#9ab0cc">'
-    +'<img src="logo.jpeg" style="width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:4px" onerror="this.style.display=\'none\'"/>Powered by <strong style="color:#C9A961">Dante Caniglia</strong> · Breed<span style="color:#C9A961">Ped</span></div>'
-    +'<div onclick="scegliModalita(\'famiglia\')" style="margin:16px;padding:16px;background:linear-gradient(135deg,#1565C0,#42A5F5);border-radius:16px;cursor:pointer">'
+    container.innerHTML += '<div onclick="scegliModalita(\'famiglia\')" style="margin:16px;padding:16px;background:linear-gradient(135deg,#1565C0,#42A5F5);border-radius:16px;cursor:pointer">'
       +'<div style="color:#fff;font-weight:700;font-size:15px">🏠 Famiglia</div>'
       +'<div style="color:rgba(255,255,255,.8);font-size:12px;margin-top:4px">Gestisci salute quotidiana, passeggiate e diario del tuo cane</div>'
     +'</div>';
@@ -12074,9 +12072,6 @@ function renderSportHome(container){
       +'<div style="color:#fff;font-weight:700;font-size:16px">🏆 Classifica & Ranking</div>'
       +'<div style="color:rgba(255,255,255,.8);font-size:12px;margin-top:4px">Confronta i tuoi risultati con altri atleti</div>'
     +'</div>'
-    // Footer
-    +'<div style="text-align:center;padding:8px;font-size:10px;color:#FFCCBC">'
-    +'Powered by <strong style="color:#C9A961">Dante Caniglia</strong></div>';
 }
 
 function apriClassificaSport(){
@@ -23546,22 +23541,22 @@ function sendChat(){
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div onclick="scegliModalita('allevatore');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(13,71,161,.25),rgba(13,71,161,.1));border:1.5px solid rgba(13,71,161,.3);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+      <div onclick="scegliModalita('allevatore');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(13,71,161,.6),rgba(13,71,161,.4));border:1.5px solid rgba(13,71,161,.6);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
         <img src="icon-allevatore.png" style="width:64px;height:64px;border-radius:12px;margin-bottom:8px"/>
         <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:#F2EEE7">Allevatore</div>
         <div style="font-size:10px;color:rgba(242,238,231,.5);margin-top:4px">Pedigree · ENCI · Show</div>
       </div>
-      <div onclick="scegliModalita('famiglia');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(233,30,99,.25),rgba(233,30,99,.1));border:1.5px solid rgba(233,30,99,.3);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+      <div onclick="scegliModalita('famiglia');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(233,30,99,.6),rgba(233,30,99,.4));border:1.5px solid rgba(233,30,99,.6);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
         <img src="icon-famiglia.png" style="width:64px;height:64px;border-radius:12px;margin-bottom:8px"/>
         <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:#F2EEE7">Famiglia</div>
         <div style="font-size:10px;color:rgba(242,238,231,.5);margin-top:4px">Salute · Diario · Score</div>
       </div>
-      <div onclick="scegliModalita('caccia');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(46,125,50,.25),rgba(46,125,50,.1));border:1.5px solid rgba(46,125,50,.3);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+      <div onclick="scegliModalita('caccia');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(46,125,50,.6),rgba(46,125,50,.4));border:1.5px solid rgba(46,125,50,.6);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
         <img src="icon-caccia.png" style="width:64px;height:64px;border-radius:12px;margin-bottom:8px"/>
         <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:#F2EEE7">Caccia</div>
         <div style="font-size:10px;color:rgba(242,238,231,.5);margin-top:4px">GPS · Carniere · Tartufo</div>
       </div>
-      <div onclick="scegliModalita('sport');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(230,81,0,.25),rgba(230,81,0,.1));border:1.5px solid rgba(230,81,0,.3);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+      <div onclick="scegliModalita('sport');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(230,81,0,.6),rgba(230,81,0,.4));border:1.5px solid rgba(230,81,0,.6);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
         <img src="icon-sport.png" style="width:64px;height:64px;border-radius:12px;margin-bottom:8px"/>
         <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:#F2EEE7">Sport & Agility</div>
         <div style="font-size:10px;color:rgba(242,238,231,.5);margin-top:4px">Agility · IGP · Obedience</div>
