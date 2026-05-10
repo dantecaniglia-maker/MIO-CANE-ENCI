@@ -4495,6 +4495,9 @@ async function onUserSignedIn(user){
   if(!localStorage.getItem('bp_onboarding_done')){
     setTimeout(function(){ mostraOnboarding(); }, 1500);
   }
+  if(!localStorage.getItem('bp_gdpr_accepted')){
+    setTimeout(function(){ mostraBannerGDPR(); }, 2000);
+  }
 
   // Check percorso condiviso via URL
   try{
@@ -4542,6 +4545,27 @@ function mostraOnboarding(){
     +'<button onclick="localStorage.setItem(\'bp_onboarding_done\',\'1\');document.getElementById(\'ov-onboarding\').remove();window._onboardStep=0" style="width:100%;margin-top:8px;padding:10px;background:none;border:none;color:rgba(242,238,231,.4);font-size:12px;cursor:pointer">Salta</button>'
     +'</div>';
   document.body.appendChild(ov);
+}
+
+function mostraBannerGDPR(){
+  if(document.getElementById('gdpr-banner')) return;
+  var b=document.createElement('div');
+  b.id='gdpr-banner';
+  b.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:10700;background:#0E1116;border-top:2px solid #C9A961;padding:16px 20px;box-shadow:0 -4px 20px rgba(0,0,0,.3)';
+  b.innerHTML='<div style="max-width:600px;margin:0 auto">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:16px;font-weight:600;color:#F2EEE7;margin-bottom:8px">🔒 Privacy e Cookie</div>'
+    +'<div style="font-size:12px;color:rgba(242,238,231,.7);line-height:1.5;margin-bottom:14px">'
+    +'BreedPed utilizza Supabase per salvare i tuoi dati in modo sicuro. '
+    +'I dati biometrici e sanitari dei tuoi cani sono trattati secondo il GDPR. '
+    +'Non vendiamo né condividiamo i tuoi dati con terze parti. '
+    +'Utilizzando l\'app accetti la nostra informativa sulla privacy.</div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button onclick="localStorage.setItem(\'bp_gdpr_accepted\',\'1\');document.getElementById(\'gdpr-banner\').remove()" '
+    +'style="flex:1;padding:12px;background:linear-gradient(135deg,#C9A961,#B8943F);color:#0E1116;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">✅ Accetto</button>'
+    +'<button onclick="window.open(\'https://www.iubenda.com/privacy-policy/generic\',\'_blank\')" '
+    +'style="padding:12px 16px;background:rgba(242,238,231,.08);border:1px solid rgba(242,238,231,.15);border-radius:10px;color:rgba(242,238,231,.6);font-size:12px;cursor:pointer">Leggi tutto</button>'
+    +'</div></div>';
+  document.body.appendChild(b);
 }
 
 function onUserSignedOut(){
