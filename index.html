@@ -10298,9 +10298,13 @@ function scegliModalita(mod){
 function applicaModalita(mod){
   var badge = g('modalita-badge');
   if(badge){
-    badge.style.display = '';
-    var badgeNomi = {allevatore:'🏆 Allevatore', famiglia:'🏠 Famiglia', caccia:'🐕‍🦺 Caccia', sport:'🏋️ Sport'};
-    badge.textContent = badgeNomi[mod] || '🏠 Famiglia';
+    if(mod === 'allevatore'){
+      badge.style.display = 'none';
+    } else {
+      badge.style.display = '';
+      var badgeNomi = {famiglia:'🏠 Famiglia', caccia:'🐕‍🦺 Caccia', sport:'🏋️ Sport'};
+      badge.textContent = badgeNomi[mod] || mod;
+    }
   }
   // Nascondi sempre il vecchio coming-soon
   var oldBanner = g('famiglia-coming-soon');
