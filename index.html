@@ -19598,51 +19598,36 @@ function renderMembriFamiglia(container){
 }
 
 function renderServiziFamiglia(container){
-  var categorie = [
-    {ico:'🏥', label:'Veterinari',   key:'vet'},
-    {ico:'✂️',  label:'Toelettatori', key:'groomer'},
-    {ico:'🌳', label:'Dog Park',     key:'dogpark'},
-    {ico:'🏨', label:'Pensioni',     key:'pension'},
-    {ico:'🛒', label:'Pet Shop',     key:'petshop'}
+  if(!container) return;
+  var servizi=[
+    {ico:'🏥',nome:'Veterinari',query:'veterinario+vicino+a+me',colore:'#C62828'},
+    {ico:'🐾',nome:'Negozi Pet',query:'negozio+animali+vicino+a+me',colore:'#2E7D32'},
+    {ico:'✂️',nome:'Toelettatura',query:'toelettatura+cani+vicino+a+me',colore:'#6A1B9A'},
+    {ico:'🏨',nome:'Pensioni',query:'pensione+cani+vicino+a+me',colore:'#E65100'},
+    {ico:'🏞️',nome:'Aree Cani',query:'area+cani+vicino+a+me',colore:'#1565C0'},
+    {ico:'🎓',nome:'Educatori Cinofili',query:'educatore+cinofilo+vicino+a+me',colore:'#00695C'},
+    {ico:'💊',nome:'Farmacie Veterinarie',query:'farmacia+veterinaria+vicino+a+me',colore:'#AD1457'},
+    {ico:'🏥',nome:'Cliniche H24',query:'clinica+veterinaria+emergenza+vicino+a+me',colore:'#B71C1C'}
   ];
-  container.innerHTML =
-    '<div style="margin-bottom:16px">'
-    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:4px">📍 Servizi vicini</div>'
-    +'<div style="font-size:12px;color:#9ab0cc">Trova vet, toelettatori e dog park vicino a te</div>'
-    +'</div>'
-    +'<div id="fam-servizi-cat" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px">'
-    +categorie.map(function(c,i){
-      return '<button id="btn-serv-'+c.key+'" onclick="_selezionaCategoria(\''+c.key+'\')" '
-        +'style="flex-shrink:0;background:'+(i===0?'#0D47A1':'#EEF3FB')+';color:'+(i===0?'#fff':'#6B8BB0')+';'
-        +'border:none;border-radius:20px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">'
-        +c.ico+' '+c.label+'</button>';
-    }).join('')
-    +'</div>'
-    +'<div id="fam-servizi-list">'
-    +'<div style="text-align:center;padding:30px;color:#9ab0cc">⏳ Rilevazione posizione...</div>'
-    +'</div>';
 
-  // Chiedi posizione UNA VOLTA e poi carica veterinari
-  if(_posizioneUtente){
-    _caricaServizi('vet', _posizioneUtente.lat, _posizioneUtente.lng);
-  } else {
-    navigator.geolocation.getCurrentPosition(
-      function(pos){
-        _posizioneUtente = {lat: pos.coords.latitude, lng: pos.coords.longitude};
-        _caricaServizi('vet', _posizioneUtente.lat, _posizioneUtente.lng);
-      },
-      function(err){
-        var lista = document.getElementById('fam-servizi-list');
-        if(lista) lista.innerHTML =
-          '<div style="text-align:center;padding:30px;color:#C0534A">'
-          +'⚠️ Posizione non disponibile<br><small>'+err.message+'</small><br><br>'
-          +'<button onclick="renderServiziFamiglia(document.getElementById(\'fam-tab-content\'))" '
-          +'style="background:#0D47A1;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">🔄 Riprova</button>'
-          +'</div>';
-      },
-      {enableHighAccuracy:true, timeout:15000, maximumAge:60000}
-    );
-  }
+  container.innerHTML='<div style="padding:4px 0">'
+    +'<div style="font-size:13px;color:#6B8BB0;margin-bottom:14px">Trova servizi per il tuo cane nella zona. Si apriranno su Google Maps.</div>'
+    +servizi.map(function(s){
+      return '<div onclick="window.open(\'https://www.google.com/maps/search/'+s.query+'\',\'_blank\')" '
+        +'style="display:flex;align-items:center;gap:14px;padding:14px;background:#fff;border-radius:12px;margin-bottom:8px;cursor:pointer;border:1.5px solid #DDEAFF;transition:all .15s" '
+        +'onmouseover="this.style.borderColor=\''+s.colore+'\'" onmouseout="this.style.borderColor=\'#DDEAFF\'">'
+        +'<div style="width:44px;height:44px;border-radius:12px;background:'+s.colore+'15;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+s.ico+'</div>'
+        +'<div style="flex:1"><div style="font-weight:700;font-size:14px;color:#1a1a3a">'+s.nome+'</div>'
+        +'<div style="font-size:11px;color:#6B8BB0">Apri su Google Maps</div></div>'
+        +'<span style="color:#BFCFE8;font-size:18px">›</span></div>';
+    }).join('')
+    +'<div style="margin-top:16px;padding:14px;background:#FFF3E0;border-radius:12px;border:1.5px solid #FFCC02">'
+    +'<div style="font-size:12px;color:#E65100;font-weight:600">📞 Numeri utili</div>'
+    +'<div style="font-size:12px;color:#6B8BB0;margin-top:6px;line-height:1.8">'
+    +'<strong>Emergenze:</strong> <a href="tel:112" style="color:#C62828;font-weight:700">112</a><br>'
+    +'<strong>Guardia Zoofila:</strong> <a href="tel:1515" style="color:#2E7D32;font-weight:700">1515</a><br>'
+    +'<strong>Centro Antiveleni:</strong> <a href="tel:0266101029" style="color:#E65100;font-weight:700">02 6610 1029</a>'
+    +'</div></div></div>';
 }
 
 function mostraServizi(){
