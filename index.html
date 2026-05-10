@@ -20514,12 +20514,15 @@ function selezionaCaneFamiglia(id){
   var cane = _famigliaCani.find(function(c){return c.id===id;});
   if(!cane) return;
   _famigliaCaneSelezionato = cane;
-  // Mostra loading nell'hero
   var hero = g('fam-cane-hero');
   if(hero) hero.style.opacity='0.5';
   caricaLogFamiglia().then(function(){
     if(hero) hero.style.opacity='1';
-    renderHomeFamiglia();
+    try { renderHomeFamiglia(); } catch(e){ console.warn('[famiglia] render error:', e); }
+  }).catch(function(e){
+    console.warn('[famiglia] caricaLog error:', e);
+    if(hero) hero.style.opacity='1';
+    try { renderHomeFamiglia(); } catch(e2){ console.warn('[famiglia] render fallback:', e2); }
   });
 }
 
