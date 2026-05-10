@@ -1931,6 +1931,9 @@ html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] t
         </div>
         <div style="font-size:10px;color:#6B8BB0;margin-top:6px">Salva una copia dei tuoi dati sul telefono</div>
       </div>
+      <div style="margin-top:16px;text-align:center">
+        <button onclick="mostraPrivacyPolicy()" style="background:none;border:none;color:#6B8BB0;font-size:12px;cursor:pointer;text-decoration:underline">🔒 Informativa Privacy</button>
+      </div>
 
       <!-- Account -->
       <div style="font-size:10px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.12em;margin:14px 0 6px;padding-left:4px">Account</div>
@@ -4705,6 +4708,40 @@ function _installApp(){
   }
 }
 
+function mostraPrivacyPolicy(){
+  var ov=document.createElement('div');
+  ov.id='ov-privacy';
+  ov.style.cssText='position:fixed;inset:0;z-index:10700;background:#fff;overflow-y:auto';
+  ov.innerHTML='<div style="background:linear-gradient(135deg,#0D47A1,#1a237e);padding:16px;display:flex;align-items:center;gap:10px">'
+    +'<button onclick="document.getElementById(\'ov-privacy\').remove()" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;color:#fff;font-weight:700;font-size:16px">‹</button>'
+    +'<div style="color:#fff;font-weight:700;font-size:16px">🔒 Informativa Privacy</div></div>'
+    +'<div style="padding:20px;max-width:600px;margin:0 auto;font-size:13px;line-height:1.8;color:#333">'
+    +'<h2 style="color:#0D47A1;font-size:18px">Informativa sulla Privacy — BreedPed</h2>'
+    +'<p><strong>Ultimo aggiornamento:</strong> '+new Date().toLocaleDateString('it-IT')+'</p>'
+    +'<h3 style="color:#0D47A1;font-size:15px;margin-top:20px">1. Titolare del trattamento</h3>'
+    +'<p>BreedPed è un\'applicazione sviluppata per la gestione cinofila. I dati vengono trattati in conformità al Regolamento UE 2016/679 (GDPR).</p>'
+    +'<h3 style="color:#0D47A1;font-size:15px;margin-top:20px">2. Dati raccolti</h3>'
+    +'<p>Raccogliamo: email di registrazione, dati dei cani (nome, razza, pedigree, misurazioni biometriche, dati sanitari), posizione GPS (solo quando attivata), foto caricate nel diario, dati di allenamento sportivo.</p>'
+    +'<h3 style="color:#0D47A1;font-size:15px;margin-top:20px">3. Finalità</h3>'
+    +'<p>I dati sono utilizzati esclusivamente per il funzionamento dell\'app: gestione cani, calcoli genealogici, monitoraggio salute, tracciamento attività sportive e venatorie.</p>'
+    +'<h3 style="color:#0D47A1;font-size:15px;margin-top:20px">4. Base giuridica</h3>'
+    +'<p>Il trattamento si basa sul consenso dell\'utente (art. 6.1.a GDPR) e sull\'esecuzione del servizio (art. 6.1.b GDPR).</p>'
+    +'<h3 style="color:#0D47A1;font-size:15px;margin-top:20px">5. Conservazione e sicurezza</h3>'
+    +'<p>I dati sono conservati su Supabase (infrastruttura cloud conforme GDPR, server EU). L\'accesso è protetto da autenticazione. Non vendiamo né condividiamo dati con terze parti.</p>'
+    +'<h3 style="color:#0D47A1;font-size:15px;margin-top:20px">6. Diritti dell\'utente</h3>'
+    +'<p>Hai diritto di: accedere ai tuoi dati, rettificarli, cancellarli (diritto all\'oblio), limitarne il trattamento, portabilità, opposizione. Usa la funzione "Esporta Backup" nelle impostazioni per la portabilità.</p>'
+    +'<h3 style="color:#0D47A1;font-size:15px;margin-top:20px">7. Cookies e dati locali</h3>'
+    +'<p>Utilizziamo localStorage per preferenze (tema, lingua, modalità) e sessionStorage per la sessione. Nessun cookie di profilazione o tracciamento pubblicitario.</p>'
+    +'<h3 style="color:#0D47A1;font-size:15px;margin-top:20px">8. GPS e geolocalizzazione</h3>'
+    +'<p>La posizione GPS viene utilizzata solo quando l\'utente attiva esplicitamente le funzioni di tracciamento (passeggiate, uscite caccia, atleti vicini). Non tracciamo la posizione in background.</p>'
+    +'<h3 style="color:#0D47A1;font-size:15px;margin-top:20px">9. AI e Gemini</h3>'
+    +'<p>Le funzionalità AI (chatbot, analisi pedigree, analisi video) utilizzano l\'API Google Gemini. I dati inviati all\'AI sono limitati al contesto della richiesta e non vengono conservati da Google per addestramento.</p>'
+    +'<h3 style="color:#0D47A1;font-size:15px;margin-top:20px">10. Contatti</h3>'
+    +'<p>Per esercitare i tuoi diritti o per qualsiasi domanda sulla privacy, contattaci tramite l\'app o via email.</p>'
+    +'</div>';
+  document.body.appendChild(ov);
+}
+
 function mostraBannerGDPR(){
   if(document.getElementById('gdpr-banner')) return;
   var b=document.createElement('div');
@@ -4720,7 +4757,7 @@ function mostraBannerGDPR(){
     +'<div style="display:flex;gap:10px">'
     +'<button onclick="localStorage.setItem(\'bp_gdpr_accepted\',\'1\');document.getElementById(\'gdpr-banner\').remove()" '
     +'style="flex:1;padding:12px;background:linear-gradient(135deg,#C9A961,#B8943F);color:#0E1116;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">✅ Accetto</button>'
-    +'<button onclick="window.open(\'https://www.iubenda.com/privacy-policy/generic\',\'_blank\')" '
+    +'<button onclick="mostraPrivacyPolicy()" '
     +'style="padding:12px 16px;background:rgba(242,238,231,.08);border:1px solid rgba(242,238,231,.15);border-radius:10px;color:rgba(242,238,231,.6);font-size:12px;cursor:pointer">Leggi tutto</button>'
     +'</div></div>';
   document.body.appendChild(b);
