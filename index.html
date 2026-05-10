@@ -4123,8 +4123,9 @@ function renderSidebar(){
     renderReminderSummary();
 
     // Popola tab "I miei cani" (escludi cuccioli non "mio cane")
+    var _caniVisibili = (cani.length > 30 && !window._showAllCani) ? cani.slice(0, 30) : cani;
     var byBreed={};
-    cani.forEach(function(dog){
+    _caniVisibili.forEach(function(dog){
       if(dog._cucciolataId){
         var cuPar=cucciolate.find(function(c){return String(c.id)===String(dog._cucciolataId);});
         if(cuPar){
@@ -4142,6 +4143,9 @@ function renderSidebar(){
       dogHtml+='<div class="breed-section-hdr"><span>'+breed+'</span><span style="color:#6B8BB0;font-weight:400">'+dogs.length+' '+(dogs.length===1?'cane':'cani')+'</span></div>';
       dogs.forEach(function(dog){ dogHtml+=dogCardHtml(dog,false); });
     });
+    if(cani.length > 30 && !window._showAllCani){
+      dogHtml+='<button onclick="window._showAllCani=true;renderSidebar()" style="width:100%;padding:10px;background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:10px;color:#0D47A1;font-size:12px;font-weight:700;cursor:pointer;margin-top:6px">Mostra tutti i cani ('+cani.length+')</button>';
+    }
     var tdl=g('tab-dog-list'); if(tdl) tdl.innerHTML=dogHtml;
     var emptyMiei=g('dog-list-empty');
     if(emptyMiei) emptyMiei.style.display=cani.length===0?'':'none';
@@ -9276,6 +9280,7 @@ function _setLang(lang){
 }
 
 function openImpostazioni(){
+  if(window._impRendering) return; window._impRendering=true;
   // Versione
   var v=APP_VERSION||'';
   var v1=g('imp-version'), v2=g('imp-version2');
@@ -9289,6 +9294,7 @@ function openImpostazioni(){
   if(btnIt){btnIt.style.borderColor=_LANG==='it'?'#0D47A1':'#ddd';btnIt.style.background=_LANG==='it'?'#E3F2FD':'#fff';}
   if(btnEn){btnEn.style.borderColor=_LANG==='en'?'#0D47A1':'#ddd';btnEn.style.background=_LANG==='en'?'#E3F2FD':'#fff';}
   show('modal-impostazioni');
+  window._impRendering=false;
 }
 function toggleThema(el){
   var isDark=document.documentElement.getAttribute('data-theme')==='dark';
@@ -10470,7 +10476,7 @@ function applicaModalita(mod){
         .order('created_at',{ascending:false}).limit(200);
       if(_rTutti.data) _famigliaLogTutti = _rTutti.data;
       } finally { _pollingInProgress = false; }
-    }, 30000);
+    }, 60000);
   } else {
     var hf2 = g('home-famiglia');
     if(hf2) hf2.style.display = 'none';
@@ -14092,6 +14098,7 @@ function _selezionaCheckpoint(){
 
 /* ══ MODALITÀ GARA CON SPLIT ══ */
 function avviaGaraCampo(){
+  if(typeof _garaCampoInit==='undefined'){_garaCampoInit=true;console.log('[lazy] gara campo loaded');}
   var cps=window._campoCheckpoints||[];
   if(cps.length<1){
     toast('⚠️ Piazza almeno 1 checkpoint timer sul campo');
