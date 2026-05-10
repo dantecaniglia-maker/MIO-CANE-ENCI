@@ -1434,6 +1434,11 @@ html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] t
         </div>
       </div>
 
+      <!-- Ricerca cani -->
+      <div style="padding:8px 16px 0">
+        <input id="cerca-cane-input" type="text" placeholder="🔍 Cerca cani..." oninput="_filtraCani(this.value)" style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid #DDEAFF;font-size:13px;outline:none;font-family:Inter,sans-serif"/>
+      </div>
+
       <!-- Pannello I miei cani -->
       <div id="panel-tab-miei" style="padding:0 16px 24px">
         <div id="tab-dog-list"></div>
@@ -4227,6 +4232,15 @@ function switchCaniTab(tab){
 /* ══════════════════════════════════════
    SIDEBAR
 ══════════════════════════════════════ */
+function _filtraCani(query){
+  query=(query||'').toLowerCase().trim();
+  var cards=document.querySelectorAll('.dog-card');
+  cards.forEach(function(card){
+    var nome=(card.getAttribute('data-nome')||card.textContent||'').toLowerCase();
+    card.style.display=(!query||nome.indexOf(query)>=0)?'':'none';
+  });
+}
+
 function renderSidebar(){
   salvaDB(); // persiste ad ogni aggiornamento UI
   var sidebar=g('sidebar');
@@ -4414,7 +4428,7 @@ function dogCardHtml(c,isGuest){
   if(req.mondiale.ok)badges+='<span class="badge badge-green">🌐</span>';
   var nPed=pedCount(c.pedigreeFlat||{});
   if(nPed>0)badges+='<span class="badge badge-green">🌳</span>';
-  return '<div class="dog-card '+gClass+' '+active+'" onclick="openDetail(\''+c.id+'\')">'
+  return '<div class="dog-card '+gClass+' '+active+'" data-nome="'+esc(c.nome||'')+'" onclick="openDetail(\''+c.id+'\')">'
     +'<div class="dog-avatar"'+(isGuest?' style="border-color:#80DEEA;background:linear-gradient(135deg,#00838F,#006064)"':'')+'>'+av+'</div>'
     +'<div style="flex:1;min-width:0">'
       +'<div style="font-family:\'Playfair Display\',serif;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#1a1a3a">'+c.nome+'</div>'
