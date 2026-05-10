@@ -10796,7 +10796,7 @@ function applicaModalita(mod){
             +'<div style="font-size:9px;color:rgba(255,255,255,.6);letter-spacing:.06em">Cane di Famiglia</div></div>'
           +'</div>'
           +'<div style="display:flex;gap:6px;align-items:center">'
-            +'<button onclick="show(\'modal-impostazioni\')" aria-label="Impostazioni" style="background:rgba(255,255,255,.15);border:none;border-radius:50%;width:34px;height:34px;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">⚙️</button>'
+            +'<button onclick="openImpostazioni()" aria-label="Impostazioni" style="background:rgba(255,255,255,.15);border:none;border-radius:50%;width:34px;height:34px;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">⚙️</button>'
             +'<button onclick="show(\'modal-modalita\')" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:6px 10px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">🔄 Modalità</button>'
           +'</div>'
         +'</div>'
@@ -17988,9 +17988,9 @@ function renderHomeFamiglia(){
 
   // Selettore cani
   var selettore = '';
-  if(_famigliaCani.length > 1){
+  if(_famigliaCani.length > 1 || _isAdminHero){
     selettore = '<div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px">'
-      +_famigliaCani.map(function(c){
+      +(_famigliaCani.length > 1 ? _famigliaCani.map(function(c){
         var att = c.id === cane.id;
         return '<button onclick="selezionaCaneFamiglia(\''+c.id+'\')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:2px solid '
           +(att?'#C9A961':'#DDEAFF')+';background:'+(att?'#FFF8E7':'#fff')
@@ -17998,7 +17998,9 @@ function renderHomeFamiglia(){
           +';cursor:pointer;display:flex;align-items:center;gap:6px">'
           +(c.foto?'<img src="'+c.foto+'" style="width:20px;height:20px;border-radius:50%;object-fit:cover"/>':'')
           +c.nome+'</button>';
-      }).join('')+'</div>';
+      }).join('') : '')
+      +(_isAdminHero?'<button onclick="apriAggiungiCaneFamiglia()" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:2px dashed #BBDEFB;background:#fff;font-size:12px;font-weight:700;color:#1565C0;cursor:pointer">+ Aggiungi</button>':'')
+      +'</div>';
   }
 
   var eta = cane.data_nascita
