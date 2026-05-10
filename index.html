@@ -1269,6 +1269,22 @@ html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] t
         </div>
       </div>
 
+      <!-- Statistiche globali allevamento -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px">
+        <div style="background:#fff;border-radius:12px;padding:14px;text-align:center;border:1.5px solid #DDEAFF">
+          <div id="stat-n-cani" style="font-size:24px;font-weight:700;color:#0D47A1">0</div>
+          <div style="font-size:10px;color:#6B8BB0;font-weight:600">Cani</div>
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:14px;text-align:center;border:1.5px solid #DDEAFF">
+          <div id="stat-n-campioni" style="font-size:24px;font-weight:700;color:#C9A961">0</div>
+          <div style="font-size:10px;color:#6B8BB0;font-weight:600">Campioni</div>
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:14px;text-align:center;border:1.5px solid #DDEAFF">
+          <div id="stat-n-cucc" style="font-size:24px;font-weight:700;color:#2E7D32">0</div>
+          <div style="font-size:10px;color:#6B8BB0;font-weight:600">Cucciolate</div>
+        </div>
+      </div>
+
       <!-- Due colonne principali -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
 
@@ -4232,6 +4248,23 @@ function switchCaniTab(tab){
 /* ══════════════════════════════════════
    SIDEBAR
 ══════════════════════════════════════ */
+function _aggiornaStat(){
+  var nc=document.getElementById('stat-n-cani');
+  var nca=document.getElementById('stat-n-campioni');
+  var ncu=document.getElementById('stat-n-cucc');
+  if(nc) nc.textContent=(cani||[]).length;
+  if(nca) nca.textContent=(cani||[]).filter(function(c){return c.campione||(c.dati&&c.dati.campione);}).length;
+  if(ncu) ncu.textContent=(cucciolate||[]).length;
+}
+(function(){
+  var _obs=new MutationObserver(function(){ _aggiornaStat(); });
+  document.addEventListener('DOMContentLoaded',function(){
+    var tdl=document.getElementById('tab-dog-list');
+    if(tdl) _obs.observe(tdl,{childList:true,subtree:true});
+    _aggiornaStat();
+  });
+})();
+
 function _filtraCani(query){
   query=(query||'').toLowerCase().trim();
   var cards=document.querySelectorAll('.dog-card');
