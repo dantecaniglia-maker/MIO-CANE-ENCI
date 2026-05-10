@@ -1971,6 +1971,14 @@ html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] t
         <div id="notif-test-wrap"></div>
       </div>
 
+      <!-- AI Config -->
+      <div id="imp-ai-section" style="margin-top:16px">
+        <div style="font-weight:700;font-size:13px;color:#0D47A1;margin-bottom:8px">🤖 Configurazione AI</div>
+        <div style="font-size:11px;color:#6B8BB0;margin-bottom:8px">Chiave API Gemini per chatbot, analisi pedigree e video</div>
+        <input id="imp-gemini-key" type="password" placeholder="Inserisci API Key Gemini" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #DDEAFF;font-size:13px;margin-bottom:8px"/>
+        <button onclick="_salvaGeminiKey()" style="width:100%;padding:10px;background:linear-gradient(135deg,#0D47A1,#1565C0);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">💾 Salva chiave</button>
+      </div>
+
       <!-- Lingua -->
       <div style="font-size:10px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.12em;margin:14px 0 6px;padding-left:4px">Lingua / Language</div>
       <div style="display:flex;gap:8px;margin-bottom:4px">
@@ -7929,6 +7937,12 @@ function _refreshAISettings(fromEl){
 }
 
 // Compatibilità vecchie funzioni
+function _salvaGeminiKey(){
+  var key=document.getElementById('imp-gemini-key');
+  if(!key||!key.value.trim()){toast('⚠️ Inserisci una chiave');return;}
+  saveAIKey('gemini',key.value.trim());
+  toast('✅ Chiave API salvata!');
+}
 function salvaGeminiKey(elId){
   var inp=g('gemini-key-input-'+elId); if(!inp) return;
   var key=inp.value.trim(); if(!key) return;
@@ -9598,6 +9612,9 @@ function _setLang(lang){
 
 function openImpostazioni(){
   if(window._impRendering) return; window._impRendering=true;
+  // Popola campo API Key
+  var _gkInput=document.getElementById('imp-gemini-key');
+  if(_gkInput) _gkInput.value=(_aiKeys&&_aiKeys.gemini)||'';
   // Versione
   var v=APP_VERSION||'';
   var v1=g('imp-version'), v2=g('imp-version2');
@@ -20111,15 +20128,6 @@ async function _caricaServizi(tipo, lat, lng){
   }
 }
 
-function _distanzaKm(lat1,lon1,lat2,lon2){
-  var R=6371;
-  var dLat=(lat2-lat1)*Math.PI/180;
-  var dLon=(lon2-lon1)*Math.PI/180;
-  var a=Math.sin(dLat/2)*Math.sin(dLat/2)
-    +Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)
-    *Math.sin(dLon/2)*Math.sin(dLon/2);
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-}
 
 function apriRubricaEmergenze(){
   var overlay = document.createElement('div');
