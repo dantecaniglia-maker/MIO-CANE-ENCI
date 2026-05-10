@@ -14041,7 +14041,7 @@ function avviaGaraCampo(){
       +'⏱️ CP'+(i+1)+' — —</button>';
   });
 
-  ov.innerHTML='<button onclick="_chiudiGaraCampo()" style="position:fixed;top:12px;right:12px;z-index:10201;background:rgba(255,255,255,.15);border:none;border-radius:50%;width:40px;height:40px;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>'
+  ov.innerHTML='<button onclick="_chiudiGaraCampo()" style="position:fixed;top:12px;right:12px;z-index:10201;background:rgba(255,255,255,.2);border:none;border-radius:50%;width:44px;height:44px;color:#fff;font-size:22px;cursor:pointer">✕</button>'
     +'<div style="max-width:400px;width:100%;text-align:center">'
     +'<div style="color:rgba(255,255,255,.5);font-size:12px;margin-bottom:8px">🏁 Modalità Gara — '+cps.length+' checkpoint</div>'
     +'<div id="gara-timer-display" style="font-size:64px;font-weight:800;color:#fff;font-family:monospace;letter-spacing:3px;margin-bottom:16px">00.000</div>'
@@ -14167,7 +14167,7 @@ function _garaReset(){
 
 function _chiudiGaraCampo(){
   window._garaRunning=false;
-  clearInterval(window._garaInterval);
+  if(window._garaInterval){clearInterval(window._garaInterval);window._garaInterval=null;}
   var ov=document.getElementById('ov-gara-campo');
   if(ov) ov.remove();
 }
