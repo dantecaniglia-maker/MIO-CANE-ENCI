@@ -1934,6 +1934,11 @@ html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] t
       <div style="margin-top:16px;text-align:center">
         <button onclick="mostraPrivacyPolicy()" style="background:none;border:none;color:#6B8BB0;font-size:12px;cursor:pointer;text-decoration:underline">🔒 Informativa Privacy</button>
       </div>
+      <div style="margin-top:24px;padding:16px;background:#FFEBEE;border-radius:12px;border:1.5px solid #FFCDD2">
+        <div style="font-weight:700;font-size:13px;color:#C62828;margin-bottom:8px">⚠️ Zona pericolosa</div>
+        <button onclick="_cancellaAccount()" style="width:100%;padding:12px;background:#C62828;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">🗑️ Cancella tutti i miei dati</button>
+        <div style="font-size:10px;color:#C62828;margin-top:6px">Elimina permanentemente tutti i tuoi dati da BreedPed. Azione irreversibile.</div>
+      </div>
 
       <!-- Account -->
       <div style="font-size:10px;font-weight:800;color:#6B8BB0;text-transform:uppercase;letter-spacing:.12em;margin:14px 0 6px;padding-left:4px">Account</div>
@@ -4705,6 +4710,41 @@ function _installApp(){
       window._installPrompt=null;
       var ib=document.getElementById('install-banner');if(ib)ib.remove();
     });
+  }
+}
+
+function _cancellaAccount(){
+  if(!confirm('⚠️ ATTENZIONE: Questa azione è IRREVERSIBILE.\n\nVerranno cancellati:\n- Tutti i tuoi cani\n- Pedigree e cucciolate\n- Dati biometrici\n- Diario e foto\n- Allenamenti e gare\n- Uscite caccia\n- Tutti i dati associati\n\nSei sicuro?')) return;
+  if(!confirm('ULTIMA CONFERMA: Scrivi "ELIMINA" mentalmente e clicca OK per procedere.')) return;
+  var keysToKeep=['bp_gdpr_accepted'];
+  var allKeys=Object.keys(localStorage);
+  allKeys.forEach(function(k){
+    if(k.startsWith('bp_') && keysToKeep.indexOf(k)===-1){
+      localStorage.removeItem(k);
+    }
+  });
+  if(_currentUser && _supabase){
+    var uid=_currentUser.id;
+    Promise.all([
+      _supabase.from('cani').delete().eq('user_id',uid),
+      _supabase.from('cucciolate').delete().eq('user_id',uid),
+      _supabase.from('famiglia_log').delete().eq('user_id',uid),
+      _supabase.from('sport_allenamenti').delete().eq('user_id',uid),
+      _supabase.from('caccia_uscite').delete().eq('user_id',uid),
+      _supabase.from('caccia_carniere').delete().eq('user_id',uid),
+      _supabase.from('profili').delete().eq('id',uid)
+    ]).then(function(){
+      toast('🗑️ Tutti i dati cancellati');
+      _supabase.auth.signOut().then(function(){
+        location.reload();
+      });
+    }).catch(function(e){
+      toast('⚠️ Errore: '+e.message+'. Alcuni dati potrebbero non essere stati cancellati.');
+      location.reload();
+    });
+  } else {
+    toast('🗑️ Dati locali cancellati');
+    location.reload();
   }
 }
 
