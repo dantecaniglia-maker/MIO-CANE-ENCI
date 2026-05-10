@@ -4571,6 +4571,12 @@ async function onUserSignedIn(user){
     setTimeout(function(){ mostraBannerGDPR(); }, 2000);
   }
 
+  var _lastSeenVersion = localStorage.getItem('bp_last_version');
+  if(_lastSeenVersion !== APP_VERSION && _lastSeenVersion){
+    setTimeout(function(){ mostraNovaVersion(); }, 2000);
+  }
+  localStorage.setItem('bp_last_version', APP_VERSION);
+
   var _installCount = parseInt(localStorage.getItem('bp_visit_count')||'0') + 1;
   localStorage.setItem('bp_visit_count', String(_installCount));
   window.addEventListener('beforeinstallprompt', function(e){
@@ -4625,6 +4631,28 @@ function mostraOnboarding(){
     +'" style="width:100%;padding:14px;background:linear-gradient(135deg,#C9A961,#B8943F);color:#0E1116;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">'
     +(isLast?'🚀 Inizia!':'Avanti →')+'</button>'
     +'<button onclick="localStorage.setItem(\'bp_onboarding_done\',\'1\');document.getElementById(\'ov-onboarding\').remove();window._onboardStep=0" style="width:100%;margin-top:8px;padding:10px;background:none;border:none;color:rgba(242,238,231,.4);font-size:12px;cursor:pointer">Salta</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+}
+
+function mostraNovaVersion(){
+  var ov=document.createElement('div');
+  ov.id='ov-novita';
+  ov.style.cssText='position:fixed;inset:0;z-index:10600;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML='<div style="background:#0E1116;border-radius:20px;padding:28px 24px;max-width:400px;width:100%;max-height:80vh;overflow-y:auto">'
+    +'<div style="text-align:center;margin-bottom:20px">'
+    +'<div style="font-size:40px;margin-bottom:8px">🎉</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:24px;font-weight:600;color:#F2EEE7">Novità v'+APP_VERSION+'</div>'
+    +'<div style="font-size:12px;color:rgba(242,238,231,.5);margin-top:4px">Ecco cosa c\'è di nuovo</div></div>'
+    +'<div style="display:flex;flex-direction:column;gap:12px">'
+    +'<div style="display:flex;gap:10px;align-items:flex-start"><span style="font-size:20px">📐</span><div><div style="color:#F2EEE7;font-weight:600;font-size:13px">Biometria Professionale</div><div style="color:rgba(242,238,231,.5);font-size:11px">Misurazioni al volo o su cane registrato con export PDF</div></div></div>'
+    +'<div style="display:flex;gap:10px;align-items:flex-start"><span style="font-size:20px">🗺️</span><div><div style="color:#F2EEE7;font-weight:600;font-size:13px">Campo Agility 2D</div><div style="color:rgba(242,238,231,.5);font-size:11px">Ostacoli reali, drag & drop, condivisione percorsi</div></div></div>'
+    +'<div style="display:flex;gap:10px;align-items:flex-start"><span style="font-size:20px">👨‍⚖️</span><div><div style="color:#F2EEE7;font-weight:600;font-size:13px">Giudice Ring</div><div style="color:rgba(242,238,231,.5);font-size:11px">Valutazione rapida in esposizione con export</div></div></div>'
+    +'<div style="display:flex;gap:10px;align-items:flex-start"><span style="font-size:20px">📸</span><div><div style="color:#F2EEE7;font-weight:600;font-size:13px">Diario con Foto</div><div style="color:rgba(242,238,231,.5);font-size:11px">Allega foto ai momenti del tuo cane</div></div></div>'
+    +'<div style="display:flex;gap:10px;align-items:flex-start"><span style="font-size:20px">🏆</span><div><div style="color:#F2EEE7;font-weight:600;font-size:13px">Classifica Sport</div><div style="color:rgba(242,238,231,.5);font-size:11px">Ranking, badge e livelli per atleti</div></div></div>'
+    +'<div style="display:flex;gap:10px;align-items:flex-start"><span style="font-size:20px">🌐</span><div><div style="color:#F2EEE7;font-weight:600;font-size:13px">Multi-lingua</div><div style="color:rgba(242,238,231,.5);font-size:11px">Italiano e Inglese disponibili</div></div></div>'
+    +'</div>'
+    +'<button onclick="document.getElementById(\'ov-novita\').remove()" style="width:100%;margin-top:20px;padding:14px;background:linear-gradient(135deg,#C9A961,#B8943F);color:#0E1116;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">👍 Capito!</button>'
     +'</div>';
   document.body.appendChild(ov);
 }
