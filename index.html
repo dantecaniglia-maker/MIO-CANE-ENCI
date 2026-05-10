@@ -23007,45 +23007,35 @@ function sendChat(){
 
 <!-- ══ MODAL SELEZIONE MODALITÀ ══ -->
 <div id="modal-modalita" class="overlay" style="display:none;z-index:10500">
-  <div class="modal" style="max-width:420px;padding:32px 24px;text-align:center">
-    <img src="logo.jpeg" style="width:80px;height:80px;border-radius:20px;object-fit:cover;box-shadow:0 8px 24px rgba(201,169,97,.4);margin-bottom:20px" onerror="this.style.display='none'"/>
-    <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#0D47A1;margin-bottom:8px">
-      Come vuoi usare<br>Breed<span style="color:#C9A961">Ped</span>?
-    </div>
-    <div style="font-size:13px;color:#6B8BB0;margin-bottom:28px">
-      Scegli la tua modalità principale.<br>Potrai cambiarla in qualsiasi momento.
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
-      <div onclick="scegliModalita('allevatore')" style="border:2px solid #C9A961;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:linear-gradient(135deg,#FFFBF0,#FFF8E1)"
-        onmouseover="this.style.borderColor='#A88A41';this.style.background='linear-gradient(135deg,#FFF8E1,#FFF3CD)'"
-        onmouseout="this.style.borderColor='#C9A961';this.style.background='linear-gradient(135deg,#FFFBF0,#FFF8E1)'">
-        <div style="font-size:36px;margin-bottom:10px">🏆</div>
-        <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Allevatore</div>
-        <div style="font-size:11px;color:#6B8BB0;line-height:1.4">Pedigree, cucciolate,<br>moduli ENCI, breeding</div>
-      </div>
-      <div onclick="scegliModalita('famiglia')" style="border:2px solid #F48FB1;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:linear-gradient(135deg,#FFF0F5,#FCE4EC)"
-        onmouseover="this.style.borderColor='#E91E8C';this.style.background='linear-gradient(135deg,#FCE4EC,#F8BBD0)'"
-        onmouseout="this.style.borderColor='#F48FB1';this.style.background='linear-gradient(135deg,#FFF0F5,#FCE4EC)'">
-        <div style="font-size:36px;margin-bottom:10px">🏠</div>
-        <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Cane di Famiglia</div>
-        <div style="font-size:11px;color:#6B8BB0;line-height:1.4">Diario, salute, famiglia<br>condivisa</div>
-      </div>
-      <div onclick="scegliModalita('sport')" style="border:2px solid #FFCCBC;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:#FFF3E0"
-        onmouseover="this.style.borderColor='#E65100';this.style.background='#FBE9E7'"
-        onmouseout="this.style.borderColor='#FFCCBC';this.style.background='#FFF3E0'">
-        <div style="font-size:36px;margin-bottom:10px">🐕‍🦺</div>
-        <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Sport & Agility</div>
-        <div style="font-size:11px;color:#6B8BB0;line-height:1.4">Obbedienza, difesa,<br>agility, soccorso</div>
-      </div>
-      <div onclick="scegliModalita('caccia')" style="border:2px solid #81C784;border-radius:16px;padding:20px 12px;cursor:pointer;transition:all .2s;background:linear-gradient(135deg,#F1F8E9,#E8F5E9)"
-        onmouseover="this.style.borderColor='#2E7D32';this.style.background='linear-gradient(135deg,#E8F5E9,#C8E6C9)'"
-        onmouseout="this.style.borderColor='#81C784';this.style.background='linear-gradient(135deg,#F1F8E9,#E8F5E9)'">
-        <div style="font-size:36px;margin-bottom:10px">🐕‍🦺</div>
-        <div style="font-weight:700;font-size:14px;color:#1a1a3a;margin-bottom:4px">Caccia & Tartufo</div>
-        <div style="font-size:11px;color:#6B8BB0;line-height:1.4">GPS, diario, prove<br>FIDASC, zone segrete</div>
+  <div style="background:#0E1116;border-radius:20px;padding:28px 24px;max-width:400px;width:100%">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:600;color:#F2EEE7;letter-spacing:-.02em">
+        Scegli la <em style="font-style:italic;color:#C9A961">modalità</em>
       </div>
     </div>
-    <div style="font-size:11px;color:#9ab0cc">Puoi aggiungere altre modalità in Impostazioni</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div onclick="scegliModalita('allevatore');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(13,71,161,.25),rgba(13,71,161,.1));border:1.5px solid rgba(13,71,161,.3);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+        <div style="font-size:32px;margin-bottom:8px">🏆</div>
+        <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:#F2EEE7">Allevatore</div>
+        <div style="font-size:10px;color:rgba(242,238,231,.5);margin-top:4px">Pedigree · ENCI · Show</div>
+      </div>
+      <div onclick="scegliModalita('famiglia');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(233,30,99,.25),rgba(233,30,99,.1));border:1.5px solid rgba(233,30,99,.3);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+        <div style="font-size:32px;margin-bottom:8px">🏠</div>
+        <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:#F2EEE7">Famiglia</div>
+        <div style="font-size:10px;color:rgba(242,238,231,.5);margin-top:4px">Salute · Diario · Score</div>
+      </div>
+      <div onclick="scegliModalita('caccia');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(46,125,50,.25),rgba(46,125,50,.1));border:1.5px solid rgba(46,125,50,.3);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+        <div style="font-size:32px;margin-bottom:8px">🐕‍🦺</div>
+        <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:#F2EEE7">Caccia</div>
+        <div style="font-size:10px;color:rgba(242,238,231,.5);margin-top:4px">GPS · Carniere · Tartufo</div>
+      </div>
+      <div onclick="scegliModalita('sport');hide('modal-modalita')" style="background:linear-gradient(135deg,rgba(230,81,0,.25),rgba(230,81,0,.1));border:1.5px solid rgba(230,81,0,.3);border-radius:16px;padding:20px 14px;cursor:pointer;text-align:center;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+        <div style="font-size:32px;margin-bottom:8px">🏋️</div>
+        <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:#F2EEE7">Sport</div>
+        <div style="font-size:10px;color:rgba(242,238,231,.5);margin-top:4px">Agility · IGP · Obedience</div>
+      </div>
+    </div>
+    <button onclick="hide('modal-modalita')" style="width:100%;margin-top:16px;padding:12px;background:rgba(242,238,231,.08);border:1px solid rgba(242,238,231,.12);border-radius:12px;color:rgba(242,238,231,.5);font-size:13px;cursor:pointer">Annulla</button>
   </div>
 </div>
 
