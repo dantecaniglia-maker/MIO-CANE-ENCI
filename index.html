@@ -4492,6 +4492,9 @@ async function onUserSignedIn(user){
     applicaModalita(modSalvata);
   }
   checkNotificheAlAvvio();
+  if(!localStorage.getItem('bp_onboarding_done')){
+    setTimeout(function(){ mostraOnboarding(); }, 1500);
+  }
 
   // Check percorso condiviso via URL
   try{
@@ -4510,6 +4513,35 @@ async function onUserSignedIn(user){
       },2000);
     }
   }catch(_pe){console.warn('[percorso] parse error',_pe);}
+}
+
+function mostraOnboarding(){
+  var old=document.getElementById('ov-onboarding');if(old)old.remove();
+  var ov=document.createElement('div');
+  ov.id='ov-onboarding';
+  ov.style.cssText='position:fixed;inset:0;z-index:10600;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px';
+  var steps=[
+    {ico:'🐾',titolo:'Benvenuto in BreedPed!',desc:'L\'app completa per il tuo cane. Pedigree, salute, sport, caccia — tutto in un posto.'},
+    {ico:'🔄',titolo:'4 Modalità',desc:'Allevatore per professionisti, Famiglia per la vita quotidiana, Caccia per il campo, Sport per agility e IGP.'},
+    {ico:'📱',titolo:'Come iniziare',desc:'Aggiungi il tuo primo cane, scegli la modalità e inizia! Puoi cambiare modalità in qualsiasi momento.'},
+    {ico:'🤖',titolo:'AI integrata',desc:'Usa il bottone robot in basso a destra per analisi pedigree, video agility e consigli personalizzati.'}
+  ];
+  if(typeof window._onboardStep==='undefined') window._onboardStep=0;
+  var s=steps[window._onboardStep];
+  var isLast=window._onboardStep===steps.length-1;
+  ov.innerHTML='<div style="background:#0E1116;border-radius:20px;padding:32px 24px;max-width:380px;width:100%;text-align:center">'
+    +'<div style="font-size:48px;margin-bottom:16px">'+s.ico+'</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:22px;font-weight:600;color:#F2EEE7;margin-bottom:12px">'+s.titolo+'</div>'
+    +'<div style="font-size:13px;color:rgba(242,238,231,.7);line-height:1.6;margin-bottom:24px">'+s.desc+'</div>'
+    +'<div style="display:flex;justify-content:center;gap:6px;margin-bottom:20px">'
+    +steps.map(function(_,i){return '<div style="width:8px;height:8px;border-radius:50%;background:'+(i===window._onboardStep?'#C9A961':'rgba(242,238,231,.2)')+'"></div>';}).join('')
+    +'</div>'
+    +'<button onclick="'+(isLast?'localStorage.setItem(\'bp_onboarding_done\',\'1\');document.getElementById(\'ov-onboarding\').remove();window._onboardStep=0':'window._onboardStep++;mostraOnboarding()')
+    +'" style="width:100%;padding:14px;background:linear-gradient(135deg,#C9A961,#B8943F);color:#0E1116;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">'
+    +(isLast?'🚀 Inizia!':'Avanti →')+'</button>'
+    +'<button onclick="localStorage.setItem(\'bp_onboarding_done\',\'1\');document.getElementById(\'ov-onboarding\').remove();window._onboardStep=0" style="width:100%;margin-top:8px;padding:10px;background:none;border:none;color:rgba(242,238,231,.4);font-size:12px;cursor:pointer">Salta</button>'
+    +'</div>';
+  document.body.appendChild(ov);
 }
 
 function onUserSignedOut(){
