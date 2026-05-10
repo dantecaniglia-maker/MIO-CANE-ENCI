@@ -4759,7 +4759,7 @@ function onDetFotoSelected(input){
       c.foto=compressed;
       salvaDB();
       g('det-avatar').innerHTML='<img src="'+compressed+'" style="width:100%;height:100%;object-fit:cover"/>';
-      toast('✅ Foto aggiornata!');
+      if(navigator.vibrate) navigator.vibrate([50,30,50]); toast('✅ Foto aggiornata!');
     };
     img.src=e.target.result;
   };
@@ -5013,7 +5013,7 @@ async function chiudiAnnuncio(annuncioId){
       },
       body: JSON.stringify({ stato: 'chiuso' })
     });
-    toast('✅ Annuncio chiuso');
+    if(navigator.vibrate) navigator.vibrate([50,30,50]); toast('✅ Annuncio chiuso');
     caricaMieiAnnunci();
   } catch(e){
     toast('❌ Errore');
@@ -5669,7 +5669,7 @@ function importaDatiPed(pos, caneId){
   if(banner) banner.style.display='none';
   salvaDB();
   renderPedigree();
-  toast('✅ Dati importati: '+esc(c.nome));
+  if(navigator.vibrate) navigator.vibrate([50,30,50]); toast('✅ Dati importati: '+esc(c.nome));
 }
 function savePedTitolo(pos,titolo,checked){
   var c=cur();if(!c||c._guest)return;
@@ -7126,7 +7126,7 @@ function ripristinaCucciolata(id){
   cu.archiviata=false;
   renderCucciolate();
   salvaDB();
-  toast('✅ Cucciolata ripristinata');
+  if(navigator.vibrate) navigator.vibrate([50,30,50]); toast('✅ Cucciolata ripristinata');
 }
 function eliminaDefinitivaCucciolata(id){
   if(!confirm('Eliminare definitivamente questa cucciolata e tutti i suoi dati?'))return;
@@ -7445,12 +7445,13 @@ function applicaPdfImport(){
   hide('modal-pdf-import');
   renderDettaglio(c.id);
   switchTab('pedigree');
-  toast('✅ Pedigree importato dal PDF!');
+  if(navigator.vibrate) navigator.vibrate([50,30,50]); toast('✅ Pedigree importato dal PDF!');
 }
 
 
 
 function toast(msg){
+  if(navigator.vibrate) navigator.vibrate(50);
   var el=document.createElement('div');
   el.textContent=msg;
   el.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a3a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:9990;box-shadow:0 4px 16px rgba(0,0,0,.3);pointer-events:none;animation:fadeIn .2s';
