@@ -9984,10 +9984,19 @@ function apriGiudiceRing(){
   ov.id='ov-giudice-ring';
   ov.style.cssText='position:fixed;inset:0;z-index:10100;background:#F4F7FE;overflow-y:auto;display:flex;flex-direction:column';
 
-  var razzeOpts=(RAZZE_FCI||[]).map(function(r){return '<option>'+esc(r)+'</option>';}).join('');
   var oggiStr=new Date().toISOString().slice(0,10);
   var valutazioniOggi=(window._giudiceValutazioni||[]).filter(function(v){return v.data===oggiStr;});
   valutazioniOggi.sort(function(a,b){return b.ts-a.ts;});
+
+  var opzioniCaniHtml='<select id="giudice-cane-select" onchange="_giudiceToggleAltro(this.value)" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #DDEAFF;font-size:14px;margin-bottom:12px;box-sizing:border-box">'
+    +'<option value="">Seleziona cane...</option>';
+  (cani||[]).forEach(function(c){
+    opzioniCaniHtml+='<option value="'+c.id+'">'+(c.nome||'Senza nome')+' — '+(c.razza||'')+'</option>';
+  });
+  opzioniCaniHtml+='<option value="__ALTRO__">✏️ Altro (cane non mio)</option></select>'
+    +'<input id="giudice-cane-nome" placeholder="Nome cane" style="display:none;width:100%;padding:12px;border-radius:10px;border:1.5px solid #DDEAFF;font-size:14px;margin-bottom:12px;box-sizing:border-box"/>'
+    +'<input id="giudice-cane-razza" placeholder="Razza" style="display:none;width:100%;padding:12px;border-radius:10px;border:1.5px solid #DDEAFF;font-size:14px;margin-bottom:12px;box-sizing:border-box"/>';
+  window._giudiceQualifica=null; window._giudicePremio=null;
 
   ov.innerHTML=
     '<div style="background:linear-gradient(135deg,#0D47A1,#1a237e);padding:16px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0">'
@@ -9998,25 +10007,27 @@ function apriGiudiceRing(){
     // Form
     +'<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:16px;border:1.5px solid #DDEAFF">'
       +'<div style="font-size:13px;font-weight:700;color:#0D47A1;margin-bottom:12px">📋 Nuova valutazione</div>'
-      +'<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:#1565C0;display:block;margin-bottom:4px">Nome cane</label>'
-        +'<input id="gr-nome" type="text" placeholder="Es. Arco del Vento" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px;box-sizing:border-box"/></div>'
-      +'<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:#1565C0;display:block;margin-bottom:4px">Razza</label>'
-        +'<input id="gr-razza" list="gr-razze-list" placeholder="Inserisci o scegli razza" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px;box-sizing:border-box"/>'
-        +'<datalist id="gr-razze-list">'+razzeOpts+'</datalist></div>'
-      +'<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:#1565C0;display:block;margin-bottom:4px">Classe</label>'
-        +'<select id="gr-classe" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px;box-sizing:border-box">'
-        +'<option>Giovani</option><option>Libera</option><option>Lavoro</option><option>Campioni</option><option>Veterani</option>'
-        +'</select></div>'
-      +'<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#1565C0;display:block;margin-bottom:8px">Valutazione</label>'
-        +'<div style="display:flex;flex-wrap:wrap;gap:6px">'
-        +[['Eccellente','#2E7D32'],['Molto Buono','#1565C0'],['Buono','#FF8F00'],['Sufficiente','#6D4C41'],['Non classificato','#C62828']].map(function(v){
-          return '<button onclick="_grSelezionaVal(this,\''+v[0]+'\')" style="padding:8px 12px;border-radius:8px;border:2px solid '+v[1]+';background:#fff;color:'+v[1]+';font-size:12px;font-weight:700;cursor:pointer">'+v[0]+'</button>';
-        }).join('')
-        +'</div>'
-        +'<input type="hidden" id="gr-val" value=""/></div>'
+      +opzioniCaniHtml
+      +'<select id="gr-classe" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #DDEAFF;font-size:14px;margin-bottom:12px;box-sizing:border-box">'
+      +'<option value="">Classe...</option>'
+      +'<option>Giovani (9-18 mesi)</option><option>Intermedia (15-24 mesi)</option><option>Libera (15+ mesi)</option>'
+      +'<option>Lavoro</option><option>Campioni</option><option>Veterani (8+ anni)</option>'
+      +'</select>'
+      +'<div style="font-weight:700;font-size:13px;color:#0D47A1;margin-bottom:8px">Qualifica</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="giudice-qualifica-btns">'
+      +['Eccellente','Molto Buono','Buono','Sufficiente','Non classificato'].map(function(q){
+        var col={Eccellente:'#4CAF50','Molto Buono':'#8BC34A',Buono:'#FFC107',Sufficiente:'#FF9800','Non classificato':'#9E9E9E'}[q]||'#ddd';
+        return '<button onclick="_selGiudiceQualifica(\''+q+'\')" data-val="'+q+'" style="padding:10px 16px;border-radius:10px;border:2px solid '+col+';background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:#333">'+q+'</button>';
+      }).join('')
+      +'</div>'
+      +'<div style="font-weight:700;font-size:13px;color:#0D47A1;margin-bottom:8px">Premio / Titolo</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="giudice-premio-btns">'
+      +['Nessuno','CAC','R.CAC','CACIB','R.CACIB','BOB','BOS','BOG','BIS'].map(function(p){
+        return '<button onclick="_selGiudicePremio(\''+p+'\')" data-val="'+p+'" style="padding:8px 14px;border-radius:8px;border:1.5px solid #C9A961;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:#333">'+p+'</button>';
+      }).join('')
+      +'</div>'
       +'<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:#1565C0;display:block;margin-bottom:4px">Note rapide</label>'
-        +'<textarea id="gr-note" rows="2" placeholder="Es. Buon angolo posteriore, testa fine..." style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:13px;resize:none;box-sizing:border-box"></textarea></div>'
-      // Foto
+        +'<textarea id="giudice-note" rows="2" placeholder="Es. Buon angolo posteriore, testa fine..." style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:13px;resize:none;box-sizing:border-box"></textarea></div>'
       +'<div style="margin-bottom:12px">'
         +'<label style="display:flex;align-items:center;gap:8px;padding:10px;border:2px dashed #BBDEFB;border-radius:10px;cursor:pointer;justify-content:center">'
         +'<span style="font-size:20px">📸</span>'
@@ -10053,7 +10064,29 @@ function _grSelezionaVal(btn,valore){
     b.style.background='#fff';b.style.color=colori[b.textContent.trim()]||'#333';
   });
   btn.style.background=c;btn.style.color='#fff';
-  document.getElementById('gr-val').value=valore;
+  var grVal=document.getElementById('gr-val');if(grVal)grVal.value=valore;
+}
+function _giudiceToggleAltro(val){
+  var n=document.getElementById('giudice-cane-nome'),r=document.getElementById('giudice-cane-razza');
+  var show=val==='__ALTRO__';
+  if(n)n.style.display=show?'block':'none';
+  if(r)r.style.display=show?'block':'none';
+}
+function _selGiudiceQualifica(val){
+  window._giudiceQualifica=val;
+  document.querySelectorAll('#giudice-qualifica-btns button').forEach(function(b){
+    var sel=b.getAttribute('data-val')===val;
+    b.style.background=sel?b.style.borderColor:'#fff';
+    b.style.color=sel?'#fff':'#333';
+  });
+}
+function _selGiudicePremio(val){
+  window._giudicePremio=val;
+  document.querySelectorAll('#giudice-premio-btns button').forEach(function(b){
+    var sel=b.getAttribute('data-val')===val;
+    b.style.background=sel?'#C9A961':'#fff';
+    b.style.color=sel?'#fff':'#333';
+  });
 }
 
 function _grFotoPreview(input){
@@ -10077,13 +10110,22 @@ function _grFotoPreview(input){
 }
 
 function salvaValutazioneGiudice(){
-  var nome=(document.getElementById('gr-nome')||{}).value||'';
-  var razza=(document.getElementById('gr-razza')||{}).value||'';
+  var selEl=document.getElementById('giudice-cane-select');
+  var selVal=selEl?selEl.value:'';
+  var nome='',razza='';
+  if(selVal&&selVal!=='__ALTRO__'){
+    var _cc=(cani||[]).find(function(c){return String(c.id)===String(selVal);});
+    if(_cc){nome=_cc.nome||'';razza=_cc.razza||'';}
+  } else {
+    nome=(document.getElementById('giudice-cane-nome')||{}).value||'';
+    razza=(document.getElementById('giudice-cane-razza')||{}).value||'';
+  }
   var classe=(document.getElementById('gr-classe')||{}).value||'Libera';
-  var val=(document.getElementById('gr-val')||{}).value||'';
-  var note=(document.getElementById('gr-note')||{}).value||'';
-  if(!nome.trim()){toast('⚠️ Inserisci il nome del cane');return;}
-  if(!val){toast('⚠️ Seleziona una valutazione');return;}
+  var val=window._giudiceQualifica||'';
+  var premio=window._giudicePremio||'Nessuno';
+  var note=(document.getElementById('giudice-note')||{}).value||'';
+  if(!nome.trim()){toast('⚠️ Seleziona o inserisci il nome del cane');return;}
+  if(!val){toast('⚠️ Seleziona una qualifica');return;}
 
   var record={
     id:'gr_'+Date.now(),
@@ -10093,6 +10135,7 @@ function salvaValutazioneGiudice(){
     razza:razza.trim(),
     classe:classe,
     valutazione:val,
+    premio:premio,
     note:note.trim(),
     foto:window._grFotoBase64||null
   };
@@ -10100,31 +10143,40 @@ function salvaValutazioneGiudice(){
   window._giudiceValutazioni=window._giudiceValutazioni||[];
   window._giudiceValutazioni.unshift(record);
   try{localStorage.setItem(_GIUDICE_KEY,JSON.stringify(window._giudiceValutazioni));}catch(e){}
-  toast('✅ '+record.nome+' — '+record.valutazione);
+  toast('✅ '+record.nome+' — '+record.valutazione+(premio&&premio!=='Nessuno'?' 🏆 '+premio:''));
 
   if(_currentUser){
     var rec={user_id:_currentUser.id,nome:record.nome,razza:record.razza,
-      classe:record.classe,valutazione:record.valutazione,note:record.note,
+      classe:record.classe,valutazione:record.valutazione,premio:record.premio,note:record.note,
       data:record.data,created_at:new Date().toISOString()};
     _supabase.from('giudice_valutazioni').insert(rec).then(function(){});
   }
 
+  // Ponte titoli: aggiungi alla scheda cane se cane registrato e premio rilevante
+  if(selVal&&selVal!=='__ALTRO__'&&premio&&premio!=='Nessuno'){
+    var _caneTrov=(cani||[]).find(function(c){return String(c.id)===String(selVal);});
+    if(_caneTrov){
+      if(!_caneTrov.titoli) _caneTrov.titoli=[];
+      _caneTrov.titoli.push({titolo:premio,qualifica:val,classe:classe,data:record.data,note:note.trim()});
+      salvaDB();
+      toast('🏆 '+premio+' aggiunto ai titoli di '+(_caneTrov.nome||'cane')+'!');
+    }
+  }
+
   // Aggiorna lista overlay
-  var oggiStr=record.data;
-  var oggi=(window._giudiceValutazioni||[]).filter(function(v){return v.data===oggiStr;});
+  var oggiStr2=record.data;
+  var oggi=(window._giudiceValutazioni||[]).filter(function(v){return v.data===oggiStr2;});
   oggi.sort(function(a,b){return b.ts-a.ts;});
   var lista=document.getElementById('gr-lista');
   if(lista) lista.innerHTML=_renderListaValutazioni(oggi);
-  // Aggiorna contatore
-  var ov=document.getElementById('ov-giudice-ring');
-  if(ov){
-    var cnt=ov.querySelector('[data-cnt]');
-    if(cnt) cnt.textContent='Oggi — '+oggi.length+' cani';
-  }
+  var ov2=document.getElementById('ov-giudice-ring');
+  if(ov2){var cnt=ov2.querySelector('[data-cnt]');if(cnt)cnt.textContent='Oggi — '+oggi.length+' cani';}
   // Reset form
-  ['gr-nome','gr-razza','gr-note'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('gr-val').value='';
-  document.querySelectorAll('#ov-giudice-ring button[data-val]').forEach(function(b){b.style.background='#fff';});
+  if(selEl){selEl.value='';_giudiceToggleAltro('');}
+  ['giudice-cane-nome','giudice-cane-razza','giudice-note'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  window._giudiceQualifica=null;window._giudicePremio=null;
+  document.querySelectorAll('#giudice-qualifica-btns button').forEach(function(b){b.style.background='#fff';b.style.color='#333';});
+  document.querySelectorAll('#giudice-premio-btns button').forEach(function(b){b.style.background='#fff';b.style.color='#333';});
   var prev=document.getElementById('gr-foto-preview');if(prev)prev.style.display='none';
   window._grFotoBase64=null;
 }
@@ -10137,7 +10189,10 @@ function _renderListaValutazioni(lista){
     return '<div style="padding:10px;border-radius:10px;border:1px solid #DDEAFF;margin-bottom:8px;background:#F8FAFF">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
         +'<div style="font-weight:700;font-size:14px;color:#1a1a3a">'+esc(v.nome||'')+'</div>'
+        +'<div style="display:flex;gap:4px;align-items:center">'
+        +(v.premio&&v.premio!=='Nessuno'?'<div style="background:#C9A961;color:#fff;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700">🏆 '+esc(v.premio)+'</div>':'')
         +'<div style="background:'+c+';color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700">'+esc(v.valutazione||'')+'</div>'
+        +'</div>'
       +'</div>'
       +'<div style="font-size:11px;color:#6B8BB0">'+esc(v.razza||'')+(v.classe?' · '+esc(v.classe):'')+'</div>'
       +(v.note?'<div style="font-size:11px;color:#4A6080;margin-top:4px;font-style:italic">'+esc(v.note)+'</div>':'')
