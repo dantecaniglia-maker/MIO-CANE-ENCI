@@ -2151,7 +2151,7 @@ html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] t
 </div>
 
 <!-- ════ MODAL PESO CUCCIOLO ════ -->
-<div id="modal-peso" class="overlay hidden">
+<div id="modal-peso" class="overlay hidden" style="z-index:10500">
   <div class="modal" style="max-width:340px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:#0D47A1">⚖ Registra Peso</div>
@@ -9467,15 +9467,16 @@ function openAggiuntaPeso(cuccId, puppyId){
 }
 
 function salvaPeso(){
-  var cuccId=parseInt(g('peso-cuccId').value);
-  var puppyId=parseInt(g('peso-puppyId').value);
+  var cuccIdRaw=g('peso-cuccId').value;
+  var puppyIdRaw=g('peso-puppyId').value;
   var data=g('peso-data').value;
   var grammi=parseInt(g('peso-grammi').value);
-  if(!data||!grammi){alert('Inserisci data e peso');return;}
-  var cu=cucciolate.find(function(c){return c.id===cuccId;});
-  if(!cu) return;
-  var p=(cu.cuccioli||[]).find(function(x){return x.id===puppyId;});
-  if(!p) return;
+  if(!data||!grammi){toast('⚠️ Inserisci data e peso');return;}
+  // String comparison per gestire sia ID numerici che UUID Supabase
+  var cu=cucciolate.find(function(c){return String(c.id)===String(cuccIdRaw);});
+  if(!cu){toast('⚠️ Cucciolata non trovata');return;}
+  var p=(cu.cuccioli||[]).find(function(x){return String(x.id)===String(puppyIdRaw);});
+  if(!p){toast('⚠️ Cucciolo non trovato');return;}
   p.pesi=p.pesi||[];
   p.pesi.push({id:Date.now(),data:data,grammi:grammi});
   p.pesi.sort(function(a,b){return a.data.localeCompare(b.data);});
@@ -9483,7 +9484,7 @@ function salvaPeso(){
   hide('modal-peso');
   toast('✅ Peso salvato: '+grammi+'g — totale '+p.pesi.length+' misurazioni');
   renderCucciolate();
-  showCuccioliModal(cuccId);
+  showCuccioliModal(cu.id);
 }
 
 /* estendi getReminders con calori e gravidanza */
