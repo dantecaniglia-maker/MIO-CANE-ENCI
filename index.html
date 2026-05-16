@@ -10158,10 +10158,37 @@ function salvaValutazioneGiudice(){
   if(selVal&&selVal!=='__ALTRO__'&&premio&&premio!=='Nessuno'){
     var _caneTrov=(cani||[]).find(function(c){return String(c.id)===String(selVal);});
     if(_caneTrov){
+      var _oggi=record.data;
+      var _changed=false;
+      var _entryBase={id:Date.now(),data:_oggi,giudice:'(Giudice Ring)',paese:'Italia'};
+
+      // CAC → cac_list (contatore "CAC 0" nella scheda cane)
+      if(premio==='CAC'){
+        if(!_caneTrov.cac_list) _caneTrov.cac_list=[];
+        var _dupCAC=_caneTrov.cac_list.find(function(x){return x.data===_oggi;});
+        if(!_dupCAC){_caneTrov.cac_list.push(_entryBase);_changed=true;}
+      }
+      // CACIB → cacib_list (contatore "CACIB 0" nella scheda cane)
+      else if(premio==='CACIB'){
+        if(!_caneTrov.cacib_list) _caneTrov.cacib_list=[];
+        var _dupCACIB=_caneTrov.cacib_list.find(function(x){return x.data===_oggi;});
+        if(!_dupCACIB){_caneTrov.cacib_list.push(Object.assign({tipo:'normale'},_entryBase));_changed=true;}
+      }
+
+      // Tutti i premi → titoli[] (storico generale)
       if(!_caneTrov.titoli) _caneTrov.titoli=[];
-      _caneTrov.titoli.push({titolo:premio,qualifica:val,classe:classe,data:record.data,note:note.trim()});
-      salvaDB();
-      toast('🏆 '+premio+' aggiunto ai titoli di '+(_caneTrov.nome||'cane')+'!');
+      var _dupTit=_caneTrov.titoli.find(function(t){return t.titolo===premio&&t.data===_oggi;});
+      if(!_dupTit){
+        _caneTrov.titoli.push({titolo:premio,qualifica:val,classe:classe,data:_oggi,note:note.trim()});
+        _changed=true;
+      }
+
+      if(_changed){
+        salvaDB();
+        toast('🏆 '+premio+' aggiunto ai titoli di '+(_caneTrov.nome||'cane')+'!');
+      } else {
+        toast('ℹ️ '+premio+' già registrato oggi per '+(_caneTrov.nome||'cane'));
+      }
     }
   }
 
