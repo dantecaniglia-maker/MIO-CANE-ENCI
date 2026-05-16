@@ -6919,9 +6919,12 @@ function renderCucciolate(){
       if(!cuccioli.length){
         html+='<div style="text-align:center;padding:14px;color:#6B8BB0;font-size:12px">Nessun cucciolo registrato</div>';
       } else {
+        var _idxM=0,_idxF=0;
         cuccioli.forEach(function(p){
+          var _idx=p.sesso==='M'?++_idxM:++_idxF;
+          var nomeDisplay=p.nome||(p.sesso==='M'?'♂ Maschio '+_idx:'♀ Femmina '+_idx);
           var acq=p.acquirente||{};
-          var stato=acq.stato||'disponibile';
+          var stato=acq.stato||p.stato||'disponibile';
           var statoColor={disponibile:'#1a7a4a',prenotato:'#E65100',venduto:'#C0534A'}[stato];
           var statoLabel={disponibile:'🟢 Disponibile',prenotato:'🟡 Prenotato',venduto:'🔴 Venduto'}[stato];
           var ultimoPeso=p.pesi&&p.pesi.length?p.pesi[p.pesi.length-1]:null;
@@ -6929,7 +6932,8 @@ function renderCucciolate(){
           html+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">';
           html+='<div style="display:flex;align-items:center;gap:8px">';
           html+='<span style="font-size:20px;background:#EEF3FB;border-radius:8px;padding:4px 7px">'+(p.sesso==='M'?'♂':'♀')+'</span>';
-          html+='<div><div style="font-weight:700;font-size:13px">'+(p.nome||'Senza nome')+(p.colore?' <span style="font-size:11px;color:#6B8BB0">'+p.colore+'</span>':'')+'</div>';
+          html+='<div><div style="font-weight:700;font-size:13px">'+nomeDisplay+(p.colore?' <span style="font-size:11px;color:#6B8BB0">'+p.colore+'</span>':'')+'</div>';
+          html+='<div style="font-size:10px;color:#6B8BB0;margin-top:2px">'+madreNome+' × '+padreNome+'</div>';
           if(ultimoPeso)html+='<div style="font-size:11px;color:#1565C0">⚖ '+ultimoPeso.grammi+'g · '+ultimoPeso.data+'</div>';
           html+='</div></div>';
           html+='<div style="display:flex;gap:5px;align-items:center">';
@@ -7415,17 +7419,48 @@ function addCucciolata(){
   if(!data){alert('Inserisci la data di nascita');return;}
   if(!nati){alert('Inserisci il numero di cuccioli nati');return;}
   var padreId=g('cucc-padre').value, madreId=g('cucc-madre').value;
-  cucciolate.push({
+  var _nM=parseInt(g('cucc-maschi').value)||0;
+  var _nF=parseInt(g('cucc-femmine').value)||0;
+  var _nuovaCucc={
     id:Date.now(),
     padre:padreId,
     madre:madreId,
     data:data,nati:nati,
-    maschi:parseInt(g('cucc-maschi').value)||0,
-    femmine:parseInt(g('cucc-femmine').value)||0,
+    maschi:_nM,
+    femmine:_nF,
     note:g('cucc-note').value.trim(),
     schedule:generaSchedule(data),
     cuccioli:[]
-  });
+  };
+  // Auto-genera cuccioli con sesso corretto (nome vuoto, assegnabile dopo)
+  var _ts=Date.now();
+  for(var _cm=1;_cm<=_nM;_cm++){
+    _nuovaCucc.cuccioli.push({
+      id:'cuc_'+(_ts+_cm)+'_m'+_cm,
+      nome:'',sesso:'M',colore:'',stato:'disponibile',
+      ceduto:false,acquirente:{stato:'disponibile'},
+      peso_attuale:null,pesi:[],prezzo:null,microchip:'',note:''
+    });
+  }
+  for(var _cf=1;_cf<=_nF;_cf++){
+    _nuovaCucc.cuccioli.push({
+      id:'cuc_'+(_ts+_nM+_cf)+'_f'+_cf,
+      nome:'',sesso:'F',colore:'',stato:'disponibile',
+      ceduto:false,acquirente:{stato:'disponibile'},
+      peso_attuale:null,pesi:[],prezzo:null,microchip:'',note:''
+    });
+  }
+  // Cuccioli extra se nati > maschi + femmine
+  var _nExtra=nati-(_nM+_nF);
+  for(var _ce=1;_ce<=_nExtra;_ce++){
+    _nuovaCucc.cuccioli.push({
+      id:'cuc_'+(_ts+_nM+_nF+_ce)+'_x'+_ce,
+      nome:'',sesso:'M',colore:'',stato:'disponibile',
+      ceduto:false,acquirente:{stato:'disponibile'},
+      peso_attuale:null,pesi:[],prezzo:null,microchip:'',note:''
+    });
+  }
+  cucciolate.push(_nuovaCucc);
   // Registra gravidanza automaticamente nella scheda della madre
   if(madreId){
     var madreDog = cani.find(function(c){return String(c.id)===madreId;}) || guestCani.find(function(c){return String(c.id)===madreId;});
