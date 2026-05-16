@@ -2158,6 +2158,7 @@ html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] t
     </div>
     <input type="hidden" id="peso-cuccId"/>
     <input type="hidden" id="peso-puppyId"/>
+    <button onclick="hide('modal-peso')" style="background:rgba(13,71,161,.1);border:none;border-radius:8px;padding:8px 12px;color:#0D47A1;font-size:15px;cursor:pointer;margin-bottom:12px">← Indietro</button>
     <div style="margin-bottom:10px"><label>Data</label><input type="date" id="peso-data"/></div>
     <div style="margin-bottom:16px"><label>Peso (grammi)</label><input type="number" id="peso-grammi" min="1" placeholder="Es. 380"/></div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
@@ -2472,7 +2473,7 @@ html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] t
       </div>
       <div style="display:flex;gap:20px;flex-wrap:wrap">
         <div><div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em">Titolare</div><div id="kc-nome" style="font-size:14px;font-weight:600;color:#fff"></div></div>
-        <div><div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em">Provincia</div><div id="kc-prov" style="font-size:14px;font-weight:600;color:#fff"></div></div>
+        <div><div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em">Sede</div><div id="kc-prov" style="font-size:14px;font-weight:600;color:#fff"></div></div>
         <div><div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em">Tel / Email</div><div id="kc-contatti" style="font-size:13px;font-weight:500;color:rgba(255,255,255,.85)"></div></div>
       </div>
     </div>
@@ -2480,9 +2481,11 @@ html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] t
     <div class="form-grid" style="margin-bottom:10px">
       <div style="grid-column:span 2"><label>Affisso ENCI *</label><input id="p-affisso" type="text" placeholder="Es. Dell'Alta Murgia" oninput="liveProfilo()"/></div>
       <div><label>Nome Titolare</label><input id="p-nome" type="text" placeholder="Mario Rossi" oninput="liveProfilo()"/></div>
-      <div><label>Provincia</label><input id="p-prov" type="text" placeholder="Es. Bari (BA)" oninput="liveProfilo()"/></div>
-      <div><label>Telefono</label><div style="display:flex;gap:6px"><select id="p-tel-prefix" style="flex:0 0 auto;padding:6px 4px;border-radius:8px;border:1.5px solid #BFCFE8;background:#fff;font-size:13px;color:#082d6b;cursor:pointer" onchange="liveProfilo()"><option value="+39">🇮🇹 +39</option><option value="+49">🇩🇪 +49</option><option value="+33">🇫🇷 +33</option><option value="+34">🇪🇸 +34</option><option value="+351">🇵🇹 +351</option><option value="+44">🇬🇧 +44</option><option value="+31">🇳🇱 +31</option><option value="+32">🇧🇪 +32</option><option value="+43">🇦🇹 +43</option><option value="+41">🇨🇭 +41</option><option value="+48">🇵🇱 +48</option><option value="+40">🇷🇴 +40</option><option value="+420">🇨🇿 +420</option><option value="+36">🇭🇺 +36</option><option value="+46">🇸🇪 +46</option><option value="+47">🇳🇴 +47</option><option value="+45">🇩🇰 +45</option><option value="+358">🇫🇮 +358</option><option value="+421">🇸🇰 +421</option><option value="+385">🇭🇷 +385</option><option value="+386">🇸🇮 +386</option><option value="+359">🇧🇬 +359</option><option value="+30">🇬🇷 +30</option><option value="+381">🇷🇸 +381</option></select><input id="p-tel-number" type="tel" placeholder="333 0000000" style="flex:1" oninput="liveProfilo()"/></div></div>
+      <div><label>Città/Paese</label><input id="p-prov" type="text" placeholder="Es. Cassino (FR)" oninput="liveProfilo()"/></div>
+      <div style="grid-column:span 2"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div><label>Email</label><input id="p-email" type="email" placeholder="kennel@esempio.it" oninput="liveProfilo()"/></div>
+      <div><label>Telefono</label><div style="display:flex;gap:6px"><select id="p-tel-prefix" style="flex:0 0 auto;padding:6px 4px;border-radius:8px;border:1.5px solid #BFCFE8;background:#fff;font-size:13px;color:#082d6b;cursor:pointer" onchange="liveProfilo()"><option value="+39">🇮🇹 +39</option><option value="+49">🇩🇪 +49</option><option value="+33">🇫🇷 +33</option><option value="+34">🇪🇸 +34</option><option value="+351">🇵🇹 +351</option><option value="+44">🇬🇧 +44</option><option value="+31">🇳🇱 +31</option><option value="+32">🇧🇪 +32</option><option value="+43">🇦🇹 +43</option><option value="+41">🇨🇭 +41</option><option value="+48">🇵🇱 +48</option><option value="+40">🇷🇴 +40</option><option value="+420">🇨🇿 +420</option><option value="+36">🇭🇺 +36</option><option value="+46">🇸🇪 +46</option><option value="+47">🇳🇴 +47</option><option value="+45">🇩🇰 +45</option><option value="+358">🇫🇮 +358</option><option value="+421">🇸🇰 +421</option><option value="+385">🇭🇷 +385</option><option value="+386">🇸🇮 +386</option><option value="+359">🇧🇬 +359</option><option value="+30">🇬🇷 +30</option><option value="+381">🇷🇸 +381</option></select><input id="p-tel-number" type="tel" placeholder="333 1234567" style="flex:1" oninput="liveProfilo()"/></div></div>
+      </div></div>
       <div style="grid-column:span 2"><label>Razza / Razze allevate</label><input id="p-razza" type="text" placeholder="Es. Cane Corso, Pastore Maremmano" oninput="liveProfilo()"/></div>
       <div style="grid-column:span 2"><label>Sito Web / Social</label><input id="p-web" type="text" placeholder="www.kennelexample.it" oninput="liveProfilo()"/></div>
       <div style="grid-column:span 2"><label>Note / Presentazione</label><textarea id="p-note" rows="3" placeholder="Allevo con passione dal 2010..." oninput="liveProfilo()"></textarea></div>
@@ -6723,6 +6726,14 @@ function updateKennelCard(){
 function saveProfilo(){
   liveProfilo();
   salvaDB();
+  if(typeof _supabase!=='undefined'&&typeof _currentUser!=='undefined'&&_currentUser){
+    _supabase.from('profili').upsert({
+      id:_currentUser.id,affisso:profilo.affisso||'',nome:profilo.nome||'',
+      prov:profilo.prov||'',tel:profilo.tel||'',email:profilo.email||'',
+      razza:profilo.razza||'',web:profilo.web||'',note:profilo.note||'',
+      logo:profilo.logo||null
+    }).then(function(){}).catch(function(e){console.warn('[profilo] upsert:',e);});
+  }
   hide('modal-profilo');
   // Mostra un mini-toast
   var t=document.createElement('div');
@@ -6854,10 +6865,12 @@ function renderCucciolate(){
       html+='<span class="badge" style="background:#F0FFF6;color:#1a7a4a;border-color:#A8D8B8">✓ '+fatti+'/'+schedule.length+' trattamenti</span>';
       html+='</div>';
 
-      // Calendario sanitario
+      // Calendario sanitario (collassabile)
       if(schedule.length){
-        html+='<div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:1.5px solid #EEF3FB">📋 Calendario Sanitario Cuccioli</div>';
-        html+='<div style="display:flex;flex-direction:column;gap:6px">';
+        html+='<div style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:6px;border-bottom:1.5px solid #EEF3FB" onclick="toggleEl(\'cal-san-'+cu.id+'\')">';
+        html+='<div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.08em">📋 Calendario Sanitario</div>';
+        html+='<span style="font-size:11px;color:#BFCFE8">▼</span></div>';
+        html+='<div id="cal-san-'+cu.id+'" class="hidden"><div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">';
         schedule.forEach(function(s){
           var diff=Math.round((new Date(s.dataScadenza)-now)/864e5);
           var isOverdue=!s.fatto&&diff<0;
@@ -6888,14 +6901,14 @@ function renderCucciolate(){
           }
           html+='</div>';
         });
-        html+='</div>';
+        html+='</div></div>';
       }
-      // ── SEZIONE CUCCIOLI INDIVIDUALI (collassabile) ──
+      // ── SEZIONE CUCCIOLI INDIVIDUALI ──
       var cuccioli=cu.cuccioli||[];
       var disp=cuccioli.filter(function(p){return !p.acquirente||p.acquirente.stato==='disponibile';}).length;
       var pren=cuccioli.filter(function(p){return p.acquirente&&p.acquirente.stato==='prenotato';}).length;
       var vend=cuccioli.filter(function(p){return p.acquirente&&p.acquirente.stato==='venduto';}).length;
-      html+='<div id="cuccioli-section-'+cu.id+'" style="display:none;margin-top:10px;border-top:1.5px solid #EEF3FB;padding-top:12px">';
+      html+='<div id="cuccioli-section-'+cu.id+'" style="display:block;margin-top:10px;border-top:1.5px solid #EEF3FB;padding-top:12px">';
       html+='<div style="font-size:11px;font-weight:700;color:#1a7a4a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">';
       html+='<span>🐾 Cuccioli Individuali</span>';
       html+='<div style="display:flex;gap:5px;align-items:center">';
@@ -6920,9 +6933,9 @@ function renderCucciolate(){
           html+='</div></div>';
           html+='<div style="display:flex;gap:5px;align-items:center">';
           html+='<span style="font-size:11px;font-weight:700;color:'+statoColor+'">'+statoLabel+'</span>';
-          html+='<button onclick="openCuccioloDetail('+cu.id+','+p.id+')" style="background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1565C0">✏</button>';
-          html+='<button onclick="openAggiuntaPeso('+cu.id+','+p.id+')" style="background:#F0FFF6;border:1.5px solid #A8D8B8;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1a7a4a">⚖</button>';
-          html+='<button onclick="deleteCucciolo('+cu.id+','+p.id+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:13px">🗑</button>';
+          html+='<button onclick="openCuccioloDetail('+cu.id+','+p.id+')" style="background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:12px;padding:12px 18px;font-size:13px;font-weight:700;cursor:pointer;color:#1565C0;min-height:44px">✏</button>';
+          html+='<button onclick="openAggiuntaPeso('+cu.id+','+p.id+')" style="background:#F0FFF6;border:1.5px solid #A8D8B8;border-radius:12px;padding:12px 18px;font-size:13px;font-weight:700;cursor:pointer;color:#1a7a4a;min-height:44px">⚖</button>';
+          html+='<button onclick="deleteCucciolo('+cu.id+','+p.id+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:14px;padding:12px;min-height:44px">🗑</button>';
           html+='</div></div>';
           if(acq.nome){
             html+='<div style="margin-top:6px;padding:6px 9px;background:#fff;border-radius:7px;border:1px solid #EEF3FB;font-size:12px;color:#4A6080">';
@@ -23052,7 +23065,7 @@ function renderRegistroLista(){
       +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1a1a3a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(m.descrizione||m.categoria)+'</div>'
       +'<div style="font-size:11px;color:#6B8BB0">'+(m.data||'')+(m.fonte==='auto'?' · Auto':' · Manuale')+'</div></div>'
       +'<div style="font-weight:700;font-size:15px;color:'+colore+';flex-shrink:0">€'+(m.importo||0).toFixed(0)+'</div>'
-      +(m.fonte!=='auto'?'<button onclick="deleteMovimento(\''+m.id+'\')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:14px;flex-shrink:0;padding:0 4px" title="Elimina">🗑</button>':'')
+      +(m.fonte!=='auto'?'<div style="display:flex;gap:4px;flex-shrink:0"><button onclick="_modificaVoceRegistro(\''+m.id+'\')" style="background:none;border:none;font-size:14px;cursor:pointer;padding:4px">✏️</button><button onclick="_eliminaVoceRegistro(\''+m.id+'\')" style="background:none;border:none;font-size:14px;cursor:pointer;padding:4px">🗑️</button></div>':'')
       +'</div>';
   });
   lista.innerHTML=html;
@@ -23090,6 +23103,43 @@ function deleteMovimento(id){
   registro.movimenti=registro.movimenti.filter(function(m){return String(m.id)!==String(id);});
   salvaDB();
   renderRegistroLista();
+}
+function _eliminaVoceRegistro(id){
+  if(confirm('Eliminare questa voce?')) deleteMovimento(id);
+}
+function _modificaVoceRegistro(id){
+  var m=registro.movimenti.find(function(x){return String(x.id)===String(id);});
+  if(!m) return;
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10200;display:flex;align-items:flex-end;justify-content:center';
+  var cats=m.tipo==='entrata'?_REG_CAT_ENTRATE:_REG_CAT_USCITE;
+  var catOpts=cats.map(function(c){return '<option value="'+c[0]+'"'+(m.categoria===c[0]?' selected':'')+'>'+c[1]+'</option>';}).join('');
+  overlay.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto">'
+    +'<div style="font-weight:700;font-size:16px;color:#0D47A1;margin-bottom:16px">✏️ Modifica '+(m.tipo==='entrata'?'Entrata':'Uscita')+'</div>'
+    +'<div class="form-grid" style="margin-bottom:12px">'
+    +'<div><label>Data</label><input type="date" id="_reg-edit-data" value="'+(m.data||'')+'"/></div>'
+    +'<div><label>Importo (€)</label><input type="number" id="_reg-edit-importo" min="0" step="1" value="'+(m.importo||0)+'"/></div>'
+    +'<div><label>Categoria</label><select id="_reg-edit-cat">'+catOpts+'</select></div>'
+    +'<div style="grid-column:span 2"><label>Descrizione</label><input type="text" id="_reg-edit-desc" value="'+(m.descrizione||m.categoria||'')+'"/></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:10px;justify-content:flex-end">'
+    +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;color:#1565C0">Annulla</button>'
+    +'<button onclick="_salvaModificaRegistro(\''+id+'\');this.closest(\'[style*=fixed]\').remove()" style="background:linear-gradient(135deg,#0D47A1,#1565C0);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer">✓ Salva</button>'
+    +'</div>'
+    +'</div>';
+  document.body.appendChild(overlay);
+}
+function _salvaModificaRegistro(id){
+  var m=registro.movimenti.find(function(x){return String(x.id)===String(id);});
+  if(!m) return;
+  var d=g('_reg-edit-data'),im=g('_reg-edit-importo'),ca=g('_reg-edit-cat'),de=g('_reg-edit-desc');
+  if(d&&d.value) m.data=d.value;
+  if(im&&im.value) m.importo=parseFloat(im.value)||m.importo;
+  if(ca&&ca.value) m.categoria=ca.value;
+  if(de) m.descrizione=de.value.trim()||m.categoria;
+  salvaDB();
+  renderRegistro();
+  toast('✅ Voce aggiornata');
 }
 function exportRegistroPDF(){
   var entrate=getEntrateMensili(_regAnno,_regMese);
