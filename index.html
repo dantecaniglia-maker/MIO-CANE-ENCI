@@ -23049,8 +23049,8 @@ function captureFromGuide(){
 ══════════════════════════════════════ */
 var _REG_MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 var _REG_CAT_USCITE=[['veterinario','🏥 Veterinario'],['alimentazione','🍖 Alimentazione'],['enci','🏅 ENCI / Quote'],['farmaci','💊 Farmaci'],['altro','📋 Altro']];
-var _REG_CAT_ENTRATE=[['altro_entrata','💵 Altra entrata'],['vendita_cucciolo','🐾 Vendita cucciolo']];
-var _REG_ICONS={veterinario:'🏥',alimentazione:'🍖',enci:'🏅',farmaci:'💊',altro:'📋',vendita_cucciolo:'🐾',altro_entrata:'💵'};
+var _REG_CAT_ENTRATE=[['altro_entrata','💵 Altra entrata'],['vendita_cucciolo','🐾 Vendita cucciolo'],['acconto_cucciolo','🤝 Acconto cucciolo']];
+var _REG_ICONS={veterinario:'🏥',alimentazione:'🍖',enci:'🏅',farmaci:'💊',altro:'📋',vendita_cucciolo:'🐾',acconto_cucciolo:'🤝',altro_entrata:'💵'};
 
 function openRegistro(){
   _regMese=new Date().getMonth(); _regAnno=new Date().getFullYear(); _regTab='entrate';
@@ -23150,20 +23150,38 @@ function renderRegistroLista(){
   });
   lista.innerHTML=html;
 }
+function _regToggleCucciolo(cat){
+  var w=g('reg-cucciolo-wrapper');
+  if(w) w.style.display=(cat==='vendita_cucciolo'||cat==='acconto_cucciolo')?'block':'none';
+}
 function renderRegistroAddForm(){
   var form=g('reg-add-form');
   if(!form)return;
   var cats=_regTab==='entrate'?_REG_CAT_ENTRATE:_REG_CAT_USCITE;
   var colore=_regTab==='entrate'?'#1a7a4a':'#C0534A';
   var oggi=new Date().toISOString().slice(0,10);
+
+  // Opzioni cuccioli da tutte le cucciolate
+  var cucOpts='<option value="">Seleziona cucciolo...</option>';
+  (cucciolate||[]).forEach(function(cucc){
+    (cucc.cuccioli||[]).forEach(function(c){
+      var nm=(c.nome||('Cucciolo '+(c.sesso==='M'?'♂':'♀')))+' — '+(c.stato||'disponibile');
+      cucOpts+='<option value="'+c.id+'" data-cucc="'+cucc.id+'">'+nm+'</option>';
+    });
+  });
+
   var html='<div style="font-size:11px;font-weight:700;color:'+colore+';text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">+ Aggiungi '+((_regTab==='entrate')?'entrata':'uscita')+'</div>'
     +'<div class="form-grid">'
     +'<div><label>Data</label><input type="date" id="reg-input-data" value="'+oggi+'"/></div>'
     +'<div><label>Importo (€)</label><input type="number" id="reg-input-importo" min="0" step="1" placeholder="Es. 150"/></div>'
-    +'<div><label>Categoria</label><select id="reg-input-cat">';
+    +'<div><label>Categoria</label><select id="reg-input-cat" onchange="_regToggleCucciolo(this.value)">';
   cats.forEach(function(c){html+='<option value="'+c[0]+'">'+c[1]+'</option>';});
   html+='</select></div>'
     +'<div style="grid-column:span 2"><label>Descrizione</label><input type="text" id="reg-input-desc" placeholder="Descrizione opzionale..."/></div>'
+    +'</div>'
+    +'<div id="reg-cucciolo-wrapper" style="display:none;margin-top:8px;margin-bottom:4px">'
+    +'<label style="font-size:12px;font-weight:600;color:#6B8BB0;display:block;margin-bottom:4px">Cucciolo</label>'
+    +'<select id="reg-cucciolo-select" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid #DDEAFF;font-size:13px;box-sizing:border-box">'+cucOpts+'</select>'
     +'</div>'
     +'<button onclick="addMovimento()" style="margin-top:10px;background:'+colore+';color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer">✓ Aggiungi</button>';
   form.innerHTML=html;
@@ -23174,9 +23192,35 @@ function addMovimento(){
   var cat=g('reg-input-cat')&&g('reg-input-cat').value;
   var desc=(g('reg-input-desc')&&g('reg-input-desc').value.trim())||'';
   if(!data||!importo){toast('⚠️ Inserisci data e importo');return;}
-  registro.movimenti.push({id:Date.now(),data:data,tipo:_regTab==='entrate'?'entrata':'uscita',importo:importo,categoria:cat,descrizione:desc||cat,fonte:'manuale'});
+
+  var movimento={id:Date.now(),data:data,tipo:_regTab==='entrate'?'entrata':'uscita',
+    importo:importo,categoria:cat,descrizione:desc||cat,fonte:'manuale'};
+
+  // Ponte cucciolo: aggiorna stato se vendita o acconto
+  var cucSel=g('reg-cucciolo-select');
+  if(cucSel&&cucSel.value&&(cat==='vendita_cucciolo'||cat==='acconto_cucciolo')){
+    var cucId=cucSel.value;
+    var _opt=cucSel.selectedOptions&&cucSel.selectedOptions[0];
+    var cuccId=_opt?_opt.getAttribute('data-cucc'):null;
+    var cucc=(cucciolate||[]).find(function(c){return String(c.id)===String(cuccId);});
+    if(cucc){
+      var cucciolo=(cucc.cuccioli||[]).find(function(c){return String(c.id)===String(cucId);});
+      if(cucciolo){
+        var nuovoStato=cat==='vendita_cucciolo'?'venduto':'prenotato';
+        cucciolo.stato=nuovoStato;
+        if(cucciolo.acquirente) cucciolo.acquirente.stato=nuovoStato;
+        movimento.cucciolo_id=cucId;
+        movimento.cucciolata_id=cuccId;
+        if(!desc) movimento.descrizione=(cat==='vendita_cucciolo'?'Vendita ':'Acconto ')+(cucciolo.nome||'cucciolo');
+        toast((cat==='vendita_cucciolo'?'🐾 Cucciolo segnato come venduto':'🤝 Cucciolo segnato come prenotato'));
+      }
+    }
+  }
+
+  registro.movimenti.push(movimento);
   salvaDB();
   renderRegistro();
+  if(typeof renderCucciolate==='function') renderCucciolate();
   toast(_regTab==='entrate'?'✅ Entrata aggiunta':'✅ Uscita aggiunta');
 }
 function deleteMovimento(id){
