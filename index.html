@@ -18702,7 +18702,7 @@ function renderHealthDashboard(container){
   +'</div>'
   +(streak>0
     ?'<div style="background:#FFF8E7;border:1.5px solid #C9A961;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:#A88A41;white-space:nowrap;flex-shrink:0">🔥 '+streak+' giorni</div>'
-    :'<div style="background:#FFF8E7;border:1.5px solid #C9A961;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:#A88A41;white-space:nowrap;flex-shrink:0">Inizia oggi!</div>')
+    :'<button onclick="aggiungiLogFamiglia(\'pasto\')" style="background:#FFF8E7;border:1.5px solid #C9A961;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:#A88A41;white-space:nowrap;flex-shrink:0;cursor:pointer">🐾 Inizia oggi!</button>')
   +'</div>'
 
   // ── DOG SCORE card ──
@@ -18962,7 +18962,11 @@ function switchFamTab(tab){
     });
   }
   var content = g('fam-tab-content');
-  if(!content) return;
+  if(!content){
+    renderHomeFamiglia();
+    content = g('fam-tab-content');
+    if(!content) return;
+  }
   if(tab==='home') renderHealthDashboard(content);
   else if(tab==='diario') renderDiarioFamiglia(content);
   else if(tab==='compiti') renderCompitiFamiglia(content);
@@ -20860,15 +20864,11 @@ async function salvaLogFamigliaAvanzato(tipo, btn){
     });
     if(res.error) throw res.error;
 
-    // Aggiorna punteggio_mese su Supabase per classifica nazionale
-    setTimeout(function(){
-      var _tc = g('fam-tab-content');
-      if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
-    }, 500);
-
     window._diarioFotoBase64=null;
     btn.closest('[style*=fixed]').remove();
-    _famigliaLog.unshift({
+
+    // Push nell'array locale PRIMA del render
+    var _entry = {
       famiglia_id: _famigliaDati.id,
       cane_id: _famigliaCaneSelezionato.id,
       user_id: _currentUser.id,
@@ -20876,8 +20876,11 @@ async function salvaLogFamigliaAvanzato(tipo, btn){
       tipo: tipo, testo: testo||null,
       foto_url: fotoUrl, dati: dati,
       created_at: new Date().toISOString()
-    });
-    if(_famigliaLog&&_famigliaLog[0]) (_famigliaLogTutti||[]).unshift(_famigliaLog[0]);
+    };
+    if(!_famigliaLog) _famigliaLog=[];
+    if(!_famigliaLogTutti) _famigliaLogTutti=[];
+    _famigliaLog.unshift(_entry);
+    _famigliaLogTutti.unshift(_entry);
     _salvFam();
 
     // Sync verso scheda cane (cani[] localStorage)
@@ -20888,14 +20891,12 @@ async function salvaLogFamigliaAvanzato(tipo, btn){
     if(reminderDate) msg += ' — reminder '+reminderDate;
     toast(msg);
 
-    // Se scheda salute è aperta, aggiornala con i nuovi dati
+    // Se scheda salute è aperta, aggiornala (senza ri-fetch: usa dati locali)
     var schedaOverlay = g('scheda-salute-overlay');
     if(schedaOverlay){
       var _scid = schedaOverlay.dataset.caneId;
       schedaOverlay.remove();
-      caricaLogFamiglia().then(function(){
-        apriSchedaSaluteCane(_scid);
-      });
+      apriSchedaSaluteCane(_scid);
     }
 
     // Nota → porta sempre al diario dove è visibile
@@ -20903,15 +20904,10 @@ async function salvaLogFamigliaAvanzato(tipo, btn){
       switchFamTab('diario');
     }
 
+    // Re-render con dati già aggiornati localmente (no re-fetch Supabase)
     var _tc = g('fam-tab-content');
     if(_tc && _famTabAttiva==='diario') renderDiarioFamiglia(_tc);
     else if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
-
-    caricaLogFamiglia().then(function(){
-      var _tc2 = g('fam-tab-content');
-      if(_tc2 && _famTabAttiva==='diario') renderDiarioFamiglia(_tc2);
-      else if(_tc2 && _famTabAttiva==='home') renderHealthDashboard(_tc2);
-    });
   } catch(e){
     btn.disabled=false; btn.textContent='✓ Salva';
     toast('❌ Errore: '+e.message);
