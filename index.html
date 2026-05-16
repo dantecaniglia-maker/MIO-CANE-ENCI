@@ -10022,12 +10022,16 @@ function apriGiudiceRing(){
         return '<button onclick="_selGiudiceQualifica(\''+q+'\')" data-val="'+q+'" style="padding:10px 16px;border-radius:10px;border:2px solid '+col+';background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:#333">'+q+'</button>';
       }).join('')
       +'</div>'
-      +'<div style="font-weight:700;font-size:13px;color:#0D47A1;margin-bottom:8px">Premio / Titolo</div>'
+      +'<div style="font-weight:700;font-size:13px;color:#C9A961;margin:12px 0 8px">Titolo</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="giudice-titolo-btns">'
+      +['Nessuno','CAC','R.CAC','CACIB','R.CACIB'].map(function(p){
+        return '<button onclick="_selGiudiceTitolo(\''+p+'\')" data-val="'+p+'" style="padding:8px 14px;border-radius:8px;border:1.5px solid #C9A961;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:#333">'+p+'</button>';
+      }).join('')+'</div>'
+      +'<div style="font-weight:700;font-size:13px;color:#E65100;margin:12px 0 8px">Premio Speciale</div>'
       +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="giudice-premio-btns">'
-      +['Nessuno','CAC','R.CAC','CACIB','R.CACIB','BOB','BOS','BOG','BIS'].map(function(p){
-        return '<button onclick="_selGiudicePremio(\''+p+'\')" data-val="'+p+'" style="padding:8px 14px;border-radius:8px;border:1.5px solid #C9A961;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:#333">'+p+'</button>';
-      }).join('')
-      +'</div>'
+      +['Nessuno','BOB','BOS','BOG','BIS'].map(function(p){
+        return '<button onclick="_selGiudicePremio(\''+p+'\')" data-val="'+p+'" style="padding:8px 14px;border-radius:8px;border:1.5px solid #E65100;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:#333">'+p+'</button>';
+      }).join('')+'</div>'
       +'<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:#1565C0;display:block;margin-bottom:4px">Note rapide</label>'
         +'<textarea id="giudice-note" rows="2" placeholder="Es. Buon angolo posteriore, testa fine..." style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:13px;resize:none;box-sizing:border-box"></textarea></div>'
       +'<div style="margin-bottom:12px">'
@@ -10082,11 +10086,19 @@ function _selGiudiceQualifica(val){
     b.style.color=sel?'#fff':'#333';
   });
 }
+function _selGiudiceTitolo(val){
+  window._giudiceTitolo=val;
+  document.querySelectorAll('#giudice-titolo-btns button').forEach(function(b){
+    var sel=b.getAttribute('data-val')===val;
+    b.style.background=sel?'#C9A961':'#fff';
+    b.style.color=sel?'#fff':'#333';
+  });
+}
 function _selGiudicePremio(val){
   window._giudicePremio=val;
   document.querySelectorAll('#giudice-premio-btns button').forEach(function(b){
     var sel=b.getAttribute('data-val')===val;
-    b.style.background=sel?'#C9A961':'#fff';
+    b.style.background=sel?'#E65100':'#fff';
     b.style.color=sel?'#fff':'#333';
   });
 }
@@ -10124,6 +10136,7 @@ function salvaValutazioneGiudice(){
   }
   var classe=(document.getElementById('gr-classe')||{}).value||'Libera';
   var val=window._giudiceQualifica||'';
+  var titolo=window._giudiceTitolo||'Nessuno';
   var premio=window._giudicePremio||'Nessuno';
   var note=(document.getElementById('giudice-note')||{}).value||'';
   if(!nome.trim()){toast('⚠️ Seleziona o inserisci il nome del cane');return;}
@@ -10137,6 +10150,7 @@ function salvaValutazioneGiudice(){
     razza:razza.trim(),
     classe:classe,
     valutazione:val,
+    titolo:titolo,
     premio:premio,
     note:note.trim(),
     foto:window._grFotoBase64||null
@@ -10145,49 +10159,70 @@ function salvaValutazioneGiudice(){
   window._giudiceValutazioni=window._giudiceValutazioni||[];
   window._giudiceValutazioni.unshift(record);
   try{localStorage.setItem(_GIUDICE_KEY,JSON.stringify(window._giudiceValutazioni));}catch(e){}
-  toast('✅ '+record.nome+' — '+record.valutazione+(premio&&premio!=='Nessuno'?' 🏆 '+premio:''));
+  var _toastParts=[record.valutazione];
+  if(titolo!=='Nessuno') _toastParts.push('🎖️ '+titolo);
+  if(premio!=='Nessuno') _toastParts.push('🏆 '+premio);
+  toast('✅ '+record.nome+' — '+_toastParts.join(' · '));
 
   if(_currentUser){
     var rec={user_id:_currentUser.id,nome:record.nome,razza:record.razza,
-      classe:record.classe,valutazione:record.valutazione,premio:record.premio,note:record.note,
+      classe:record.classe,valutazione:record.valutazione,
+      titolo:record.titolo,premio:record.premio,note:record.note,
       data:record.data,created_at:new Date().toISOString()};
     _supabase.from('giudice_valutazioni').insert(rec).then(function(){});
   }
 
-  // Ponte titoli: aggiungi alla scheda cane se cane registrato e premio rilevante
-  if(selVal&&selVal!=='__ALTRO__'&&premio&&premio!=='Nessuno'){
+  // Ponte titoli: aggiungi TITOLO e PREMIO separatamente alla scheda cane
+  if(selVal&&selVal!=='__ALTRO__'){
     var _caneTrov=(cani||[]).find(function(c){return String(c.id)===String(selVal);});
     if(_caneTrov){
       var _oggi=record.data;
       var _changed=false;
-      var _entryBase={id:Date.now(),data:_oggi,giudice:'(Giudice Ring)',paese:'Italia'};
+      var _entryBase={id:Date.now(),data:_oggi,giudice:note.trim()||'(Giudice Ring)',paese:'Italia'};
 
-      // CAC → cac_list (contatore "CAC 0" nella scheda cane)
-      if(premio==='CAC'){
+      // CAC → cac_list
+      if(titolo==='CAC'){
         if(!_caneTrov.cac_list) _caneTrov.cac_list=[];
-        var _dupCAC=_caneTrov.cac_list.find(function(x){return x.data===_oggi;});
+        var _dupCAC=_caneTrov.cac_list.find(function(x){return x.data===_oggi&&!x.riserva;});
         if(!_dupCAC){_caneTrov.cac_list.push(_entryBase);_changed=true;}
       }
-      // CACIB → cacib_list (contatore "CACIB 0" nella scheda cane)
-      else if(premio==='CACIB'){
+      // R.CAC → cac_list con flag riserva
+      if(titolo==='R.CAC'){
+        if(!_caneTrov.cac_list) _caneTrov.cac_list=[];
+        var _dupRCAC=_caneTrov.cac_list.find(function(x){return x.data===_oggi&&x.riserva;});
+        if(!_dupRCAC){_caneTrov.cac_list.push(Object.assign({riserva:true},_entryBase));_changed=true;}
+      }
+      // CACIB → cacib_list
+      if(titolo==='CACIB'){
         if(!_caneTrov.cacib_list) _caneTrov.cacib_list=[];
-        var _dupCACIB=_caneTrov.cacib_list.find(function(x){return x.data===_oggi;});
+        var _dupCACIB=_caneTrov.cacib_list.find(function(x){return x.data===_oggi&&x.tipo!=='riserva';});
         if(!_dupCACIB){_caneTrov.cacib_list.push(Object.assign({tipo:'normale'},_entryBase));_changed=true;}
       }
+      // R.CACIB → cacib_list con tipo riserva
+      if(titolo==='R.CACIB'){
+        if(!_caneTrov.cacib_list) _caneTrov.cacib_list=[];
+        var _dupRCACIB=_caneTrov.cacib_list.find(function(x){return x.data===_oggi&&x.tipo==='riserva';});
+        if(!_dupRCACIB){_caneTrov.cacib_list.push(Object.assign({tipo:'riserva'},_entryBase));_changed=true;}
+      }
 
-      // Tutti i premi → titoli[] (storico generale)
+      // Tutto va in titoli[] (storico completo)
       if(!_caneTrov.titoli) _caneTrov.titoli=[];
-      var _dupTit=_caneTrov.titoli.find(function(t){return t.titolo===premio&&t.data===_oggi;});
-      if(!_dupTit){
-        _caneTrov.titoli.push({titolo:premio,qualifica:val,classe:classe,data:_oggi,note:note.trim()});
-        _changed=true;
+      if(titolo!=='Nessuno'){
+        var _dupT=_caneTrov.titoli.find(function(t){return t.titolo===titolo&&t.data===_oggi;});
+        if(!_dupT){_caneTrov.titoli.push({titolo:titolo,qualifica:val,classe:classe,data:_oggi,note:note.trim()});_changed=true;}
+      }
+      if(premio!=='Nessuno'){
+        var _dupP=_caneTrov.titoli.find(function(t){return t.titolo===premio&&t.data===_oggi;});
+        if(!_dupP){_caneTrov.titoli.push({titolo:premio,qualifica:val,classe:classe,data:_oggi,note:'Premio speciale'});_changed=true;}
       }
 
       if(_changed){
         salvaDB();
-        toast('🏆 '+premio+' aggiunto ai titoli di '+(_caneTrov.nome||'cane')+'!');
-      } else {
-        toast('ℹ️ '+premio+' già registrato oggi per '+(_caneTrov.nome||'cane'));
+        var _msg='🏆 ';
+        if(titolo!=='Nessuno') _msg+=titolo;
+        if(premio!=='Nessuno') _msg+=(titolo!=='Nessuno'?' + ':'')+premio;
+        _msg+=' aggiunto a '+(_caneTrov.nome||'cane')+'!';
+        toast(_msg);
       }
     }
   }
@@ -10203,9 +10238,8 @@ function salvaValutazioneGiudice(){
   // Reset form
   if(selEl){selEl.value='';_giudiceToggleAltro('');}
   ['giudice-cane-nome','giudice-cane-razza','giudice-note'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  window._giudiceQualifica=null;window._giudicePremio=null;
-  document.querySelectorAll('#giudice-qualifica-btns button').forEach(function(b){b.style.background='#fff';b.style.color='#333';});
-  document.querySelectorAll('#giudice-premio-btns button').forEach(function(b){b.style.background='#fff';b.style.color='#333';});
+  window._giudiceQualifica=null;window._giudiceTitolo=null;window._giudicePremio=null;
+  document.querySelectorAll('#giudice-qualifica-btns button,#giudice-titolo-btns button,#giudice-premio-btns button').forEach(function(b){b.style.background='#fff';b.style.color='#333';});
   var prev=document.getElementById('gr-foto-preview');if(prev)prev.style.display='none';
   window._grFotoBase64=null;
 }
@@ -10218,8 +10252,9 @@ function _renderListaValutazioni(lista){
     return '<div style="padding:10px;border-radius:10px;border:1px solid #DDEAFF;margin-bottom:8px;background:#F8FAFF">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
         +'<div style="font-weight:700;font-size:14px;color:#1a1a3a">'+esc(v.nome||'')+'</div>'
-        +'<div style="display:flex;gap:4px;align-items:center">'
-        +(v.premio&&v.premio!=='Nessuno'?'<div style="background:#C9A961;color:#fff;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700">🏆 '+esc(v.premio)+'</div>':'')
+        +'<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:flex-end">'
+        +(v.titolo&&v.titolo!=='Nessuno'?'<span style="background:#C9A961;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">🎖️ '+esc(v.titolo)+'</span>':'')
+        +(v.premio&&v.premio!=='Nessuno'?'<span style="background:#E65100;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">🏆 '+esc(v.premio)+'</span>':'')
         +'<div style="background:'+c+';color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700">'+esc(v.valutazione||'')+'</div>'
         +'</div>'
       +'</div>'
