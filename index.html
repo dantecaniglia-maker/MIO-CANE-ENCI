@@ -19429,12 +19429,7 @@ async function completaCompitoFissoSingolo(caneId, tipo, orario, punti){
   _supabase.from('famiglia_log').insert(
     {famiglia_id:_famigliaDati.id,cane_id:caneId,user_id:_currentUser.id,
      nickname_autore:nick,tipo:tipo,testo:null}
-  ).then(function(r){
-    if(!r.error) caricaLogFamiglia().then(function(){
-      if(_tc && _famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
-      if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
-    });
-  });
+  ).then(function(){});
 }
 
 async function completaCompitoFissoTutti(key){
@@ -19480,12 +19475,7 @@ async function completaCompitoFissoTutti(key){
   if(_tc && _famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
   if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
   toast('✅ Tutti i cani — +'+totPunti+'pt!');
-  _supabase.from('famiglia_log').insert(inserts).then(function(r){
-    if(!r.error) caricaLogFamiglia().then(function(){
-      if(_tc && _famTabAttiva==='compiti') renderCompitiFamiglia(_tc);
-      if(_tc && _famTabAttiva==='home') renderHealthDashboard(_tc);
-    });
-  });
+  _supabase.from('famiglia_log').insert(inserts).then(function(){});
 }
 
 function apriCreaCompitoAdmin(){
@@ -20612,7 +20602,9 @@ async function completaCompito(id){
       famiglia_id: _famigliaDati.id,
       testo: 'Compito: '+(compito.testo||'')
     };
+    if(!_famigliaLogTutti) _famigliaLogTutti=[];
     _famigliaLog.unshift(logEntry);
+    _famigliaLogTutti.unshift(Object.assign({cane_id:_famigliaCaneSelezionato.id},logEntry));
     _salvFam();
     _supabase.from('famiglia_log').insert(Object.assign({
       cane_id: _famigliaCaneSelezionato.id
@@ -21143,8 +21135,8 @@ async function salvaLogFamiglia(tipo, btn){
     console.log('[LOG] Risultato insert:', _logRes.data, _logRes.error);
     if(_logRes.error) throw _logRes.error;
     btn.closest('[style*=fixed]').remove();
-    // Aggiorna in memoria subito per refresh istantaneo dei ring
-    _famigliaLog.unshift({
+    // Push locale PRIMA del render (nessun re-fetch da Supabase)
+    var _entryFam={
       famiglia_id: _famigliaDati.id,
       cane_id: _famigliaCaneSelezionato&&_famigliaCaneSelezionato.id||null,
       user_id: _currentUser.id,
@@ -21153,7 +21145,11 @@ async function salvaLogFamiglia(tipo, btn){
       testo: testo||null,
       foto_url: fotoUrl,
       created_at: new Date().toISOString()
-    });
+    };
+    if(!_famigliaLog) _famigliaLog=[];
+    if(!_famigliaLogTutti) _famigliaLogTutti=[];
+    _famigliaLog.unshift(_entryFam);
+    _famigliaLogTutti.unshift(_entryFam);
     _salvFam();
     if(_famTabAttiva==='home'){
       var _tc = g('fam-tab-content');
@@ -21163,17 +21159,6 @@ async function salvaLogFamiglia(tipo, btn){
       var _tc3 = g('fam-tab-content');
       if(_tc3) renderCompitiFamiglia(_tc3);
     }
-    // Poi sincronizza da Supabase in background
-    caricaLogFamiglia().then(function(){
-      if(_famTabAttiva==='home'){
-        var _tc2 = g('fam-tab-content');
-        if(_tc2) renderHealthDashboard(_tc2);
-      }
-      if(_famTabAttiva==='compiti'){
-        var _tc4 = g('fam-tab-content');
-        if(_tc4) renderCompitiFamiglia(_tc4);
-      }
-    });
     toast('✅ '+tipoLogLabel(tipo)+' registrata!');
   } catch(e){
     console.error('[LOG] Errore salva:', e, {
