@@ -10050,6 +10050,28 @@ function apriGiudiceRing(){
       +'<option>Giovani (9-18 mesi)</option><option>Intermedia (15-24 mesi)</option><option>Libera (15+ mesi)</option>'
       +'<option>Lavoro</option><option>Campioni</option><option>Veterani (8+ anni)</option>'
       +'</select>'
+      +'<div style="margin-bottom:12px">'
+      +'<label style="font-size:12px;font-weight:600;color:#6B8BB0">Nome Giudice</label>'
+      +'<input id="giudice-nome-giudice" type="text" placeholder="Es. Dr. Mario Rossi" '
+      +'style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #DDEAFF;font-size:14px;margin-top:4px;box-sizing:border-box"/>'
+      +'</div>'
+      +'<div style="margin-bottom:12px">'
+      +'<label style="font-size:12px;font-weight:600;color:#6B8BB0">Esposizione / Località</label>'
+      +'<input id="giudice-localita" type="text" placeholder="Es. Internazionale di Milano" '
+      +'style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #DDEAFF;font-size:14px;margin-top:4px;box-sizing:border-box"/>'
+      +'</div>'
+      +'<div style="margin-bottom:12px">'
+      +'<label style="font-size:12px;font-weight:600;color:#6B8BB0">Paese</label>'
+      +'<select id="giudice-paese" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #DDEAFF;font-size:14px;margin-top:4px">'
+      +'<option value="Italia">🇮🇹 Italia</option>'
+      +'<option value="Germania">🇩🇪 Germania</option>'
+      +'<option value="Francia">🇫🇷 Francia</option>'
+      +'<option value="Spagna">🇪🇸 Spagna</option>'
+      +'<option value="UK">🇬🇧 Regno Unito</option>'
+      +'<option value="Svizzera">🇨🇭 Svizzera</option>'
+      +'<option value="Austria">🇦🇹 Austria</option>'
+      +'<option value="Altro">Altro</option>'
+      +'</select></div>'
       +'<div style="font-weight:700;font-size:13px;color:#0D47A1;margin-bottom:8px">Qualifica</div>'
       +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="giudice-qualifica-btns">'
       +['Eccellente','Molto Buono','Buono','Sufficiente','Non classificato'].map(function(q){
@@ -10188,7 +10210,10 @@ function salvaValutazioneGiudice(){
     titolo:titolo,
     premio:premio,
     note:note.trim(),
-    foto:window._grFotoBase64||null
+    foto:window._grFotoBase64||null,
+    giudice_nome:(document.getElementById('giudice-nome-giudice')||{}).value||'',
+    localita:(document.getElementById('giudice-localita')||{}).value||'',
+    paese:(document.getElementById('giudice-paese')||{}).value||'Italia'
   };
 
   window._giudiceValutazioni=window._giudiceValutazioni||[];
@@ -10216,7 +10241,10 @@ function salvaValutazioneGiudice(){
       if(!_caneTrov.titoli) _caneTrov.titoli=[];
       var _oggi=record.data;
       var _changed=false;
-      var _entryBase={id:Date.now(),data:_oggi,giudice:note.trim()||'(Giudice Ring)',paese:'Italia'};
+      var _nomeGiudice=record.giudice_nome||note.trim()||'(Giudice Ring)';
+      var _paeseEntry=record.paese||'Italia';
+      var _localitaEntry=record.localita||'';
+      var _entryBase={id:Date.now(),data:_oggi,giudice:_nomeGiudice,paese:_paeseEntry,localita:_localitaEntry};
 
       if(titolo==='CAC'||titolo==='R.CAC'){
         var _dup=_caneTrov.cac_list.find(function(x){return x.data===_oggi&&(x.riserva||false)===(titolo==='R.CAC');});
@@ -10262,7 +10290,8 @@ function salvaValutazioneGiudice(){
   if(ov2){var cnt=ov2.querySelector('[data-cnt]');if(cnt)cnt.textContent='Oggi — '+oggi.length+' cani';}
   // Reset form
   if(selEl){selEl.value='';_giudiceToggleAltro('');}
-  ['giudice-cane-nome','giudice-cane-razza','giudice-note'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['giudice-cane-nome','giudice-cane-razza','giudice-note','giudice-nome-giudice','giudice-localita'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var paeseEl=document.getElementById('giudice-paese');if(paeseEl)paeseEl.value='Italia';
   window._giudiceQualifica=null;window._giudiceTitolo=null;window._giudicePremio=null;
   document.querySelectorAll('#giudice-qualifica-btns button,#giudice-titolo-btns button,#giudice-premio-btns button').forEach(function(b){b.style.background='#fff';b.style.color='#333';});
   var prev=document.getElementById('gr-foto-preview');if(prev)prev.style.display='none';
@@ -10284,6 +10313,8 @@ function _renderListaValutazioni(lista){
         +'</div>'
       +'</div>'
       +'<div style="font-size:11px;color:#6B8BB0">'+esc(v.razza||'')+(v.classe?' · '+esc(v.classe):'')+'</div>'
+      +(v.giudice_nome?'<div style="font-size:10px;color:#666;margin-top:2px">👨‍⚖️ '+esc(v.giudice_nome)+'</div>':'')
+      +(v.localita?'<div style="font-size:10px;color:#999;margin-top:1px">📍 '+esc(v.localita)+' — '+esc(v.paese||'Italia')+'</div>':'')
       +(v.note?'<div style="font-size:11px;color:#4A6080;margin-top:4px;font-style:italic">'+esc(v.note)+'</div>':'')
       +(v.foto?'<img src="'+v.foto+'" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;margin-top:6px"/>':'')
       +'</div>';
