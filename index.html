@@ -10907,6 +10907,7 @@ function scegliModalita(mod){
 }
 
 function applicaModalita(mod){
+  _sincronizzaCaniTraModalita();
   var badge = g('modalita-badge');
   if(badge){
     if(mod === 'allevatore'){
@@ -16065,7 +16066,7 @@ function _renderQuizStep(ov){
 }
 
 // ── Aggiungi cane sport ──
-function apriAggiungiCaneSport(){
+function _apriFormCaneSport(){
   var ov=document.createElement('div');
   ov.id='ov-add-sport-cane';
   ov.style.cssText='position:fixed;inset:0;z-index:10100;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
@@ -16089,6 +16090,13 @@ function apriAggiungiCaneSport(){
     +'<button onclick="salvaCaneSport(this)" style="width:100%;background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">✓ Aggiungi cane</button>'
     +'</div>';
   document.body.appendChild(ov);
+}
+
+function apriAggiungiCaneSport(){
+  _mostraCaniEsistenti('sport', function(caneImport){
+    if(caneImport){ _importaCaneInSport(caneImport); return; }
+    _apriFormCaneSport();
+  });
 }
 
 function salvaCaneSport(btn){
@@ -17100,7 +17108,7 @@ function renderCacciaCani(container){
   }
 }
 
-function apriNuovoCaneC(){
+function _apriFormCaneC(){
   var ov=document.createElement('div');
   ov.id='ov-nuovo-cane-c';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:flex-end;justify-content:center';
@@ -17142,6 +17150,13 @@ function apriNuovoCaneC(){
     +'<button onclick="salvaCaneC(this)" style="flex:2;background:linear-gradient(135deg,#2E7D32,#388E3C);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✓ Salva cane</button>'
     +'</div></div>';
   document.body.appendChild(ov);
+}
+
+function apriNuovoCaneC(){
+  _mostraCaniEsistenti('caccia', function(caneImport){
+    if(caneImport){ _importaCaneInCaccia(caneImport); return; }
+    _apriFormCaneC();
+  });
 }
 
 async function salvaCaneC(btn){
@@ -21332,7 +21347,180 @@ async function confermaIngressoFamiglia(codice, emoji){
   } catch(e){ toast('❌ Errore: '+e.message); }
 }
 
-function apriAggiungiCaneFamiglia(){
+// ───── PONTE CANI CROSS-MODALITÀ ─────
+
+function _sincronizzaCaniTraModalita(){
+  var mappa = {};
+  function _addEntry(arr, modKey){
+    (arr||[]).forEach(function(c){
+      var key = (c.microchip&&c.microchip.trim())
+        || (c.nome&&c.nome.toLowerCase().trim())
+        || String(c.id);
+      if(!mappa[key]) mappa[key] = {};
+      mappa[key][modKey] = c;
+    });
+  }
+  _addEntry(window.cani, 'allevatore');
+  _addEntry(window._famigliaCani, 'famiglia');
+  _addEntry(window._sportCani, 'sport');
+  _addEntry(window._cacciaCaniList, 'caccia');
+  window._tuttiICani = mappa;
+}
+
+function _mostraCaniEsistenti(modalitaDest, callback){
+  _sincronizzaCaniTraModalita();
+  var lista = [];
+  var srcOrder = ['allevatore','famiglia','sport','caccia'];
+  Object.keys(window._tuttiICani||{}).forEach(function(key){
+    var entry = window._tuttiICani[key];
+    if(entry[modalitaDest]) return; // già presente in questa modalità
+    for(var i=0;i<srcOrder.length;i++){
+      var src = srcOrder[i];
+      if(src!==modalitaDest && entry[src]){
+        lista.push({source:src, cane:entry[src]});
+        break;
+      }
+    }
+  });
+  if(!lista.length){ callback(null); return; }
+  window._bridgeCb = callback;
+  window._bridgeCaniList = lista;
+  var ov = document.createElement('div');
+  ov.id = 'ov-importa-cane';
+  ov.style.cssText='position:fixed;inset:0;z-index:10300;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px';
+  var srcLabel = {allevatore:'🏆 Allevatore',famiglia:'🏠 Famiglia',sport:'🏋️ Sport',caccia:'🐕‍🦺 Caccia'};
+  var html = '<div style="background:#fff;border-radius:20px;padding:24px;max-width:400px;width:100%;max-height:70vh;overflow-y:auto">'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:6px">🐾 Cani già registrati</div>'
+    +'<div style="font-size:12px;color:#6B8BB0;margin-bottom:16px">Hai cani in altre modalità. Vuoi importarne uno?</div>';
+  lista.forEach(function(item, i){
+    var c = item.cane;
+    var isFemmina = c.sesso==='F'||c.sesso==='femmina'||c.sesso==='Femmina';
+    html += '<div onclick="_ponteSelezionaCane('+i+')" '
+      +'style="display:flex;align-items:center;gap:12px;padding:12px;background:#F5F7FF;border-radius:12px;margin-bottom:8px;cursor:pointer;border:1.5px solid #DDEAFF" '
+      +'onmouseover="this.style.background=\'#EEF3FB\'" onmouseout="this.style.background=\'#F5F7FF\'">'
+      +'<div style="width:40px;height:40px;border-radius:50%;overflow:hidden;background:#DDEAFF;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px">'
+      +(c.foto?'<img src="'+c.foto+'" style="width:100%;height:100%;object-fit:cover"/>':'🐾')
+      +'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-weight:700;color:#1a1a3a;font-size:14px">'+(c.nome||'Senza nome')+'</div>'
+        +'<div style="font-size:11px;color:#6B8BB0">'+(c.razza||'Razza mista')+'</div>'
+        +'<div style="font-size:10px;color:#9ab0cc;margin-top:2px">'+(srcLabel[item.source]||item.source)+'</div>'
+      +'</div>'
+      +'<div style="font-size:11px;font-weight:700;color:#1565C0;flex-shrink:0">Usa →</div>'
+      +'</div>';
+  });
+  html += '<button onclick="_ponteContinuaConNuovo()" '
+    +'style="width:100%;margin-top:12px;padding:12px;background:#F5F5F5;border:none;border-radius:12px;font-size:13px;color:#555;cursor:pointer;font-weight:600">+ Registra nuovo cane</button>'
+    +'</div>';
+  ov.innerHTML = html;
+  document.body.appendChild(ov);
+}
+
+function _ponteSelezionaCane(i){
+  var ov = document.getElementById('ov-importa-cane');
+  if(ov) ov.remove();
+  var item = (window._bridgeCaniList||[])[i];
+  if(item && window._bridgeCb) window._bridgeCb(item.cane);
+}
+
+function _ponteContinuaConNuovo(){
+  var ov = document.getElementById('ov-importa-cane');
+  if(ov) ov.remove();
+  if(window._bridgeCb) window._bridgeCb(null);
+}
+
+function _importaCaneInFamiglia(cane){
+  if(!_famigliaDati||!_currentUser){ toast('Famiglia non caricata'); return; }
+  if(_famigliaDati.admin_uid!==_currentUser.id){ toast('Solo l\'admin può aggiungere cani'); return; }
+  var _tmp = {
+    id: 'loc_'+Date.now(),
+    famiglia_id: _famigliaDati.id,
+    nome: cane.nome,
+    razza: cane.razza||null,
+    sesso: cane.sesso||'M',
+    taglia: cane.taglia||'media',
+    data_nascita: cane.dataNascita||cane.data_nascita||null,
+    peso_attuale: null,
+    microchip: cane.microchip||null,
+    foto: cane.foto||null
+  };
+  _famigliaCani.push(_tmp);
+  _famigliaCaneSelezionato = _tmp;
+  _salvFam();
+  renderHomeFamiglia();
+  toast('✅ '+cane.nome+' importato nella famiglia!');
+  var _s = Object.assign({}, _tmp); delete _s.id;
+  _supabase.from('famiglia_cani').insert(_s).select().single().then(function(res){
+    if(res.error) return;
+    var _i = _famigliaCani.findIndex(function(c){return c.id===_tmp.id;});
+    if(_i>=0) _famigliaCani[_i] = res.data;
+    if(_famigliaCaneSelezionato&&_famigliaCaneSelezionato.id===_tmp.id) _famigliaCaneSelezionato = res.data;
+    _salvFam();
+    caricaLogFamiglia().then(function(){ renderHomeFamiglia(); });
+  }).catch(function(){});
+}
+
+function _importaCaneInSport(cane){
+  if(!_currentUser){ toast('Devi essere loggato'); return; }
+  var c = {
+    id: 'tmp_'+Date.now(),
+    user_id: _currentUser.id,
+    nome: cane.nome,
+    razza: cane.razza||'',
+    sesso: (cane.sesso==='F'||cane.sesso==='femmina') ? 'femmina' : 'maschio',
+    taglia: cane.taglia||'large',
+    data_nascita: cane.dataNascita||cane.data_nascita||null,
+    discipline: []
+  };
+  if(!window._sportCani) window._sportCani = [];
+  _sportCani.push(c);
+  if(typeof _salvaSportLocale==='function') _salvaSportLocale();
+  toast('✅ '+cane.nome+' importato in Sport!');
+  if(typeof switchSportTab==='function') switchSportTab('sport-home');
+  var rec = Object.assign({}, c); delete rec.id;
+  _supabase.from('sport_cani').insert(rec).select().then(function(res){
+    if(res.error) return;
+    if(res.data&&res.data[0]){
+      var idx = _sportCani.findIndex(function(x){return x.id===c.id;});
+      if(idx>=0) _sportCani[idx] = res.data[0];
+      if(typeof _salvaSportLocale==='function') _salvaSportLocale();
+    }
+  }).catch(function(){});
+}
+
+function _importaCaneInCaccia(cane){
+  if(!_currentUser){ toast('Devi essere loggato'); return; }
+  var c = {
+    id: 'loc_'+Date.now(),
+    user_id: _currentUser.id,
+    nome: cane.nome,
+    razza: cane.razza||null,
+    data_nascita: cane.dataNascita||cane.data_nascita||null,
+    sesso: cane.sesso||'M',
+    categoria: 'FERMA',
+    sistema_gare: 'ENCI',
+    numero_loi: cane.numeroENCI||null,
+    microchip: cane.microchip||null
+  };
+  if(!window._cacciaCaniList) window._cacciaCaniList = [];
+  window._cacciaCaniList.unshift(c);
+  if(typeof _salvaCacciaLocale==='function') _salvaCacciaLocale();
+  toast('✅ '+cane.nome+' importato in Caccia!');
+  var _tc = document.getElementById('caccia-tab-content');
+  if(_tc && typeof renderCacciaCani==='function') renderCacciaCani(_tc);
+  var _s = Object.assign({}, c); delete _s.id;
+  _supabase.from('caccia_cani').insert(_s).select().then(function(res){
+    if(res.error) return;
+    if(res.data&&res.data[0]){
+      var _i = window._cacciaCaniList.findIndex(function(x){return x.id===c.id;});
+      if(_i>=0) window._cacciaCaniList[_i] = res.data[0];
+      if(typeof _salvaCacciaLocale==='function') _salvaCacciaLocale();
+    }
+  }).catch(function(){});
+}
+
+// ─── Wrapper con bridge — Famiglia ───
+function _apriGestioneCaneFamiglia(){
   var _isAdmin = _famigliaDati && _currentUser && _famigliaDati.admin_uid===_currentUser.id;
   if(!_isAdmin && _famigliaCani.length > 0) return;
 
@@ -21389,6 +21577,16 @@ function apriAggiungiCaneFamiglia(){
     +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-bottom:16px">🐾 Gestione cani</div>'
     +caniHtml+formHtml+'</div>';
   document.body.appendChild(overlay);
+}
+
+function apriAggiungiCaneFamiglia(){
+  var _isAdminChk = _famigliaDati && _currentUser && _famigliaDati.admin_uid===_currentUser.id;
+  if(!_isAdminChk && _famigliaCani.length > 0) return;
+  if(!_isAdminChk){ _apriGestioneCaneFamiglia(); return; }
+  _mostraCaniEsistenti('famiglia', function(caneImport){
+    if(caneImport){ _importaCaneInFamiglia(caneImport); return; }
+    _apriGestioneCaneFamiglia();
+  });
 }
 
 function apriModificaCane(caneId){
