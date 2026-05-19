@@ -4729,6 +4729,29 @@ async function onUserSignedIn(user){
       },2000);
     }
   }catch(_pe){console.warn('[percorso] parse error',_pe);}
+
+  // Check trasferimento cucciolo via URL
+  try{
+    var _trParams=new URLSearchParams(location.search);
+    var _transferParam=_trParams.get('transfer');
+    if(_transferParam){
+      var _tData=JSON.parse(decodeURIComponent(escape(atob(_transferParam))));
+      if(_tData.type==='breedped_transfer'){
+        history.replaceState(null,'',location.pathname);
+        localStorage.setItem('bp_pending_transfer',JSON.stringify(_tData));
+      }
+    }
+  }catch(_te){console.warn('[transfer] parse error',_te);}
+
+  // Mostra cucciolo pendente dopo login
+  var _pendingTransfer=localStorage.getItem('bp_pending_transfer');
+  if(_pendingTransfer&&_currentUser){
+    try{
+      var _ptData=JSON.parse(_pendingTransfer);
+      localStorage.removeItem('bp_pending_transfer');
+      setTimeout(function(){ _riceviCucciolo(_ptData); },2000);
+    }catch(_pte){}
+  }
 }
 
 function mostraOnboarding(){
@@ -7398,6 +7421,130 @@ function condividiCucciolataVia(platform){
     window.open('mailto:?subject='+encodeURIComponent(sogg)+'&body='+encodeURIComponent(testo),'_blank');
   }
 }
+
+// ───── TRASFERIMENTO CUCCIOLO ─────
+
+function _generaCodiceTransfer(cucId, cuccId){
+  var cucc=(cucciolate||[]).find(function(c){return String(c.id)===String(cuccId);});
+  if(!cucc){toast('⚠️ Cucciolata non trovata');return;}
+  var cucciolo=(cucc.cuccioli||[]).find(function(p){return String(p.id)===String(cucId);});
+  if(!cucciolo){toast('⚠️ Cucciolo non trovato');return;}
+
+  var transferData={
+    type:'breedped_transfer',
+    version:APP_VERSION,
+    timestamp:Date.now(),
+    cucciolo:{
+      nome:cucciolo.nome||'',
+      sesso:cucciolo.sesso||'',
+      colore:cucciolo.colore||'',
+      microchip:cucciolo.microchip||'',
+      data_nascita:cucc.data_nascita||cucc.data||'',
+      pesi:cucciolo.pesi||[],
+      foto:cucciolo.foto||null
+    },
+    genitori:{
+      padre_nome:nomeById(cucc.padre)||cucc.padre||'',
+      madre_nome:nomeById(cucc.madre)||cucc.madre||''
+    },
+    razza:cucc.razza||(profilo&&profilo.razza)||'',
+    allevamento:{
+      affisso:(profilo&&profilo.affisso)||'',
+      titolare:_currentUser?_currentUser.email:''
+    },
+    pedigree_base:cucciolo.pedigree||null
+  };
+
+  var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(transferData))));
+  var transferUrl=location.origin+location.pathname+'?transfer='+encoded;
+
+  var ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:10300;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px';
+  var nomeCucc=cucciolo.nome||('Cucciolo '+(cucciolo.sesso==='M'?'♂':'♀'));
+  ov.innerHTML='<div style="background:#fff;border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center">'
+    +'<div style="font-size:40px;margin-bottom:12px">📲</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#0D47A1;margin-bottom:8px">Trasferisci cucciolo</div>'
+    +'<div style="font-size:13px;color:#666;margin-bottom:16px">'+esc(nomeCucc)+' — '+esc(transferData.razza)+'</div>'
+    +'<div style="font-size:12px;color:#6B8BB0;margin-bottom:16px">Il nuovo proprietario deve aprire questo link nell\'app BreedPed. Il cucciolo apparirà nella sua modalità Famiglia con tutti i dati.</div>'
+    +'<div style="display:flex;gap:8px;margin-bottom:12px">'
+    +'<button onclick="_condividiTransfer(\''+encoded+'\')" style="flex:1;padding:12px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer">📱 WhatsApp</button>'
+    +'<button onclick="navigator.clipboard.writeText(\''+transferUrl.replace(/'/g,"\\'")+'\')"'
+    +' style="flex:1;padding:12px;background:linear-gradient(135deg,#0D47A1,#1565C0);color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer" '
+    +'ontouchstart="" onclick="navigator.clipboard.writeText(decodeURIComponent(\''+encodeURIComponent(transferUrl)+'\')).then(function(){toast(\'📋 Link copiato!\');})">📋 Copia link</button>'
+    +'</div>'
+    +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="width:100%;padding:10px;background:#F5F5F5;border:none;border-radius:10px;font-size:12px;color:#666;cursor:pointer">Chiudi</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+}
+
+function _condividiTransfer(encoded){
+  var url=location.origin+location.pathname+'?transfer='+encoded;
+  var text='🐾 BreedPed — Il tuo nuovo cucciolo ti aspetta! Apri questo link nell\'app:';
+  if(navigator.share){
+    navigator.share({title:'BreedPed — Trasferimento cucciolo',text:text,url:url});
+  } else {
+    window.open('https://wa.me/?text='+encodeURIComponent(text+'\n'+url),'_blank');
+  }
+}
+
+function _riceviCucciolo(tData){
+  window._pendingTransferData=tData;
+  var ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:10300;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML='<div style="background:#fff;border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center">'
+    +'<div style="font-size:48px;margin-bottom:12px">🐾</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#0D47A1;margin-bottom:8px">Nuovo cucciolo!</div>'
+    +'<div style="font-size:14px;color:#333;margin-bottom:4px"><strong>'+esc(tData.cucciolo.nome||'Cucciolo')+'</strong></div>'
+    +'<div style="font-size:13px;color:#666;margin-bottom:4px">'+esc(tData.razza||'')
+    +' — '+(tData.cucciolo.sesso==='M'?'♂ Maschio':'♀ Femmina')+'</div>'
+    +'<div style="font-size:12px;color:#6B8BB0;margin-bottom:4px">'
+    +'Genitori: '+esc(tData.genitori.padre_nome||'?')+' × '+esc(tData.genitori.madre_nome||'?')+'</div>'
+    +(tData.allevamento&&tData.allevamento.affisso?'<div style="font-size:11px;color:#C9A961;margin-bottom:16px">Allevamento: '+esc(tData.allevamento.affisso)+'</div>':'<div style="margin-bottom:16px"></div>')
+    +'<button onclick="_accettaCucciolo(this)" style="width:100%;padding:14px;background:linear-gradient(135deg,#4CAF50,#2E7D32);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px">✅ Accetta cucciolo</button>'
+    +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="width:100%;padding:10px;background:#F5F5F5;border:none;border-radius:10px;font-size:12px;color:#666;cursor:pointer">Rifiuta</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+}
+
+function _accettaCucciolo(btn){
+  var tData=window._pendingTransferData;
+  if(!tData){toast('⚠️ Dati trasferimento non trovati');return;}
+  var nuovoCane={
+    id:'transfer_'+Date.now(),
+    nome:tData.cucciolo.nome||'',
+    razza:tData.razza||'',
+    sesso:tData.cucciolo.sesso||'',
+    colore:tData.cucciolo.colore||'',
+    microchip:tData.cucciolo.microchip||'',
+    dataNascita:tData.cucciolo.data_nascita||'',
+    padre_nome:tData.genitori.padre_nome||'',
+    madre_nome:tData.genitori.madre_nome||'',
+    allevamento_origine:tData.allevamento&&tData.allevamento.affisso||'',
+    pesi:tData.cucciolo.pesi||[],
+    trasferito_da:tData.allevamento&&tData.allevamento.titolare||'',
+    data_trasferimento:new Date().toISOString().substring(0,10),
+    vaccinazioni:[],trattamenti:[],displasia:{hd:'',ed:'',dataTest:'',note:''},
+    cac_list:[],cacib_list:[],pedigreeFlat:{},pedGens:1
+  };
+  cani.push(nuovoCane);
+  salvaDB();
+  if(_famigliaDati&&_currentUser){
+    _supabase.from('famiglia_cani').insert({
+      famiglia_id:_famigliaDati.id,
+      nome:nuovoCane.nome,
+      razza:nuovoCane.razza,
+      sesso:nuovoCane.sesso,
+      data_nascita:nuovoCane.dataNascita||null,
+      microchip:nuovoCane.microchip||null,
+      foto:null
+    }).then(function(){});
+  }
+  window._pendingTransferData=null;
+  btn.closest('[style*=fixed]').remove();
+  toast('🐾 '+nuovoCane.nome+' è ora nel tuo account!');
+  renderSidebar();
+}
+
 function nomeById(id){
   if(!id) return null;
   var found = cani.find(function(x){return String(x.id)===String(id);}) ||
@@ -9003,6 +9150,7 @@ function showCuccioliModal(cuccId){
       html+='<button onclick="hide(\'modal-cuccioli-list\');openCuccioloDetail('+cuccId+','+p.id+')" style="background:rgba(255,255,255,.8);border:1.5px solid #DDEAFF;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1565C0">✏</button>';
       html+='<button onclick="hide(\'modal-cuccioli-list\');openAggiuntaPeso(\''+cuccId+'\',\''+p.id+'\')" style="background:rgba(255,255,255,.8);border:1.5px solid #A8D8B8;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#1a7a4a">⚖</button>';
       html+='<button onclick="condividiCucciolo('+cuccId+','+p.id+')" style="background:none;border:none;cursor:pointer;color:#1565C0;font-size:13px" title="Condividi scheda">📲</button>';
+      html+='<button onclick="_generaCodiceTransfer(\''+p.id+'\',\''+cuccId+'\')" style="background:linear-gradient(135deg,#C9A961,#A88A41);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">📲 Trasferisci</button>';
       html+='<button onclick="deleteCucciolo('+cuccId+','+p.id+')" style="background:none;border:none;cursor:pointer;color:#C0534A;font-size:13px">🗑</button>';
       html+='</div></div>';
       // Contatti acquirenti
