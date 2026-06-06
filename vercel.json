@@ -7,9 +7,16 @@
     { "src": "survey.html", "use": "@vercel/static" },
     { "src": "logo.jpeg", "use": "@vercel/static" },
     { "src": "logo-padded.png", "use": "@vercel/static" },
-    { "src": "logo-icon.html", "use": "@vercel/static" }
+    { "src": "logo-icon.html", "use": "@vercel/static" },
+    { "src": "api/create-checkout.js", "use": "@vercel/node" },
+    { "src": "api/stripe-webhook.js", "use": "@vercel/node" }
   ],
+  "functions": {
+    "api/stripe-webhook.js": { "maxDuration": 10 }
+  },
   "routes": [
+    { "src": "/api/create-checkout", "methods": ["GET"], "dest": "/api/create-checkout.js" },
+    { "src": "/api/stripe-webhook", "methods": ["POST"], "dest": "/api/stripe-webhook.js" },
     { "src": "/logo.jpeg", "headers": { "Cache-Control": "public, max-age=31536000" }, "dest": "/logo.jpeg" },
     { "src": "/logo-padded.png", "headers": { "Cache-Control": "public, max-age=31536000" }, "dest": "/logo-padded.png" },
     { "src": "/logo-icon.html", "dest": "/logo-icon.html" },
