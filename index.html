@@ -2466,14 +2466,14 @@ html[data-theme=dark] div[style*="color:#C62828"],html[data-theme=dark] span[sty
   <div class="modal modal-wide" style="max-width:780px;max-height:92vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;position:sticky;top:0;background:#fff;z-index:2;padding-bottom:12px;border-bottom:2px solid #EEF3FB">
       <div>
-        <div style="font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:#0D47A1">📋 Moduli ENCI</div>
-        <div style="font-size:12px;color:#6B8BB0;margin-top:2px">Compila, firma digitalmente e stampa come PDF</div>
+        <div id="moduli-modal-title" style="font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:#0D47A1">📋 Moduli ENCI</div>
+        <div id="moduli-modal-subtitle" style="font-size:12px;color:#6B8BB0;margin-top:2px">Compila, firma digitalmente e stampa come PDF</div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="hide('modal-moduli-enci')">✕</button>
     </div>
 
     <!-- Tab switcher -->
-    <div style="display:flex;gap:0;margin-bottom:20px;border:2px solid #DDEAFF;border-radius:12px;overflow:hidden">
+    <div id="enci-tab-switcher" style="display:flex;gap:0;margin-bottom:20px;border:2px solid #DDEAFF;border-radius:12px;overflow:hidden">
       <button id="enci-tab-a" onclick="switchEnciTab('a')" style="flex:1;padding:12px;font-weight:700;font-size:14px;border:none;cursor:pointer;background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;transition:all .2s">
         📄 Modello A<br><span style="font-size:11px;font-weight:400;opacity:.85">Denuncia Monta e Nascita</span>
       </button>
@@ -2743,6 +2743,198 @@ html[data-theme=dark] div[style*="color:#C62828"],html[data-theme=dark] span[sty
         <button class="btn btn-primary" onclick="generaPdfModelloB()" style="font-size:14px;padding:10px 24px">🖨 Genera PDF</button>
       </div>
     </div>
+
+    <!-- ═══ CERTIFICAT DE SAILLIE SCC ═══ -->
+    <div id="scc-panel-saillie" style="display:none">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:10px;color:#888;letter-spacing:.05em">SOCIÉTÉ CENTRALE CANINE</div>
+        <div style="font-size:9px;color:#aaa">155 avenue Jean Jaurès - 93535 AUBERVILLIERS Cedex - Tél.: +33 (0)1 49 37 55 90 - www.centrale-canine.fr</div>
+        <div style="font-size:9px;color:#aaa;font-style:italic">Pour l'amélioration des races de chiens en France</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#0D47A1;margin-top:8px">CERTIFICAT DE SAILLIE</div>
+        <div style="font-size:11px;color:#6B8BB0;margin-top:4px">À adresser à la S.C.C. par le propriétaire de la chienne dans les 2 mois suivant la saillie</div>
+        <div style="font-size:10px;color:#C0534A;font-weight:600;margin-top:4px">Ce formulaire doit être rempli en lettres capitales.</div>
+      </div>
+
+      <!-- N° ÉLEVEUR -->
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:800;color:#1565C0;text-transform:uppercase;letter-spacing:.1em">N° Éleveur</div>
+          <input id="scc-s-eleveur" type="text" style="width:140px;text-align:center" placeholder="N° Éleveur"/>
+        </div>
+      </div>
+
+      <!-- PROPRIÉTAIRE DE LA CHIENNE -->
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#1565C0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+          👤 Propriétaire de la Chienne
+          <button onclick="precompilaDaProfilo('scc-s')" class="btn btn-ghost btn-sm" style="font-size:11px">⚡ Du Profil</button>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:8px">
+          <label style="font-size:11px;font-weight:600;color:#1565C0;display:flex;align-items:center;gap:4px"><input type="radio" name="scc-s-civilite" value="M"> Monsieur</label>
+          <label style="font-size:11px;font-weight:600;color:#1565C0;display:flex;align-items:center;gap:4px"><input type="radio" name="scc-s-civilite" value="F"> Madame</label>
+        </div>
+        <div class="form-grid">
+          <div><label>NOM *</label><input id="scc-s-nom" type="text" placeholder="NOM" style="text-transform:uppercase"/></div>
+          <div><label>Prénom *</label><input id="scc-s-prenom" type="text" placeholder="Prénom"/></div>
+          <div style="grid-column:span 2"><label>Adresse *</label><input id="scc-s-adresse" type="text" placeholder="Adresse complète"/></div>
+          <div><label>Code postal *</label><input id="scc-s-cp" type="text" placeholder="75000"/></div>
+          <div><label>Ville *</label><input id="scc-s-ville" type="text" placeholder="Paris"/></div>
+          <div><label>Téléphone</label><input id="scc-s-tel" type="tel" placeholder="+33 6 00 00 00 00"/></div>
+          <div><label>Courriel</label><input id="scc-s-email" type="email" placeholder="email@exemple.fr"/></div>
+          <div style="grid-column:span 2"><label>AFFIXE</label><input id="scc-s-affixe" type="text" placeholder="Nom de l'élevage"/></div>
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:#6B8BB0">
+          <label><input type="checkbox" id="scc-s-premiere"> S'agit-il d'une première déclaration ?</label>
+        </div>
+      </div>
+
+      <!-- ADRESSE DE VISITE SI DIFFÉRENTE -->
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">
+          Adresse de visite de la chienne si différente de l'adresse du propriétaire
+        </div>
+        <input id="scc-s-adresse-visite" type="text" style="width:100%" placeholder="(Laisser vide si identique)"/>
+      </div>
+
+      <!-- DATE DE SAILLIE + PROPRIÉTAIRE DE L'ÉTALON -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="form-box">
+          <div style="font-size:11px;font-weight:800;color:#C0534A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">📅 Date de Saillie *</div>
+          <div style="display:flex;gap:6px">
+            <div><label style="font-size:10px;font-weight:700;color:#888">JOUR</label><input id="scc-s-jj" type="text" maxlength="2" style="width:45px;text-align:center;font-size:18px;font-weight:700" placeholder="JJ"/></div>
+            <div><label style="font-size:10px;font-weight:700;color:#888">MOIS</label><input id="scc-s-mm" type="text" maxlength="2" style="width:45px;text-align:center;font-size:18px;font-weight:700" placeholder="MM"/></div>
+            <div><label style="font-size:10px;font-weight:700;color:#888">ANNÉE</label><input id="scc-s-aa" type="text" maxlength="4" style="width:65px;text-align:center;font-size:18px;font-weight:700" placeholder="AAAA"/></div>
+          </div>
+        </div>
+        <div class="form-box">
+          <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Propriétaire de l'Étalon</div>
+          <div class="form-grid" style="grid-template-columns:1fr 1fr">
+            <div><label>NOM</label><input id="scc-s-etalon-proprio-nom" type="text" style="text-transform:uppercase"/></div>
+            <div><label>Prénom</label><input id="scc-s-etalon-proprio-prenom" type="text"/></div>
+            <div style="grid-column:span 2"><label>Rue</label><input id="scc-s-etalon-proprio-rue" type="text"/></div>
+            <div><label>Ville</label><input id="scc-s-etalon-proprio-ville" type="text"/></div>
+            <div><label>Code postal</label><input id="scc-s-etalon-proprio-cp" type="text"/></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LA CHIENNE / L'ÉTALON -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="form-box">
+          <div style="font-size:11px;font-weight:800;color:#C0534A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+            ♀ La Chienne
+            <select id="scc-s-sel-chienne" onchange="sccPrecompilaChienne(this.value)" style="font-size:11px;padding:3px 8px;border:1.5px solid #DDEAFF;border-radius:6px;color:#1565C0;font-weight:700">
+              <option value="">⚡ Mes chiens</option>
+            </select>
+          </div>
+          <div class="form-grid" style="grid-template-columns:1fr">
+            <div><label>RACE *</label><input id="scc-s-ch-race" type="text" placeholder="Race"/></div>
+            <div><label>N° LOF *</label><input id="scc-s-ch-lof" type="text" placeholder="N° LOF"/></div>
+            <div><label>Nom *</label><input id="scc-s-ch-nom" type="text" placeholder="Nom de la chienne"/></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <div><label>Taille (cm) *</label><input id="scc-s-ch-taille" type="text" placeholder="cm"/></div>
+              <div><label>Poil</label><input id="scc-s-ch-poil" type="text" placeholder="Court/Long"/></div>
+            </div>
+            <div><label>Couleur ** (obligatoire, du pedigree)</label><input id="scc-s-ch-couleur" type="text" placeholder="Couleur de robe"/></div>
+            <div><label>Tatouage</label><input id="scc-s-ch-tat" type="text" placeholder="N° tatouage"/></div>
+            <div><label>N° Transpondeur</label><input id="scc-s-ch-chip" type="text" placeholder="250260000000000"/></div>
+          </div>
+          <div style="font-size:9px;color:#888;margin-top:6px">(*) Taille : obligatoire pour Caniches et Spitz<br>(**) Couleur : obligatoire, à reprendre à partir du pedigree</div>
+        </div>
+        <div class="form-box">
+          <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+            ♂ L'Étalon
+            <select id="scc-s-sel-etalon" onchange="sccPrecompilaEtalon(this.value)" style="font-size:11px;padding:3px 8px;border:1.5px solid #DDEAFF;border-radius:6px;color:#1565C0;font-weight:700">
+              <option value="">⚡ Mes chiens</option>
+            </select>
+          </div>
+          <div class="form-grid" style="grid-template-columns:1fr">
+            <div><label>RACE *</label><input id="scc-s-et-race" type="text" placeholder="Race"/></div>
+            <div><label>N° LO</label><input id="scc-s-et-lo" type="text" placeholder="N° Livre des Origines"/></div>
+            <div><label>Nom *</label><input id="scc-s-et-nom" type="text" placeholder="Nom de l'étalon"/></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <div><label>Taille (cm) *</label><input id="scc-s-et-taille" type="text" placeholder="cm"/></div>
+              <div><label>Poil</label><input id="scc-s-et-poil" type="text" placeholder="Court/Long"/></div>
+            </div>
+            <div><label>Couleur ** (obligatoire, du pedigree)</label><input id="scc-s-et-couleur" type="text" placeholder="Couleur de robe"/></div>
+            <div><label>Tatouage</label><input id="scc-s-et-tat" type="text" placeholder="N° tatouage"/></div>
+            <div><label>N° Transpondeur</label><input id="scc-s-et-chip" type="text" placeholder="250260000000000"/></div>
+          </div>
+          <div style="font-size:9px;color:#888;margin-top:6px">(*) Taille : obligatoire pour Caniches et Spitz<br>(**) Couleur : obligatoire, à reprendre à partir du pedigree</div>
+        </div>
+      </div>
+
+      <!-- INFORMATION ADN -->
+      <div style="background:#FFF8E7;border:1.5px solid #E8D5A3;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:10px;color:#A88A41">
+        <strong>Information ADN</strong> — Seule l'identification génétique permet de garantir scientifiquement les origines mentionnées sur les documents généalogiques. Pour vous permettre de valoriser votre production et la fiabilité de votre élevage par cette garantie, la SCC vous propose des tests ADN à un tarif avantageux et vous invite à faire identifier génétiquement sans attendre vos reproducteurs et vos produits.
+      </div>
+
+      <!-- DÉCLARATIONS + CONSENTEMENTS -->
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:10px;color:#1a1a3a;line-height:1.6">
+          <label style="display:flex;gap:6px;margin-bottom:6px"><input type="checkbox" id="scc-s-consent-identite"> J'accepte que la Société Centrale Canine publie mon identité dans le cadre de son activité statutaire</label>
+          <label style="display:flex;gap:6px;margin-bottom:6px"><input type="checkbox" id="scc-s-consent-agria"> J'accepte d'être contacté par Agria pour bénéficier d'une Assurance GRATUITE* (Agria Assurance pour Chiots) pour tous les chiots de cette portée.</label>
+          <label style="display:flex;gap:6px"><input type="checkbox" id="scc-s-consent-info"> J'accepte que les informations relatives à cette portée à naître soient communiquées par la Société Centrale Canine aux acquéreurs éventuels des chiots</label>
+        </div>
+      </div>
+
+      <!-- SIGNATURES -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+        <div class="form-box" style="text-align:center">
+          <div style="font-size:10px;font-weight:700;color:#1565C0;margin-bottom:6px">
+            Pour accord du PROPRIÉTAIRE DE LA CHIENNE<br>
+            <span style="font-size:9px;font-weight:400;color:#888">qui s'engage par ailleurs à laisser libre accès à son élevage en cas de contrôle par la S.C.C.</span>
+          </div>
+          <canvas id="firma-scc-chienne" width="300" height="100" style="border:1.5px dashed #DDEAFF;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
+          <div style="display:flex;gap:6px;justify-content:center;margin-top:6px">
+            <button onclick="clearFirma('firma-scc-chienne')" class="btn btn-ghost btn-sm" style="font-size:10px">🗑 Effacer</button>
+          </div>
+          <div style="font-size:9px;color:#888;margin-top:4px">SIGNATURE</div>
+        </div>
+        <div class="form-box" style="text-align:center">
+          <div style="font-size:10px;font-weight:700;color:#1a7a4a;margin-bottom:6px">
+            Je certifie l'exactitude des présentes déclarations<br>
+            <span style="font-size:9px;font-weight:400;color:#888">LE PROPRIÉTAIRE DE L'ÉTALON</span>
+          </div>
+          <canvas id="firma-scc-etalon" width="300" height="100" style="border:1.5px dashed #DDEAFF;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
+          <div style="display:flex;gap:6px;justify-content:center;margin-top:6px">
+            <button onclick="clearFirma('firma-scc-etalon')" class="btn btn-ghost btn-sm" style="font-size:10px">🗑 Effacer</button>
+          </div>
+          <div style="font-size:9px;color:#888;margin-top:4px">SIGNATURE</div>
+        </div>
+      </div>
+
+      <!-- LIEU ET DATE -->
+      <div style="display:flex;gap:14px;margin-bottom:16px">
+        <div style="flex:1"><label style="font-size:10px;font-weight:700;color:#888">À</label><input id="scc-s-lieu" type="text" placeholder="Lieu" style="width:100%"/></div>
+        <div style="flex:1"><label style="font-size:10px;font-weight:700;color:#888">le</label><input id="scc-s-date-signature" type="date" style="width:100%"/></div>
+      </div>
+
+      <!-- NOTE PROCESSUS -->
+      <div style="background:#F5F7FF;border:1.5px solid #DDEAFF;border-radius:8px;padding:12px;margin-bottom:16px;font-size:10px;color:#6B8BB0;line-height:1.6">
+        <strong>PROCESSUS D'INSCRIPTION AU LIVRE DES ORIGINES FRANÇAIS</strong><br><br>
+        L'inscription au L.O.F. est subordonnée à :<br>
+        — L'inscription au L.O.F. du père et de la mère après confirmation<br>
+        — La production d'une déclaration de saillie dûment remplie et signée, adressée à la S.C.C. dans les <strong>8 semaines</strong> suivant l'accouplement<br>
+        — et d'une déclaration de naissance dans les <strong>2 semaines</strong> suivant la mise bas.<br><br>
+        <strong>Tarifs :</strong><br>
+        • Dans les 2 mois suivant la saillie : 12 €<br>
+        • Entre 2 et 4 mois : 22 €<br>
+        • 4 mois après la saillie : 62 €<br><br>
+        <strong>IMPORTANT :</strong><br>
+        • Pas plus de 8 portées dans la vie de la chienne<br>
+        • La déclaration ne sera acceptée que si la lice est âgée d'au moins 15 mois à la date de la saillie<br>
+        • Interdiction de faire saillir une chienne à partir de son 9ème anniversaire<br>
+        • Pas plus de 3 portées en 2 ans pour une même chienne
+      </div>
+
+      <!-- AZIONI -->
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+        <button onclick="exportSccSailliePDF()" class="btn btn-primary" style="font-size:13px">📄 Exporter PDF</button>
+        <button onclick="shareSccSaillieWhatsApp()" class="btn btn-ghost" style="font-size:13px;color:#25D366">📱 Envoyer WhatsApp</button>
+      </div>
+    </div>
+
   </div><!-- chiude .modal -->
 </div><!-- chiude #modal-moduli-enci -->
 
@@ -4356,6 +4548,16 @@ html[data-theme=dark] div[style*="color:#C62828"],html[data-theme=dark] span[sty
     </div>
 
     <div class="form-grid" style="margin-bottom:10px">
+      <div style="grid-column:span 2">
+        <label>Kennel Club / Ente Cinofilo</label>
+        <select id="p-kennel-club" onchange="salvaKennelClub(this.value)" style="width:100%;padding:10px;border:1.5px solid #DDEAFF;border-radius:8px;font-size:14px">
+          <option value="enci">🇮🇹 ENCI — Ente Nazionale Cinofilia Italiana</option>
+          <option value="scc">🇫🇷 SCC — Société Centrale Canine</option>
+          <option value="vdh">🇩🇪 VDH — Verband für das Deutsche Hundewesen</option>
+          <option value="rsce">🇪🇸 RSCE — Real Sociedad Canina de España</option>
+          <option value="kc">🇬🇧 KC — The Royal Kennel Club</option>
+        </select>
+      </div>
       <div style="grid-column:span 2"><label>Affisso ENCI *</label><input id="p-affisso" type="text" placeholder="Es. Dell'Alta Murgia" oninput="liveProfilo()"/></div>
       <div><label>Nome Titolare</label><input id="p-nome" type="text" placeholder="Mario Rossi" oninput="liveProfilo()"/></div>
       <div><label>Città/Paese</label><input id="p-prov" type="text" placeholder="Es. Cassino (FR)" oninput="liveProfilo()"/></div>
@@ -8610,7 +8812,7 @@ document.addEventListener('input', function(e){
 /* ══════════════════════════════════════
    PROFILO ALLEVATORE
 ══════════════════════════════════════ */
-var profilo = {affisso:'',nome:'',prov:'',tel:'',email:'',razza:'',web:'',note:'',logo:null};
+var profilo = {affisso:'',nome:'',prov:'',tel:'',email:'',razza:'',web:'',note:'',logo:null,kennel_club:'enci'};
 
 function renderProfilo(){
   g('p-affisso').value  = profilo.affisso;
@@ -8621,6 +8823,7 @@ function renderProfilo(){
   g('p-razza').value    = profilo.razza;
   g('p-web').value      = profilo.web;
   g('p-note').value     = profilo.note;
+  if(g('p-kennel-club')) g('p-kennel-club').value = profilo.kennel_club||'enci';
   updateKennelCard();
 }
 
@@ -8650,14 +8853,15 @@ function setPhoneField(prefixId, numId, fullNumber){
 }
 
 function liveProfilo(){
-  profilo.affisso = g('p-affisso').value;
-  profilo.nome    = g('p-nome').value;
-  profilo.prov    = g('p-prov').value;
-  profilo.tel     = g('p-tel-number') ? g('p-tel-number').value.trim() : '';
-  profilo.email   = g('p-email').value;
-  profilo.razza   = g('p-razza').value;
-  profilo.web     = g('p-web').value;
-  profilo.note    = g('p-note').value;
+  profilo.affisso     = g('p-affisso').value;
+  profilo.nome        = g('p-nome').value;
+  profilo.prov        = g('p-prov').value;
+  profilo.tel         = g('p-tel-number') ? g('p-tel-number').value.trim() : '';
+  profilo.email       = g('p-email').value;
+  profilo.razza       = g('p-razza').value;
+  profilo.web         = g('p-web').value;
+  profilo.note        = g('p-note').value;
+  profilo.kennel_club = g('p-kennel-club') ? g('p-kennel-club').value : (profilo.kennel_club||'enci');
   updateKennelCard();
 }
 
@@ -8681,7 +8885,7 @@ function saveProfilo(){
       id:_currentUser.id,affisso:profilo.affisso||'',nome:profilo.nome||'',
       prov:profilo.prov||'',tel:profilo.tel||'',email:profilo.email||'',
       razza:profilo.razza||'',web:profilo.web||'',note:profilo.note||'',
-      logo:profilo.logo||null
+      logo:profilo.logo||null,kennel_club:profilo.kennel_club||'enci'
     }).then(function(){}).catch(function(e){console.warn('[profilo] upsert:',e);});
   }
   hide('modal-profilo');
@@ -24866,6 +25070,137 @@ function switchEnciTab(tab){
   }, 100);
 }
 
+/* ══════════════════════════════════════
+   SCC — Certificat de Saillie
+══════════════════════════════════════ */
+function salvaKennelClub(val){
+  if(!profilo) profilo = {};
+  profilo.kennel_club = val;
+  salvaDB();
+}
+
+function popolaSccSelect(){
+  var femmine = cani.filter(function(c){return c.sesso==='F' && !c._guest;});
+  var maschi  = cani.filter(function(c){return c.sesso==='M' && !c._guest;});
+  var selC = g('scc-s-sel-chienne');
+  var selE = g('scc-s-sel-etalon');
+  if(selC){
+    selC.innerHTML = '<option value="">⚡ Mes chiens</option>' + femmine.map(function(c){
+      return '<option value="'+c.id+'">'+c.nome+(c.razza?' ('+c.razza+')':'')+'</option>';
+    }).join('');
+  }
+  if(selE){
+    selE.innerHTML = '<option value="">⚡ Mes chiens</option>' + maschi.map(function(c){
+      return '<option value="'+c.id+'">'+c.nome+(c.razza?' ('+c.razza+')':'')+'</option>';
+    }).join('');
+  }
+}
+
+function sccPrecompilaChienne(caneId){
+  if(!caneId) return;
+  var c = cani.find(function(x){return x.id===caneId;});
+  if(!c) return;
+  var v = function(id,val){var el=g(id);if(el&&val!==undefined&&val!=='')el.value=val;};
+  v('scc-s-ch-race',  c.razza);
+  v('scc-s-ch-nom',   c.nome);
+  v('scc-s-ch-chip',  c.microchip);
+  v('scc-s-ch-lof',   c.roi||c.registroNum||c.numeroENCI||'');
+  v('scc-s-ch-couleur', c.colore||'');
+}
+
+function sccPrecompilaEtalon(caneId){
+  if(!caneId) return;
+  var c = cani.find(function(x){return x.id===caneId;});
+  if(!c) return;
+  var v = function(id,val){var el=g(id);if(el&&val!==undefined&&val!=='')el.value=val;};
+  v('scc-s-et-race',  c.razza);
+  v('scc-s-et-nom',   c.nome);
+  v('scc-s-et-chip',  c.microchip);
+  v('scc-s-et-lo',    c.roi||c.registroNum||c.numeroENCI||'');
+  v('scc-s-et-couleur', c.colore||'');
+}
+
+function exportSccSailliePDF(){
+  var gv2 = function(id){var el=g(id);return el?el.value.trim():'';};
+  var civilite = document.querySelector('input[name="scc-s-civilite"]:checked');
+  var civStr = civilite ? (civilite.value==='M'?'M.':'Mme') : '';
+  var dateSaillie = [gv2('scc-s-jj'),gv2('scc-s-mm'),gv2('scc-s-aa')].filter(Boolean).join('/');
+  var firmaChienneUrl = getFirmaDataUrl('firma-scc-chienne');
+  var firmaEtalonUrl  = getFirmaDataUrl('firma-scc-etalon');
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8">'
+    +'<style>*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}'
+    +'body{background:#fff;font-size:9.5pt;color:#000;padding:10mm}'
+    +'.page{width:190mm;max-width:100%}'
+    +'.title-block{text-align:center;margin-bottom:10px}'
+    +'.main-title{font-size:18pt;font-weight:900;color:#0D47A1;letter-spacing:.04em}'
+    +'.section{border:1px solid #bbb;border-radius:4px;padding:8px 10px;margin-bottom:8px}'
+    +'.section-title{font-size:8pt;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:#0D47A1;margin-bottom:6px}'
+    +'.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}'
+    +'.field{margin-bottom:4px}'
+    +'.field label{font-size:7.5pt;color:#555;display:block}'
+    +'.field span{font-size:9pt;font-weight:700;display:block;border-bottom:1px solid #ccc;min-height:14px}'
+    +'.sig-box{border:1px solid #ccc;border-radius:4px;width:100%;height:60px;display:flex;align-items:center;justify-content:center}'
+    +'img.sig{max-height:55px;max-width:100%}'
+    +'@media print{body{padding:0} .no-print{display:none}}</style>'
+    +'</head><body><div class="page">'
+    +'<div class="title-block">'
+    +'<div style="font-size:8pt;color:#666">SOCIÉTÉ CENTRALE CANINE — 155 avenue Jean Jaurès - 93535 AUBERVILLIERS Cedex</div>'
+    +'<div class="main-title">CERTIFICAT DE SAILLIE</div>'
+    +'<div style="font-size:8pt;color:#888;font-style:italic">À adresser à la S.C.C. dans les 2 mois suivant la saillie</div>'
+    +'</div>'
+    +'<div class="section">'
+    +'<div class="section-title">Propriétaire de la Chienne</div>'
+    +'<div class="grid2">'
+    +'<div class="field"><label>Civilité / NOM Prénom</label><span>'+civStr+' '+gv2('scc-s-nom')+' '+gv2('scc-s-prenom')+'</span></div>'
+    +'<div class="field"><label>Affixe</label><span>'+gv2('scc-s-affixe')+'</span></div>'
+    +'<div class="field"><label>Adresse</label><span>'+gv2('scc-s-adresse')+'</span></div>'
+    +'<div class="field"><label>CP / Ville</label><span>'+gv2('scc-s-cp')+' '+gv2('scc-s-ville')+'</span></div>'
+    +'<div class="field"><label>Téléphone</label><span>'+gv2('scc-s-tel')+'</span></div>'
+    +'<div class="field"><label>Courriel</label><span>'+gv2('scc-s-email')+'</span></div>'
+    +'</div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<div class="section"><div class="section-title">♀ La Chienne</div>'
+    +'<div class="field"><label>Race</label><span>'+gv2('scc-s-ch-race')+'</span></div>'
+    +'<div class="field"><label>Nom</label><span>'+gv2('scc-s-ch-nom')+'</span></div>'
+    +'<div class="field"><label>N° LOF</label><span>'+gv2('scc-s-ch-lof')+'</span></div>'
+    +'<div class="field"><label>Transpondeur</label><span>'+gv2('scc-s-ch-chip')+'</span></div>'
+    +'<div class="field"><label>Couleur</label><span>'+gv2('scc-s-ch-couleur')+'</span></div>'
+    +'</div>'
+    +'<div class="section"><div class="section-title">♂ L\'Étalon</div>'
+    +'<div class="field"><label>Race</label><span>'+gv2('scc-s-et-race')+'</span></div>'
+    +'<div class="field"><label>Nom</label><span>'+gv2('scc-s-et-nom')+'</span></div>'
+    +'<div class="field"><label>N° LO</label><span>'+gv2('scc-s-et-lo')+'</span></div>'
+    +'<div class="field"><label>Transpondeur</label><span>'+gv2('scc-s-et-chip')+'</span></div>'
+    +'<div class="field"><label>Couleur</label><span>'+gv2('scc-s-et-couleur')+'</span></div>'
+    +'<div class="field"><label>Proprio. Étalon</label><span>'+gv2('scc-s-etalon-proprio-nom')+' '+gv2('scc-s-etalon-proprio-prenom')+'</span></div>'
+    +'</div></div>'
+    +'<div class="section"><div class="section-title">Date de Saillie</div>'
+    +'<div class="field"><span style="font-size:14pt;font-weight:900">'+dateSaillie+'</span></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">'
+    +'<div class="section" style="text-align:center"><div class="section-title">Propriétaire de la Chienne</div>'
+    +(firmaChienneUrl?'<img class="sig" src="'+firmaChienneUrl+'"/>':'<div class="sig-box"></div>')
+    +'</div>'
+    +'<div class="section" style="text-align:center"><div class="section-title">Propriétaire de l\'Étalon</div>'
+    +(firmaEtalonUrl?'<img class="sig" src="'+firmaEtalonUrl+'"/>':'<div class="sig-box"></div>')
+    +'</div></div>'
+    +'<div style="font-size:8pt;color:#888;text-align:center;margin-top:8px">Fait à '+gv2('scc-s-lieu')+' le '+gv2('scc-s-date-signature')+'</div>'
+    +'</div></body></html>';
+  apriHtmlBlob(html);
+}
+
+function shareSccSaillieWhatsApp(){
+  var ch = g('scc-s-ch-nom') ? g('scc-s-ch-nom').value.trim() : '';
+  var et = g('scc-s-et-nom') ? g('scc-s-et-nom').value.trim() : '';
+  var dd = [g('scc-s-jj')?g('scc-s-jj').value:'', g('scc-s-mm')?g('scc-s-mm').value:'', g('scc-s-aa')?g('scc-s-aa').value:''].filter(Boolean).join('/');
+  var msg = 'Certificat de Saillie SCC\n';
+  if(ch) msg += '♀ Chienne : '+ch+'\n';
+  if(et) msg += '♂ Étalon : '+et+'\n';
+  if(dd) msg += '📅 Date : '+dd+'\n';
+  msg += '\nGénéré avec BreedPed — breedped.com';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
 function openContratto(){
   // Popola select fattrice/stallone nel contratto
   var femmine = cani.filter(function(c){return c.sesso==='F' && !c._guest;});
@@ -24886,6 +25221,27 @@ function openContratto(){
 
 /* ── Apri modal ── */
 function openModuliENCI(){
+  var kc = (profilo && profilo.kennel_club) || 'enci';
+  var isScc = kc === 'scc';
+
+  // Aggiorna titolo modal
+  var titles = {enci:'📋 Moduli ENCI', scc:'📋 Modules SCC', vdh:'📋 VDH Formulare', rsce:'📋 Módulos RSCE', kc:'📋 KC Forms'};
+  if(g('moduli-modal-title')) g('moduli-modal-title').textContent = titles[kc] || titles.enci;
+
+  // Mostra/nascondi tab ENCI vs pannello SCC
+  if(g('enci-tab-switcher')) g('enci-tab-switcher').style.display = isScc ? 'none' : '';
+  if(g('enci-panel-a')) g('enci-panel-a').style.display = isScc ? 'none' : '';
+  if(g('enci-panel-b')) g('enci-panel-b').style.display = 'none';
+  if(g('scc-panel-saillie')) g('scc-panel-saillie').style.display = isScc ? '' : 'none';
+
+  if(isScc){
+    popolaSccSelect();
+    show('modal-moduli-enci');
+    setTimeout(function(){ initFirma('firma-scc-chienne'); initFirma('firma-scc-etalon'); }, 150);
+    return;
+  }
+
+  // Flusso ENCI standard
   var femmine = cani.filter(function(c){return c.sesso==='F' && !c._guest;});
   var maschi = cani.filter(function(c){return c.sesso==='M' && !c._guest;});
   ['a','b'].forEach(function(t){
@@ -24910,6 +25266,18 @@ function precompilaDaProfilo(tab){
   var p = profilo || {};
   var t = tab;
   var set = function(id, val){ var el=g(id); if(el && val) el.value=val; };
+  if(tab === 'scc-s'){
+    set('scc-s-nom', (p.nome||'').split(' ').slice(-1)[0] || p.nome);
+    set('scc-s-prenom', (p.nome||'').split(' ').slice(0,-1).join(' ') || p.nome);
+    set('scc-s-email', p.email);
+    set('scc-s-tel', p.tel);
+    set('scc-s-affixe', p.affisso);
+    var ind = [p.via, p.civico].filter(Boolean).join(' ');
+    if(ind) set('scc-s-adresse', ind+', '+[p.cap, p.citta].filter(Boolean).join(' '));
+    if(p.cap) set('scc-s-cp', p.cap);
+    if(p.citta) set('scc-s-ville', p.citta);
+    return;
+  }
   if(tab === 'c'){
     set('cc-pf-nome', p.nome);
     set('cc-pf-tel', p.tel);
