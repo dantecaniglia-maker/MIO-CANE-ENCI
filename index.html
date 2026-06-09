@@ -3372,6 +3372,7 @@ html[data-theme=dark] div[style*="color:#C62828"],html[data-theme=dark] span[sty
       <button id="vdh-tab-belastung" onclick="switchVdhTab('belastung')" style="flex:1;min-width:120px;padding:10px 4px;font-weight:700;font-size:11px;border:none;cursor:pointer;background:#FFF0EE;color:#C0534A;transition:all .2s">💪 Belastungstest</button>
       <button id="vdh-tab-klinik" onclick="switchVdhTab('klinik')" style="flex:1;min-width:120px;padding:10px 4px;font-weight:700;font-size:11px;border:none;cursor:pointer;background:#FFF0EE;color:#C0534A;transition:all .2s">🔬 Klin. Unters.</button>
       <button id="vdh-tab-spezial" onclick="switchVdhTab('spezial')" style="flex:1;min-width:120px;padding:10px 4px;font-weight:700;font-size:11px;border:none;cursor:pointer;background:#FFF0EE;color:#C0534A;transition:all .2s">🧬 Spezialunters.</button>
+      <button id="vdh-tab-merkmal" onclick="switchVdhTab('merkmal')" style="flex:1;min-width:120px;padding:10px 4px;font-weight:700;font-size:11px;border:none;cursor:pointer;background:#FFF0EE;color:#C0534A;transition:all .2s">📜 Merkmalsliste</button>
     </div>
 
     <!-- ═══ DECKSCHEIN VDH ═══ -->
@@ -3519,54 +3520,93 @@ html[data-theme=dark] div[style*="color:#C62828"],html[data-theme=dark] span[sty
     <div id="vdh-panel-belastung" style="display:none">
       <div style="text-align:center;margin-bottom:16px">
         <div style="font-size:10px;color:#888">Verband für das Deutsche Hundewesen (VDH) e.V.</div>
-        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#C0534A;margin-top:8px">BELASTUNGSTEST</div>
+        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D47A1;margin-top:8px">Untersuchungsbogen Belastungstest</div>
+        <div style="font-size:11px;color:#6B8BB0">(für kurzschnäuzige Hunderassen)</div>
+      </div>
+      <div class="form-grid" style="margin-bottom:14px">
+        <div><label>Durchführender Verein</label><input id="vdh-bel-verein" type="text"/></div>
+        <div><label>Datum</label><input id="vdh-bel-datum" type="date"/></div>
+        <div><label>Ort</label><input id="vdh-bel-ort" type="text"/></div>
+        <div><label>Außentemperatur (°C)</label><input id="vdh-bel-temp" type="text" placeholder="°C"/></div>
       </div>
       <div class="form-box" style="margin-bottom:14px">
-        <div style="font-size:11px;font-weight:800;color:#1565C0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
-          👤 Hundebesitzer
-          <button onclick="precompilaDaProfilo('vdh-belastung')" class="btn btn-ghost btn-sm" style="font-size:11px">⚡ Profil</button>
-        </div>
+        <div style="font-size:11px;font-weight:800;color:#1565C0;text-transform:uppercase;margin-bottom:8px">Angaben zum Eigentümer</div>
         <div class="form-grid">
-          <div><label>NAME *</label><input id="vdh-bel-nom" type="text"/></div>
-          <div><label>VORNAME</label><input id="vdh-bel-vorname" type="text"/></div>
-          <div style="grid-column:span 2"><label>Straße / PLZ / Ort</label><input id="vdh-bel-adresse" type="text"/></div>
-          <div><label>Tel.</label><input id="vdh-bel-tel" type="tel"/></div>
-          <div><label>E-Mail</label><input id="vdh-bel-email" type="email"/></div>
+          <div style="grid-column:span 2"><label>Name, Vorname</label><input id="vdh-bel-eigen-name" type="text"/></div>
+          <div style="grid-column:span 2"><label>Anschrift</label><input id="vdh-bel-eigen-addr" type="text"/></div>
         </div>
       </div>
       <div class="form-box" style="margin-bottom:14px">
-        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
-          🐕 Hund
-          <select id="vdh-bel-sel-hund" onchange="vdhPrecompilaHund('bel',this.value)" style="font-size:11px;padding:3px 8px;border:1.5px solid #DDEAFF;border-radius:6px;color:#1565C0;font-weight:700">
+        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+          Angaben zum untersuchten Hund
+          <select id="vdh-bel-sel" onchange="vdhPrecompilaBel(this.value)" style="font-size:11px;padding:3px 8px;border:1.5px solid #DDEAFF;border-radius:6px;color:#1565C0;font-weight:700">
             <option value="">⚡ Meine Hunde</option>
           </select>
         </div>
         <div class="form-grid">
-          <div style="grid-column:span 2"><label>Name *</label><input id="vdh-bel-hund-name" type="text"/></div>
           <div><label>Rasse</label><input id="vdh-bel-rasse" type="text"/></div>
-          <div><label>Wurftag</label><input id="vdh-bel-wurftag" type="date"/></div>
-          <div><label>Chip Nr.</label><input id="vdh-bel-chip" type="text"/></div>
+          <div><label>Wurfdatum</label><input id="vdh-bel-wurf" type="date"/></div>
+          <div><label>Gewicht (kg)</label><input id="vdh-bel-gewicht" type="text" placeholder="kg"/></div>
+          <div><label>Name des Hundes</label><input id="vdh-bel-name" type="text"/></div>
           <div><label>ZB-Nr.</label><input id="vdh-bel-zb" type="text"/></div>
+          <div><label>ID-Code (Chip)</label><input id="vdh-bel-chip" type="text"/></div>
+          <div>
+            <label>Geschlecht</label>
+            <div style="display:flex;gap:8px;margin-top:4px">
+              <label style="font-size:11px"><input type="radio" name="vdh-bel-sex" value="M"> Männlich</label>
+              <label style="font-size:11px"><input type="radio" name="vdh-bel-sex" value="W"> Weiblich</label>
+            </div>
+          </div>
         </div>
       </div>
       <div class="form-box" style="margin-bottom:14px">
-        <div style="font-size:11px;font-weight:800;color:#C0534A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Testergebnis</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
-          <label style="font-size:12px;font-weight:700;padding:8px 14px;border:2px solid #4CAF50;border-radius:8px;cursor:pointer"><input type="radio" name="vdh-bel-result" value="BESTANDEN"> ✅ BESTANDEN</label>
-          <label style="font-size:12px;font-weight:700;padding:8px 14px;border:2px solid #F44336;border-radius:8px;cursor:pointer"><input type="radio" name="vdh-bel-result" value="NICHT BESTANDEN"> ❌ NICHT BESTANDEN</label>
-        </div>
-        <div style="display:flex;gap:14px">
-          <div style="flex:1"><label style="font-size:10px">Ort / Datum</label><input id="vdh-bel-datum" type="date"/></div>
-          <div style="flex:1"><label style="font-size:10px">Prüfer</label><input id="vdh-bel-pruefer" type="text"/></div>
+        <div style="font-size:11px;font-weight:800;color:#888;text-transform:uppercase;margin-bottom:8px">Vorbericht</div>
+        <div style="font-size:10px;line-height:2.2">
+          <div style="display:flex;gap:16px;align-items:center"><span>Bisher durchgeführte Operationen?</span><label><input type="radio" name="vdh-bel-op" value="nein"> Nein</label><label><input type="radio" name="vdh-bel-op" value="ja"> Ja</label></div>
+          <div style="display:flex;gap:16px;align-items:center"><span>Allergien bekannt?</span><label><input type="radio" name="vdh-bel-allergie" value="nein"> Nein</label><label><input type="radio" name="vdh-bel-allergie" value="ja"> Ja</label></div>
+          <div style="display:flex;gap:16px;align-items:center"><span>Sonstige Erkrankungen?</span><label><input type="radio" name="vdh-bel-sonstige" value="nein"> Nein</label><label><input type="radio" name="vdh-bel-sonstige" value="ja"> Ja</label></div>
         </div>
       </div>
-      <div class="form-box" style="text-align:center;margin-bottom:14px">
-        <div style="font-size:10px;font-weight:700;color:#1565C0;margin-bottom:4px">Unterschrift Hundebesitzer</div>
-        <canvas id="firma-vdh-bel" width="300" height="80" style="border:1.5px dashed #DDEAFF;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#C0534A;text-transform:uppercase;margin-bottom:8px">Klinische Untersuchung</div>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr">
+          <div><label>Kondition</label>
+            <select id="vdh-bel-kondition" style="width:100%">
+              <option value="gut">Gut</option>
+              <option value="zufrieden">Zufriedenstellend</option>
+              <option value="keine">Keine Zuchtkondition</option>
+            </select>
+          </div>
+          <div><label>Herzfrequenz in Ruhe (bpm)</label><input id="vdh-bel-herz-ruhe" type="text" placeholder="bpm"/></div>
+          <div><label>Atemfrequenz in Ruhe (/min)</label><input id="vdh-bel-atem-ruhe" type="text" placeholder="/min"/></div>
+          <div><label>Nach Belastung — Herz</label><input id="vdh-bel-herz-belast" type="text"/></div>
+          <div><label>Nach Belastung — Atem</label><input id="vdh-bel-atem-belast" type="text"/></div>
+          <div><label>Erholung nach (min)</label><input id="vdh-bel-erholung" type="text" placeholder="5 / 10 / >15"/></div>
+        </div>
+        <div style="margin-top:10px">
+          <label style="font-size:10px;font-weight:700">Atemgeräusche in Ruhe:</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;font-size:10px">
+            <label><input type="radio" name="vdh-bel-atem-typ" value="ruhig"> Ruhig, unauffällig</label>
+            <label><input type="radio" name="vdh-bel-atem-typ" value="roechel"> Röchelnd / giemend</label>
+            <label><input type="radio" name="vdh-bel-atem-typ" value="hechel"> Hechelnd</label>
+            <label><input type="radio" name="vdh-bel-atem-typ" value="atemnot"> Atemnot</label>
+          </div>
+        </div>
+      </div>
+      <div class="form-box" style="margin-bottom:14px;text-align:center">
+        <div style="font-size:14px;font-weight:800;margin-bottom:10px">Belastungstest bestanden:</div>
+        <div style="display:flex;gap:16px;justify-content:center">
+          <label style="font-size:16px;font-weight:700;padding:12px 24px;border:2px solid #4CAF50;border-radius:10px;cursor:pointer"><input type="radio" name="vdh-bel-bestanden" value="ja"> ✅ Ja</label>
+          <label style="font-size:16px;font-weight:700;padding:12px 24px;border:2px solid #F44336;border-radius:10px;cursor:pointer"><input type="radio" name="vdh-bel-bestanden" value="nein"> ❌ Nein</label>
+        </div>
+      </div>
+      <div class="form-box" style="text-align:center;margin-bottom:16px">
+        <div style="font-size:10px;font-weight:700;color:#1565C0;margin-bottom:4px">Unterschrift Tierarzt / Stempel</div>
+        <canvas id="firma-vdh-bel" width="300" height="100" style="border:1.5px dashed #DDEAFF;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
         <button onclick="clearFirma('firma-vdh-bel')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Löschen</button>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button onclick="exportVdhGenericPDF('belastung')" class="btn btn-primary" style="font-size:13px;background:linear-gradient(135deg,#C0534A,#9B3229)">📄 PDF exportieren</button>
+        <button onclick="exportVdhBelPDF()" class="btn btn-primary" style="font-size:13px;background:linear-gradient(135deg,#C0534A,#9B3229)">📄 PDF exportieren</button>
       </div>
     </div>
 
@@ -3574,62 +3614,88 @@ html[data-theme=dark] div[style*="color:#C62828"],html[data-theme=dark] span[sty
     <div id="vdh-panel-klinik" style="display:none">
       <div style="text-align:center;margin-bottom:16px">
         <div style="font-size:10px;color:#888">Verband für das Deutsche Hundewesen (VDH) e.V.</div>
-        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#C0534A;margin-top:8px">KLINISCHE UNTERSUCHUNG</div>
-        <div style="font-size:11px;color:#6B8BB0;margin-top:4px">Zuchtuntauglichkeitsuntersuchung</div>
+        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#C0534A;margin-top:8px">Klinische Untersuchung</div>
+        <div style="font-size:11px;color:#6B8BB0">Zuchtuntauglichkeitsuntersuchung gem. § 10 TierSchHuV</div>
+      </div>
+      <div class="form-grid" style="margin-bottom:14px">
+        <div><label>Tierarzt / Prüfer</label><input id="vdh-kli-tierarzt" type="text"/></div>
+        <div><label>Datum</label><input id="vdh-kli-datum" type="date"/></div>
+        <div style="grid-column:span 2"><label>Anschrift Tierarzt</label><input id="vdh-kli-ta-addr" type="text"/></div>
       </div>
       <div class="form-box" style="margin-bottom:14px">
-        <div style="font-size:11px;font-weight:800;color:#1565C0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
-          👤 Hundebesitzer
+        <div style="font-size:11px;font-weight:800;color:#1565C0;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+          Tierhalter
           <button onclick="precompilaDaProfilo('vdh-klinik')" class="btn btn-ghost btn-sm" style="font-size:11px">⚡ Profil</button>
         </div>
         <div class="form-grid">
-          <div><label>NAME *</label><input id="vdh-kli-nom" type="text"/></div>
+          <div><label>NAME</label><input id="vdh-kli-nom" type="text"/></div>
           <div><label>VORNAME</label><input id="vdh-kli-vorname" type="text"/></div>
-          <div style="grid-column:span 2"><label>Straße / PLZ / Ort</label><input id="vdh-kli-adresse" type="text"/></div>
+          <div style="grid-column:span 2"><label>Anschrift</label><input id="vdh-kli-adresse" type="text"/></div>
           <div><label>Tel.</label><input id="vdh-kli-tel" type="tel"/></div>
           <div><label>E-Mail</label><input id="vdh-kli-email" type="email"/></div>
         </div>
       </div>
       <div class="form-box" style="margin-bottom:14px">
-        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
-          🐕 Hund
+        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+          Hund
           <select id="vdh-kli-sel-hund" onchange="vdhPrecompilaHund('kli',this.value)" style="font-size:11px;padding:3px 8px;border:1.5px solid #DDEAFF;border-radius:6px;color:#1565C0;font-weight:700">
             <option value="">⚡ Meine Hunde</option>
           </select>
         </div>
         <div class="form-grid">
-          <div style="grid-column:span 2"><label>Name *</label><input id="vdh-kli-hund-name" type="text"/></div>
           <div><label>Rasse</label><input id="vdh-kli-rasse" type="text"/></div>
-          <div><label>Wurftag</label><input id="vdh-kli-wurftag" type="date"/></div>
-          <div><label>Chip Nr.</label><input id="vdh-kli-chip" type="text"/></div>
-          <div><label>ZB-Nr.</label><input id="vdh-kli-zb" type="text"/></div>
-        </div>
-      </div>
-      <div class="form-box" style="margin-bottom:14px;background:#F5FFF5;border-color:#C8E6C9">
-        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Befund Tierarzt</div>
-        <div class="form-grid">
-          <div><label>Tierarzt / Prüfer</label><input id="vdh-kli-tierarzt" type="text"/></div>
-          <div><label>Datum</label><input id="vdh-kli-datum" type="date"/></div>
-          <div style="grid-column:span 2">
-            <label>Ergebnis</label>
-            <div style="display:flex;gap:12px;margin-top:4px;flex-wrap:wrap">
-              <label style="font-size:12px;font-weight:700;padding:6px 12px;border:2px solid #4CAF50;border-radius:8px;cursor:pointer"><input type="radio" name="vdh-kli-result" value="ZUCHTTAUGLICH"> ✅ Zuchttauglich</label>
-              <label style="font-size:12px;font-weight:700;padding:6px 12px;border:2px solid #F44336;border-radius:8px;cursor:pointer"><input type="radio" name="vdh-kli-result" value="ZUCHTUNTAUGLICH"> ❌ Zuchtuntauglich</label>
+          <div><label>Name des Hundes</label><input id="vdh-kli-hund-name" type="text"/></div>
+          <div><label>Geburtsdatum</label><input id="vdh-kli-wurftag" type="date"/></div>
+          <div>
+            <label>Rüde / Hündin</label>
+            <div style="display:flex;gap:8px;margin-top:4px">
+              <label style="font-size:11px"><input type="radio" name="vdh-kli-sex" value="M"> Rüde</label>
+              <label style="font-size:11px"><input type="radio" name="vdh-kli-sex" value="W"> Hündin</label>
             </div>
           </div>
-          <div style="grid-column:span 2"><label>Befund / Anmerkungen</label><textarea id="vdh-kli-befund" rows="2" style="width:100%;border:1.5px solid #DDEAFF;border-radius:6px;padding:6px;font-size:11px" placeholder="Klinische Befunde..."></textarea></div>
+          <div><label>Chipnummer</label><input id="vdh-kli-chip" type="text"/></div>
+          <div>
+            <label>Ernährungszustand</label>
+            <select id="vdh-kli-ernaehr" style="width:100%">
+              <option value="schlank">Schlank</option>
+              <option value="normal">Normalgewichtig</option>
+              <option value="adipos">Adipös</option>
+            </select>
+          </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px">
-          <div style="text-align:center">
-            <div style="font-size:10px;font-weight:700;color:#1565C0;margin-bottom:4px">Unterschrift Besitzer</div>
-            <canvas id="firma-vdh-kli-besitzer" width="250" height="70" style="border:1.5px dashed #DDEAFF;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
-            <button onclick="clearFirma('firma-vdh-kli-besitzer')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Löschen</button>
-          </div>
-          <div style="text-align:center">
-            <div style="font-size:10px;font-weight:700;color:#1a7a4a;margin-bottom:4px">Unterschrift Tierarzt</div>
-            <canvas id="firma-vdh-kli-tierarzt" width="250" height="70" style="border:1.5px dashed #C8E6C9;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
-            <button onclick="clearFirma('firma-vdh-kli-tierarzt')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Löschen</button>
-          </div>
+      </div>
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#C0534A;text-transform:uppercase;margin-bottom:8px">Befunde (Ja = auffällig / Nein = unauffällig)</div>
+        <div style="font-size:10px;line-height:2.4">
+          <div style="display:flex;gap:16px;align-items:center;border-bottom:1px solid #EEF3FB;padding-bottom:2px"><span style="flex:1">1. Augen (inkl. Augenlider): Lidfehlstellungen, Exophthalmus, Blindheit, Strabismus</span><label><input type="radio" name="vdh-kli-augen" value="ja"> Ja</label><label><input type="radio" name="vdh-kli-augen" value="nein" checked> Nein</label></div>
+          <div style="display:flex;gap:16px;align-items:center;border-bottom:1px solid #EEF3FB;padding-bottom:2px"><span style="flex:1">2. Schädel / Gebiss: Missbildungen Schädel, offene Fontanellen, BOAS</span><label><input type="radio" name="vdh-kli-schadel" value="ja"> Ja</label><label><input type="radio" name="vdh-kli-schadel" value="nein" checked> Nein</label></div>
+          <div style="display:flex;gap:16px;align-items:center;border-bottom:1px solid #EEF3FB;padding-bottom:2px"><span style="flex:1">3. Haut / Haar: Weißköpfigkeit, Merle-Zeichnung, Colour Dilution Alopecia, Albinismus, übermäßige Hautfalten, fehlende Vibrissen</span><label><input type="radio" name="vdh-kli-haut" value="ja"> Ja</label><label><input type="radio" name="vdh-kli-haut" value="nein" checked> Nein</label></div>
+          <div style="display:flex;gap:16px;align-items:center;border-bottom:1px solid #EEF3FB;padding-bottom:2px"><span style="flex:1">4. Bewegungsapparat: Lahmheiten</span><label><input type="radio" name="vdh-kli-bewegung" value="ja"> Ja</label><label><input type="radio" name="vdh-kli-bewegung" value="nein" checked> Nein</label></div>
+          <div style="display:flex;gap:16px;align-items:center;border-bottom:1px solid #EEF3FB;padding-bottom:2px"><span style="flex:1">5. Atmungsapparat: pathologische Atemgeräusche, Atemnot, Zyanose, Hyperthermie</span><label><input type="radio" name="vdh-kli-atmung" value="ja"> Ja</label><label><input type="radio" name="vdh-kli-atmung" value="nein" checked> Nein</label></div>
+          <div style="display:flex;gap:16px;align-items:center;border-bottom:1px solid #EEF3FB;padding-bottom:2px"><span style="flex:1">6. Herz / Kreislauf: klinisch auffällig</span><label><input type="radio" name="vdh-kli-herz" value="ja"> Ja</label><label><input type="radio" name="vdh-kli-herz" value="nein" checked> Nein</label></div>
+          <div style="display:flex;gap:16px;align-items:center;border-bottom:1px solid #EEF3FB;padding-bottom:2px"><span style="flex:1">7. Taubheit / Blindheit: neurologische Symptome</span><label><input type="radio" name="vdh-kli-neuro" value="ja"> Ja</label><label><input type="radio" name="vdh-kli-neuro" value="nein" checked> Nein</label></div>
+          <div style="display:flex;gap:16px;align-items:center;border-bottom:1px solid #EEF3FB;padding-bottom:2px"><span style="flex:1">8. Kryptorchismus</span><label><input type="radio" name="vdh-kli-krypt" value="ja"> Ja</label><label><input type="radio" name="vdh-kli-krypt" value="nein" checked> Nein</label></div>
+          <div style="display:flex;gap:16px;align-items:center"><span style="flex:1">9. Rute: verkürzt / missgebildet mit klinischen Symptomen</span><label><input type="radio" name="vdh-kli-rute" value="ja"> Ja</label><label><input type="radio" name="vdh-kli-rute" value="nein" checked> Nein</label></div>
+        </div>
+        <div style="margin-top:10px"><label style="font-size:10px">Anmerkungen</label><textarea id="vdh-kli-befund" rows="2" style="width:100%;border:1.5px solid #DDEAFF;border-radius:6px;padding:6px;font-size:11px"></textarea></div>
+      </div>
+      <div class="form-box" style="margin-bottom:14px;text-align:center">
+        <div style="font-size:13px;font-weight:800;margin-bottom:8px">Ergebnis:</div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <label style="font-size:12px;font-weight:700;padding:8px 14px;border:2px solid #4CAF50;border-radius:8px;cursor:pointer"><input type="radio" name="vdh-kli-result" value="KEINE HINWEISE"> ✅ Keine Hinweise auf Merkmale nach § 10</label>
+          <label style="font-size:12px;font-weight:700;padding:8px 14px;border:2px solid #F44336;border-radius:8px;cursor:pointer"><input type="radio" name="vdh-kli-result" value="HINWEISE VORHANDEN"> ⚠️ Hinweise vorhanden</label>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+        <div style="text-align:center">
+          <div style="font-size:10px;font-weight:700;color:#1565C0;margin-bottom:4px">Unterschrift Tierhalter</div>
+          <canvas id="firma-vdh-kli-besitzer" width="250" height="70" style="border:1.5px dashed #DDEAFF;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
+          <button onclick="clearFirma('firma-vdh-kli-besitzer')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Löschen</button>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:10px;font-weight:700;color:#1a7a4a;margin-bottom:4px">Unterschrift / Stempel Tierarzt</div>
+          <canvas id="firma-vdh-kli-tierarzt" width="250" height="70" style="border:1.5px dashed #C8E6C9;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
+          <button onclick="clearFirma('firma-vdh-kli-tierarzt')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Löschen</button>
         </div>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
@@ -3641,57 +3707,264 @@ html[data-theme=dark] div[style*="color:#C62828"],html[data-theme=dark] span[sty
     <div id="vdh-panel-spezial" style="display:none">
       <div style="text-align:center;margin-bottom:16px">
         <div style="font-size:10px;color:#888">Verband für das Deutsche Hundewesen (VDH) e.V.</div>
-        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#C0534A;margin-top:8px">SPEZIALUNTERSUCHUNG</div>
-        <div style="font-size:11px;color:#6B8BB0;margin-top:4px">HD / ED / Genetische Untersuchungen / Augenuntersuchungen</div>
+        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#C0534A;margin-top:8px">Spezialuntersuchung</div>
+        <div style="font-size:11px;color:#6B8BB0">IVDD · DCM · Mitralklappenerkrankung</div>
+      </div>
+      <div class="form-grid" style="margin-bottom:14px">
+        <div><label>Tierarzt / Prüfer</label><input id="vdh-spe-tierarzt" type="text"/></div>
+        <div><label>Datum</label><input id="vdh-spe-datum" type="date"/></div>
+        <div style="grid-column:span 2"><label>Anschrift Tierarzt</label><input id="vdh-spe-ta-addr" type="text"/></div>
       </div>
       <div class="form-box" style="margin-bottom:14px">
-        <div style="font-size:11px;font-weight:800;color:#1565C0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
-          👤 Hundebesitzer
+        <div style="font-size:11px;font-weight:800;color:#1565C0;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+          Tierhalter
           <button onclick="precompilaDaProfilo('vdh-spezial')" class="btn btn-ghost btn-sm" style="font-size:11px">⚡ Profil</button>
         </div>
         <div class="form-grid">
-          <div><label>NAME *</label><input id="vdh-spe-nom" type="text"/></div>
+          <div><label>NAME</label><input id="vdh-spe-nom" type="text"/></div>
           <div><label>VORNAME</label><input id="vdh-spe-vorname" type="text"/></div>
-          <div style="grid-column:span 2"><label>Straße / PLZ / Ort</label><input id="vdh-spe-adresse" type="text"/></div>
+          <div style="grid-column:span 2"><label>Anschrift</label><input id="vdh-spe-adresse" type="text"/></div>
         </div>
       </div>
       <div class="form-box" style="margin-bottom:14px">
-        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
-          🐕 Hund
+        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+          Hund
           <select id="vdh-spe-sel-hund" onchange="vdhPrecompilaHund('spe',this.value)" style="font-size:11px;padding:3px 8px;border:1.5px solid #DDEAFF;border-radius:6px;color:#1565C0;font-weight:700">
             <option value="">⚡ Meine Hunde</option>
           </select>
         </div>
         <div class="form-grid">
-          <div style="grid-column:span 2"><label>Name *</label><input id="vdh-spe-hund-name" type="text"/></div>
           <div><label>Rasse</label><input id="vdh-spe-rasse" type="text"/></div>
-          <div><label>Chip Nr.</label><input id="vdh-spe-chip" type="text"/></div>
+          <div><label>Name des Hundes</label><input id="vdh-spe-hund-name" type="text"/></div>
+          <div><label>Geburtsdatum</label><input id="vdh-spe-wurftag" type="date"/></div>
+          <div>
+            <label>Rüde / Hündin</label>
+            <div style="display:flex;gap:8px;margin-top:4px">
+              <label style="font-size:11px"><input type="radio" name="vdh-spe-sex" value="M"> Rüde</label>
+              <label style="font-size:11px"><input type="radio" name="vdh-spe-sex" value="W"> Hündin</label>
+            </div>
+          </div>
+          <div><label>Chipnummer</label><input id="vdh-spe-chip" type="text"/></div>
+          <div>
+            <label>Ernährungszustand</label>
+            <select id="vdh-spe-ernaehr" style="width:100%">
+              <option value="schlank">Schlank</option>
+              <option value="normal">Normalgewichtig</option>
+              <option value="adipos">Adipös</option>
+            </select>
+          </div>
         </div>
       </div>
       <div class="form-box" style="margin-bottom:14px">
-        <div style="font-size:11px;font-weight:800;color:#6B3FA0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Art der Untersuchung</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
-          <label style="font-size:11px"><input type="checkbox" id="vdh-spe-hd"> HD-Untersuchung</label>
-          <label style="font-size:11px"><input type="checkbox" id="vdh-spe-ed"> ED-Untersuchung</label>
-          <label style="font-size:11px"><input type="checkbox" id="vdh-spe-augen"> Augenuntersuchung</label>
-          <label style="font-size:11px"><input type="checkbox" id="vdh-spe-dna"> DNA-Test</label>
-          <label style="font-size:11px"><input type="checkbox" id="vdh-spe-herz"> Herzuntersuchung</label>
+        <div style="font-size:11px;font-weight:800;color:#6B3FA0;text-transform:uppercase;margin-bottom:8px">Befunde (Ja = auffällig / Nein = unauffällig)</div>
+        <div style="font-size:10px;line-height:2.4">
+          <div style="display:flex;gap:16px;align-items:center;border-bottom:1px solid #EEF3FB;padding-bottom:2px">
+            <span style="flex:1"><strong>IVDD (Bandscheibenerkrankung):</strong> Symptome einer Bandscheibenerkrankung (Schmerzen, Parese, Paralyse)</span>
+            <label><input type="radio" name="vdh-spe-ivdd" value="ja"> Ja</label>
+            <label><input type="radio" name="vdh-spe-ivdd" value="nein" checked> Nein</label>
+          </div>
+          <div style="margin-top:6px"><label style="font-size:10px">IVDD-Klasse / Score</label><input id="vdh-spe-ivdd-score" type="text" placeholder="IVDD-Klasse I / II / III"/></div>
+          <div style="display:flex;gap:16px;align-items:center;border-bottom:1px solid #EEF3FB;padding-bottom:2px;margin-top:8px">
+            <span style="flex:1"><strong>DCM (Dilatative Kardiomyopathie):</strong> echokardiographisch nachgewiesene DCM</span>
+            <label><input type="radio" name="vdh-spe-dcm" value="ja"> Ja</label>
+            <label><input type="radio" name="vdh-spe-dcm" value="nein" checked> Nein</label>
+          </div>
+          <div style="margin-top:6px"><label style="font-size:10px">DCM-Stadium (nach ACVIM)</label><input id="vdh-spe-dcm-stadium" type="text" placeholder="Stadium A / B1 / B2 / C / D"/></div>
+          <div style="display:flex;gap:16px;align-items:center;border-bottom:1px solid #EEF3FB;padding-bottom:2px;margin-top:8px">
+            <span style="flex:1"><strong>Mitralklappenerkrankung (MVD):</strong> auskultatorisch nachgewiesenes Herzgeräusch</span>
+            <label><input type="radio" name="vdh-spe-mvd" value="ja"> Ja</label>
+            <label><input type="radio" name="vdh-spe-mvd" value="nein" checked> Nein</label>
+          </div>
+          <div style="margin-top:6px"><label style="font-size:10px">MVD-Grad (I–VI)</label><input id="vdh-spe-mvd-grad" type="text" placeholder="Grad I / II / III..."/></div>
         </div>
-        <div class="form-grid">
-          <div><label>Befund / Ergebnis</label><input id="vdh-spe-ergebnis" type="text" placeholder="HD-A, ED 0/0, Augen frei..."/></div>
-          <div><label>Datum</label><input id="vdh-spe-datum" type="date"/></div>
-          <div><label>Institut / Tierarzt</label><input id="vdh-spe-institut" type="text"/></div>
-          <div><label>Untersuchungsnummer</label><input id="vdh-spe-nr" type="text"/></div>
-          <div style="grid-column:span 2"><label>Anmerkungen</label><textarea id="vdh-spe-note" rows="2" style="width:100%;border:1.5px solid #DDEAFF;border-radius:6px;padding:6px;font-size:11px"></textarea></div>
+        <div style="margin-top:10px"><label style="font-size:10px">Weitere Befunde / Anmerkungen</label><textarea id="vdh-spe-note" rows="2" style="width:100%;border:1.5px solid #DDEAFF;border-radius:6px;padding:6px;font-size:11px"></textarea></div>
+      </div>
+      <div class="form-box" style="margin-bottom:14px;text-align:center">
+        <div style="font-size:13px;font-weight:800;margin-bottom:8px">Ergebnis:</div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <label style="font-size:12px;font-weight:700;padding:8px 14px;border:2px solid #4CAF50;border-radius:8px;cursor:pointer"><input type="radio" name="vdh-spe-result" value="KEINE HINWEISE"> ✅ Keine Hinweise</label>
+          <label style="font-size:12px;font-weight:700;padding:8px 14px;border:2px solid #F44336;border-radius:8px;cursor:pointer"><input type="radio" name="vdh-spe-result" value="HINWEISE VORHANDEN"> ⚠️ Hinweise vorhanden</label>
         </div>
       </div>
       <div class="form-box" style="text-align:center;margin-bottom:14px">
-        <div style="font-size:10px;font-weight:700;color:#1565C0;margin-bottom:4px">Unterschrift Besitzer</div>
+        <div style="font-size:10px;font-weight:700;color:#1565C0;margin-bottom:4px">Unterschrift / Stempel Tierarzt</div>
         <canvas id="firma-vdh-spe" width="300" height="80" style="border:1.5px dashed #DDEAFF;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
         <button onclick="clearFirma('firma-vdh-spe')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Löschen</button>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
         <button onclick="exportVdhGenericPDF('spezial')" class="btn btn-primary" style="font-size:13px;background:linear-gradient(135deg,#C0534A,#9B3229)">📄 PDF exportieren</button>
+      </div>
+    </div>
+
+    <!-- ═══ MERKMALSLISTE VDH ═══ -->
+    <div id="vdh-panel-merkmal" style="display:none">
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#C0534A;margin-bottom:12px">VDH-Merkmalsliste (Stand 01.02.2026)</div>
+      <div style="font-size:10px;color:#1a1a3a;line-height:1.6;max-height:60vh;overflow-y:auto;padding:12px;background:#F5F7FF;border-radius:8px">
+        <p style="margin-bottom:10px"><strong>Hunde mit folgenden Merkmalen (Erblichkeit wird vorausgesetzt) dürfen nicht an termingeschützten VDH-Veranstaltungen teilnehmen.</strong></p>
+        <ol style="padding-left:18px;line-height:2">
+          <li><strong>Störung der Atmung</strong> einschließlich Störung der Thermoregulation, pathologische Atemgeräusche, Atemnot, Zyanose, Hyperthermie insbesondere bei brachycephalen Rassen.</li>
+          <li><strong>Auge inklusive Augenlider:</strong> Lidfehlstellungen wie En- und Ektropium, Exophthalmus; Blindheit; Strabismus</li>
+          <li><strong>Neurologische Symptome</strong></li>
+          <li><strong>Missbildung des Schädels</strong>, gekoppelt mit klinischer Symptomatik z.B. offene Fontanellen, BOAS</li>
+          <li><strong>Zwergwuchs</strong> (hypophysäre Form)</li>
+          <li><strong>Haut und Haar:</strong> Weißköpfigkeit/Extremscheckung, Merle-Zeichnung mit Einschränkungen, Colour Dilution Alopecia, Albinismus, Dermoid-Zysten, übermäßige Hautfalten, fehlende Vibrissen</li>
+          <li><strong>Zähne:</strong> Fehlen von Canini, P4/Oberkiefer, M1/Unterkiefer oder mehr als 2 anderen Zähnen</li>
+          <li><strong>Lahmheiten</strong></li>
+          <li><strong>Verkürzte/Missgebildete Rute</strong> in Verbindung mit klinischen Symptomen</li>
+        </ol>
+        <p style="margin-top:10px;font-size:9px;color:#888">© VDH e.V. — www.vdh.de</p>
+      </div>
+    </div>
+
+    <!-- ═══ TAB SWITCHER KC ═══ -->
+    <div id="kc-tab-switcher" style="display:none;flex-wrap:wrap;gap:0;margin-bottom:20px;border:2px solid #C8E6C9;border-radius:12px;overflow:hidden">
+      <button id="kc-tab-form1" onclick="switchKcTab('form1')" style="flex:1;min-width:140px;padding:10px 4px;font-weight:700;font-size:11px;border:none;cursor:pointer;background:linear-gradient(135deg,#006747,#004d35);color:#fff;transition:all .2s">📋 Form 1<br>Litter Registration</button>
+    </div>
+
+    <!-- ═══ KC FORM 1 — LITTER REGISTRATION ═══ -->
+    <div id="kc-panel-form1" style="display:none">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:10px;color:#006747;font-weight:700;letter-spacing:.1em">THE KENNEL CLUB</div>
+        <div style="font-size:9px;color:#888">Kennel Club House, Gatehouse Way, Aylesbury, HP19 8DB — Tel 01296 318540 — thekennelclub.org.uk</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#006747;margin-top:8px">Form 1</div>
+        <div style="font-size:16px;font-weight:700;color:#0D47A1">Application for litter registration</div>
+        <div style="font-size:10px;color:#6B8BB0;margin-top:4px">Please refer to notes overleaf when completing the application.</div>
+      </div>
+
+      <!-- 1. BREEDER -->
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#006747;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+          1 — Breeder(s) Name &amp; Address
+          <button onclick="precompilaDaProfilo('kc-f1')" class="btn btn-ghost btn-sm" style="font-size:11px">⚡ From Profile</button>
+        </div>
+        <div class="form-grid">
+          <div><label>TITLE</label><input id="kc-f1-title" type="text" placeholder="Mr/Mrs/Miss/Ms" style="width:80px"/></div>
+          <div><label>FIRST NAME / INITIALS</label><input id="kc-f1-first" type="text"/></div>
+          <div><label>LAST NAME *</label><input id="kc-f1-last" type="text" style="text-transform:uppercase"/></div>
+          <div style="grid-column:span 2"><label>ADDRESS *</label><input id="kc-f1-addr" type="text"/></div>
+          <div><label>POST CODE *</label><input id="kc-f1-postcode" type="text"/></div>
+          <div><label>TELEPHONE No.</label><input id="kc-f1-tel" type="tel"/></div>
+          <div style="grid-column:span 2"><label>EMAIL ADDRESS</label><input id="kc-f1-email" type="email"/></div>
+          <div>
+            <label>Breeding licence?</label>
+            <div style="display:flex;gap:8px;margin-top:4px">
+              <label style="font-size:11px"><input type="radio" name="kc-f1-licence" value="yes"> Yes</label>
+              <label style="font-size:11px"><input type="radio" name="kc-f1-licence" value="no"> No</label>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:10px;color:#888;font-weight:700">ADDITIONAL OWNERS (if any)</div>
+        <div class="form-grid" style="margin-top:4px">
+          <div><label>Title + Name</label><input id="kc-f1-add1" type="text" placeholder="Additional owner 1"/></div>
+          <div><label>Email</label><input id="kc-f1-add1-email" type="email"/></div>
+        </div>
+      </div>
+
+      <!-- DECLARATION -->
+      <div style="background:#F0FFF0;border:1.5px solid #C8E6C9;border-radius:8px;padding:10px;margin-bottom:14px;font-size:9px;color:#1a1a3a;line-height:1.5">
+        <strong>DECLARATION TO BE SIGNED BY BREEDER(S)</strong><br>
+        I/we the breeders of the litter certify the particulars are true to the best of my/our knowledge and belief and agree to the following statements:<br>
+        ■ The litter was born in the United Kingdom at the address listed above (excluding Jersey or Guernsey).<br>
+        ■ No dog listed in the application has been registered previously with The Kennel Club or any recognised body.<br>
+        ■ The dam has not had more than two caesareans in her lifetime.<br>
+        ■ I/we are bound by and submit to The Kennel Club rules and regulations and general code of ethics.<br>
+        ■ I/we confirm we have checked and understood the legislation in relation to dog breeding licences.
+      </div>
+      <div class="form-box" style="margin-bottom:14px;text-align:center">
+        <div style="font-size:10px;font-weight:700;color:#006747;margin-bottom:4px">APPLICANT AND ADDITIONAL OWNER SIGNATURES</div>
+        <canvas id="firma-kc-breeder" width="300" height="80" style="border:1.5px dashed #C8E6C9;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
+        <button onclick="clearFirma('firma-kc-breeder')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Clear</button>
+        <div style="margin-top:4px"><label style="font-size:10px">DATE</label><input id="kc-f1-breeder-date" type="date" style="width:140px"/></div>
+      </div>
+
+      <!-- 2. DAM + 3. BREED -->
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#C0534A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+          2 — Registered Name of Dam of Litter
+          <select id="kc-f1-sel-dam" onchange="kcPrecompilaDam(this.value)" style="font-size:11px;padding:3px 8px;border:1.5px solid #DDEAFF;border-radius:6px;color:#1565C0;font-weight:700">
+            <option value="">⚡ My dogs</option>
+          </select>
+        </div>
+        <div class="form-grid">
+          <div style="grid-column:span 2"><label>REGISTERED NAME OF DAM *</label><input id="kc-f1-dam-name" type="text"/></div>
+          <div><label>KC REG. NUMBER</label><input id="kc-f1-dam-kcreg" type="text"/></div>
+          <div><label>MICROCHIP NO.</label><input id="kc-f1-dam-chip" type="text"/></div>
+          <div><label>3 — BREED *</label><input id="kc-f1-breed" type="text"/></div>
+        </div>
+      </div>
+
+      <!-- 4-6 -->
+      <div class="form-grid" style="margin-bottom:14px">
+        <div><label>4 — LITTER DATE OF BIRTH *</label><input id="kc-f1-dob" type="date"/></div>
+        <div><label>5 — LITTER DATE OF MATING</label><input id="kc-f1-dom" type="date"/></div>
+        <div><label>6 — KENNEL NAME</label><input id="kc-f1-kennel" type="text"/></div>
+      </div>
+
+      <!-- 7. SIRE OWNER -->
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">7 — Sire Owner(s) Name &amp; Address</div>
+        <div class="form-grid">
+          <div><label>TITLE</label><input id="kc-f1-sire-title" type="text" style="width:80px"/></div>
+          <div><label>FIRST NAME / INITIALS</label><input id="kc-f1-sire-first" type="text"/></div>
+          <div><label>LAST NAME</label><input id="kc-f1-sire-last" type="text"/></div>
+          <div style="grid-column:span 2"><label>ADDRESS</label><input id="kc-f1-sire-addr" type="text"/></div>
+          <div><label>POST CODE</label><input id="kc-f1-sire-postcode" type="text"/></div>
+          <div><label>TELEPHONE No.</label><input id="kc-f1-sire-tel" type="tel"/></div>
+          <div style="grid-column:span 2"><label>EMAIL ADDRESS</label><input id="kc-f1-sire-email" type="email"/></div>
+        </div>
+        <div style="margin-top:10px;font-size:9px;color:#1a1a3a;line-height:1.5;background:#F5F7FF;padding:8px;border-radius:6px">
+          <strong>CONFIRMATION OF MATING TO BE SIGNED BY OWNER(S) OF SIRE</strong><br>
+          I/we hereby certify that the Dam named as identified to me/us was mated to the Sire on the date indicated and that the Sire was recorded as owned by me/us on that date.
+        </div>
+        <div style="text-align:center;margin-top:8px">
+          <canvas id="firma-kc-sire" width="300" height="80" style="border:1.5px dashed #DDEAFF;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
+          <button onclick="clearFirma('firma-kc-sire')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Clear</button>
+          <div><label style="font-size:10px">DATE</label><input id="kc-f1-sire-date" type="date" style="width:140px"/></div>
+        </div>
+      </div>
+
+      <!-- 8. SIRE -->
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+          8 — Registered Name of Sire of Litter
+          <select id="kc-f1-sel-sire" onchange="kcPrecompilaSire(this.value)" style="font-size:11px;padding:3px 8px;border:1.5px solid #DDEAFF;border-radius:6px;color:#1565C0;font-weight:700">
+            <option value="">⚡ My dogs</option>
+          </select>
+        </div>
+        <div class="form-grid">
+          <div style="grid-column:span 2"><label>REGISTERED NAME OF SIRE *</label><input id="kc-f1-sire-name" type="text"/></div>
+          <div><label>THE KENNEL CLUB REG. NUMBER</label><input id="kc-f1-sire-kcreg" type="text"/></div>
+          <div><label>MICROCHIP NO.</label><input id="kc-f1-sire-chip" type="text"/></div>
+        </div>
+      </div>
+
+      <!-- 9-10 -->
+      <div class="form-grid" style="margin-bottom:14px">
+        <div><label style="font-size:10px"><input type="checkbox" id="kc-f1-ai"> 9 — Litter bred using Artificial Insemination</label></div>
+        <div>
+          <label style="font-size:10px"><input type="checkbox" id="kc-f1-caesar"> 10 — Litter born by Caesarean Section</label>
+          <div style="margin-top:4px;font-size:10px">
+            <label>Emergency <input type="radio" name="kc-f1-caesar-type" value="emergency"></label>
+            <label style="margin-left:8px">Elective <input type="radio" name="kc-f1-caesar-type" value="elective"></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 12. PUPPIES -->
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#006747;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">12 — Puppies</div>
+        <div style="font-size:9px;color:#888;margin-bottom:8px">A name must consist of more than one word and a maximum of 24 letters</div>
+        <div id="kc-f1-puppies-list"></div>
+        <button onclick="kcAddPuppy()" class="btn btn-ghost btn-sm" style="margin-top:8px;font-size:11px">+ Add Puppy</button>
+        <div style="margin-top:8px;font-size:11px;color:#1a1a3a">
+          Total: Dogs <input id="kc-f1-dogs" type="number" style="width:40px" value="0"/> Bitches <input id="kc-f1-bitches" type="number" style="width:40px" value="0"/> at £17 each
+        </div>
+      </div>
+
+      <!-- ACTIONS -->
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+        <button onclick="exportKcForm1PDF()" class="btn btn-primary" style="font-size:13px;background:linear-gradient(135deg,#006747,#004d35)">📄 Export PDF</button>
+        <button onclick="window.open('https://www.thekennelclub.org.uk/registration/','_blank')" class="btn btn-ghost" style="font-size:13px;color:#006747">🌐 Register Online (KC website)</button>
       </div>
     </div>
 
@@ -25834,7 +26107,7 @@ function switchEnciTab(tab){
    VDH — Deckschein + Formulare
 ══════════════════════════════════════ */
 function switchVdhTab(tab){
-  ['deck','belastung','klinik','spezial'].forEach(function(t){
+  ['deck','belastung','klinik','spezial','merkmal'].forEach(function(t){
     var panel = g('vdh-panel-'+t);
     var btn   = g('vdh-tab-'+t);
     if(panel) panel.style.display = t===tab ? '' : 'none';
@@ -25844,10 +26117,10 @@ function switchVdhTab(tab){
     }
   });
   var firmaMap = {
-    deck:    ['firma-vdh-rude','firma-vdh-hundin'],
-    belastung:['firma-vdh-bel'],
-    klinik:  ['firma-vdh-kli-besitzer','firma-vdh-kli-tierarzt'],
-    spezial: ['firma-vdh-spe']
+    deck:      ['firma-vdh-rude','firma-vdh-hundin'],
+    belastung: ['firma-vdh-bel'],
+    klinik:    ['firma-vdh-kli-besitzer','firma-vdh-kli-tierarzt'],
+    spezial:   ['firma-vdh-spe']
   };
   setTimeout(function(){
     (firmaMap[tab]||[]).forEach(function(id){ initFirma(id); });
@@ -25868,7 +26141,9 @@ function popolaVdhSelect(){
   if(selH) selH.innerHTML = '<option value="">⚡ Meine Hunde</option>' + femmine.map(function(c){
     return '<option value="'+c.id+'">♀ '+c.nome+(c.razza?' ('+c.razza+')':'')+'</option>';
   }).join('');
-  ['bel','kli','spe'].forEach(function(pref){
+  var selBel = g('vdh-bel-sel');
+  if(selBel) selBel.innerHTML = optsAll;
+  ['kli','spe'].forEach(function(pref){
     var sel = g('vdh-'+pref+'-sel-hund');
     if(sel) sel.innerHTML = optsAll;
   });
@@ -25906,6 +26181,101 @@ function vdhPrecompilaHund(pref, caneId){
   v('vdh-'+pref+'-chip',      c.microchip||'');
   if(g('vdh-'+pref+'-zb')) v('vdh-'+pref+'-zb', c.roi||c.registroNum||c.numeroENCI||'');
   if(c.dataNascita && g('vdh-'+pref+'-wurftag')) v('vdh-'+pref+'-wurftag', c.dataNascita);
+}
+
+function vdhPrecompilaBel(caneId){
+  if(!caneId) return;
+  var c = cani.find(function(x){return x.id===caneId;});
+  if(!c) return;
+  var v = function(id,val){var el=g(id);if(el&&val!==undefined&&val!=='')el.value=val;};
+  v('vdh-bel-name',  c.nome);
+  v('vdh-bel-rasse', c.razza||'');
+  v('vdh-bel-chip',  c.microchip||'');
+  v('vdh-bel-zb',    c.roi||c.registroNum||c.numeroENCI||'');
+  if(c.dataNascita) v('vdh-bel-wurf', c.dataNascita);
+  if(c.sesso){
+    var r = document.querySelector('input[name="vdh-bel-sex"][value="'+(c.sesso==='M'?'M':'W')+'"]');
+    if(r) r.checked = true;
+  }
+  var p = profilo || {};
+  var eigenName = p.nome || '';
+  var eigenAddr = [p.via, p.civico, p.cap, p.citta].filter(Boolean).join(', ');
+  v('vdh-bel-eigen-name', eigenName);
+  if(eigenAddr) v('vdh-bel-eigen-addr', eigenAddr);
+}
+
+function exportVdhBelPDF(){
+  var gv2  = function(id){var el=g(id);return el?el.value.trim():'';};
+  var gRad = function(name){var r=document.querySelector('input[name="'+name+'"]:checked');return r?r.value:'';};
+  var firmaUrl = getFirmaDataUrl('firma-vdh-bel');
+  var bestanden = gRad('vdh-bel-bestanden');
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8">'
+    +'<style>*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}'
+    +'body{background:#fff;font-size:9.5pt;color:#000;padding:10mm}'
+    +'.title-block{text-align:center;margin-bottom:10px}'
+    +'.main-title{font-size:17pt;font-weight:900;color:#0D47A1}'
+    +'.sub-title{font-size:9pt;color:#6B8BB0;margin-top:3px}'
+    +'.section{border:1px solid #bbb;border-radius:4px;padding:8px 10px;margin-bottom:7px}'
+    +'.section-title{font-size:7.5pt;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:#0D47A1;margin-bottom:5px}'
+    +'.grid2{display:grid;grid-template-columns:1fr 1fr;gap:5px}'
+    +'.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}'
+    +'.field{margin-bottom:2px}'
+    +'.field label{font-size:7pt;color:#555;display:block}'
+    +'.field span{font-size:8.5pt;font-weight:700;display:block;border-bottom:1px solid #ccc;min-height:12px}'
+    +'@media print{body{padding:0}}</style>'
+    +'</head><body>'
+    +'<div class="title-block">'
+    +'<div style="font-size:8pt;color:#666">Verband für das Deutsche Hundewesen (VDH) e.V.</div>'
+    +'<div class="main-title">UNTERSUCHUNGSBOGEN BELASTUNGSTEST</div>'
+    +'<div class="sub-title">für kurzschnäuzige Hunderassen</div>'
+    +'</div>'
+    +'<div class="section"><div class="section-title">Veranstaltung</div>'
+    +'<div class="grid2">'
+    +'<div class="field"><label>Durchführender Verein</label><span>'+gv2('vdh-bel-verein')+'</span></div>'
+    +'<div class="field"><label>Datum</label><span>'+gv2('vdh-bel-datum')+'</span></div>'
+    +'<div class="field"><label>Ort</label><span>'+gv2('vdh-bel-ort')+'</span></div>'
+    +'<div class="field"><label>Außentemperatur</label><span>'+gv2('vdh-bel-temp')+' °C</span></div>'
+    +'</div></div>'
+    +'<div class="section"><div class="section-title">Eigentümer</div>'
+    +'<div class="grid2">'
+    +'<div class="field" style="grid-column:span 2"><label>Name, Vorname</label><span>'+gv2('vdh-bel-eigen-name')+'</span></div>'
+    +'<div class="field" style="grid-column:span 2"><label>Anschrift</label><span>'+gv2('vdh-bel-eigen-addr')+'</span></div>'
+    +'</div></div>'
+    +'<div class="section"><div class="section-title">Hund</div>'
+    +'<div class="grid2">'
+    +'<div class="field"><label>Name</label><span>'+gv2('vdh-bel-name')+'</span></div>'
+    +'<div class="field"><label>Rasse</label><span>'+gv2('vdh-bel-rasse')+'</span></div>'
+    +'<div class="field"><label>Wurfdatum</label><span>'+gv2('vdh-bel-wurf')+'</span></div>'
+    +'<div class="field"><label>Gewicht</label><span>'+gv2('vdh-bel-gewicht')+' kg</span></div>'
+    +'<div class="field"><label>ZB-Nr.</label><span>'+gv2('vdh-bel-zb')+'</span></div>'
+    +'<div class="field"><label>Chip</label><span>'+gv2('vdh-bel-chip')+'</span></div>'
+    +'<div class="field"><label>Geschlecht</label><span>'+gRad('vdh-bel-sex')+'</span></div>'
+    +'</div></div>'
+    +'<div class="section"><div class="section-title">Vorbericht</div>'
+    +'<div class="grid3">'
+    +'<div class="field"><label>Operationen</label><span>'+gRad('vdh-bel-op')+'</span></div>'
+    +'<div class="field"><label>Allergien</label><span>'+gRad('vdh-bel-allergie')+'</span></div>'
+    +'<div class="field"><label>Erkrankungen</label><span>'+gRad('vdh-bel-sonstige')+'</span></div>'
+    +'</div></div>'
+    +'<div class="section"><div class="section-title">Klinische Untersuchung</div>'
+    +'<div class="grid3">'
+    +'<div class="field"><label>Kondition</label><span>'+gv2('vdh-bel-kondition')+'</span></div>'
+    +'<div class="field"><label>Herzfrequenz Ruhe (bpm)</label><span>'+gv2('vdh-bel-herz-ruhe')+'</span></div>'
+    +'<div class="field"><label>Atemfrequenz Ruhe (/min)</label><span>'+gv2('vdh-bel-atem-ruhe')+'</span></div>'
+    +'<div class="field"><label>Herz nach Belastung</label><span>'+gv2('vdh-bel-herz-belast')+'</span></div>'
+    +'<div class="field"><label>Atem nach Belastung</label><span>'+gv2('vdh-bel-atem-belast')+'</span></div>'
+    +'<div class="field"><label>Erholung nach (min)</label><span>'+gv2('vdh-bel-erholung')+'</span></div>'
+    +'<div class="field" style="grid-column:span 3"><label>Atemgeräusche in Ruhe</label><span>'+gRad('vdh-bel-atem-typ')+'</span></div>'
+    +'</div></div>'
+    +'<div class="section" style="text-align:center;padding:12px">'
+    +'<div style="font-size:11pt;font-weight:900;color:#333;margin-bottom:6px">BELASTUNGSTEST BESTANDEN:</div>'
+    +'<div style="font-size:18pt;font-weight:900;color:'+(bestanden==='ja'?'#1a7a4a':'#C0534A')+'">'+(bestanden==='ja'?'✅ JA':bestanden==='nein'?'❌ NEIN':'—')+'</div>'
+    +'<div style="margin-top:10px">'
+    +(firmaUrl?'<img style="max-height:60px;max-width:200px" src="'+firmaUrl+'"/>':'<div style="height:60px;border:1px solid #ccc;border-radius:4px;width:200px;margin:0 auto"></div>')
+    +'<div style="font-size:7pt;color:#555;margin-top:3px">Unterschrift Tierarzt / Stempel</div>'
+    +'</div></div>'
+    +'</body></html>';
+  apriHtmlBlob(html);
 }
 
 function exportVdhDeckPDF(){
@@ -26035,6 +26405,177 @@ function shareVdhDeckWhatsApp(){
   if(datum)  msg += '📅 Datum : '+datum+'\n';
   msg += '\nErstellt mit BreedPed — breedped.com';
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+/* ══════════════════════════════════════
+   KC — The Kennel Club (UK)
+══════════════════════════════════════ */
+function switchKcTab(tab){
+  ['form1'].forEach(function(t){
+    var panel = g('kc-panel-'+t);
+    var btn   = g('kc-tab-'+t);
+    if(panel) panel.style.display = t===tab ? '' : 'none';
+    if(btn){
+      btn.style.background = t===tab ? 'linear-gradient(135deg,#006747,#004d35)' : '#F0FFF0';
+      btn.style.color      = t===tab ? '#fff' : '#006747';
+    }
+  });
+  var firmaMap = { form1: ['firma-kc-breeder','firma-kc-sire'] };
+  setTimeout(function(){
+    (firmaMap[tab]||[]).forEach(function(id){ initFirma(id); });
+  }, 100);
+}
+
+var _kcPuppyCount = 0;
+function popolaKcSelect(){
+  var maschi  = cani.filter(function(c){return c.sesso==='M' && !c._guest;});
+  var femmine = cani.filter(function(c){return c.sesso==='F' && !c._guest;});
+  var selDam  = g('kc-f1-sel-dam');
+  var selSire = g('kc-f1-sel-sire');
+  if(selDam) selDam.innerHTML = '<option value="">⚡ My dogs</option>' + femmine.map(function(c){
+    return '<option value="'+c.id+'">♀ '+c.nome+(c.razza?' ('+c.razza+')':'')+'</option>';
+  }).join('');
+  if(selSire) selSire.innerHTML = '<option value="">⚡ My dogs</option>' + maschi.map(function(c){
+    return '<option value="'+c.id+'">♂ '+c.nome+(c.razza?' ('+c.razza+')':'')+'</option>';
+  }).join('');
+}
+
+function kcPrecompilaDam(caneId){
+  if(!caneId) return;
+  var c = cani.find(function(x){return x.id===caneId;});
+  if(!c) return;
+  var v = function(id,val){var el=g(id);if(el&&val!==undefined&&val!=='')el.value=val;};
+  v('kc-f1-dam-name',  c.nome);
+  v('kc-f1-dam-chip',  c.microchip||'');
+  v('kc-f1-dam-kcreg', c.roi||c.registroNum||c.numeroENCI||'');
+  v('kc-f1-breed',     c.razza||'');
+}
+
+function kcPrecompilaSire(caneId){
+  if(!caneId) return;
+  var c = cani.find(function(x){return x.id===caneId;});
+  if(!c) return;
+  var v = function(id,val){var el=g(id);if(el&&val!==undefined&&val!=='')el.value=val;};
+  v('kc-f1-sire-name',  c.nome);
+  v('kc-f1-sire-chip',  c.microchip||'');
+  v('kc-f1-sire-kcreg', c.roi||c.registroNum||c.numeroENCI||'');
+}
+
+function kcAddPuppy(){
+  _kcPuppyCount++;
+  var n = _kcPuppyCount;
+  var list = g('kc-f1-puppies-list');
+  if(!list) return;
+  var row = document.createElement('div');
+  row.id = 'kc-puppy-row-'+n;
+  row.style.cssText = 'display:grid;grid-template-columns:auto 1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:6px;background:#F5F7FF;border-radius:6px;padding:6px 8px';
+  row.innerHTML = '<span style="font-size:10px;font-weight:700;color:#006747">#'+n+'</span>'
+    +'<div><label style="font-size:9px">SEX</label>'
+    +'<div style="display:flex;gap:6px;font-size:10px">'
+    +'<label><input type="radio" name="kc-pup-sex-'+n+'" value="Dog"> Dog</label>'
+    +'<label><input type="radio" name="kc-pup-sex-'+n+'" value="Bitch"> Bitch</label>'
+    +'</div></div>'
+    +'<div><label style="font-size:9px">NAME</label><input id="kc-pup-name-'+n+'" type="text" style="width:100%;font-size:11px"/></div>'
+    +'<div><label style="font-size:9px">COLOUR</label><input id="kc-pup-colour-'+n+'" type="text" style="width:100%;font-size:11px"/></div>'
+    +'<div><label style="font-size:9px">MICROCHIP</label><input id="kc-pup-chip-'+n+'" type="text" style="width:100%;font-size:11px"/></div>'
+    +'<button onclick="document.getElementById(\'kc-puppy-row-'+n+'\').remove()" style="background:none;border:none;cursor:pointer;font-size:14px;color:#C0534A" title="Remove">✕</button>';
+  list.appendChild(row);
+}
+
+function exportKcForm1PDF(){
+  var gv2  = function(id){var el=g(id);return el?el.value.trim():'';};
+  var gRad = function(name){var r=document.querySelector('input[name="'+name+'"]:checked');return r?r.value:'';};
+  var gChk = function(id){var el=g(id);return el&&el.checked?'Yes':'No';};
+  var firmaBUrl = getFirmaDataUrl('firma-kc-breeder');
+  var firmaSUrl = getFirmaDataUrl('firma-kc-sire');
+  var puppyRows = g('kc-f1-puppies-list') ? g('kc-f1-puppies-list').children : [];
+  var puppiesHtml = '';
+  for(var i=0;i<puppyRows.length;i++){
+    var row = puppyRows[i];
+    var nr  = row.id.replace('kc-puppy-row-','');
+    var sex    = gRad('kc-pup-sex-'+nr);
+    var pname  = gv2('kc-pup-name-'+nr);
+    var colour = gv2('kc-pup-colour-'+nr);
+    var chip   = gv2('kc-pup-chip-'+nr);
+    puppiesHtml += '<tr>'
+      +'<td>'+(i+1)+'</td>'
+      +'<td>'+sex+'</td>'
+      +'<td>'+pname+'</td>'
+      +'<td>'+colour+'</td>'
+      +'<td>'+chip+'</td>'
+      +'</tr>';
+  }
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8">'
+    +'<style>*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}'
+    +'body{background:#fff;font-size:9.5pt;color:#000;padding:10mm}'
+    +'.header{text-align:center;margin-bottom:10px;border-bottom:2px solid #006747;padding-bottom:8px}'
+    +'.kc-title{font-size:8pt;font-weight:900;color:#006747;letter-spacing:.15em}'
+    +'.form-title{font-size:18pt;font-weight:900;color:#006747}'
+    +'.form-sub{font-size:11pt;color:#0D47A1;font-weight:700}'
+    +'.section{border:1px solid #bbb;border-radius:4px;padding:8px 10px;margin-bottom:7px}'
+    +'.section-title{font-size:7.5pt;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:#006747;margin-bottom:5px}'
+    +'.grid2{display:grid;grid-template-columns:1fr 1fr;gap:5px}'
+    +'.field{margin-bottom:2px}'
+    +'.field label{font-size:7pt;color:#555;display:block}'
+    +'.field span{font-size:8.5pt;font-weight:700;display:block;border-bottom:1px solid #ccc;min-height:12px}'
+    +'table{width:100%;border-collapse:collapse;font-size:8pt}'
+    +'th,td{border:1px solid #ccc;padding:3px 6px}'
+    +'th{background:#006747;color:#fff;font-size:7pt}'
+    +'@media print{body{padding:0}}</style>'
+    +'</head><body>'
+    +'<div class="header">'
+    +'<div class="kc-title">THE KENNEL CLUB</div>'
+    +'<div class="form-title">FORM 1</div>'
+    +'<div class="form-sub">Application for Litter Registration</div>'
+    +'</div>'
+    +'<div class="section"><div class="section-title">1 — Breeder</div>'
+    +'<div class="grid2">'
+    +'<div class="field"><label>Name</label><span>'+gv2('kc-f1-title')+' '+gv2('kc-f1-first')+' '+gv2('kc-f1-last')+'</span></div>'
+    +'<div class="field"><label>Breeding Licence</label><span>'+gRad('kc-f1-licence')+'</span></div>'
+    +'<div class="field" style="grid-column:span 2"><label>Address</label><span>'+gv2('kc-f1-addr')+', '+gv2('kc-f1-postcode')+'</span></div>'
+    +'<div class="field"><label>Tel.</label><span>'+gv2('kc-f1-tel')+'</span></div>'
+    +'<div class="field"><label>Email</label><span>'+gv2('kc-f1-email')+'</span></div>'
+    +'</div></div>'
+    +'<div class="section"><div class="section-title">Breeder Signature</div>'
+    +'<div style="display:flex;align-items:center;gap:16px">'
+    +(firmaBUrl?'<img style="max-height:50px;max-width:160px" src="'+firmaBUrl+'"/>':'<div style="height:50px;width:160px;border:1px solid #ccc;border-radius:4px"></div>')
+    +'<span style="font-size:8pt;color:#555">Date: '+gv2('kc-f1-breeder-date')+'</span>'
+    +'</div></div>'
+    +'<div class="section"><div class="section-title">2 — Dam</div>'
+    +'<div class="grid2">'
+    +'<div class="field" style="grid-column:span 2"><label>Registered Name</label><span>'+gv2('kc-f1-dam-name')+'</span></div>'
+    +'<div class="field"><label>KC Reg. No.</label><span>'+gv2('kc-f1-dam-kcreg')+'</span></div>'
+    +'<div class="field"><label>Microchip</label><span>'+gv2('kc-f1-dam-chip')+'</span></div>'
+    +'</div></div>'
+    +'<div class="section"><div class="section-title">3-6 — Breed & Litter Details</div>'
+    +'<div class="grid2">'
+    +'<div class="field"><label>Breed</label><span>'+gv2('kc-f1-breed')+'</span></div>'
+    +'<div class="field"><label>Kennel Name</label><span>'+gv2('kc-f1-kennel')+'</span></div>'
+    +'<div class="field"><label>Date of Birth</label><span>'+gv2('kc-f1-dob')+'</span></div>'
+    +'<div class="field"><label>Date of Mating</label><span>'+gv2('kc-f1-dom')+'</span></div>'
+    +'<div class="field"><label>AI</label><span>'+gChk('kc-f1-ai')+'</span></div>'
+    +'<div class="field"><label>Caesarean</label><span>'+gChk('kc-f1-caesar')+(gRad('kc-f1-caesar-type')?' ('+gRad('kc-f1-caesar-type')+')':'')+'</span></div>'
+    +'</div></div>'
+    +'<div class="section"><div class="section-title">7-8 — Sire</div>'
+    +'<div class="grid2">'
+    +'<div class="field"><label>Sire Owner</label><span>'+gv2('kc-f1-sire-title')+' '+gv2('kc-f1-sire-first')+' '+gv2('kc-f1-sire-last')+'</span></div>'
+    +'<div class="field"><label>Address</label><span>'+gv2('kc-f1-sire-addr')+' '+gv2('kc-f1-sire-postcode')+'</span></div>'
+    +'<div class="field" style="grid-column:span 2"><label>Sire Registered Name</label><span>'+gv2('kc-f1-sire-name')+'</span></div>'
+    +'<div class="field"><label>KC Reg. No.</label><span>'+gv2('kc-f1-sire-kcreg')+'</span></div>'
+    +'<div class="field"><label>Microchip</label><span>'+gv2('kc-f1-sire-chip')+'</span></div>'
+    +'</div>'
+    +'<div style="display:flex;align-items:center;gap:16px;margin-top:6px">'
+    +(firmaSUrl?'<img style="max-height:50px;max-width:160px" src="'+firmaSUrl+'"/>':'<div style="height:50px;width:160px;border:1px solid #ccc;border-radius:4px"></div>')
+    +'<span style="font-size:8pt;color:#555">Sire Owner Signature — Date: '+gv2('kc-f1-sire-date')+'</span>'
+    +'</div></div>'
+    +'<div class="section"><div class="section-title">12 — Puppies</div>'
+    +'<table><thead><tr><th>#</th><th>Sex</th><th>Name</th><th>Colour</th><th>Microchip</th></tr></thead>'
+    +'<tbody>'+puppiesHtml+'</tbody></table>'
+    +'<div style="font-size:8pt;margin-top:5px">Dogs: <strong>'+gv2('kc-f1-dogs')+'</strong> &nbsp; Bitches: <strong>'+gv2('kc-f1-bitches')+'</strong></div>'
+    +'</div>'
+    +'<div style="text-align:center;font-size:7pt;color:#888;margin-top:8px">Created with BreedPed — breedped.com</div>'
+    +'</body></html>';
+  apriHtmlBlob(html);
 }
 
 /* ══════════════════════════════════════
@@ -26348,20 +26889,26 @@ function openModuliENCI(){
   if(g('moduli-modal-title')) g('moduli-modal-title').textContent = titles[kc] || titles.enci;
 
   var isVdh = kc === 'vdh';
+  var isKc  = kc === 'kc';
 
-  // Switcher ENCI / SCC / VDH
-  if(g('enci-tab-switcher')) g('enci-tab-switcher').style.display = (!isScc && !isVdh) ? '' : 'none';
-  if(g('scc-tab-switcher'))  g('scc-tab-switcher').style.display  = isScc  ? 'flex' : 'none';
-  if(g('vdh-tab-switcher'))  g('vdh-tab-switcher').style.display  = isVdh  ? 'flex' : 'none';
-  if(g('enci-panel-a')) g('enci-panel-a').style.display = (!isScc && !isVdh) ? '' : 'none';
+  // Switcher ENCI / SCC / VDH / KC
+  if(g('enci-tab-switcher')) g('enci-tab-switcher').style.display = (!isScc && !isVdh && !isKc) ? '' : 'none';
+  if(g('scc-tab-switcher'))  g('scc-tab-switcher').style.display  = isScc ? 'flex' : 'none';
+  if(g('vdh-tab-switcher'))  g('vdh-tab-switcher').style.display  = isVdh ? 'flex' : 'none';
+  if(g('kc-tab-switcher'))   g('kc-tab-switcher').style.display   = isKc  ? 'flex' : 'none';
+  if(g('enci-panel-a')) g('enci-panel-a').style.display = (!isScc && !isVdh && !isKc) ? '' : 'none';
   if(g('enci-panel-b')) g('enci-panel-b').style.display = 'none';
   // Nascondi tutti i pannelli SCC
   ['saillie','conf','ti','imp','la'].forEach(function(t){
     if(g('scc-panel-'+t)) g('scc-panel-'+t).style.display = 'none';
   });
   // Nascondi tutti i pannelli VDH
-  ['deck','belastung','klinik','spezial'].forEach(function(t){
+  ['deck','belastung','klinik','spezial','merkmal'].forEach(function(t){
     if(g('vdh-panel-'+t)) g('vdh-panel-'+t).style.display = 'none';
+  });
+  // Nascondi tutti i pannelli KC
+  ['form1'].forEach(function(t){
+    if(g('kc-panel-'+t)) g('kc-panel-'+t).style.display = 'none';
   });
 
   if(isScc){
@@ -26375,6 +26922,13 @@ function openModuliENCI(){
     popolaVdhSelect();
     show('modal-moduli-enci');
     switchVdhTab('deck');
+    return;
+  }
+
+  if(isKc){
+    popolaKcSelect();
+    show('modal-moduli-enci');
+    switchKcTab('form1');
     return;
   }
 
@@ -26413,6 +26967,18 @@ function precompilaDaProfilo(tab){
     if(ind) set('scc-s-adresse', ind+', '+[p.cap, p.citta].filter(Boolean).join(' '));
     if(p.cap) set('scc-s-cp', p.cap);
     if(p.citta) set('scc-s-ville', p.citta);
+    return;
+  }
+  if(tab === 'kc-f1'){
+    var kcNomParts = (p.nome||'').split(' ');
+    set('kc-f1-first', kcNomParts.slice(0,-1).join(' ')||p.nome||'');
+    set('kc-f1-last',  kcNomParts.slice(-1)[0]||p.nome||'');
+    set('kc-f1-tel',   p.tel);
+    set('kc-f1-email', p.email);
+    set('kc-f1-kennel',p.affisso);
+    var kcAddr = [p.via, p.civico].filter(Boolean).join(' ');
+    if(kcAddr) set('kc-f1-addr', kcAddr+', '+[p.citta].filter(Boolean).join(''));
+    if(p.cap) set('kc-f1-postcode', p.cap);
     return;
   }
   if(tab==='vdh-belastung'||tab==='vdh-klinik'||tab==='vdh-spezial'){
