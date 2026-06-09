@@ -2744,6 +2744,15 @@ html[data-theme=dark] div[style*="color:#C62828"],html[data-theme=dark] span[sty
       </div>
     </div>
 
+    <!-- ═══ TAB SWITCHER SCC ═══ -->
+    <div id="scc-tab-switcher" style="display:none;flex-wrap:wrap;gap:0;margin-bottom:20px;border:2px solid #DDEAFF;border-radius:12px;overflow:hidden">
+      <button id="scc-tab-saillie" onclick="switchSccTab('saillie')" style="flex:1;min-width:120px;padding:10px 4px;font-weight:700;font-size:11px;border:none;cursor:pointer;background:linear-gradient(135deg,#1565C0,#0D47A1);color:#fff;transition:all .2s">📋 Certificat<br>de Saillie</button>
+      <button id="scc-tab-conf" onclick="switchSccTab('conf')" style="flex:1;min-width:120px;padding:10px 4px;font-weight:700;font-size:11px;border:none;cursor:pointer;background:#EEF3FB;color:#6B8BB0;transition:all .2s">✅ Confirmation</button>
+      <button id="scc-tab-ti" onclick="switchSccTab('ti')" style="flex:1;min-width:120px;padding:10px 4px;font-weight:700;font-size:11px;border:none;cursor:pointer;background:#EEF3FB;color:#6B8BB0;transition:all .2s">📄 Titre Initial</button>
+      <button id="scc-tab-imp" onclick="switchSccTab('imp')" style="flex:1;min-width:120px;padding:10px 4px;font-weight:700;font-size:11px;border:none;cursor:pointer;background:#EEF3FB;color:#6B8BB0;transition:all .2s">🌍 Importation</button>
+      <button id="scc-tab-la" onclick="switchSccTab('la')" style="flex:1;min-width:120px;padding:10px 4px;font-weight:700;font-size:11px;border:none;cursor:pointer;background:#EEF3FB;color:#6B8BB0;transition:all .2s">📘 Livre d'Attente</button>
+    </div>
+
     <!-- ═══ CERTIFICAT DE SAILLIE SCC ═══ -->
     <div id="scc-panel-saillie" style="display:none">
       <div style="text-align:center;margin-bottom:16px">
@@ -2932,6 +2941,428 @@ html[data-theme=dark] div[style*="color:#C62828"],html[data-theme=dark] span[sty
       <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
         <button onclick="exportSccSailliePDF()" class="btn btn-primary" style="font-size:13px">📄 Exporter PDF</button>
         <button onclick="shareSccSaillieWhatsApp()" class="btn btn-ghost" style="font-size:13px;color:#25D366">📱 Envoyer WhatsApp</button>
+      </div>
+    </div>
+
+    <!-- ═══ FORMULAIRE DE CONFIRMATION (FC) ═══ -->
+    <div id="scc-panel-conf" style="display:none">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:10px;color:#888">SOCIÉTÉ CENTRALE CANINE — 155 avenue Jean Jaurès - 93535 AUBERVILLIERS Cedex</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#0D47A1;margin-top:8px">FORMULAIRE DE DEMANDE DE CONFIRMATION</div>
+        <div style="font-size:11px;color:#6B8BB0;margin-top:4px">(Décret n°74-195 du 26 février 1974)</div>
+        <div style="font-size:10px;color:#C0534A;font-weight:600;margin-top:4px">A PRESENTER avec le CERTIFICAT DE NAISSANCE et la CARTE D'IDENTIFICATION</div>
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#1565C0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+          👤 Propriétaire du Chien
+          <button onclick="precompilaDaProfilo('scc-conf')" class="btn btn-ghost btn-sm" style="font-size:11px">⚡ Du Profil</button>
+        </div>
+        <div style="font-size:10px;color:#1a1a3a;margin-bottom:8px;font-style:italic">Je soussigné(e) certifie être le propriétaire du chien ci-dessous identifié et demande qu'il subisse l'examen en vue de sa confirmation.</div>
+        <div class="form-grid">
+          <div><label>NOM *</label><input id="scc-conf-nom" type="text" style="text-transform:uppercase"/></div>
+          <div><label>PRÉNOM *</label><input id="scc-conf-prenom" type="text"/></div>
+          <div style="grid-column:span 2"><label>ADRESSE</label><input id="scc-conf-adresse" type="text"/></div>
+          <div><label>CODE POSTAL</label><input id="scc-conf-cp" type="text"/></div>
+          <div><label>VILLE</label><input id="scc-conf-ville" type="text"/></div>
+          <div><label>Téléphone fixe</label><input id="scc-conf-tel" type="tel"/></div>
+          <div><label>Téléphone portable</label><input id="scc-conf-mobile" type="tel"/></div>
+          <div style="grid-column:span 2"><label>Courriel</label><input id="scc-conf-email" type="email"/></div>
+        </div>
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+          🐕 Chien
+          <select id="scc-conf-sel-chien" onchange="sccPrecompilaConfChien(this.value)" style="font-size:11px;padding:3px 8px;border:1.5px solid #DDEAFF;border-radius:6px;color:#1565C0;font-weight:700">
+            <option value="">⚡ Mes chiens</option>
+          </select>
+        </div>
+        <div class="form-grid">
+          <div style="grid-column:span 2"><label>RACE *</label><input id="scc-conf-race" type="text"/></div>
+          <div style="grid-column:span 2"><label>N° de LOF *</label><input id="scc-conf-lof" type="text" placeholder="N° Livre des Origines Français"/></div>
+          <div style="grid-column:span 2"><label>NOM du CHIEN *</label><input id="scc-conf-chien-nom" type="text"/></div>
+          <div><label>DATE de NAISSANCE</label><input id="scc-conf-ddn" type="date"/></div>
+          <div>
+            <label>Sexe</label>
+            <div style="display:flex;gap:12px;margin-top:4px">
+              <label style="font-size:11px"><input type="radio" name="scc-conf-sexe" value="M"> Mâle</label>
+              <label style="font-size:11px"><input type="radio" name="scc-conf-sexe" value="F"> Femelle</label>
+            </div>
+          </div>
+          <div><label>NATURE du POIL</label><input id="scc-conf-poil" type="text"/></div>
+          <div><label>COULEUR DE ROBE</label><input id="scc-conf-couleur" type="text"/></div>
+          <div><label>TRANSPONDEUR</label><input id="scc-conf-chip" type="text"/></div>
+          <div><label>TATOUAGE</label><input id="scc-conf-tat" type="text"/></div>
+        </div>
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px;text-align:center">
+        <div style="font-size:10px;font-weight:700;color:#1565C0;margin-bottom:6px">Signature du propriétaire</div>
+        <canvas id="firma-scc-conf-proprio" width="300" height="100" style="border:1.5px dashed #DDEAFF;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
+        <button onclick="clearFirma('firma-scc-conf-proprio')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Effacer</button>
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px;background:#F5FFF5;border-color:#C8E6C9">
+        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Certificat (à établir par l'expert de la S.C.C.)</div>
+        <div class="form-grid">
+          <div><label>Taille (cm)</label><input id="scc-conf-taille" type="text" placeholder="cm"/></div>
+          <div><label>Poids (kg)</label><input id="scc-conf-poids" type="text" placeholder="kg"/></div>
+          <div><label>Tour de poitrine (cm)</label><input id="scc-conf-poitrine" type="text" placeholder="cm"/></div>
+          <div>
+            <label>Coup de feu</label>
+            <div style="display:flex;gap:12px;margin-top:4px">
+              <label style="font-size:11px"><input type="radio" name="scc-conf-feu" value="OUI"> OUI</label>
+              <label style="font-size:11px"><input type="radio" name="scc-conf-feu" value="NON"> NON</label>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:10px;font-style:italic;color:#1a1a3a">Je soussigné(e), expert de la S.C.C., certifie avoir examiné le chien ci-dessus identifié, et le déclare :</div>
+        <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
+          <label style="font-size:12px;font-weight:700;padding:8px 16px;border:2px solid #4CAF50;border-radius:8px;cursor:pointer"><input type="radio" name="scc-conf-resultat" value="APTE"> ✅ APTE</label>
+          <label style="font-size:12px;font-weight:700;padding:8px 16px;border:2px solid #FF9800;border-radius:8px;cursor:pointer"><input type="radio" name="scc-conf-resultat" value="AJOURNE"> ⏸ AJOURNÉ</label>
+          <label style="font-size:12px;font-weight:700;padding:8px 16px;border:2px solid #F44336;border-radius:8px;cursor:pointer"><input type="radio" name="scc-conf-resultat" value="INAPTE"> ❌ INAPTE</label>
+        </div>
+        <div style="margin-top:10px">
+          <label style="font-size:10px">En cas d'INAPTITUDE ou d'AJOURNEMENT, motif :</label>
+          <textarea id="scc-conf-motif" rows="2" style="width:100%;border:1.5px solid #DDEAFF;border-radius:6px;padding:6px;font-size:11px" placeholder="Motif (à reporter sur le Certificat de Naissance)"></textarea>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:14px">
+          <div style="flex:1"><label style="font-size:10px">Lieu de l'examen</label><input id="scc-conf-lieu-exam" type="text"/></div>
+          <div style="flex:1"><label style="font-size:10px">Date</label><input id="scc-conf-date-exam" type="date"/></div>
+        </div>
+        <div style="text-align:center;margin-top:10px">
+          <div style="font-size:10px;font-weight:700;color:#1a7a4a;margin-bottom:4px">Signature de l'expert</div>
+          <canvas id="firma-scc-conf-expert" width="300" height="100" style="border:1.5px dashed #C8E6C9;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
+          <button onclick="clearFirma('firma-scc-conf-expert')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Effacer</button>
+        </div>
+      </div>
+
+      <div style="background:#FFF8E7;border:1.5px solid #E8D5A3;border-radius:8px;padding:10px;margin-bottom:16px;font-size:10px;color:#A88A41;line-height:1.6">
+        <strong>LE MONTANT DES DROITS D'INSCRIPTION :</strong><br>
+        1 — Inscription au titre de la descendance : 25 €<br>
+        2 — Inscription à titre initial : 25 € (groupe 6) / 60 € (autres races)<br>
+        3 — Inscription au titre de l'importation : 60 €<br>
+        4 — Inscription au Livre d'Attente : 25 €
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="exportSccFormPDF('conf')" class="btn btn-primary" style="font-size:13px">📄 Exporter PDF</button>
+      </div>
+    </div>
+
+    <!-- ═══ TITRE INITIAL (FCTI) ═══ -->
+    <div id="scc-panel-ti" style="display:none">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:10px;color:#888">SOCIÉTÉ CENTRALE CANINE — 155 avenue Jean Jaurès - 93535 AUBERVILLIERS Cedex</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#0D47A1;margin-top:8px">DEMANDE D'INSCRIPTION AU L.O.F. À TITRE INITIAL</div>
+        <div style="font-size:11px;color:#6B8BB0;margin-top:4px">Pour les chiens sans origine connue</div>
+        <div style="font-size:10px;color:#C0534A;font-weight:600;margin-top:4px">A PRESENTER avec la CARTE D'IDENTIFICATION</div>
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#1565C0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+          👤 Propriétaire du Chien
+          <button onclick="precompilaDaProfilo('scc-ti')" class="btn btn-ghost btn-sm" style="font-size:11px">⚡ Du Profil</button>
+        </div>
+        <div style="font-size:10px;color:#1a1a3a;margin-bottom:8px;font-style:italic">Je soussigné(e) certifie être le propriétaire du chien ci-dessous identifié et demande son inscription au Livre des Origines Français à titre initial.</div>
+        <div class="form-grid">
+          <div><label>NOM *</label><input id="scc-ti-nom" type="text" style="text-transform:uppercase"/></div>
+          <div><label>PRÉNOM *</label><input id="scc-ti-prenom" type="text"/></div>
+          <div style="grid-column:span 2"><label>ADRESSE</label><input id="scc-ti-adresse" type="text"/></div>
+          <div><label>CODE POSTAL</label><input id="scc-ti-cp" type="text"/></div>
+          <div><label>VILLE</label><input id="scc-ti-ville" type="text"/></div>
+          <div><label>Téléphone fixe</label><input id="scc-ti-tel" type="tel"/></div>
+          <div><label>Téléphone portable</label><input id="scc-ti-mobile" type="tel"/></div>
+          <div style="grid-column:span 2"><label>Courriel</label><input id="scc-ti-email" type="email"/></div>
+        </div>
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+          🐕 Chien
+          <select id="scc-ti-sel-chien" onchange="sccPrecompilaGenericChien('ti',this.value)" style="font-size:11px;padding:3px 8px;border:1.5px solid #DDEAFF;border-radius:6px;color:#1565C0;font-weight:700">
+            <option value="">⚡ Mes chiens</option>
+          </select>
+        </div>
+        <div class="form-grid">
+          <div style="grid-column:span 2"><label>RACE *</label><input id="scc-ti-race" type="text"/></div>
+          <div style="grid-column:span 2"><label>NOM du CHIEN *</label><input id="scc-ti-chien-nom" type="text"/></div>
+          <div><label>DATE de NAISSANCE</label><input id="scc-ti-ddn" type="date"/></div>
+          <div>
+            <label>Sexe</label>
+            <div style="display:flex;gap:12px;margin-top:4px">
+              <label style="font-size:11px"><input type="radio" name="scc-ti-sexe" value="M"> Mâle</label>
+              <label style="font-size:11px"><input type="radio" name="scc-ti-sexe" value="F"> Femelle</label>
+            </div>
+          </div>
+          <div><label>NATURE du POIL</label><input id="scc-ti-poil" type="text"/></div>
+          <div><label>COULEUR DE ROBE</label><input id="scc-ti-couleur" type="text"/></div>
+          <div><label>TRANSPONDEUR</label><input id="scc-ti-chip" type="text"/></div>
+          <div><label>TATOUAGE</label><input id="scc-ti-tat" type="text"/></div>
+        </div>
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#6B3FA0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Avis du Club de Race</div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px">
+          <label style="font-size:11px"><input type="checkbox" id="scc-ti-tan"> TAN (Test d'Aptitudes Naturelles)</label>
+          <label style="font-size:11px"><input type="checkbox" id="scc-ti-tc"> TC (Test de Comportement)</label>
+          <label style="font-size:11px"><input type="checkbox" id="scc-ti-csau"> CSAU (Chien Sans Aptitude Utilitaire)</label>
+        </div>
+        <div><label style="font-size:10px">Maladie génétique exigée par le club</label><input id="scc-ti-maladie" type="text" placeholder="Ex: dysplasie, BAER..."/></div>
+        <div style="margin-top:10px;display:flex;gap:12px;align-items:center">
+          <span style="font-size:11px;font-weight:700">Avis du Club :</span>
+          <label style="font-size:12px;font-weight:700;padding:6px 14px;border:2px solid #4CAF50;border-radius:8px;cursor:pointer"><input type="radio" name="scc-ti-avis" value="FAVORABLE"> ✅ FAVORABLE</label>
+          <label style="font-size:12px;font-weight:700;padding:6px 14px;border:2px solid #F44336;border-radius:8px;cursor:pointer"><input type="radio" name="scc-ti-avis" value="DEFAVORABLE"> ❌ DÉFAVORABLE</label>
+        </div>
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px;background:#F5FFF5;border-color:#C8E6C9">
+        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Certificat de l'expert S.C.C.</div>
+        <div class="form-grid">
+          <div><label>Taille (cm)</label><input id="scc-ti-taille" type="text" placeholder="cm"/></div>
+          <div><label>Poids (kg)</label><input id="scc-ti-poids" type="text" placeholder="kg"/></div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
+          <label style="font-size:12px;font-weight:700;padding:8px 16px;border:2px solid #4CAF50;border-radius:8px;cursor:pointer"><input type="radio" name="scc-ti-resultat" value="APTE"> ✅ APTE</label>
+          <label style="font-size:12px;font-weight:700;padding:8px 16px;border:2px solid #FF9800;border-radius:8px;cursor:pointer"><input type="radio" name="scc-ti-resultat" value="AJOURNE"> ⏸ AJOURNÉ</label>
+          <label style="font-size:12px;font-weight:700;padding:8px 16px;border:2px solid #F44336;border-radius:8px;cursor:pointer"><input type="radio" name="scc-ti-resultat" value="INAPTE"> ❌ INAPTE</label>
+        </div>
+        <div style="margin-top:10px">
+          <label style="font-size:10px">Motif (si ajourné/inapte)</label>
+          <textarea id="scc-ti-motif" rows="2" style="width:100%;border:1.5px solid #DDEAFF;border-radius:6px;padding:6px;font-size:11px"></textarea>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:14px">
+          <div style="flex:1"><label style="font-size:10px">Lieu</label><input id="scc-ti-lieu-exam" type="text"/></div>
+          <div style="flex:1"><label style="font-size:10px">Date</label><input id="scc-ti-date-exam" type="date"/></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px">
+          <div style="text-align:center">
+            <div style="font-size:10px;font-weight:700;color:#1565C0;margin-bottom:4px">Signature propriétaire</div>
+            <canvas id="firma-scc-ti-proprio" width="300" height="100" style="border:1.5px dashed #DDEAFF;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
+            <button onclick="clearFirma('firma-scc-ti-proprio')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Effacer</button>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:10px;font-weight:700;color:#1a7a4a;margin-bottom:4px">Signature expert</div>
+            <canvas id="firma-scc-ti-expert" width="300" height="100" style="border:1.5px dashed #C8E6C9;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
+            <button onclick="clearFirma('firma-scc-ti-expert')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Effacer</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="exportSccFormPDF('ti')" class="btn btn-primary" style="font-size:13px">📄 Exporter PDF</button>
+      </div>
+    </div>
+
+    <!-- ═══ IMPORTATION (FCTIP) ═══ -->
+    <div id="scc-panel-imp" style="display:none">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:10px;color:#888">SOCIÉTÉ CENTRALE CANINE — 155 avenue Jean Jaurès - 93535 AUBERVILLIERS Cedex</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#0D47A1;margin-top:8px">DEMANDE D'INSCRIPTION AU TITRE DE L'IMPORTATION</div>
+        <div style="font-size:11px;color:#6B8BB0;margin-top:4px">Inscription au L.O.F. d'un CHIEN né à l'ÉTRANGER</div>
+        <div style="font-size:10px;color:#C0534A;font-weight:600;margin-top:4px">A PRESENTER avec le PEDIGREE D'ORIGINE et la CARTE D'IDENTIFICATION</div>
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#1565C0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+          👤 Propriétaire du Chien
+          <button onclick="precompilaDaProfilo('scc-imp')" class="btn btn-ghost btn-sm" style="font-size:11px">⚡ Du Profil</button>
+        </div>
+        <div class="form-grid">
+          <div><label>NOM *</label><input id="scc-imp-nom" type="text" style="text-transform:uppercase"/></div>
+          <div><label>PRÉNOM *</label><input id="scc-imp-prenom" type="text"/></div>
+          <div style="grid-column:span 2"><label>ADRESSE</label><input id="scc-imp-adresse" type="text"/></div>
+          <div><label>CODE POSTAL</label><input id="scc-imp-cp" type="text"/></div>
+          <div><label>VILLE</label><input id="scc-imp-ville" type="text"/></div>
+          <div><label>Téléphone</label><input id="scc-imp-tel" type="tel"/></div>
+          <div><label>Courriel</label><input id="scc-imp-email" type="email"/></div>
+        </div>
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+          🐕 Chien Importé
+          <select id="scc-imp-sel-chien" onchange="sccPrecompilaGenericChien('imp',this.value)" style="font-size:11px;padding:3px 8px;border:1.5px solid #DDEAFF;border-radius:6px;color:#1565C0;font-weight:700">
+            <option value="">⚡ Mes chiens</option>
+          </select>
+        </div>
+        <div class="form-grid">
+          <div style="grid-column:span 2"><label>RACE *</label><input id="scc-imp-race" type="text"/></div>
+          <div style="grid-column:span 2"><label>NOM du CHIEN *</label><input id="scc-imp-chien-nom" type="text"/></div>
+          <div><label>N° de LIVRE DES ORIGINES</label><input id="scc-imp-lo" type="text" placeholder="LOSH / KC / LOI / LOE / NHSB..."/></div>
+          <div><label>PAYS d'origine</label><input id="scc-imp-pays" type="text" placeholder="Belgique, Italie..."/></div>
+          <div><label>DATE de NAISSANCE</label><input id="scc-imp-ddn" type="date"/></div>
+          <div>
+            <label>Sexe</label>
+            <div style="display:flex;gap:12px;margin-top:4px">
+              <label style="font-size:11px"><input type="radio" name="scc-imp-sexe" value="M"> Mâle</label>
+              <label style="font-size:11px"><input type="radio" name="scc-imp-sexe" value="F"> Femelle</label>
+            </div>
+          </div>
+          <div><label>NATURE du POIL</label><input id="scc-imp-poil" type="text"/></div>
+          <div><label>COULEUR DE ROBE</label><input id="scc-imp-couleur" type="text"/></div>
+          <div><label>TRANSPONDEUR</label><input id="scc-imp-chip" type="text"/></div>
+          <div><label>TATOUAGE</label><input id="scc-imp-tat" type="text"/></div>
+        </div>
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">PRODUCTEUR (allevatore estero)</div>
+        <div class="form-grid">
+          <div><label>Nom</label><input id="scc-imp-prod-nom" type="text" style="text-transform:uppercase"/></div>
+          <div><label>Prénom</label><input id="scc-imp-prod-prenom" type="text"/></div>
+          <div style="grid-column:span 2"><label>Adresse</label><input id="scc-imp-prod-adresse" type="text"/></div>
+          <div><label>Pays</label><input id="scc-imp-prod-pays" type="text"/></div>
+        </div>
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px;background:#F5FFF5;border-color:#C8E6C9">
+        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Certificat de l'expert S.C.C.</div>
+        <div class="form-grid">
+          <div><label>Taille (cm)</label><input id="scc-imp-taille" type="text" placeholder="cm"/></div>
+          <div><label>Poids (kg)</label><input id="scc-imp-poids" type="text" placeholder="kg"/></div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
+          <label style="font-size:12px;font-weight:700;padding:8px 16px;border:2px solid #4CAF50;border-radius:8px;cursor:pointer"><input type="radio" name="scc-imp-resultat" value="APTE"> ✅ APTE</label>
+          <label style="font-size:12px;font-weight:700;padding:8px 16px;border:2px solid #FF9800;border-radius:8px;cursor:pointer"><input type="radio" name="scc-imp-resultat" value="AJOURNE"> ⏸ AJOURNÉ</label>
+          <label style="font-size:12px;font-weight:700;padding:8px 16px;border:2px solid #F44336;border-radius:8px;cursor:pointer"><input type="radio" name="scc-imp-resultat" value="INAPTE"> ❌ INAPTE</label>
+        </div>
+        <div style="margin-top:10px">
+          <label style="font-size:10px">Motif (si ajourné/inapte)</label>
+          <textarea id="scc-imp-motif" rows="2" style="width:100%;border:1.5px solid #DDEAFF;border-radius:6px;padding:6px;font-size:11px"></textarea>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:14px">
+          <div style="flex:1"><label style="font-size:10px">Lieu</label><input id="scc-imp-lieu-exam" type="text"/></div>
+          <div style="flex:1"><label style="font-size:10px">Date</label><input id="scc-imp-date-exam" type="date"/></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px">
+          <div style="text-align:center">
+            <div style="font-size:10px;font-weight:700;color:#1565C0;margin-bottom:4px">Signature propriétaire</div>
+            <canvas id="firma-scc-imp-proprio" width="300" height="100" style="border:1.5px dashed #DDEAFF;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
+            <button onclick="clearFirma('firma-scc-imp-proprio')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Effacer</button>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:10px;font-weight:700;color:#1a7a4a;margin-bottom:4px">Signature expert</div>
+            <canvas id="firma-scc-imp-expert" width="300" height="100" style="border:1.5px dashed #C8E6C9;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
+            <button onclick="clearFirma('firma-scc-imp-expert')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Effacer</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="exportSccFormPDF('imp')" class="btn btn-primary" style="font-size:13px">📄 Exporter PDF</button>
+      </div>
+    </div>
+
+    <!-- ═══ LIVRE D'ATTENTE (FCLA) ═══ -->
+    <div id="scc-panel-la" style="display:none">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:10px;color:#888">SOCIÉTÉ CENTRALE CANINE — 155 avenue Jean Jaurès - 93535 AUBERVILLIERS Cedex</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#0D47A1;margin-top:8px">DEMANDE D'ENREGISTREMENT AU LIVRE D'ATTENTE</div>
+        <div style="font-size:10px;color:#C0534A;font-weight:600;margin-top:4px">A PRESENTER avec la CARTE D'IDENTIFICATION</div>
+      </div>
+
+      <div style="background:#EEF3FB;border:1.5px solid #DDEAFF;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:10px;color:#1565C0;line-height:1.8">
+        <strong>Pour être enregistré au Livre d'Attente, un chien doit :</strong><br>
+        1 — être indemne pour la maladie génétique la plus recherchée dans la race<br>
+        2 — avoir passé le TAN, TC ou CSAU<br>
+        3 — avoir obtenu au minimum <strong>Très Bon</strong> en exposition canine officielle
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#1565C0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+          👤 Propriétaire du Chien
+          <button onclick="precompilaDaProfilo('scc-la')" class="btn btn-ghost btn-sm" style="font-size:11px">⚡ Du Profil</button>
+        </div>
+        <div class="form-grid">
+          <div><label>NOM *</label><input id="scc-la-nom" type="text" style="text-transform:uppercase"/></div>
+          <div><label>PRÉNOM *</label><input id="scc-la-prenom" type="text"/></div>
+          <div style="grid-column:span 2"><label>ADRESSE</label><input id="scc-la-adresse" type="text"/></div>
+          <div><label>CODE POSTAL</label><input id="scc-la-cp" type="text"/></div>
+          <div><label>VILLE</label><input id="scc-la-ville" type="text"/></div>
+          <div><label>Téléphone</label><input id="scc-la-tel" type="tel"/></div>
+          <div><label>Courriel</label><input id="scc-la-email" type="email"/></div>
+        </div>
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+          🐕 Chien
+          <select id="scc-la-sel-chien" onchange="sccPrecompilaGenericChien('la',this.value)" style="font-size:11px;padding:3px 8px;border:1.5px solid #DDEAFF;border-radius:6px;color:#1565C0;font-weight:700">
+            <option value="">⚡ Mes chiens</option>
+          </select>
+        </div>
+        <div class="form-grid">
+          <div style="grid-column:span 2"><label>RACE *</label><input id="scc-la-race" type="text"/></div>
+          <div style="grid-column:span 2"><label>NOM du CHIEN *</label><input id="scc-la-chien-nom" type="text"/></div>
+          <div><label>DATE de NAISSANCE</label><input id="scc-la-ddn" type="date"/></div>
+          <div>
+            <label>Sexe</label>
+            <div style="display:flex;gap:12px;margin-top:4px">
+              <label style="font-size:11px"><input type="radio" name="scc-la-sexe" value="M"> Mâle</label>
+              <label style="font-size:11px"><input type="radio" name="scc-la-sexe" value="F"> Femelle</label>
+            </div>
+          </div>
+          <div><label>NATURE du POIL</label><input id="scc-la-poil" type="text"/></div>
+          <div><label>COULEUR DE ROBE</label><input id="scc-la-couleur" type="text"/></div>
+          <div><label>TRANSPONDEUR</label><input id="scc-la-chip" type="text"/></div>
+          <div><label>TATOUAGE</label><input id="scc-la-tat" type="text"/></div>
+        </div>
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:#6B3FA0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Avis du Club de Race</div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px">
+          <label style="font-size:11px"><input type="checkbox" id="scc-la-tan"> TAN</label>
+          <label style="font-size:11px"><input type="checkbox" id="scc-la-tc"> TC</label>
+          <label style="font-size:11px"><input type="checkbox" id="scc-la-csau"> CSAU</label>
+        </div>
+        <div><label style="font-size:10px">Maladie génétique vérifiée</label><input id="scc-la-maladie" type="text" placeholder="Ex: dysplasie, BAER..."/></div>
+        <div style="margin-top:8px"><label style="font-size:10px">Résultat exposition (Très Bon minimum)</label><input id="scc-la-expo" type="text" placeholder="Ex: Très Bon — Nationale d'Élevage 2023"/></div>
+        <div style="margin-top:10px;display:flex;gap:12px;align-items:center">
+          <span style="font-size:11px;font-weight:700">Avis du Club :</span>
+          <label style="font-size:12px;font-weight:700;padding:6px 14px;border:2px solid #4CAF50;border-radius:8px;cursor:pointer"><input type="radio" name="scc-la-avis" value="FAVORABLE"> ✅ FAVORABLE</label>
+          <label style="font-size:12px;font-weight:700;padding:6px 14px;border:2px solid #F44336;border-radius:8px;cursor:pointer"><input type="radio" name="scc-la-avis" value="DEFAVORABLE"> ❌ DÉFAVORABLE</label>
+        </div>
+      </div>
+
+      <div class="form-box" style="margin-bottom:14px;background:#F5FFF5;border-color:#C8E6C9">
+        <div style="font-size:11px;font-weight:800;color:#1a7a4a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Certificat de l'expert S.C.C.</div>
+        <div class="form-grid">
+          <div><label>Taille (cm)</label><input id="scc-la-taille" type="text" placeholder="cm"/></div>
+          <div><label>Poids (kg)</label><input id="scc-la-poids" type="text" placeholder="kg"/></div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
+          <label style="font-size:12px;font-weight:700;padding:8px 16px;border:2px solid #4CAF50;border-radius:8px;cursor:pointer"><input type="radio" name="scc-la-resultat" value="APTE"> ✅ APTE</label>
+          <label style="font-size:12px;font-weight:700;padding:8px 16px;border:2px solid #FF9800;border-radius:8px;cursor:pointer"><input type="radio" name="scc-la-resultat" value="AJOURNE"> ⏸ AJOURNÉ</label>
+          <label style="font-size:12px;font-weight:700;padding:8px 16px;border:2px solid #F44336;border-radius:8px;cursor:pointer"><input type="radio" name="scc-la-resultat" value="INAPTE"> ❌ INAPTE</label>
+        </div>
+        <div style="margin-top:10px">
+          <label style="font-size:10px">Motif (si ajourné/inapte)</label>
+          <textarea id="scc-la-motif" rows="2" style="width:100%;border:1.5px solid #DDEAFF;border-radius:6px;padding:6px;font-size:11px"></textarea>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:14px">
+          <div style="flex:1"><label style="font-size:10px">Lieu</label><input id="scc-la-lieu-exam" type="text"/></div>
+          <div style="flex:1"><label style="font-size:10px">Date</label><input id="scc-la-date-exam" type="date"/></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px">
+          <div style="text-align:center">
+            <div style="font-size:10px;font-weight:700;color:#1565C0;margin-bottom:4px">Signature propriétaire</div>
+            <canvas id="firma-scc-la-proprio" width="300" height="100" style="border:1.5px dashed #DDEAFF;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
+            <button onclick="clearFirma('firma-scc-la-proprio')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Effacer</button>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:10px;font-weight:700;color:#1a7a4a;margin-bottom:4px">Signature expert</div>
+            <canvas id="firma-scc-la-expert" width="300" height="100" style="border:1.5px dashed #C8E6C9;border-radius:8px;width:100%;touch-action:none;cursor:crosshair"></canvas>
+            <button onclick="clearFirma('firma-scc-la-expert')" class="btn btn-ghost btn-sm" style="font-size:10px;margin-top:4px">🗑 Effacer</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="exportSccFormPDF('la')" class="btn btn-primary" style="font-size:13px">📄 Exporter PDF</button>
       </div>
     </div>
 
@@ -25071,8 +25502,31 @@ function switchEnciTab(tab){
 }
 
 /* ══════════════════════════════════════
-   SCC — Certificat de Saillie
+   SCC — Tab switcher + multi-form
 ══════════════════════════════════════ */
+function switchSccTab(tab){
+  ['saillie','conf','ti','imp','la'].forEach(function(t){
+    var panel = g('scc-panel-'+t);
+    var btn   = g('scc-tab-'+t);
+    if(panel) panel.style.display = t===tab ? '' : 'none';
+    if(btn){
+      btn.style.background = t===tab ? 'linear-gradient(135deg,#1565C0,#0D47A1)' : '#EEF3FB';
+      btn.style.color      = t===tab ? '#fff' : '#6B8BB0';
+    }
+  });
+  if(tab==='saillie'){
+    setTimeout(function(){ initFirma('firma-scc-chienne'); initFirma('firma-scc-etalon'); }, 100);
+  } else if(tab==='conf'){
+    setTimeout(function(){ initFirma('firma-scc-conf-proprio'); initFirma('firma-scc-conf-expert'); }, 100);
+  } else if(tab==='ti'){
+    setTimeout(function(){ initFirma('firma-scc-ti-proprio'); initFirma('firma-scc-ti-expert'); }, 100);
+  } else if(tab==='imp'){
+    setTimeout(function(){ initFirma('firma-scc-imp-proprio'); initFirma('firma-scc-imp-expert'); }, 100);
+  } else if(tab==='la'){
+    setTimeout(function(){ initFirma('firma-scc-la-proprio'); initFirma('firma-scc-la-expert'); }, 100);
+  }
+}
+
 function salvaKennelClub(val){
   if(!profilo) profilo = {};
   profilo.kennel_club = val;
@@ -25080,20 +25534,54 @@ function salvaKennelClub(val){
 }
 
 function popolaSccSelect(){
+  var tutti   = cani.filter(function(c){return !c._guest;});
   var femmine = cani.filter(function(c){return c.sesso==='F' && !c._guest;});
   var maschi  = cani.filter(function(c){return c.sesso==='M' && !c._guest;});
+  var optsAll = '<option value="">⚡ Mes chiens</option>' + tutti.map(function(c){
+    return '<option value="'+c.id+'">'+(c.sesso==='M'?'♂ ':'♀ ')+c.nome+(c.razza?' ('+c.razza+')':'')+'</option>';
+  }).join('');
   var selC = g('scc-s-sel-chienne');
   var selE = g('scc-s-sel-etalon');
-  if(selC){
-    selC.innerHTML = '<option value="">⚡ Mes chiens</option>' + femmine.map(function(c){
-      return '<option value="'+c.id+'">'+c.nome+(c.razza?' ('+c.razza+')':'')+'</option>';
-    }).join('');
-  }
-  if(selE){
-    selE.innerHTML = '<option value="">⚡ Mes chiens</option>' + maschi.map(function(c){
-      return '<option value="'+c.id+'">'+c.nome+(c.razza?' ('+c.razza+')':'')+'</option>';
-    }).join('');
-  }
+  if(selC) selC.innerHTML = '<option value="">⚡ Mes chiens</option>' + femmine.map(function(c){
+    return '<option value="'+c.id+'">♀ '+c.nome+(c.razza?' ('+c.razza+')':'')+'</option>';
+  }).join('');
+  if(selE) selE.innerHTML = '<option value="">⚡ Mes chiens</option>' + maschi.map(function(c){
+    return '<option value="'+c.id+'">♂ '+c.nome+(c.razza?' ('+c.razza+')':'')+'</option>';
+  }).join('');
+  // Popola i select degli altri pannelli SCC
+  ['conf','ti','imp','la'].forEach(function(t){
+    var sel = g('scc-'+t+'-sel-chien');
+    if(sel) sel.innerHTML = optsAll;
+  });
+}
+
+function sccPrecompilaConfChien(caneId){
+  if(!caneId) return;
+  var c = cani.find(function(x){return x.id===caneId;});
+  if(!c) return;
+  var v = function(id,val){var el=g(id);if(el&&val!==undefined&&val!=='')el.value=val;};
+  v('scc-conf-race', c.razza);
+  v('scc-conf-chien-nom', c.nome);
+  v('scc-conf-chip', c.microchip);
+  v('scc-conf-lof', c.roi||c.registroNum||c.numeroENCI||'');
+  v('scc-conf-couleur', c.colore||'');
+  if(c.dataNascita) v('scc-conf-ddn', c.dataNascita);
+  if(c.sesso){ var r=document.querySelector('input[name="scc-conf-sexe"][value="'+c.sesso+'"]'); if(r) r.checked=true; }
+}
+
+function sccPrecompilaGenericChien(tab, caneId){
+  if(!caneId) return;
+  var c = cani.find(function(x){return x.id===caneId;});
+  if(!c) return;
+  var pref = 'scc-'+tab+'-';
+  var v = function(id,val){var el=g(id);if(el&&val!==undefined&&val!=='')el.value=val;};
+  v(pref+'race', c.razza);
+  v(pref+'chien-nom', c.nome);
+  v(pref+'chip', c.microchip);
+  v(pref+'couleur', c.colore||'');
+  if(c.dataNascita) v(pref+'ddn', c.dataNascita);
+  if(tab==='imp') v(pref+'lo', c.roi||c.registroNum||c.numeroENCI||'');
+  if(c.sesso){ var r=document.querySelector('input[name="scc-'+tab+'-sexe"][value="'+c.sesso+'"]'); if(r) r.checked=true; }
 }
 
 function sccPrecompilaChienne(caneId){
@@ -25189,6 +25677,101 @@ function exportSccSailliePDF(){
   apriHtmlBlob(html);
 }
 
+function exportSccFormPDF(form){
+  var pref = 'scc-'+form+'-';
+  var gv2 = function(id){var el=g(id);return el?el.value.trim():'';};
+  var gRad = function(name){var r=document.querySelector('input[name="'+name+'"]:checked');return r?r.value:'';};
+  var titles = {
+    conf:'FORMULAIRE DE DEMANDE DE CONFIRMATION',
+    ti:'DEMANDE D\'INSCRIPTION AU L.O.F. À TITRE INITIAL',
+    imp:'DEMANDE D\'INSCRIPTION AU TITRE DE L\'IMPORTATION',
+    la:'DEMANDE D\'ENREGISTREMENT AU LIVRE D\'ATTENTE'
+  };
+  var subtitles = {
+    conf:'(Décret n°74-195 du 26 février 1974)',
+    ti:'Pour les chiens sans origine connue',
+    imp:'Inscription au L.O.F. d\'un CHIEN né à l\'ÉTRANGER',
+    la:''
+  };
+  var firmaProprioUrl = getFirmaDataUrl('firma-scc-'+form+'-proprio');
+  var firmaExpertUrl  = getFirmaDataUrl('firma-scc-'+form+'-expert');
+  var resultat = gRad('scc-'+form+'-resultat');
+  var sexe     = gRad('scc-'+form+'-sexe');
+
+  var extraRows = '';
+  if(form==='imp'){
+    extraRows += '<div class="field"><label>N° Livre Origines étranger</label><span>'+gv2(pref+'lo')+'</span></div>';
+    extraRows += '<div class="field"><label>Pays d\'origine</label><span>'+gv2(pref+'pays')+'</span></div>';
+  }
+  if(form==='ti'||form==='la'){
+    var tan = g(pref+'tan')&&g(pref+'tan').checked?'TAN ':' ';
+    var tc  = g(pref+'tc') &&g(pref+'tc').checked ?'TC ':' ';
+    var cs  = g(pref+'csau')&&g(pref+'csau').checked?'CSAU':' ';
+    var avis = gRad('scc-'+form+'-avis');
+    extraRows += '<div class="field" style="grid-column:span 2"><label>Tests passés</label><span>'+tan+tc+cs+'</span></div>';
+    extraRows += '<div class="field" style="grid-column:span 2"><label>Avis du Club</label><span style="font-weight:900;color:'+(avis==='FAVORABLE'?'#1a7a4a':'#C0534A')+'">'+avis+'</span></div>';
+    if(form==='la') extraRows += '<div class="field" style="grid-column:span 2"><label>Résultat exposition</label><span>'+gv2(pref+'expo')+'</span></div>';
+  }
+  var expertSection = ''
+    +'<div class="section expert"><div class="section-title">Certificat de l\'expert S.C.C.</div>'
+    +'<div class="grid2">'
+    +'<div class="field"><label>Taille (cm)</label><span>'+gv2(pref+'taille')+'</span></div>'
+    +'<div class="field"><label>Poids (kg)</label><span>'+gv2(pref+'poids')+'</span></div>'
+    +(form==='conf'?'<div class="field"><label>Tour de poitrine</label><span>'+gv2(pref+'poitrine')+'</span></div><div class="field"><label>Coup de feu</label><span>'+gRad('scc-conf-feu')+'</span></div>':'')
+    +'</div>'
+    +'<div style="margin-top:8px;font-size:11pt;font-weight:900;color:'+(resultat==='APTE'?'#1a7a4a':resultat==='AJOURNE'?'#E65100':'#B71C1C')+'">Résultat : '+(resultat||'—')+'</div>'
+    +(gv2(pref+'motif')?'<div style="font-size:9pt;margin-top:4px"><em>Motif : '+gv2(pref+'motif')+'</em></div>':'')
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">'
+    +'<div style="font-size:8pt">Lieu : '+gv2(pref+'lieu-exam')+'<br>Date : '+gv2(pref+'date-exam')+'</div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">'
+    +'<div style="text-align:center"><div style="font-size:8pt;font-weight:700;color:#1565C0;margin-bottom:4px">Signature propriétaire</div>'
+    +(firmaProprioUrl?'<img style="max-height:50px;max-width:100%" src="'+firmaProprioUrl+'"/>':'<div style="height:50px;border:1px solid #ccc;border-radius:4px"></div>')+'</div>'
+    +'<div style="text-align:center"><div style="font-size:8pt;font-weight:700;color:#1a7a4a;margin-bottom:4px">Signature expert</div>'
+    +(firmaExpertUrl?'<img style="max-height:50px;max-width:100%" src="'+firmaExpertUrl+'"/>':'<div style="height:50px;border:1px solid #ccc;border-radius:4px"></div>')+'</div>'
+    +'</div></div>';
+
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8">'
+    +'<style>*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}'
+    +'body{background:#fff;font-size:9.5pt;color:#000;padding:10mm}'
+    +'.title-block{text-align:center;margin-bottom:10px}'
+    +'.main-title{font-size:15pt;font-weight:900;color:#0D47A1}'
+    +'.section{border:1px solid #bbb;border-radius:4px;padding:8px 10px;margin-bottom:8px}'
+    +'.section.expert{border-color:#4CAF50;background:#F5FFF5}'
+    +'.section-title{font-size:8pt;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:#0D47A1;margin-bottom:6px}'
+    +'.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}'
+    +'.field{margin-bottom:3px}'
+    +'.field label{font-size:7pt;color:#555;display:block}'
+    +'.field span{font-size:9pt;font-weight:700;display:block;border-bottom:1px solid #ccc;min-height:13px}'
+    +'@media print{body{padding:0}}</style>'
+    +'</head><body>'
+    +'<div class="title-block">'
+    +'<div style="font-size:8pt;color:#666">SOCIÉTÉ CENTRALE CANINE — 155 avenue Jean Jaurès - 93535 AUBERVILLIERS Cedex</div>'
+    +'<div class="main-title">'+titles[form]+'</div>'
+    +(subtitles[form]?'<div style="font-size:9pt;color:#6B8BB0">'+subtitles[form]+'</div>':'')
+    +'</div>'
+    +'<div class="section"><div class="section-title">Propriétaire du Chien</div>'
+    +'<div class="grid2">'
+    +'<div class="field"><label>NOM Prénom</label><span>'+gv2(pref+'nom')+' '+gv2(pref+'prenom')+'</span></div>'
+    +'<div class="field"><label>Adresse</label><span>'+gv2(pref+'adresse')+'</span></div>'
+    +'<div class="field"><label>CP / Ville</label><span>'+gv2(pref+'cp')+' '+gv2(pref+'ville')+'</span></div>'
+    +'<div class="field"><label>Tél. / Courriel</label><span>'+gv2(pref+'tel')+(gv2(pref+'email')?' — '+gv2(pref+'email'):'')+'</span></div>'
+    +'</div></div>'
+    +'<div class="section"><div class="section-title">Chien</div>'
+    +'<div class="grid2">'
+    +'<div class="field"><label>Race</label><span>'+gv2(pref+'race')+'</span></div>'
+    +'<div class="field"><label>Nom</label><span>'+gv2(pref+'chien-nom')+'</span></div>'
+    +(form==='conf'?'<div class="field"><label>N° LOF</label><span>'+gv2(pref+'lof')+'</span></div>':'')
+    +'<div class="field"><label>Naissance / Sexe</label><span>'+gv2(pref+'ddn')+(sexe?' — '+sexe:'')+'</span></div>'
+    +'<div class="field"><label>Transpondeur</label><span>'+gv2(pref+'chip')+'</span></div>'
+    +'<div class="field"><label>Couleur / Poil</label><span>'+gv2(pref+'couleur')+(gv2(pref+'poil')?' — '+gv2(pref+'poil'):'')+'</span></div>'
+    +extraRows
+    +'</div></div>'
+    +expertSection
+    +'</body></html>';
+  apriHtmlBlob(html);
+}
+
 function shareSccSaillieWhatsApp(){
   var ch = g('scc-s-ch-nom') ? g('scc-s-ch-nom').value.trim() : '';
   var et = g('scc-s-et-nom') ? g('scc-s-et-nom').value.trim() : '';
@@ -25230,14 +25813,18 @@ function openModuliENCI(){
 
   // Mostra/nascondi tab ENCI vs pannello SCC
   if(g('enci-tab-switcher')) g('enci-tab-switcher').style.display = isScc ? 'none' : '';
+  if(g('scc-tab-switcher')) g('scc-tab-switcher').style.display = isScc ? 'flex' : 'none';
   if(g('enci-panel-a')) g('enci-panel-a').style.display = isScc ? 'none' : '';
   if(g('enci-panel-b')) g('enci-panel-b').style.display = 'none';
-  if(g('scc-panel-saillie')) g('scc-panel-saillie').style.display = isScc ? '' : 'none';
+  // Nascondi tutti i pannelli SCC (switchSccTab li gestisce)
+  ['saillie','conf','ti','imp','la'].forEach(function(t){
+    if(g('scc-panel-'+t)) g('scc-panel-'+t).style.display = 'none';
+  });
 
   if(isScc){
     popolaSccSelect();
     show('modal-moduli-enci');
-    setTimeout(function(){ initFirma('firma-scc-chienne'); initFirma('firma-scc-etalon'); }, 150);
+    switchSccTab('saillie');
     return;
   }
 
@@ -25276,6 +25863,19 @@ function precompilaDaProfilo(tab){
     if(ind) set('scc-s-adresse', ind+', '+[p.cap, p.citta].filter(Boolean).join(' '));
     if(p.cap) set('scc-s-cp', p.cap);
     if(p.citta) set('scc-s-ville', p.citta);
+    return;
+  }
+  if(tab==='scc-conf'||tab==='scc-ti'||tab==='scc-imp'||tab==='scc-la'){
+    var pref = tab.replace('scc-','scc-')+'-'; // es. scc-conf-
+    var nom  = (p.nome||'').split(' ');
+    set(pref+'nom',     nom.slice(-1)[0]||p.nome||'');
+    set(pref+'prenom',  nom.slice(0,-1).join(' ')||p.nome||'');
+    set(pref+'email',   p.email);
+    set(pref+'tel',     p.tel);
+    var ind2 = [p.via, p.civico].filter(Boolean).join(' ');
+    if(ind2) set(pref+'adresse', ind2+', '+[p.cap, p.citta].filter(Boolean).join(' '));
+    if(p.cap)   set(pref+'cp',   p.cap);
+    if(p.citta) set(pref+'ville',p.citta);
     return;
   }
   if(tab === 'c'){
